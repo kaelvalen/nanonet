@@ -23,7 +23,7 @@ services:
     build: ./backend
     container_name: nanonet-backend
     environment:
-      DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres}@db:5432/nanonet
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres}@db:5432/nanonet?sslmode=disable
       JWT_SECRET: ${JWT_SECRET:-change-me-secret-key-min-32-chars}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY}
       PORT: 8080
@@ -35,7 +35,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-    command: air -c .air.toml
+    command: ./nanonet-backend
 
   frontend:
     build: ./frontend
