@@ -1,0 +1,6 @@
+mock-service
+*.exe
+*.dll
+*.so
+*.dylib
+.DS_Store
