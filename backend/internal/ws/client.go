@@ -58,7 +58,7 @@ func (c *Client) ReadPump() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNormalClosure) {
 				log.Printf("WebSocket hatası [%s/%s]: %v", c.clientType, c.id, err)
 			}
 			break
@@ -67,7 +67,7 @@ func (c *Client) ReadPump() {
 		if c.clientType == AgentClient {
 			c.hub.HandleAgentMessage(c, message)
 		} else {
-			log.Printf("Dashboard client %s mesaj gönderdi: %s", c.id, message)
+			c.hub.HandleDashboardMessage(c, message)
 		}
 	}
 }

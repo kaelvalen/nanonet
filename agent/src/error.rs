@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
+#[allow(dead_code)]
 pub enum AgentError {
     #[error("WebSocket bağlantısı kurulamadı: {0}")]
     WebSocketConnection(String),

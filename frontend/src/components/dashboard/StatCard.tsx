@@ -19,32 +19,25 @@ export default function StatCard({
   trendValue,
   status,
 }: StatCardProps) {
-  const statusColors = {
-    up: 'bg-green-100 text-green-800',
-    down: 'bg-red-100 text-red-800',
-    degraded: 'bg-yellow-100 text-yellow-800',
-    unknown: 'bg-gray-100 text-gray-800',
-  };
-
   const trendColors = {
-    up: 'text-green-600',
-    down: 'text-red-600',
-    stable: 'text-gray-600',
+    up: 'text-emerald-400',
+    down: 'text-red-400',
+    stable: 'text-gray-500',
   };
 
   const noData = value === '-' || value === '' || value === undefined;
 
   return (
-    <div className="card p-5">
+    <div className="card p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</span>
-        <Icon className={`w-4 h-4 ${noData ? 'text-gray-300' : 'text-gray-400'}`} />
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{title}</span>
+        <Icon className={`w-4 h-4 ${noData ? 'text-gray-700' : 'text-gray-500'}`} />
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className={`text-2xl font-bold ${noData ? 'text-gray-300' : 'text-gray-900'}`}>
+        <span className={`text-2xl font-bold tabular-nums ${noData ? 'text-gray-700' : 'text-white'}`}>
           {noData ? '—' : value}
         </span>
-        {!noData && unit && <span className="text-sm text-gray-400">{unit}</span>}
+        {!noData && unit && <span className="text-sm text-gray-500">{unit}</span>}
       </div>
       <div className="mt-2 flex items-center gap-3">
         {trend && trendValue && (
@@ -56,12 +49,12 @@ export default function StatCard({
           </span>
         )}
         {status && (
-          <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[status]}`}>
+          <span className={status === 'up' ? 'badge-up' : status === 'down' ? 'badge-down' : status === 'degraded' ? 'badge-degraded' : 'badge-unknown'}>
             {status}
           </span>
         )}
         {noData && !status && (
-          <span className="text-xs text-gray-400">Veri bekleniyor</span>
+          <span className="text-xs text-gray-600">Veri bekleniyor</span>
         )}
       </div>
     </div>

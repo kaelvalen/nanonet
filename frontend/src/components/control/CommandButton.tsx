@@ -16,14 +16,14 @@ export default function CommandButton({ action, onExecute, disabled, isLoading }
       icon: RotateCcw,
       label: 'Restart',
       confirmText: 'Bu servis yeniden başlatılacak. Devam etmek istiyor musunuz?',
-      color: 'bg-blue-600 hover:bg-blue-700 text-white',
-      confirmColor: 'bg-blue-600 hover:bg-blue-700',
+      color: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20',
+      confirmColor: 'bg-indigo-600 hover:bg-indigo-700',
     },
     stop: {
       icon: Square,
       label: 'Stop',
       confirmText: 'Bu servis durdurulacak. Devam etmek istiyor musunuz?',
-      color: 'bg-red-600 hover:bg-red-700 text-white',
+      color: 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20',
       confirmColor: 'bg-red-600 hover:bg-red-700',
     },
   };
@@ -33,8 +33,8 @@ export default function CommandButton({ action, onExecute, disabled, isLoading }
 
   if (showConfirm) {
     return (
-      <div className="card p-4 border-2 border-amber-200 bg-amber-50">
-        <p className="text-sm text-amber-900 mb-3">{cfg.confirmText}</p>
+      <div className="card p-4 border border-amber-500/20 bg-amber-500/5">
+        <p className="text-sm text-amber-300 mb-3">{cfg.confirmText}</p>
         <div className="flex gap-2">
           <button
             onClick={() => {
@@ -42,14 +42,14 @@ export default function CommandButton({ action, onExecute, disabled, isLoading }
               setShowConfirm(false);
             }}
             disabled={isLoading}
-            className={`px-4 py-1.5 text-sm text-white rounded-lg ${cfg.confirmColor} disabled:opacity-50 flex items-center gap-2`}
+            className={`px-4 py-1.5 text-sm text-white rounded-lg ${cfg.confirmColor} disabled:opacity-50 flex items-center gap-2 transition-colors`}
           >
             {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
             Onayla
           </button>
           <button
             onClick={() => setShowConfirm(false)}
-            className="px-4 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="btn-ghost px-4 py-1.5 text-sm"
           >
             İptal
           </button>
