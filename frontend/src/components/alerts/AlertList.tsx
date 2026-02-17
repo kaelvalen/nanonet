@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Bell } from 'lucide-react';
 import AlertCard from './AlertCard';
 
 interface Alert {
@@ -28,45 +29,38 @@ export default function AlertList({ alerts, onResolve, showResolved = false }: A
 
   const activeCount = alerts.filter((a) => !a.resolved_at).length;
 
+  const filterBtnClass = (key: string, activeColor: string, inactiveColor: string) =>
+    `px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+      filter === key ? activeColor : inactiveColor
+    }`;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-lg">Alertler</h3>
+          <h3 className="font-semibold text-white">Alertler</h3>
           {activeCount > 0 && (
-            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">
+            <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-xs rounded-full ring-1 ring-red-500/20">
               {activeCount} aktif
             </span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1 text-sm rounded ${
-              filter === 'all'
-                ? 'bg-gray-800 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={filterBtnClass('all', 'bg-white/10 text-white', 'bg-white/5 text-gray-400 hover:bg-white/10')}
           >
             Tümü
           </button>
           <button
             onClick={() => setFilter('crit')}
-            className={`px-3 py-1 text-sm rounded ${
-              filter === 'crit'
-                ? 'bg-red-600 text-white'
-                : 'bg-red-50 text-red-700 hover:bg-red-100'
-            }`}
+            className={filterBtnClass('crit', 'bg-red-600 text-white shadow-lg shadow-red-500/20', 'bg-red-500/10 text-red-400 hover:bg-red-500/20')}
           >
             Kritik
           </button>
           <button
             onClick={() => setFilter('warn')}
-            className={`px-3 py-1 text-sm rounded ${
-              filter === 'warn'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-            }`}
+            className={filterBtnClass('warn', 'bg-amber-600 text-white shadow-lg shadow-amber-500/20', 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20')}
           >
             Uyarı
           </button>
@@ -74,8 +68,13 @@ export default function AlertList({ alerts, onResolve, showResolved = false }: A
       </div>
 
       {filteredAlerts.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          {filter === 'all' ? 'Henüz alert yok' : `${filter} seviyesinde alert yok`}
+        <div className="text-center py-12">
+          <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+            <Bell className="w-6 h-6 text-gray-700" />
+          </div>
+          <p className="text-sm font-medium text-gray-500">
+            {filter === 'all' ? 'Henüz alert yok' : `${filter} seviyesinde alert yok`}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">

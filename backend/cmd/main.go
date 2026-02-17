@@ -106,13 +106,13 @@ func main() {
 	{
 		wsGroup.GET("/dashboard", authMiddleware.Required(), wsHandler.Dashboard)
 		wsGroup.GET("/services/:id", authMiddleware.Required(), wsHandler.ServiceStream)
-		wsGroup.GET("/agent", wsHandler.AgentConnect)
+		wsGroup.GET("/agent", authMiddleware.Required(), wsHandler.AgentConnect)
 	}
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status":           "ok",
-			"connected_agents": hub.GetConnectedAgentCount(),
+			"status":               "ok",
+			"connected_agents":     hub.GetConnectedAgentCount(),
 			"connected_dashboards": hub.GetConnectedDashboardCount(),
 		})
 	})
@@ -148,15 +148,24 @@ func main() {
 func corsMiddleware(frontendURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		if origin == frontendURL || origin == "http://localhost:3000" || origin == "http://localhost:5173" {
+		allowedOrigins := map[string]bool{
+			frontendURL:             true,
+			"http://localhost:3000": true,
+			"http://localhost:5173": true,
+			"http://localhost:4173": true,
+		}
+
+		if allowedOrigins[origin] {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
+		} else if frontendURL != "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", frontendURL)
 		}
 
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, X-Request-Id")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)

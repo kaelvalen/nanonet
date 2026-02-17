@@ -3,15 +3,26 @@ import { useWSStore } from '../store/wsStore';
 import { useServiceStore } from '../store/serviceStore';
 import toast from 'react-hot-toast';
 
+const MAX_RECONNECT_DELAY = 30000;
+const INITIAL_RECONNECT_DELAY = 1000;
+const HEARTBEAT_INTERVAL = 30000;
+
 export function useWebSocket() {
-  const { setConnected, setWS } = useWSStore();
+  const {
+    setConnected, setWS,
+    incrementReconnect, resetReconnect,
+    setLastMessageTime, setLastError,
+  } = useWSStore();
   const { updateServiceStatus } = useServiceStore();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const reconnectDelayRef = useRef(1000);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval>>();
+  const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
+  const mountedRef = useRef(true);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
+      setLastMessageTime(Date.now());
       const message = JSON.parse(event.data);
 
       switch (message.type) {
@@ -42,58 +53,118 @@ export function useWebSocket() {
             toast.error(`Komut başarısız (${message.command_id?.slice(0, 8)})`);
           }
           break;
+
+        case 'pong':
+          // Heartbeat response, connection healthy
+          break;
       }
     } catch (error) {
       console.error('WebSocket mesaj parse hatası:', error);
     }
-  }, [updateServiceStatus]);
+  }, [updateServiceStatus, setLastMessageTime]);
+
+  const startHeartbeat = useCallback((ws: WebSocket) => {
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    heartbeatRef.current = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        } catch {
+          // Connection might be closing
+        }
+      }
+    }, HEARTBEAT_INTERVAL);
+  }, []);
+
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = undefined;
+    }
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
+
     const connect = () => {
+      if (!mountedRef.current) return;
+
       const wsUrl = import.meta.env.VITE_WS_URL;
       const token = localStorage.getItem('access_token');
 
       if (!token || !wsUrl) return;
 
-      const ws = new WebSocket(`${wsUrl}/dashboard?token=${encodeURIComponent(token)}`);
-      wsRef.current = ws;
+      // Clean up existing connection
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+        wsRef.current.close();
+      }
 
-      ws.onopen = () => {
-        setConnected(true);
-        setWS(ws);
-        reconnectDelayRef.current = 1000;
-      };
+      try {
+        const ws = new WebSocket(`${wsUrl}/dashboard?token=${encodeURIComponent(token)}`);
+        wsRef.current = ws;
 
-      ws.onmessage = handleMessage;
+        ws.onopen = () => {
+          if (!mountedRef.current) return;
+          setConnected(true);
+          setWS(ws);
+          setLastError(null);
+          resetReconnect();
+          reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+          startHeartbeat(ws);
+        };
 
-      ws.onerror = () => {
-        setConnected(false);
-      };
+        ws.onmessage = handleMessage;
 
-      ws.onclose = () => {
-        setConnected(false);
-        setWS(null);
+        ws.onerror = (e) => {
+          if (!mountedRef.current) return;
+          setConnected(false);
+          setLastError('WebSocket bağlantı hatası');
+          console.error('WebSocket error:', e);
+        };
 
-        const delay = reconnectDelayRef.current;
-        reconnectDelayRef.current = Math.min(delay * 2, 30000);
+        ws.onclose = (e) => {
+          if (!mountedRef.current) return;
+          setConnected(false);
+          setWS(null);
+          stopHeartbeat();
 
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (localStorage.getItem('access_token')) {
-            connect();
+          // Don't reconnect if closed intentionally or auth failed
+          if (e.code === 1000 || e.code === 4401) {
+            if (e.code === 4401) {
+              setLastError('Oturum süresi doldu');
+              localStorage.removeItem('access_token');
+              window.location.href = '/login';
+            }
+            return;
           }
-        }, delay);
-      };
+
+          const delay = reconnectDelayRef.current;
+          reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
+          incrementReconnect();
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (mountedRef.current && localStorage.getItem('access_token')) {
+              connect();
+            }
+          }, delay);
+        };
+      } catch (err) {
+        console.error('WebSocket oluşturma hatası:', err);
+        setLastError('WebSocket oluşturulamadı');
+      }
     };
 
     connect();
 
     return () => {
+      mountedRef.current = false;
+      stopHeartbeat();
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
-        wsRef.current.close();
+        wsRef.current.close(1000, 'Component unmount');
       }
     };
-  }, [setConnected, setWS, handleMessage]);
+  }, [setConnected, setWS, handleMessage, startHeartbeat, stopHeartbeat, resetReconnect, incrementReconnect, setLastError]);
 }

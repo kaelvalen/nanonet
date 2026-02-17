@@ -152,6 +152,26 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 	}
 }
 
+func (h *Hub) HandleDashboardMessage(client *Client, rawMessage []byte) {
+	var msg struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(rawMessage, &msg); err != nil {
+		return
+	}
+
+	switch msg.Type {
+	case "ping":
+		pong, _ := json.Marshal(map[string]string{"type": "pong"})
+		select {
+		case client.send <- pong:
+		default:
+		}
+	default:
+		log.Printf("Dashboard client %s: bilinmeyen mesaj tipi: %s", client.id, msg.Type)
+	}
+}
+
 func (h *Hub) BroadcastToDashboards(serviceID string, data interface{}) {
 	message := map[string]interface{}{
 		"type":       "metric_update",
