@@ -136,7 +136,7 @@ func (mb *MetricsBroadcaster) broadcastLatestMetrics(ctx context.Context) {
 			continue
 		}
 
-		latest := latestMetrics[0]
+		latest := latestMetrics[len(latestMetrics)-1]
 		mb.hub.BroadcastToDashboards(svc.ID.String(), map[string]interface{}{
 			"time":           latest.Time,
 			"cpu_percent":    latest.CPUPercent,

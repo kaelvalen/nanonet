@@ -57,12 +57,12 @@ func (s *Service) Login(email, password string) (*User, error) {
 }
 
 func (s *Service) GenerateTokens(userID uuid.UUID) (*TokenResponse, error) {
-	accessToken, err := s.generateToken(userID, 24*time.Hour)
+	accessToken, err := s.generateToken(userID, 24*time.Hour, "access")
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := s.generateToken(userID, 30*24*time.Hour)
+	refreshToken, err := s.generateToken(userID, 30*24*time.Hour, "refresh")
 	if err != nil {
 		return nil, err
 	}
@@ -74,15 +74,43 @@ func (s *Service) GenerateTokens(userID uuid.UUID) (*TokenResponse, error) {
 	}, nil
 }
 
-func (s *Service) generateToken(userID uuid.UUID, duration time.Duration) (string, error) {
+func (s *Service) generateToken(userID uuid.UUID, duration time.Duration, tokenType string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID.String(),
 		"exp": time.Now().Add(duration).Unix(),
 		"iat": time.Now().Unix(),
+		"typ": tokenType,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.jwtSecret))
+}
+
+// ValidateRefreshToken refresh token'ını doğrular; access token ile kullanılamaz.
+func (s *Service) ValidateRefreshToken(tokenString string) (uuid.UUID, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("geçersiz imza metodu")
+		}
+		return []byte(s.jwtSecret), nil
+	})
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if typ, _ := claims["typ"].(string); typ != "refresh" {
+			return uuid.Nil, errors.New("geçersiz token tipi: refresh token gerekli")
+		}
+		userIDStr, ok := claims["sub"].(string)
+		if !ok {
+			return uuid.Nil, errors.New("geçersiz token payload")
+		}
+		return uuid.Parse(userIDStr)
+	}
+
+	return uuid.Nil, errors.New("geçersiz token")
 }
 
 func (s *Service) ValidateToken(tokenString string) (uuid.UUID, error) {

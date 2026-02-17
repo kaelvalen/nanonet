@@ -17,8 +17,8 @@ export function useAuth() {
       navigate('/');
     },
     onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err?.response?.data?.message || 'Giriş başarısız');
+      const err = error as { response?: { data?: { error?: string } } };
+      toast.error(err?.response?.data?.error || 'Giriş başarısız');
     },
   });
 
@@ -30,8 +30,8 @@ export function useAuth() {
       navigate('/');
     },
     onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err?.response?.data?.message || 'Kayıt başarısız');
+      const err = error as { response?: { data?: { error?: string } } };
+      toast.error(err?.response?.data?.error || 'Kayıt başarısız');
     },
   });
 

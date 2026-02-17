@@ -38,7 +38,7 @@ func (s *Service) GetLatestMetric(ctx context.Context, serviceID uuid.UUID) (*Me
 	if len(metrics) == 0 {
 		return nil, nil
 	}
-	return &metrics[0], nil
+	return &metrics[len(metrics)-1], nil
 }
 
 func (s *Service) GetUptime(ctx context.Context, serviceID uuid.UUID, duration time.Duration) (float64, error) {

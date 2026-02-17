@@ -88,7 +88,7 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 
 		case message := <-h.broadcast:
-			h.mu.RLock()
+			h.mu.Lock()
 			for client := range h.dashboardClients {
 				select {
 				case client.send <- message:
@@ -97,7 +97,7 @@ func (h *Hub) Run() {
 					delete(h.dashboardClients, client)
 				}
 			}
-			h.mu.RUnlock()
+			h.mu.Unlock()
 		}
 	}
 }

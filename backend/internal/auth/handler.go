@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"strings"
+
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +28,11 @@ func (h *Handler) Register(c *gin.Context) {
 
 	user, err := h.service.Register(req.Email, req.Password)
 	if err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "duplicate") || strings.Contains(errMsg, "unique") || strings.Contains(errMsg, "already exists") {
+			response.Error(c, 409, "bu email adresi zaten kullanılıyor")
+			return
+		}
 		response.InternalError(c, "kullanıcı oluşturulamadı")
 		return
 	}
@@ -77,7 +84,7 @@ func (h *Handler) Refresh(c *gin.Context) {
 		return
 	}
 
-	userID, err := h.service.ValidateToken(req.RefreshToken)
+	userID, err := h.service.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
 		response.Unauthorized(c, "geçersiz refresh token")
 		return
