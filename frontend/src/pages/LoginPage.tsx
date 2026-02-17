@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Geçerli bir email girin'),
@@ -22,43 +23,56 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6">NanoNet Giriş</h1>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              {...register('email')}
-              type="email"
-              className="w-full px-3 py-2 border rounded-md"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-            )}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <span className="text-white font-bold text-lg">N</span>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Şifre</label>
-            <input
-              {...register('password')}
-              type="password"
-              className="w-full px-3 py-2 border rounded-md"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={isLoggingIn}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoggingIn ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm">
+          <h1 className="text-2xl font-bold text-gray-900">NanoNet'e Giriş</h1>
+          <p className="text-sm text-gray-500 mt-1">Servislerinizi izlemeye devam edin</p>
+        </div>
+
+        <div className="card p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <input
+                {...register('email')}
+                type="email"
+                className="input-field"
+                placeholder="ornek@email.com"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1.5">{errors.email.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Şifre</label>
+              <input
+                {...register('password')}
+                type="password"
+                className="input-field"
+                placeholder="En az 8 karakter"
+              />
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1.5">{errors.password.message}</p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full btn-primary flex items-center justify-center gap-2 py-2.5"
+            >
+              {isLoggingIn && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isLoggingIn ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-gray-500">
           Hesabınız yok mu?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
+          <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
             Kayıt Ol
           </Link>
         </p>

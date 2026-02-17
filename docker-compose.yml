@@ -12,7 +12,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -24,32 +23,29 @@ services:
     container_name: nanonet-backend
     environment:
       DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres}@db:5432/nanonet?sslmode=disable
-      JWT_SECRET: ${JWT_SECRET:-change-me-secret-key-min-32-chars}
-      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
-      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-change-me-secret-key-min-32-chars-here!}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      PORT: "8080"
       FRONTEND_URL: http://localhost:3000
+      POLL_DEFAULT_SEC: "10"
+      WS_MAX_CONNECTIONS: "1000"
     ports:
       - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-    command: ./nanonet-backend
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api/v1
+        VITE_WS_URL: ws://localhost:8080/ws
     container_name: nanonet-frontend
-    environment:
-      VITE_API_URL: http://localhost:8080/api/v1
-      VITE_WS_URL: ws://localhost:8080
     ports:
       - "3000:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
 
 volumes:
   postgres_data:
