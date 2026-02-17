@@ -62,6 +62,18 @@ func (r *Repository) GetActiveAlerts(ctx context.Context, userID uuid.UUID) ([]A
 	return alerts, err
 }
 
+func (r *Repository) HasActiveAlert(ctx context.Context, serviceID uuid.UUID, alertType string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&Alert{}).
+		Where("service_id = ? AND type = ? AND resolved_at IS NULL", serviceID, alertType).
+		Count(&count).Error
+	return count > 0, err
+}
+
 func (r *Repository) ResolveByUser(ctx context.Context, alertID, userID uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

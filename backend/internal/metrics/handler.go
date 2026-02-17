@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"time"
 
 	"nanonet-backend/pkg/response"
@@ -12,18 +13,41 @@ import (
 
 type Handler struct {
 	service *Service
+	db      *gorm.DB
 }
 
 func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{
 		service: NewService(db),
+		db:      db,
 	}
 }
 
+// checkServiceOwnership servisin kimlik doğrulama yapan kullanıcıya ait olup olmadığını kontrol eder.
+func (h *Handler) checkServiceOwnership(ctx context.Context, serviceID, userID uuid.UUID) bool {
+	var count int64
+	h.db.WithContext(ctx).
+		Table("services").
+		Where("id = ? AND user_id = ?", serviceID, userID).
+		Count(&count)
+	return count > 0
+}
+
 func (h *Handler) GetHistory(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
 	serviceID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.BadRequest(c, "geçersiz servis ID")
+		return
+	}
+
+	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+		response.NotFound(c, "servis bulunamadı")
 		return
 	}
 
@@ -44,9 +68,20 @@ func (h *Handler) GetHistory(c *gin.Context) {
 }
 
 func (h *Handler) GetAggregated(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
 	serviceID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.BadRequest(c, "geçersiz servis ID")
+		return
+	}
+
+	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+		response.NotFound(c, "servis bulunamadı")
 		return
 	}
 
@@ -75,6 +110,21 @@ func (h *Handler) InsertMetric(c *gin.Context) {
 		return
 	}
 
+	if metric.ServiceID == uuid.Nil {
+		response.BadRequest(c, "service_id zorunlu")
+		return
+	}
+
+	// Servisin var olduğunu doğrula
+	var count int64
+	if err := h.db.WithContext(c.Request.Context()).
+		Table("services").
+		Where("id = ?", metric.ServiceID).
+		Count(&count).Error; err != nil || count == 0 {
+		response.NotFound(c, "servis bulunamadı")
+		return
+	}
+
 	metric.Time = time.Now()
 
 	if err := h.service.InsertMetric(c.Request.Context(), &metric); err != nil {
@@ -86,9 +136,20 @@ func (h *Handler) InsertMetric(c *gin.Context) {
 }
 
 func (h *Handler) GetUptime(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
 	serviceID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.BadRequest(c, "geçersiz servis ID")
+		return
+	}
+
+	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+		response.NotFound(c, "servis bulunamadı")
 		return
 	}
 

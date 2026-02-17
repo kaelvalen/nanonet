@@ -93,7 +93,7 @@ func (h *Handler) List(c *gin.Context) {
 		AgentConnected bool `json:"agent_connected"`
 	}
 
-	var result []serviceWithAgent
+	result := make([]serviceWithAgent, 0, len(services))
 	for _, svc := range services {
 		result = append(result, serviceWithAgent{
 			Service:        svc,
