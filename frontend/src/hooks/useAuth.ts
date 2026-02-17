@@ -1,9 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import type { LoginRequest, RegisterRequest } from '../types/auth';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export function useAuth() {
     onSuccess: (response) => {
       setAuth(response.user, response.tokens.access_token, response.tokens.refresh_token);
       toast.success('Giriş başarılı');
-      navigate('/dashboard');
+      navigate('/');
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
@@ -27,7 +27,7 @@ export function useAuth() {
     onSuccess: (response) => {
       setAuth(response.user, response.tokens.access_token, response.tokens.refresh_token);
       toast.success('Kayıt başarılı');
-      navigate('/dashboard');
+      navigate('/');
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
