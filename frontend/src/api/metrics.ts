@@ -63,7 +63,7 @@ export const metricsApi = {
     return response.data.data || [];
   },
 
-  getUptime: async (serviceId: string, duration: string = '24h'): Promise<{ uptime_percent: number }> => {
+  getUptime: async (serviceId: string, duration: string = '24h'): Promise<{ uptime_percent: number; service_id: string; duration: string }> => {
     const response = await apiClient.get(`/services/${serviceId}/metrics/uptime`, {
       params: { duration },
     });
@@ -95,7 +95,7 @@ export const metricsApi = {
 
   getInsights: async (serviceId: string, page: number = 1): Promise<{ insights: AIInsight[]; total: number }> => {
     const response = await apiClient.get(`/services/${serviceId}/insights`, {
-      params: { page, limit: 10 },
+      params: { page, limit: 20 },
     });
     return response.data.data || { insights: [], total: 0 };
   },

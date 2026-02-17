@@ -125,10 +125,9 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 		h.mu.RUnlock()
 
 		if fn != nil {
+			// fn (handleAgentMetric) normalizes the data and broadcasts to dashboards
 			fn(serviceID, msg)
 		}
-
-		h.BroadcastToDashboards(serviceID, msg)
 
 	case "ack":
 		log.Printf("Agent %s: komut ACK alındı (command_id: %s)", client.id, msg.CommandID)

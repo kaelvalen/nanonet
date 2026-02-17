@@ -5,16 +5,16 @@ export interface ServiceMetrics {
   memory_used_mb?: number;
   latency_ms?: number;
   error_rate?: number;
-  status: 'up' | 'down' | 'degraded';
+  status: 'up' | 'down' | 'degraded' | 'unknown';
   disk_used_gb?: number;
 }
 
 export interface MetricSnapshot {
   time: string;
-  cpu_percent: number;
-  memory_used_mb: number;
-  latency_ms: number;
-  error_rate: number;
   status: string;
-  disk_used_gb: number;
+  cpu_percent?: number | null;
+  memory_used_mb?: number | null;
+  latency_ms?: number | null;
+  error_rate?: number | null;
+  disk_used_gb?: number | null;
 }

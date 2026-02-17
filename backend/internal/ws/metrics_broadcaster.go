@@ -110,6 +110,28 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 			})
 	}
 
+	// Normalize and broadcast to dashboards so frontend gets consistent data shape
+	broadcast := map[string]any{
+		"time":   metric.Time,
+		"status": metric.Status,
+	}
+	if metric.CPUPercent != nil {
+		broadcast["cpu_percent"] = *metric.CPUPercent
+	}
+	if metric.MemoryUsedMB != nil {
+		broadcast["memory_used_mb"] = *metric.MemoryUsedMB
+	}
+	if metric.LatencyMS != nil {
+		broadcast["latency_ms"] = *metric.LatencyMS
+	}
+	if metric.ErrorRate != nil {
+		broadcast["error_rate"] = *metric.ErrorRate
+	}
+	if metric.DiskUsedGB != nil {
+		broadcast["disk_used_gb"] = *metric.DiskUsedGB
+	}
+	mb.hub.BroadcastToDashboards(svcID.String(), broadcast)
+
 	if err := mb.alertService.CheckMetricAndCreateAlert(ctx, svcID, metric); err != nil {
 		log.Printf("Alert kontrol hatası [service=%s]: %v", serviceID, err)
 	}

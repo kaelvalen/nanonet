@@ -8,6 +8,7 @@ export interface Service {
   poll_interval_sec: number;
   status: 'up' | 'down' | 'degraded' | 'unknown';
   agent_id: string | null;
+  agent_connected?: boolean;
   created_at: string;
   updated_at: string;
 }
