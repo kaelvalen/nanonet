@@ -9,6 +9,7 @@ import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
 import { AlertsPage } from "@/pages/AlertsPage";
 import { AIInsightsPage } from "@/pages/AIInsightsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { ErrorPage } from "@/pages/ErrorPage";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
         <LoginPage />
       </GuestGuard>
     ),
+    errorElement: <ErrorPage />,
   },
   {
     path: "/register",
@@ -38,6 +40,7 @@ export const router = createBrowserRouter([
         <RegisterPage />
       </GuestGuard>
     ),
+    errorElement: <ErrorPage />,
   },
   {
     path: "/",
@@ -46,6 +49,7 @@ export const router = createBrowserRouter([
         <DashboardLayout />
       </AuthGuard>
     ),
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "services", element: <ServicesPage /> },
@@ -58,5 +62,6 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: <Navigate to="/" replace />,
+    errorElement: <ErrorPage />,
   },
 ]);

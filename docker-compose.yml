@@ -54,6 +54,9 @@ services:
       NANONET_BACKEND: ws://backend:8080
       NANONET_SERVICE_ID: ${AGENT_SERVICE_ID:-}
       NANONET_TOKEN: ${AGENT_TOKEN:-}
+      NANONET_RESTART_CMD: ${AGENT_RESTART_CMD:-}
+      NANONET_STOP_CMD: ${AGENT_STOP_CMD:-}
+      NANONET_ERROR_RATE_WINDOW: ${AGENT_ERROR_RATE_WINDOW:-20}
     command:
       - --backend=ws://backend:8080
       - --service-id=${AGENT_SERVICE_ID}
