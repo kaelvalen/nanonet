@@ -83,10 +83,10 @@ func (s *Service) GetAlerts(ctx context.Context, serviceID uuid.UUID, includeRes
 	return s.repo.GetByServiceID(ctx, serviceID, includeResolved)
 }
 
-func (s *Service) ResolveAlert(ctx context.Context, alertID uuid.UUID) error {
-	return s.repo.Resolve(ctx, alertID)
+func (s *Service) ResolveAlert(ctx context.Context, alertID, userID uuid.UUID) error {
+	return s.repo.ResolveByUser(ctx, alertID, userID)
 }
 
-func (s *Service) GetActiveAlerts(ctx context.Context) ([]Alert, error) {
-	return s.repo.GetActiveAlerts(ctx)
+func (s *Service) GetActiveAlerts(ctx context.Context, userID uuid.UUID) ([]Alert, error) {
+	return s.repo.GetActiveAlerts(ctx, userID)
 }

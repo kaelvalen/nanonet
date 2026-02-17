@@ -38,7 +38,9 @@ func (h *Handler) Dashboard(c *gin.Context) {
 		return
 	}
 
-	client := NewClient(userID, h.hub, conn)
+	clientID := uuid.New().String()
+	client := NewClient(clientID, DashboardClient, h.hub, conn)
+	client.userID = userID
 	h.hub.register <- client
 
 	go client.WritePump()
@@ -46,7 +48,16 @@ func (h *Handler) Dashboard(c *gin.Context) {
 }
 
 func (h *Handler) AgentConnect(c *gin.Context) {
-	agentID := uuid.New().String()
+	serviceID := c.Query("service_id")
+	if serviceID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "service_id gerekli"})
+		return
+	}
+
+	agentID := c.Query("agent_id")
+	if agentID == "" {
+		agentID = uuid.New().String()
+	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -54,7 +65,37 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 		return
 	}
 
-	client := NewClient(agentID, h.hub, conn)
+	client := NewClient(agentID, AgentClient, h.hub, conn)
+	client.serviceID = serviceID
+	h.hub.register <- client
+
+	go client.WritePump()
+	go client.ReadPump()
+}
+
+func (h *Handler) ServiceStream(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	serviceID := c.Param("id")
+	if serviceID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "service_id gerekli"})
+		return
+	}
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Printf("WebSocket upgrade hatası: %v", err)
+		return
+	}
+
+	clientID := uuid.New().String()
+	client := NewClient(clientID, DashboardClient, h.hub, conn)
+	client.userID = userID
+	client.serviceID = serviceID
 	h.hub.register <- client
 
 	go client.WritePump()

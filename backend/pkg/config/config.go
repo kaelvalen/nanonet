@@ -43,7 +43,7 @@ func Load() *Config {
 		log.Fatal("JWT_SECRET en az 32 karakter olmalı")
 	}
 	if cfg.ClaudeAPIKey == "" {
-		log.Fatal("CLAUDE_API_KEY zorunlu")
+		log.Println("Warning: CLAUDE_API_KEY ayarlanmamış, AI analiz özelliği devre dışı")
 	}
 
 	return cfg

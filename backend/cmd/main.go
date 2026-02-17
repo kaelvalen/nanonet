@@ -12,6 +12,7 @@ import (
 	"nanonet-backend/internal/ai"
 	"nanonet-backend/internal/alerts"
 	"nanonet-backend/internal/auth"
+	"nanonet-backend/internal/commands"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/services"
 	"nanonet-backend/internal/ws"
@@ -36,20 +37,36 @@ func main() {
 	router := gin.Default()
 	router.Use(corsMiddleware(cfg.FrontendURL))
 
+	generalLimiter := auth.NewRateLimiter(100, time.Minute)
+	authLimiter := auth.NewRateLimiter(10, time.Minute)
+	router.Use(auth.RateLimitMiddleware(generalLimiter))
+
 	hub := ws.NewHub()
 	go hub.Run()
 
+	broadcaster := ws.NewMetricsBroadcaster(hub, db, time.Duration(cfg.PollDefaultSec)*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go broadcaster.Start(ctx)
+
 	authHandler := auth.NewHandler(db, cfg.JWTSecret)
 	authMiddleware := auth.NewMiddleware(cfg.JWTSecret)
-	serviceHandler := services.NewHandler(db)
+	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)
 	alertHandler := alerts.NewHandler(db)
 	wsHandler := ws.NewHandler(hub)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
+	cmdHandler := commands.NewHandler(db)
+	cmdService := commands.NewService(db)
+
+	hub.SetOnCommandResult(func(commandID, status string, msg ws.AgentMessage) {
+		cmdService.UpdateStatus(context.Background(), commandID, status, nil)
+	})
 
 	v1 := router.Group("/api/v1")
 	{
 		authGroup := v1.Group("/auth")
+		authGroup.Use(auth.AuthRateLimitMiddleware(authLimiter))
 		{
 			authGroup.POST("/register", authHandler.Register)
 			authGroup.POST("/login", authHandler.Login)
@@ -66,10 +83,14 @@ func main() {
 			svcGroup.DELETE("/:id", serviceHandler.Delete)
 			svcGroup.GET("/:id/metrics", metricsHandler.GetHistory)
 			svcGroup.GET("/:id/metrics/aggregated", metricsHandler.GetAggregated)
+			svcGroup.GET("/:id/metrics/uptime", metricsHandler.GetUptime)
 			svcGroup.GET("/:id/alerts", alertHandler.List)
+			svcGroup.GET("/:id/insights", aiHandler.GetInsights)
 			svcGroup.POST("/:id/restart", serviceHandler.Restart)
 			svcGroup.POST("/:id/stop", serviceHandler.Stop)
+			svcGroup.POST("/:id/ping", serviceHandler.Ping)
 			svcGroup.POST("/:id/analyze", aiHandler.Analyze)
+			svcGroup.GET("/:id/commands", cmdHandler.GetHistory)
 		}
 
 		alertsGroup := v1.Group("/alerts", authMiddleware.Required())
@@ -80,15 +101,20 @@ func main() {
 	}
 
 	router.POST("/api/v1/metrics", metricsHandler.InsertMetric)
-	
+
 	wsGroup := router.Group("/ws")
 	{
 		wsGroup.GET("/dashboard", authMiddleware.Required(), wsHandler.Dashboard)
+		wsGroup.GET("/services/:id", authMiddleware.Required(), wsHandler.ServiceStream)
 		wsGroup.GET("/agent", wsHandler.AgentConnect)
 	}
 
 	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		c.JSON(http.StatusOK, gin.H{
+			"status":           "ok",
+			"connected_agents": hub.GetConnectedAgentCount(),
+			"connected_dashboards": hub.GetConnectedDashboardCount(),
+		})
 	})
 
 	srv := &http.Server{
@@ -108,10 +134,11 @@ func main() {
 	<-quit
 
 	log.Println("Server kapatılıyor...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("Server kapatma hatası: %v", err)
 	}
 
@@ -120,7 +147,13 @@ func main() {
 
 func corsMiddleware(frontendURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", frontendURL)
+		origin := c.GetHeader("Origin")
+		if origin == frontendURL || origin == "http://localhost:3000" || origin == "http://localhost:5173" {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", frontendURL)
+		}
+
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")

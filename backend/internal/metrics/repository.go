@@ -58,3 +58,32 @@ func (r *Repository) GetAggregated(ctx context.Context, serviceID uuid.UUID, dur
 
 	return results, err
 }
+
+func (r *Repository) GetUptime(ctx context.Context, serviceID uuid.UUID, duration time.Duration) (float64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var result struct {
+		UptimePercent *float64 `gorm:"column:uptime_percent"`
+	}
+
+	err := r.db.WithContext(ctx).
+		Raw(`
+			SELECT
+				COUNT(*) FILTER (WHERE status = 'up')::float /
+				NULLIF(COUNT(*), 0) * 100 AS uptime_percent
+			FROM metrics
+			WHERE service_id = ? AND time > ?
+		`, serviceID, time.Now().Add(-duration)).
+		Scan(&result).Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	if result.UptimePercent == nil {
+		return 0, nil
+	}
+
+	return *result.UptimePercent, nil
+}
