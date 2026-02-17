@@ -194,35 +194,108 @@ export default function ServiceDetailPage() {
             <WifiOff className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-amber-800">Agent Bağlı Değil</h3>
-              <p className="text-xs text-amber-700 mt-1">
-                Metrik toplamaya başlamak için bu servise bir agent bağlayın. Aşağıdaki komutu sunucunuzda çalıştırın:
+              <p className="text-xs text-amber-700 mt-1 mb-3">
+                Metrik toplamaya başlamak için agent'ı kurun. En kolay yöntem:
               </p>
-              <div className="mt-2 relative">
-                <div className="p-2.5 bg-gray-900 rounded-lg overflow-x-auto pr-12">
-                  <code className="text-xs text-green-400 whitespace-nowrap block">
-                    ./nanonet-agent \<br />
-                    {'  '}--backend ws://localhost:8080 \<br />
-                    {'  '}--service-id {service.id} \<br />
-                    {'  '}--token {localStorage.getItem('access_token') || 'YOUR_JWT_TOKEN'} \<br />
-                    {'  '}--host {service.host} \<br />
-                    {'  '}--port {service.port} \<br />
-                    {'  '}--health-endpoint {service.health_endpoint} \<br />
-                    {'  '}--poll-interval {service.poll_interval_sec}
-                  </code>
+
+              {/* Quick Install - Recommended */}
+              <div className="space-y-3">
+                <div className="bg-white border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">ÖNERİLEN</span>
+                    <span className="text-xs font-semibold text-gray-700">Hızlı Kurulum (Tek Komut)</span>
+                  </div>
+                  <div className="relative">
+                    <div className="p-2 bg-gray-900 rounded overflow-x-auto pr-10">
+                      <code className="text-xs text-green-400 whitespace-nowrap">
+                        curl -sSL https://get.nanonet.io | bash -s -- --service-id {service.id.slice(0, 8)}...
+                      </code>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const token = localStorage.getItem('access_token');
+                        const cmd = `curl -sSL http://localhost:8080/install.sh | bash -s -- --backend ws://localhost:8080 --service-id ${service.id} --token ${token} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
+                        navigator.clipboard.writeText(cmd);
+                        toast.success('Kurulum komutu kopyalandı');
+                      }}
+                      className="absolute top-1.5 right-1.5 p-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                      title="Kopyala"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1.5">Agent'ı indirir, kurar ve systemd servisi olarak başlatır</p>
                 </div>
-                <button
-                  onClick={() => {
-                    const cmd = `./nanonet-agent --backend ws://localhost:8080 --service-id ${service.id} --token ${localStorage.getItem('access_token')} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
-                    navigator.clipboard.writeText(cmd);
-                    toast.success('Komut kopyalandı');
-                  }}
-                  className="absolute top-2 right-2 p-1.5 bg-gray-800 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
-                  title="Kopyala"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
+
+                {/* Docker */}
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-gray-700">Docker ile Çalıştır</span>
+                  </div>
+                  <div className="relative">
+                    <div className="p-2 bg-gray-900 rounded overflow-x-auto pr-10">
+                      <code className="text-xs text-blue-400 whitespace-nowrap">
+                        docker run -d nanonet/agent --service-id {service.id.slice(0, 8)}...
+                      </code>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const token = localStorage.getItem('access_token');
+                        const cmd = `docker run -d --name nanonet-agent --restart unless-stopped nanonet/agent --backend ws://host.docker.internal:8080 --service-id ${service.id} --token ${token} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
+                        navigator.clipboard.writeText(cmd);
+                        toast.success('Docker komutu kopyalandı');
+                      }}
+                      className="absolute top-1.5 right-1.5 p-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                      title="Kopyala"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1.5">Container olarak çalıştırır, otomatik restart</p>
+                </div>
+
+                {/* Manual - Collapsed by default */}
+                <details className="bg-white border border-gray-200 rounded-lg">
+                  <summary className="p-3 cursor-pointer text-xs font-semibold text-gray-600 hover:text-gray-800">
+                    Manuel Kurulum (İleri Seviye)
+                  </summary>
+                  <div className="px-3 pb-3 space-y-2">
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <p><strong>1. Binary'yi indirin:</strong></p>
+                      <div className="relative">
+                        <div className="p-2 bg-gray-900 rounded overflow-x-auto pr-10">
+                          <code className="text-xs text-purple-400">wget https://github.com/nanonet/agent/releases/latest/download/nanonet-agent-linux-x86_64</code>
+                        </div>
+                      </div>
+                      <p className="mt-2"><strong>2. Çalıştırın:</strong></p>
+                      <div className="relative">
+                        <div className="p-2 bg-gray-900 rounded overflow-x-auto pr-10">
+                          <code className="text-xs text-purple-400">
+                            ./nanonet-agent --backend ws://localhost:8080 --service-id {service.id} --token YOUR_TOKEN
+                          </code>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const token = localStorage.getItem('access_token');
+                            const cmd = `./nanonet-agent --backend ws://localhost:8080 --service-id ${service.id} --token ${token} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
+                            navigator.clipboard.writeText(cmd);
+                            toast.success('Manuel komut kopyalandı');
+                          }}
+                          className="absolute top-1.5 right-1.5 p-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                          title="Kopyala"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           </div>
