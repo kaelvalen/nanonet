@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
@@ -11,22 +12,33 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 512
+	maxMessageSize = 4096
+)
+
+type ClientType string
+
+const (
+	DashboardClient ClientType = "dashboard"
+	AgentClient     ClientType = "agent"
 )
 
 type Client struct {
-	id   string
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
+	id         string
+	clientType ClientType
+	serviceID  string
+	userID     string
+	hub        *Hub
+	conn       *websocket.Conn
+	send       chan []byte
 }
 
-func NewClient(id string, hub *Hub, conn *websocket.Conn) *Client {
+func NewClient(id string, clientType ClientType, hub *Hub, conn *websocket.Conn) *Client {
 	return &Client{
-		id:   id,
-		hub:  hub,
-		conn: conn,
-		send: make(chan []byte, 256),
+		id:         id,
+		clientType: clientType,
+		hub:        hub,
+		conn:       conn,
+		send:       make(chan []byte, 256),
 	}
 }
 
@@ -36,6 +48,7 @@ func (c *Client) ReadPump() {
 		c.conn.Close()
 	}()
 
+	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
 		c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -46,12 +59,16 @@ func (c *Client) ReadPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket hatası: %v", err)
+				log.Printf("WebSocket hatası [%s/%s]: %v", c.clientType, c.id, err)
 			}
 			break
 		}
 
-		log.Printf("Client %s mesaj gönderdi: %s", c.id, message)
+		if c.clientType == AgentClient {
+			c.hub.HandleAgentMessage(c, message)
+		} else {
+			log.Printf("Dashboard client %s mesaj gönderdi: %s", c.id, message)
+		}
 	}
 }
 
@@ -93,5 +110,18 @@ func (c *Client) WritePump() {
 				return
 			}
 		}
+	}
+}
+
+func (c *Client) SendJSON(v interface{}) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	select {
+	case c.send <- data:
+		return nil
+	default:
+		return nil
 	}
 }

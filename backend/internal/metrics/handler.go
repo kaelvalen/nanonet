@@ -84,3 +84,30 @@ func (h *Handler) InsertMetric(c *gin.Context) {
 
 	response.Created(c, metric)
 }
+
+func (h *Handler) GetUptime(c *gin.Context) {
+	serviceID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "geçersiz servis ID")
+		return
+	}
+
+	durationStr := c.DefaultQuery("duration", "24h")
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		response.BadRequest(c, "geçersiz duration formatı")
+		return
+	}
+
+	uptime, err := h.service.GetUptime(c.Request.Context(), serviceID, duration)
+	if err != nil {
+		response.InternalError(c, "uptime hesaplanamadı")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"service_id":     serviceID,
+		"uptime_percent": uptime,
+		"duration":       durationStr,
+	})
+}

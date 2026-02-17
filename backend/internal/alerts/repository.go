@@ -49,14 +49,35 @@ func (r *Repository) Resolve(ctx context.Context, alertID uuid.UUID) error {
 		Update("resolved_at", now).Error
 }
 
-func (r *Repository) GetActiveAlerts(ctx context.Context) ([]Alert, error) {
+func (r *Repository) GetActiveAlerts(ctx context.Context, userID uuid.UUID) ([]Alert, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	var alerts []Alert
 	err := r.db.WithContext(ctx).
-		Where("resolved_at IS NULL").
-		Order("triggered_at DESC").
+		Joins("JOIN services ON services.id = alerts.service_id").
+		Where("services.user_id = ? AND alerts.resolved_at IS NULL", userID).
+		Order("alerts.triggered_at DESC").
 		Find(&alerts).Error
 	return alerts, err
+}
+
+func (r *Repository) ResolveByUser(ctx context.Context, alertID, userID uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	now := time.Now()
+	result := r.db.WithContext(ctx).
+		Exec(`UPDATE alerts SET resolved_at = ?
+			WHERE id = ? AND resolved_at IS NULL
+			AND service_id IN (SELECT id FROM services WHERE user_id = ?)`,
+			now, alertID, userID)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }

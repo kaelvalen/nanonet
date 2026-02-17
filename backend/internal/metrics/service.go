@@ -40,3 +40,7 @@ func (s *Service) GetLatestMetric(ctx context.Context, serviceID uuid.UUID) (*Me
 	}
 	return &metrics[0], nil
 }
+
+func (s *Service) GetUptime(ctx context.Context, serviceID uuid.UUID, duration time.Duration) (float64, error) {
+	return s.repo.GetUptime(ctx, serviceID, duration)
+}

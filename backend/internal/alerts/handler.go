@@ -37,14 +37,20 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 func (h *Handler) Resolve(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
 	alertID, err := uuid.Parse(c.Param("alertId"))
 	if err != nil {
 		response.BadRequest(c, "geçersiz alert ID")
 		return
 	}
 
-	if err := h.service.ResolveAlert(c.Request.Context(), alertID); err != nil {
-		response.InternalError(c, "alert çözümlenemedi")
+	if err := h.service.ResolveAlert(c.Request.Context(), alertID, userID); err != nil {
+		response.NotFound(c, "alert bulunamadı veya yetki yok")
 		return
 	}
 
@@ -52,7 +58,13 @@ func (h *Handler) Resolve(c *gin.Context) {
 }
 
 func (h *Handler) GetActive(c *gin.Context) {
-	alerts, err := h.service.GetActiveAlerts(c.Request.Context())
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	alerts, err := h.service.GetActiveAlerts(c.Request.Context(), userID)
 	if err != nil {
 		response.InternalError(c, "aktif alertler alınamadı")
 		return
