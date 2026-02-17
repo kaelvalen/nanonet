@@ -67,11 +67,14 @@ func (h *Handler) Get(c *gin.Context) {
 		return
 	}
 
-	agentConnected := h.hub.IsAgentConnected(id.String())
+	type serviceWithAgent struct {
+		Service
+		AgentConnected bool `json:"agent_connected"`
+	}
 
-	response.Success(c, gin.H{
-		"service":         service,
-		"agent_connected": agentConnected,
+	response.Success(c, serviceWithAgent{
+		Service:        *service,
+		AgentConnected: h.hub.IsAgentConnected(id.String()),
 	})
 }
 
