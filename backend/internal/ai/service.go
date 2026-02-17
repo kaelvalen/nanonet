@@ -50,17 +50,19 @@ type AnalysisResult struct {
 }
 
 func (s *Service) AnalyzeMetrics(serviceID uuid.UUID, metricsData string) (*AnalysisResult, error) {
-	prompt := fmt.Sprintf(`Aşağıdaki servis metriklerini analiz et ve JSON formatında yanıt ver:
+	prompt := fmt.Sprintf(`Sen bir DevOps uzmanısın. Aşağıdaki mikroservis metriklerini analiz et ve sorunları tespit et.
 
 Metrikler:
 %s
 
-Yanıt formatı:
+Lütfen şu formatta JSON yanıt ver:
 {
-  "summary": "Kısa özet",
-  "root_cause": "Olası kök neden",
-  "recommendations": ["Öneri 1", "Öneri 2"]
-}`, metricsData)
+  "summary": "Genel durum özeti (2-3 cümle)",
+  "root_cause": "Tespit edilen ana sorun veya performans darboğazı",
+  "recommendations": ["Somut aksiyon önerisi 1", "Somut aksiyon önerisi 2", "Somut aksiyon önerisi 3"]
+}
+
+Öneriler spesifik ve uygulanabilir olmalı (örn: "CPU kullanımını azaltmak için worker thread sayısını 4'e düşür").`, metricsData)
 
 	reqBody := ClaudeRequest{
 		Model:     "claude-3-5-sonnet-20241022",

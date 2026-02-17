@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"nanonet-backend/internal/ai"
+	"nanonet-backend/internal/alerts"
 	"nanonet-backend/internal/auth"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/services"
@@ -42,6 +43,7 @@ func main() {
 	authMiddleware := auth.NewMiddleware(cfg.JWTSecret)
 	serviceHandler := services.NewHandler(db)
 	metricsHandler := metrics.NewHandler(db)
+	alertHandler := alerts.NewHandler(db)
 	wsHandler := ws.NewHandler(hub)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
 
@@ -63,12 +65,22 @@ func main() {
 			svcGroup.PUT("/:id", serviceHandler.Update)
 			svcGroup.DELETE("/:id", serviceHandler.Delete)
 			svcGroup.GET("/:id/metrics", metricsHandler.GetHistory)
+			svcGroup.GET("/:id/metrics/aggregated", metricsHandler.GetAggregated)
+			svcGroup.GET("/:id/alerts", alertHandler.List)
 			svcGroup.POST("/:id/restart", serviceHandler.Restart)
 			svcGroup.POST("/:id/stop", serviceHandler.Stop)
 			svcGroup.POST("/:id/analyze", aiHandler.Analyze)
 		}
+
+		alertsGroup := v1.Group("/alerts", authMiddleware.Required())
+		{
+			alertsGroup.GET("", alertHandler.GetActive)
+			alertsGroup.POST("/:alertId/resolve", alertHandler.Resolve)
+		}
 	}
 
+	router.POST("/api/v1/metrics", metricsHandler.InsertMetric)
+	
 	router.GET("/ws/dashboard", authMiddleware.Required(), wsHandler.Dashboard)
 	router.GET("/ws/agent", wsHandler.AgentConnect)
 
