@@ -6,7 +6,7 @@ export const metricsApi = {
     const response = await apiClient.get(`/services/${serviceId}/metrics`, {
       params: { duration },
     });
-    return response.data.data;
+    return response.data.data || [];
   },
 
   analyze: async (serviceId: string, metricsData: string): Promise<unknown> => {

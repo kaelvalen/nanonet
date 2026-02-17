@@ -81,8 +81,11 @@ func main() {
 
 	router.POST("/api/v1/metrics", metricsHandler.InsertMetric)
 	
-	router.GET("/ws/dashboard", authMiddleware.Required(), wsHandler.Dashboard)
-	router.GET("/ws/agent", wsHandler.AgentConnect)
+	wsGroup := router.Group("/ws")
+	{
+		wsGroup.GET("/dashboard", authMiddleware.Required(), wsHandler.Dashboard)
+		wsGroup.GET("/agent", wsHandler.AgentConnect)
+	}
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})

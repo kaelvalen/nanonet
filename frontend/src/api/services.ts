@@ -4,7 +4,7 @@ import type { Service, CreateServiceRequest, UpdateServiceRequest } from '../typ
 export const servicesApi = {
   list: async (): Promise<Service[]> => {
     const response = await apiClient.get('/services');
-    return response.data.data;
+    return response.data.data || [];
   },
 
   get: async (id: string): Promise<Service> => {

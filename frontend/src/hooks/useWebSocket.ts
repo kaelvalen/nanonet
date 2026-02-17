@@ -15,7 +15,7 @@ export function useWebSocket() {
       
       if (!token) return;
 
-      const ws = new WebSocket(`${wsUrl}/ws/dashboard`);
+      const ws = new WebSocket(`${wsUrl}/dashboard`);
       wsRef.current = ws;
 
       ws.onopen = () => {

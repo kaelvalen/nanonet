@@ -16,8 +16,9 @@ export function useAuth() {
       toast.success('Giriş başarılı');
       navigate('/dashboard');
     },
-    onError: () => {
-      toast.error('Giriş başarısız');
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message || 'Giriş başarısız');
     },
   });
 
@@ -28,8 +29,9 @@ export function useAuth() {
       toast.success('Kayıt başarılı');
       navigate('/dashboard');
     },
-    onError: () => {
-      toast.error('Kayıt başarısız');
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message || 'Kayıt başarısız');
     },
   });
 
