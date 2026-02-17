@@ -4,33 +4,47 @@ use clap::Parser;
 #[command(name = "nanonet-agent")]
 #[command(about = "NanoNet monitoring agent")]
 pub struct Config {
-    /// WebSocket backend URL (e.g. ws://localhost:8080)
+    /// WebSocket backend URL (örn: ws://localhost:8080)
     #[arg(long, env = "NANONET_BACKEND")]
     pub backend: String,
 
-    /// Service UUID to monitor
+    /// İzlenecek servisin UUID'si
     #[arg(long, env = "NANONET_SERVICE_ID")]
     pub service_id: String,
 
-    /// JWT token for authentication
+    /// Kimlik doğrulama için JWT token
     #[arg(long, env = "NANONET_TOKEN")]
     pub token: String,
 
-    /// Target service host for health checks
-    #[arg(long, default_value = "localhost")]
+    /// Health check için hedef host
+    #[arg(long, default_value = "localhost", env = "NANONET_HOST")]
     pub host: String,
 
-    /// Target service port for health checks
-    #[arg(long, default_value = "8080")]
+    /// Health check için hedef port
+    #[arg(long, default_value = "8080", env = "NANONET_PORT")]
     pub port: u16,
 
-    /// Health check endpoint path
-    #[arg(long, default_value = "/health")]
+    /// Health check endpoint yolu
+    #[arg(long, default_value = "/health", env = "NANONET_HEALTH_ENDPOINT")]
     pub health_endpoint: String,
 
-    /// Metric collection interval in seconds
-    #[arg(long, default_value = "10")]
+    /// Metrik toplama aralığı (saniye)
+    #[arg(long, default_value = "10", env = "NANONET_POLL_INTERVAL")]
     pub poll_interval: u64,
+
+    /// Servisi yeniden başlatmak için shell komutu
+    /// Örn: "systemctl restart myapp" veya "pm2 restart myapp"
+    #[arg(long, env = "NANONET_RESTART_CMD")]
+    pub restart_cmd: Option<String>,
+
+    /// Servisi durdurmak için shell komutu
+    /// Örn: "systemctl stop myapp" veya "pm2 stop myapp"
+    #[arg(long, env = "NANONET_STOP_CMD")]
+    pub stop_cmd: Option<String>,
+
+    /// Hata oranı hesabı için tutulacak health check sayısı
+    #[arg(long, default_value = "20", env = "NANONET_ERROR_RATE_WINDOW")]
+    pub error_rate_window: usize,
 }
 
 impl Config {

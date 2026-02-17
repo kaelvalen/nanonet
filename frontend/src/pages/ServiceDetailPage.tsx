@@ -31,6 +31,9 @@ import {
   Zap,
   Shield,
   Eye,
+  Terminal,
+  Send,
+  ChevronRight,
 } from "lucide-react";
 import {
   LineChart,
@@ -43,10 +46,18 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { Input } from "@/components/ui/input";
 import { servicesApi } from "@/api/services";
 import { metricsApi, type Alert, type AnalysisResult } from "@/api/metrics";
 import { useServices } from "@/hooks/useServices";
 import { toast } from "sonner";
+
+type ExecEntry = {
+  command: string;
+  command_id: string;
+  status: string;
+  queued_at: string;
+};
 
 export function ServiceDetailPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -56,6 +67,9 @@ export function ServiceDetailPage() {
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [metricsDuration, setMetricsDuration] = useState("1h");
+  const [execCommand, setExecCommand] = useState("");
+  const [execLoading, setExecLoading] = useState(false);
+  const [execHistory, setExecHistory] = useState<ExecEntry[]>([]);
 
   const { data: service, isLoading: serviceLoading } = useQuery({
     queryKey: ["service", serviceId],
@@ -97,6 +111,25 @@ export function ServiceDetailPage() {
 
   const handleStop = () => {
     if (serviceId) stopService(serviceId);
+  };
+
+  const handleExec = async () => {
+    if (!serviceId || !execCommand.trim()) return;
+    const cmd = execCommand.trim();
+    setExecLoading(true);
+    setExecCommand("");
+    try {
+      const result = await servicesApi.exec(serviceId, cmd);
+      setExecHistory((prev) => [
+        { command: cmd, ...result },
+        ...prev,
+      ]);
+      toast.success("Komut gönderildi");
+    } catch {
+      toast.error("Komut gönderilemedi");
+    } finally {
+      setExecLoading(false);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -181,7 +214,7 @@ export function ServiceDetailPage() {
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold text-[#3b4563] truncate">{service.name}</h1>
               <Badge className={`text-[10px] font-[var(--font-mono)] px-2 py-0.5 rounded-full border ${statusBg}`}>
-                {service.status.toUpperCase()}
+                {service.status?.toUpperCase() ?? 'UNKNOWN'}
               </Badge>
             </div>
             <p className="text-xs text-[#b0bdd5] font-[var(--font-mono)] mt-0.5">
@@ -273,6 +306,9 @@ export function ServiceDetailPage() {
               </TabsTrigger>
               <TabsTrigger value="ai" className="rounded-lg text-xs data-[state=active]:bg-[#c4b5fd]/10 data-[state=active]:text-[#7c3aed]">
                 <Sparkles className="w-3 h-3 mr-1" /> AI Analysis
+              </TabsTrigger>
+              <TabsTrigger value="terminal" className="rounded-lg text-xs data-[state=active]:bg-[#1e293b]/10 data-[state=active]:text-[#334155]">
+                <Terminal className="w-3 h-3 mr-1" /> Terminal
               </TabsTrigger>
             </TabsList>
 
@@ -450,6 +486,76 @@ export function ServiceDetailPage() {
                 </motion.div>
               ))
             )}
+          </TabsContent>
+
+          {/* Terminal Tab */}
+          <TabsContent value="terminal" className="space-y-3">
+            <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden">
+              {/* Output area */}
+              <div className="p-4 min-h-[280px] max-h-[400px] overflow-y-auto space-y-2 font-mono text-xs">
+                {execHistory.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[240px] gap-2">
+                    <Terminal className="w-8 h-8 text-[#334155]" />
+                    <p className="text-[#475569] text-[11px]">Çalıştırmak istediğiniz komutu girin</p>
+                  </div>
+                ) : (
+                  execHistory.map((entry, i) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-[#38bdf8]">
+                        <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                        <span>{entry.command}</span>
+                      </div>
+                      <div className="pl-4 text-[#64748b] space-y-0.5">
+                        <p>
+                          <span className="text-[#22d3ee]">status:</span>{" "}
+                          <span className={entry.status === "queued" ? "text-[#a3e635]" : "text-[#fbbf24]"}>
+                            {entry.status}
+                          </span>
+                        </p>
+                        <p>
+                          <span className="text-[#22d3ee]">id:</span>{" "}
+                          <span className="text-[#94a3b8]">{entry.command_id}</span>
+                        </p>
+                        <p>
+                          <span className="text-[#22d3ee]">queued_at:</span>{" "}
+                          <span className="text-[#94a3b8]">
+                            {new Date(entry.queued_at).toLocaleTimeString("tr-TR")}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              {/* Input area */}
+              <div className="flex items-center gap-2 px-4 py-3 border-t border-[#1e293b] bg-[#0f172a]">
+                <span className="text-[#38bdf8] font-mono text-xs flex-shrink-0">$</span>
+                <Input
+                  value={execCommand}
+                  onChange={(e) => setExecCommand(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !execLoading) handleExec(); }}
+                  placeholder="komut girin..."
+                  disabled={execLoading}
+                  className="bg-transparent border-none text-[#e2e8f0] font-mono text-xs h-7 px-0 focus-visible:ring-0 placeholder:text-[#334155]"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleExec}
+                  disabled={execLoading || !execCommand.trim()}
+                  className="h-7 px-3 bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/20 rounded-lg flex-shrink-0"
+                  variant="outline"
+                >
+                  {execLoading ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Send className="w-3 h-3" />
+                  )}
+                </Button>
+              </div>
+            </Card>
+            <p className="text-[10px] text-[#b0bdd5] px-1">
+              Komutlar agent üzerinden asenkron olarak çalıştırılır. Sonuçlar agent loglarında görünür.
+            </p>
           </TabsContent>
 
           {/* AI Tab */}

@@ -253,7 +253,7 @@ export function ServicesPage() {
                           </div>
                         </div>
                         <Badge className={`text-[9px] font-[var(--font-mono)] px-1.5 py-0.5 rounded-full border ${colors.badge}`}>
-                          {service.status.toUpperCase()}
+                          {service.status?.toUpperCase() ?? 'UNKNOWN'}
                         </Badge>
                       </div>
 
@@ -292,7 +292,7 @@ export function ServicesPage() {
                         <span className="text-xs text-[#b0bdd5] font-[var(--font-mono)] flex-1">{service.host}:{service.port}</span>
                         <span className="text-[10px] text-[#b0bdd5]">{service.poll_interval_sec}s</span>
                         <Badge className={`text-[9px] font-[var(--font-mono)] px-1.5 py-0.5 rounded-full border ${colors.badge}`}>
-                          {service.status.toUpperCase()}
+                          {service.status?.toUpperCase() ?? 'UNKNOWN'}
                         </Badge>
                         <ArrowUpRight className="w-3.5 h-3.5 text-[#b0bdd5] group-hover:text-[#39c5bb] transition-colors" />
                       </div>

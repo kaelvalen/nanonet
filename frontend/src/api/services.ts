@@ -33,4 +33,9 @@ export const servicesApi = {
   stop: async (id: string): Promise<void> => {
     await apiClient.post(`/services/${id}/stop`);
   },
+
+  exec: async (id: string, command: string): Promise<{ command_id: string; status: string; queued_at: string }> => {
+    const response = await apiClient.post(`/services/${id}/exec`, { command });
+    return response.data.data;
+  },
 };

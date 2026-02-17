@@ -89,6 +89,7 @@ func main() {
 			svcGroup.POST("/:id/restart", serviceHandler.Restart)
 			svcGroup.POST("/:id/stop", serviceHandler.Stop)
 			svcGroup.POST("/:id/ping", serviceHandler.Ping)
+			svcGroup.POST("/:id/exec", serviceHandler.Exec)
 			svcGroup.POST("/:id/analyze", aiHandler.Analyze)
 			svcGroup.GET("/:id/commands", cmdHandler.GetHistory)
 		}

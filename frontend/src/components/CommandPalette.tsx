@@ -203,7 +203,7 @@ export function CommandPalette() {
                                   : "bg-[#fda4af]/20 text-[#e11d48] border border-[#fda4af]/30"
                               }`}
                             >
-                              {service.status.toUpperCase()}
+                              {service.status?.toUpperCase() ?? 'UNKNOWN'}
                             </span>
                           </CommandItem>
                         ))}
