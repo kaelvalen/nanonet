@@ -188,6 +188,47 @@ export default function ServiceDetailPage() {
         </div>
       </div>
 
+      {!agentConnected && (
+        <div className="card p-4 border-l-4 border-l-amber-400 bg-amber-50/50">
+          <div className="flex items-start gap-3">
+            <WifiOff className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-amber-800">Agent Bağlı Değil</h3>
+              <p className="text-xs text-amber-700 mt-1">
+                Metrik toplamaya başlamak için bu servise bir agent bağlayın. Aşağıdaki komutu sunucunuzda çalıştırın:
+              </p>
+              <div className="mt-2 relative">
+                <div className="p-2.5 bg-gray-900 rounded-lg overflow-x-auto pr-12">
+                  <code className="text-xs text-green-400 whitespace-nowrap block">
+                    ./nanonet-agent \<br />
+                    {'  '}--backend ws://localhost:8080 \<br />
+                    {'  '}--service-id {service.id} \<br />
+                    {'  '}--token {localStorage.getItem('access_token') || 'YOUR_JWT_TOKEN'} \<br />
+                    {'  '}--host {service.host} \<br />
+                    {'  '}--port {service.port} \<br />
+                    {'  '}--health-endpoint {service.health_endpoint} \<br />
+                    {'  '}--poll-interval {service.poll_interval_sec}
+                  </code>
+                </div>
+                <button
+                  onClick={() => {
+                    const cmd = `./nanonet-agent --backend ws://localhost:8080 --service-id ${service.id} --token ${localStorage.getItem('access_token')} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
+                    navigator.clipboard.writeText(cmd);
+                    toast.success('Komut kopyalandı');
+                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-gray-800 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                  title="Kopyala"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           title="CPU"
