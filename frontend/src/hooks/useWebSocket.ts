@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useWSStore } from '../store/wsStore';
 import { useServiceStore } from '../store/serviceStore';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
@@ -39,9 +39,9 @@ export function useWebSocket() {
             if (severity === 'crit') {
               toast.error(text, { duration: 5000 });
             } else if (severity === 'warn') {
-              toast(text, { icon: '⚠️', duration: 4000 });
+              toast.warning(text, { duration: 4000 });
             } else {
-              toast(text, { icon: 'ℹ️' });
+              toast.info(text);
             }
           }
           break;

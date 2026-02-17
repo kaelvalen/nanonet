@@ -1,150 +1,145 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useAuth } from '../hooks/useAuth';
-import { Link } from 'react-router-dom';
-import { Loader2, Activity, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { useState } from "react";
+import { Link } from "react-router";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
+import { motion } from "motion/react";
+import { Sparkles, Eye, EyeOff } from "lucide-react";
 
-const loginSchema = z.object({
-  email: z.string().email('Geçerli bir email girin'),
-  password: z.string().min(8, 'Şifre en az 8 karakter olmalı'),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-
-export default function LoginPage() {
-  const { login, isLoggingIn } = useAuth();
+export function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-  });
+  const { login, isLoggingIn } = useAuth();
 
-  const onSubmit = (data: LoginForm) => {
-    login(data);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    login({ email, password });
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0f1117]">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 via-purple-600/10 to-transparent" />
-        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%)' }} />
-        <div className="relative z-10 flex flex-col justify-center px-16">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Activity className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white tracking-tight">
-              Nano<span className="text-indigo-400">Net</span>
-            </span>
-          </div>
-          <h2 className="text-4xl font-bold text-white leading-tight mb-4">
-            Servislerinizi<br />
-            <span className="text-indigo-400">gerçek zamanlı</span> izleyin
-          </h2>
-          <p className="text-gray-400 text-lg leading-relaxed max-w-md">
-            Agent tabanlı metrik toplama, AI destekli anomali tespiti ve tek tıkla servis yönetimi.
-          </p>
-          <div className="mt-12 grid grid-cols-3 gap-6">
-            <div>
-              <div className="text-2xl font-bold text-white">{'<'}200ms</div>
-              <div className="text-xs text-gray-500 mt-1">Metrik gecikmesi</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-white">99.5%</div>
-              <div className="text-xs text-gray-500 mt-1">Uptime hedefi</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-white">AI</div>
-              <div className="text-xs text-gray-500 mt-1">Anomali analizi</div>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#f0f7ff] via-[#f5f0ff] to-[#fdf2f8] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#39c5bb]/10 rounded-full blur-3xl animate-blob" />
+        <div className="absolute top-1/3 -right-32 w-80 h-80 bg-[#c4b5fd]/12 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-[#fda4af]/10 rounded-full blur-3xl animate-blob animation-delay-4000" />
       </div>
 
-      {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-[400px]">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Activity className="w-4.5 h-4.5 text-white" />
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: `radial-gradient(rgba(57, 197, 187, 0.06) 1px, transparent 1px)`,
+          backgroundSize: "32px 32px",
+        }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+            className="inline-block"
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-[#39c5bb] to-[#93c5fd] rounded-2xl flex items-center justify-center shadow-lg shadow-[#39c5bb]/20 mx-auto mb-4">
+              <span className="text-white text-2xl">✦</span>
             </div>
-            <span className="text-lg font-bold text-white tracking-tight">
-              Nano<span className="text-indigo-400">Net</span>
-            </span>
+          </motion.div>
+          <h1 className="text-3xl font-bold bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent font-[var(--font-quicksand)]">
+            NanoNet
+          </h1>
+          <p className="text-sm text-[#7c8db5] mt-1">Mikroservis İzleme Platformu</p>
+        </div>
+
+        <Card className="bg-white/80 backdrop-blur-xl border-[#39c5bb]/15 rounded-2xl shadow-xl shadow-[#39c5bb]/5 p-8">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-[#3b4563]">Giriş Yap</h2>
+            <p className="text-xs text-[#7c8db5] mt-1">Hesabınıza giriş yapın</p>
           </div>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white">Tekrar hoş geldiniz</h1>
-            <p className="text-sm text-gray-500 mt-2">Hesabınıza giriş yaparak servislerinizi izlemeye devam edin</p>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email adresi</label>
-              <input
-                {...register('email')}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email" className="text-[#3b4563] text-xs">
+                E-posta
+              </Label>
+              <Input
+                id="email"
                 type="email"
-                className="input-field"
-                placeholder="ornek@email.com"
-                autoComplete="email"
+                placeholder="admin@nanonet.dev"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl"
+                required
               />
-              {errors.email && (
-                <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-red-400" />
-                  {errors.email.message}
-                </p>
-              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Şifre</label>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="text-[#3b4563] text-xs">
+                Şifre
+              </Label>
               <div className="relative">
-                <input
-                  {...register('password')}
-                  type={showPassword ? 'text' : 'password'}
-                  className="input-field pr-10"
-                  placeholder="En az 8 karakter"
-                  autoComplete="current-password"
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl pr-10"
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7c8db5] hover:text-[#39c5bb] transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-red-400" />
-                  {errors.password.message}
-                </p>
-              )}
             </div>
-            <button
+
+            <Button
               type="submit"
               disabled={isLoggingIn}
-              className="w-full btn-primary flex items-center justify-center gap-2 py-3 text-sm"
+              className="w-full bg-linear-to-r from-[#39c5bb] to-[#93c5fd] hover:from-[#2da89e] hover:to-[#60a5fa] text-white rounded-xl h-10"
             >
               {isLoggingIn ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Giriş yapılıyor...
+                </div>
               ) : (
-                <ArrowRight className="w-4 h-4" />
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Giriş Yap
+                </div>
               )}
-              {isLoggingIn ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-            </button>
+            </Button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-gray-500">
-            Hesabınız yok mu?{' '}
-            <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-              Ücretsiz kayıt olun
-            </Link>
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-xs text-[#7c8db5]">
+              Hesabınız yok mu?{" "}
+              <Link to="/register" className="text-[#39c5bb] hover:text-[#2da89e] font-medium transition-colors">
+                Kayıt Ol
+              </Link>
+            </p>
+          </div>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-6">
+          <p className="text-[10px] text-[#b0bdd5]">NanoNet v2.0 · Powered by AI</p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

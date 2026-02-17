@@ -1,148 +1,148 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "motion/react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ArrowLeft, Cpu, HardDrive, Clock, Gauge, BarChart3,
-  AlertCircle, Brain, Terminal, WifiOff, Loader2,
-  Copy, Check
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import { servicesApi } from '../api/services';
-import { metricsApi } from '../api/metrics';
-import type { AnalysisResult } from '../api/metrics';
-import MetricChart from '../components/dashboard/MetricChart';
-import StatCard from '../components/dashboard/StatCard';
-import AlertList from '../components/alerts/AlertList';
-import InsightCard from '../components/ai/InsightCard';
-import CommandHistory from '../components/control/CommandHistory';
-import CommandButton from '../components/control/CommandButton';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  Server,
+  Activity,
+  Cpu,
+  HardDrive,
+  Clock,
+  AlertCircle,
+  Sparkles,
+  RefreshCw,
+  Power,
+  Trash2,
+  TrendingUp,
+  Zap,
+  Shield,
+  Eye,
+} from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from "recharts";
+import { servicesApi } from "@/api/services";
+import { metricsApi, type Alert, type AnalysisResult } from "@/api/metrics";
+import { useServices } from "@/hooks/useServices";
+import { toast } from "sonner";
 
-type TabType = 'metrics' | 'alerts' | 'ai' | 'commands';
-type TimeRange = '1h' | '6h' | '24h' | '7d';
-
-const timeRangeMap: Record<TimeRange, { duration: string; bucket: string; label: string }> = {
-  '1h': { duration: '1h', bucket: '1 minute', label: '1 Saat' },
-  '6h': { duration: '6h', bucket: '5 minutes', label: '6 Saat' },
-  '24h': { duration: '24h', bucket: '15 minutes', label: '24 Saat' },
-  '7d': { duration: '168h', bucket: '1 hour', label: '7 Gün' },
-};
-
-function CopyButton({ text, label }: { text: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    toast.success(`${label} kopyalandı`);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      onClick={handleCopy}
-      className="absolute top-2 right-2 p-1.5 bg-white/5 hover:bg-white/10 rounded-md text-gray-500 hover:text-gray-300 transition-colors"
-      title="Kopyala"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-    </button>
-  );
-}
-
-export default function ServiceDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export function ServiceDetailPage() {
+  const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabType>('metrics');
-  const [timeRange, setTimeRange] = useState<TimeRange>('1h');
+  const { deleteService, restartService, stopService } = useServices();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [metricsDuration, setMetricsDuration] = useState("1h");
 
-  const serviceQuery = useQuery({
-    queryKey: ['service', id],
-    queryFn: () => servicesApi.get(id!),
-    enabled: !!id,
-  });
-
-  const trConfig = timeRangeMap[timeRange];
-
-  const metricsQuery = useQuery({
-    queryKey: ['metrics', id, timeRange],
-    queryFn: () => metricsApi.getHistory(id!, trConfig.duration),
-    enabled: !!id && activeTab === 'metrics',
+  const { data: service, isLoading: serviceLoading } = useQuery({
+    queryKey: ["service", serviceId],
+    queryFn: () => servicesApi.get(serviceId!),
+    enabled: !!serviceId,
     refetchInterval: 15000,
   });
 
-  const uptimeQuery = useQuery({
-    queryKey: ['uptime', id],
-    queryFn: () => metricsApi.getUptime(id!, '24h'),
-    enabled: !!id,
+  const { data: metrics = [], isLoading: metricsLoading } = useQuery({
+    queryKey: ["serviceMetrics", serviceId, metricsDuration],
+    queryFn: () => metricsApi.getHistory(serviceId!, metricsDuration),
+    enabled: !!serviceId,
+    refetchInterval: 30000,
   });
 
-  const alertsQuery = useQuery({
-    queryKey: ['alerts', id],
-    queryFn: () => metricsApi.getAlerts(id!, true),
-    enabled: !!id && activeTab === 'alerts',
+  const { data: uptime } = useQuery({
+    queryKey: ["serviceUptime", serviceId],
+    queryFn: () => metricsApi.getUptime(serviceId!, "24h"),
+    enabled: !!serviceId,
   });
 
-  const insightsQuery = useQuery({
-    queryKey: ['insights', id],
-    queryFn: () => metricsApi.getInsights(id!),
-    enabled: !!id && activeTab === 'ai',
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["serviceAlerts", serviceId],
+    queryFn: () => metricsApi.getAlerts(serviceId!, false),
+    enabled: !!serviceId,
   });
 
-  const commandsQuery = useQuery({
-    queryKey: ['commands', id],
-    queryFn: () => metricsApi.getCommands(id!),
-    enabled: !!id && activeTab === 'commands',
-  });
+  const handleDelete = () => {
+    if (serviceId) {
+      deleteService(serviceId);
+      setDeleteDialogOpen(false);
+      navigate("/services");
+    }
+  };
 
-  const analyzeMutation = useMutation({
-    mutationFn: () => metricsApi.analyze(id!, timeRange === '1h' ? 30 : timeRange === '6h' ? 360 : 1440),
-    onSuccess: (result) => {
+  const handleRestart = () => {
+    if (serviceId) restartService(serviceId);
+  };
+
+  const handleStop = () => {
+    if (serviceId) stopService(serviceId);
+  };
+
+  const handleAnalyze = async () => {
+    if (!serviceId) return;
+    setAnalyzeLoading(true);
+    try {
+      const result = await metricsApi.analyze(serviceId);
       setAnalysisResult(result);
-      toast.success('AI analizi tamamlandı');
-      queryClient.invalidateQueries({ queryKey: ['insights', id] });
-    },
-    onError: () => {
-      toast.error('AI analizi başarısız');
-    },
-  });
+    } catch {
+      toast.error("AI analiz başarısız oldu");
+    } finally {
+      setAnalyzeLoading(false);
+    }
+  };
 
-  const restartMutation = useMutation({
-    mutationFn: () => servicesApi.restart(id!),
-    onSuccess: () => {
-      toast.success('Restart komutu gönderildi');
-      queryClient.invalidateQueries({ queryKey: ['commands', id] });
-    },
-    onError: () => toast.error('Restart komutu gönderilemedi'),
-  });
+  const handleResolveAlert = async (alertId: string) => {
+    try {
+      await metricsApi.resolveAlert(alertId);
+      toast.success("Alert çözüldü");
+    } catch {
+      toast.error("Alert çözülemedi");
+    }
+  };
 
-  const stopMutation = useMutation({
-    mutationFn: () => servicesApi.stop(id!),
-    onSuccess: () => {
-      toast.success('Stop komutu gönderildi');
-      queryClient.invalidateQueries({ queryKey: ['commands', id] });
-    },
-    onError: () => toast.error('Stop komutu gönderilemedi'),
-  });
+  const chartData = metrics.map((m) => ({
+    time: new Date(m.time).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+    cpu: m.cpu_percent,
+    memory: m.memory_used_mb,
+    latency: m.latency_ms,
+    error_rate: m.error_rate,
+    disk: m.disk_used_gb,
+  }));
 
-  const resolveAlertMutation = useMutation({
-    mutationFn: (alertId: string) => metricsApi.resolveAlert(alertId),
-    onSuccess: () => {
-      toast.success('Alert çözümlendi');
-      queryClient.invalidateQueries({ queryKey: ['alerts', id] });
-    },
-    onError: () => toast.error('Alert çözümlenemedi'),
-  });
+  const latestMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const svcData = serviceQuery.data as any;
-  const service = svcData?.service ?? svcData;
-  const agentConnected: boolean = svcData?.agent_connected ?? false;
-
-  if (serviceQuery.isLoading) {
+  if (serviceLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-          <span className="text-sm text-gray-500">Servis bilgileri yükleniyor…</span>
+      <div className="space-y-6">
+        <div className="h-8 w-48 bg-[#39c5bb]/10 rounded animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+              <div className="h-4 w-20 bg-[#39c5bb]/10 rounded mb-2" />
+              <div className="h-6 w-16 bg-[#39c5bb]/10 rounded" />
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -151,305 +151,381 @@ export default function ServiceDetailPage() {
   if (!service) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-500 mb-4">Servis bulunamadı</p>
-        <button onClick={() => navigate('/dashboard')} className="btn-primary">
-          Dashboard'a Dön
-        </button>
+        <Server className="w-16 h-16 text-[#b0bdd5] mx-auto mb-4" />
+        <h2 className="text-lg font-semibold text-[#3b4563]">Servis bulunamadı</h2>
+        <Link to="/services" className="text-sm text-[#39c5bb] hover:underline mt-2 inline-block">
+          ← Servislere dön
+        </Link>
       </div>
     );
   }
 
-  const latestMetric = metricsQuery.data?.[metricsQuery.data.length - 1];
-  const metrics = metricsQuery.data || [];
+  const statusColor =
+    service.status === "up" ? "text-[#34d399]" :
+    service.status === "degraded" ? "text-[#fbbf24]" : "text-[#fb7185]";
 
-  const statusBadgeClass: Record<string, string> = {
-    up: 'badge-up',
-    down: 'badge-down',
-    degraded: 'badge-degraded',
-    unknown: 'badge-unknown',
-  };
-
-  const tabs: { key: TabType; label: string; icon: typeof BarChart3 }[] = [
-    { key: 'metrics', label: 'Metrikler', icon: BarChart3 },
-    { key: 'alerts', label: 'Alertler', icon: AlertCircle },
-    { key: 'ai', label: 'AI Analiz', icon: Brain },
-    { key: 'commands', label: 'Komutlar', icon: Terminal },
-  ];
-
-  const token = localStorage.getItem('access_token');
-
-  const installCmd = `curl -sSL http://localhost:8080/install.sh | bash -s -- --backend ws://localhost:8080 --service-id ${service.id} --token ${token} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
-  const dockerCmd = `docker run -d --name nanonet-agent --restart unless-stopped nanonet/agent --backend ws://host.docker.internal:8080 --service-id ${service.id} --token ${token} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
-  const manualCmd = `./nanonet-agent --backend ws://localhost:8080 --service-id ${service.id} --token ${token} --host ${service.host} --port ${service.port} --health-endpoint ${service.health_endpoint} --poll-interval ${service.poll_interval_sec}`;
+  const statusBg =
+    service.status === "up" ? "bg-[#a7f3d0]/20 text-[#059669] border-[#a7f3d0]/40" :
+    service.status === "degraded" ? "bg-[#fef3c7]/30 text-[#d97706] border-[#fbbf24]/30" :
+    "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/30";
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white self-start"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-white">{service.name}</h1>
-            <span className={statusBadgeClass[service.status] || 'badge-unknown'}>
-              {service.status.toUpperCase()}
-            </span>
-            {agentConnected ? (
-              <span className="flex items-center gap-1.5 text-xs text-emerald-400">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                Agent bağlı
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs text-gray-600">
-                <WifiOff className="w-3 h-3" /> Agent yok
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-gray-500 mt-1 font-mono">
-            {service.host}:{service.port} · {service.health_endpoint} · {service.poll_interval_sec}s
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start">
-          <CommandButton action="restart" onExecute={() => restartMutation.mutate()} isLoading={restartMutation.isPending} disabled={!agentConnected} />
-          <CommandButton action="stop" onExecute={() => stopMutation.mutate()} isLoading={stopMutation.isPending} disabled={!agentConnected} />
-        </div>
-      </div>
-
-      {/* Agent install banner */}
-      {!agentConnected && (
-        <div className="card p-5 border-l-2 border-l-amber-500/60">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-              <WifiOff className="w-4 h-4 text-amber-500" />
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <div className="flex items-center gap-3 mb-4">
+          <button onClick={() => navigate("/services")} className="p-2 rounded-lg hover:bg-[#39c5bb]/10 text-[#7c8db5] hover:text-[#39c5bb] transition-all">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-[#3b4563] truncate">{service.name}</h1>
+              <Badge className={`text-[10px] font-[var(--font-mono)] px-2 py-0.5 rounded-full border ${statusBg}`}>
+                {service.status.toUpperCase()}
+              </Badge>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-white">Agent Bağlı Değil</h3>
-              <p className="text-xs text-gray-500 mt-1 mb-4">
-                Metrik toplamaya başlamak için agent'ı kurun:
-              </p>
-
-              <div className="space-y-3">
-                {/* Quick Install */}
-                <div className="bg-surface-dark rounded-lg p-3 ring-1 ring-white/5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded tracking-wider">ÖNERİLEN</span>
-                    <span className="text-xs font-medium text-gray-400">Hızlı Kurulum</span>
-                  </div>
-                  <div className="relative">
-                    <div className="p-2.5 bg-black/40 rounded-md overflow-x-auto pr-10">
-                      <code className="text-xs text-emerald-400 font-mono whitespace-nowrap">
-                        curl -sSL https://get.nanonet.io | bash -s -- --service-id {service.id.slice(0, 8)}…
-                      </code>
-                    </div>
-                    <CopyButton text={installCmd} label="Kurulum komutu" />
-                  </div>
-                </div>
-
-                {/* Docker */}
-                <div className="bg-surface-dark rounded-lg p-3 ring-1 ring-white/5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-gray-400">Docker</span>
-                  </div>
-                  <div className="relative">
-                    <div className="p-2.5 bg-black/40 rounded-md overflow-x-auto pr-10">
-                      <code className="text-xs text-indigo-400 font-mono whitespace-nowrap">
-                        docker run -d nanonet/agent --service-id {service.id.slice(0, 8)}…
-                      </code>
-                    </div>
-                    <CopyButton text={dockerCmd} label="Docker komutu" />
-                  </div>
-                </div>
-
-                {/* Manual */}
-                <details className="bg-surface-dark rounded-lg ring-1 ring-white/5">
-                  <summary className="p-3 cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-300 transition-colors">
-                    Manuel Kurulum
-                  </summary>
-                  <div className="px-3 pb-3 space-y-2">
-                    <p className="text-xs text-gray-500"><strong className="text-gray-400">1.</strong> Binary indirin</p>
-                    <div className="p-2.5 bg-black/40 rounded-md overflow-x-auto">
-                      <code className="text-xs text-purple-400 font-mono">wget https://github.com/nanonet/agent/releases/latest/download/nanonet-agent-linux-x86_64</code>
-                    </div>
-                    <p className="text-xs text-gray-500"><strong className="text-gray-400">2.</strong> Çalıştırın</p>
-                    <div className="relative">
-                      <div className="p-2.5 bg-black/40 rounded-md overflow-x-auto pr-10">
-                        <code className="text-xs text-purple-400 font-mono whitespace-nowrap">
-                          ./nanonet-agent --backend ws://localhost:8080 --service-id {service.id.slice(0, 12)}…
-                        </code>
-                      </div>
-                      <CopyButton text={manualCmd} label="Manuel komut" />
-                    </div>
-                  </div>
-                </details>
-              </div>
-            </div>
+            <p className="text-xs text-[#b0bdd5] font-[var(--font-mono)] mt-0.5">
+              {service.host}:{service.port} · {service.health_endpoint} · {service.poll_interval_sec}s poll
+            </p>
           </div>
-        </div>
-      )}
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
-          title="CPU"
-          value={latestMetric?.cpu_percent?.toFixed(1) ?? '-'}
-          unit="%"
-          icon={Cpu}
-          status={service.status}
-        />
-        <StatCard
-          title="Bellek"
-          value={latestMetric?.memory_used_mb?.toFixed(0) ?? '-'}
-          unit="MB"
-          icon={HardDrive}
-        />
-        <StatCard
-          title="Gecikme"
-          value={latestMetric?.latency_ms?.toFixed(1) ?? '-'}
-          unit="ms"
-          icon={Gauge}
-        />
-        <StatCard
-          title="Uptime"
-          value={uptimeQuery.data?.uptime_percent?.toFixed(1) ?? '-'}
-          unit="%"
-          icon={Clock}
-        />
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-white/[0.06]">
-        <div className="flex gap-1 -mb-px">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.key
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-white/10'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Tab content */}
-      {activeTab === 'metrics' && (
-        <div className="space-y-6">
           <div className="flex items-center gap-2">
-            {(Object.keys(timeRangeMap) as TimeRange[]).map((tr) => (
-              <button
-                key={tr}
-                onClick={() => setTimeRange(tr)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                  timeRange === tr
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-300'
-                }`}
-              >
-                {timeRangeMap[tr].label}
-              </button>
-            ))}
-            {metricsQuery.isFetching && (
-              <Loader2 className="w-4 h-4 animate-spin text-gray-600 ml-2" />
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <MetricChart data={metrics} metricType="cpu" title="CPU Kullanımı" />
-            <MetricChart data={metrics} metricType="memory" title="Bellek Kullanımı" />
-            <MetricChart data={metrics} metricType="latency" title="Gecikme (ms)" />
-            <MetricChart data={metrics} metricType="error_rate" title="Hata Oranı" />
+            <Button variant="outline" size="sm" onClick={handleRestart} className="border-[#39c5bb]/20 text-[#39c5bb] rounded-lg text-xs h-8 hover:bg-[#39c5bb]/10">
+              <RefreshCw className="w-3 h-3 mr-1" /> Restart
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleStop} className="border-[#fbbf24]/20 text-[#d97706] rounded-lg text-xs h-8 hover:bg-[#fbbf24]/10">
+              <Power className="w-3 h-3 mr-1" /> Stop
+            </Button>
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="border-[#fda4af]/20 text-[#e11d48] rounded-lg text-xs h-8 hover:bg-[#fda4af]/10">
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white border-[#fda4af]/20 rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-[#e11d48]">Servisi Sil</DialogTitle>
+                  <DialogDescription className="text-[#7c8db5]">
+                    <strong>{service.name}</strong> servisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="rounded-xl">İptal</Button>
+                  <Button onClick={handleDelete} className="bg-[#e11d48] text-white rounded-xl hover:bg-[#be123c]">Sil</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
-      )}
+      </motion.div>
 
-      {activeTab === 'alerts' && (
-        <AlertList
-          alerts={alertsQuery.data || []}
-          onResolve={(alertId) => resolveAlertMutation.mutate(alertId)}
-          showResolved
-        />
-      )}
+      {/* Quick Stats Row */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="p-3 bg-white/80 border-[#39c5bb]/10 rounded-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Cpu className="w-3.5 h-3.5 text-[#39c5bb]" />
+              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">CPU</span>
+            </div>
+            <p className="text-lg font-bold text-[#3b4563]">
+              {latestMetric ? `${latestMetric.cpu_percent?.toFixed(1)}%` : "—"}
+            </p>
+          </Card>
+          <Card className="p-3 bg-white/80 border-[#93c5fd]/10 rounded-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Activity className="w-3.5 h-3.5 text-[#93c5fd]" />
+              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Memory</span>
+            </div>
+            <p className="text-lg font-bold text-[#3b4563]">
+              {latestMetric ? `${latestMetric.memory_used_mb?.toFixed(0)} MB` : "—"}
+            </p>
+          </Card>
+          <Card className="p-3 bg-white/80 border-[#c4b5fd]/10 rounded-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-3.5 h-3.5 text-[#c4b5fd]" />
+              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Latency</span>
+            </div>
+            <p className="text-lg font-bold text-[#3b4563]">
+              {latestMetric ? `${latestMetric.latency_ms?.toFixed(0)} ms` : "—"}
+            </p>
+          </Card>
+          <Card className="p-3 bg-white/80 border-[#fda4af]/10 rounded-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-3.5 h-3.5 text-[#34d399]" />
+              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Uptime</span>
+            </div>
+            <p className="text-lg font-bold text-[#3b4563]">
+              {uptime ? `${uptime.uptime_percent.toFixed(1)}%` : "—"}
+            </p>
+          </Card>
+        </div>
+      </motion.div>
 
-      {activeTab === 'ai' && (
-        <div className="space-y-6">
+      {/* Tabs: Charts, Alerts, AI */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+        <Tabs defaultValue="metrics" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-white">AI Analiz</h3>
-            <button
-              onClick={() => analyzeMutation.mutate()}
-              disabled={analyzeMutation.isPending}
-              className="btn-primary flex items-center gap-2"
-            >
-              {analyzeMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Brain className="w-4 h-4" />
-              )}
-              {analyzeMutation.isPending ? 'Analiz ediliyor…' : 'Analiz Et'}
-            </button>
-          </div>
+            <TabsList className="bg-white/80 border border-[#39c5bb]/10 rounded-xl p-1">
+              <TabsTrigger value="metrics" className="rounded-lg text-xs data-[state=active]:bg-[#39c5bb]/10 data-[state=active]:text-[#2da89e]">
+                <TrendingUp className="w-3 h-3 mr-1" /> Metrics
+              </TabsTrigger>
+              <TabsTrigger value="alerts" className="rounded-lg text-xs data-[state=active]:bg-[#fda4af]/10 data-[state=active]:text-[#e11d48]">
+                <AlertCircle className="w-3 h-3 mr-1" /> Alerts ({alerts.length})
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="rounded-lg text-xs data-[state=active]:bg-[#c4b5fd]/10 data-[state=active]:text-[#7c3aed]">
+                <Sparkles className="w-3 h-3 mr-1" /> AI Analysis
+              </TabsTrigger>
+            </TabsList>
 
-          {analyzeMutation.isPending && (
-            <InsightCard insight={{ summary: '', root_cause: '', recommendations: [] }} isLoading />
-          )}
-
-          {analysisResult && !analyzeMutation.isPending && (
-            <InsightCard insight={analysisResult} />
-          )}
-
-          {insightsQuery.data?.insights && insightsQuery.data.insights.length > 0 && (
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-500">Geçmiş Analizler</h4>
-              {insightsQuery.data.insights.map((insight) => (
-                <div key={insight.id} className="card p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs text-gray-500">
-                      {new Date(insight.created_at).toLocaleString('tr-TR')}
-                    </span>
-                    <span className="text-xs text-gray-600 font-mono">{insight.model}</span>
-                  </div>
-                  <p className="text-sm text-gray-300">{insight.summary}</p>
-                  {insight.root_cause && (
-                    <p className="text-sm text-amber-400/80 mt-2">Neden: {insight.root_cause}</p>
-                  )}
-                </div>
+            {/* Duration picker for metrics */}
+            <div className="flex items-center gap-1">
+              {["15m", "1h", "6h", "24h"].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setMetricsDuration(d)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                    metricsDuration === d
+                      ? "bg-[#39c5bb]/15 text-[#2da89e] border border-[#39c5bb]/20"
+                      : "text-[#7c8db5] hover:bg-[#f5f8ff] border border-transparent"
+                  }`}
+                >
+                  {d}
+                </button>
               ))}
             </div>
-          )}
+          </div>
 
-          {!analysisResult && !analyzeMutation.isPending && (!insightsQuery.data?.insights || insightsQuery.data.insights.length === 0) && (
-            <div className="text-center py-12">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-4 ring-1 ring-purple-500/20">
-                <Brain className="w-7 h-7 text-purple-400" />
+          {/* Metrics Tab */}
+          <TabsContent value="metrics" className="space-y-4">
+            {metricsLoading ? (
+              <Card className="p-8 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+                <div className="h-64 bg-[#39c5bb]/5 rounded-lg" />
+              </Card>
+            ) : chartData.length === 0 ? (
+              <Card className="p-12 bg-white/80 border-[#39c5bb]/10 rounded-xl text-center">
+                <Activity className="w-10 h-10 text-[#b0bdd5] mx-auto mb-3" />
+                <p className="text-sm text-[#7c8db5]">Bu zaman aralığında metrik verisi yok</p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* CPU Chart */}
+                <Card className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl">
+                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Cpu className="w-3 h-3 text-[#39c5bb]" /> CPU Usage (%)
+                  </h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="cpuGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#39c5bb" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#39c5bb" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" domain={[0, 100]} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #39c5bb22", fontSize: 11 }} />
+                      <Area type="monotone" dataKey="cpu" stroke="#39c5bb" fill="url(#cpuGrad)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                {/* Memory Chart */}
+                <Card className="p-4 bg-white/80 border-[#93c5fd]/10 rounded-xl">
+                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <HardDrive className="w-3 h-3 text-[#93c5fd]" /> Memory (MB)
+                  </h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="memGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#93c5fd" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#93c5fd" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #93c5fd22", fontSize: 11 }} />
+                      <Area type="monotone" dataKey="memory" stroke="#93c5fd" fill="url(#memGrad)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                {/* Latency Chart */}
+                <Card className="p-4 bg-white/80 border-[#c4b5fd]/10 rounded-xl">
+                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Clock className="w-3 h-3 text-[#c4b5fd]" /> Latency (ms)
+                  </h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="latGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#c4b5fd" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#c4b5fd" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #c4b5fd22", fontSize: 11 }} />
+                      <Area type="monotone" dataKey="latency" stroke="#c4b5fd" fill="url(#latGrad)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                {/* Error Rate Chart */}
+                <Card className="p-4 bg-white/80 border-[#fda4af]/10 rounded-xl">
+                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Zap className="w-3 h-3 text-[#fda4af]" /> Error Rate (%)
+                  </h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="errGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#fda4af" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#fda4af" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" domain={[0, "auto"]} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #fda4af22", fontSize: 11 }} />
+                      <Area type="monotone" dataKey="error_rate" stroke="#fda4af" fill="url(#errGrad)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
               </div>
-              <p className="font-medium text-gray-300">Henüz AI analizi yapılmadı</p>
-              <p className="text-sm text-gray-600 mt-1">"Analiz Et" butonuna tıklayarak servis metriklerini analiz edebilirsiniz</p>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </TabsContent>
 
-      {activeTab === 'commands' && (
-        <CommandHistory
-          commands={commandsQuery.data?.commands || []}
-          isLoading={commandsQuery.isLoading}
-        />
-      )}
+          {/* Alerts Tab */}
+          <TabsContent value="alerts" className="space-y-3">
+            {alerts.length === 0 ? (
+              <Card className="p-12 bg-white/80 border-[#39c5bb]/10 rounded-xl text-center">
+                <Shield className="w-10 h-10 text-[#34d399] mx-auto mb-3" />
+                <p className="text-sm text-[#7c8db5]">Aktif alert yok — tüm sistemler çalışıyor</p>
+              </Card>
+            ) : (
+              alerts.map((alert, index) => (
+                <motion.div key={alert.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}>
+                  <Card className={`p-4 bg-white/80 border rounded-xl ${
+                    alert.severity === "crit" ? "border-[#fda4af]/30" :
+                    alert.severity === "warn" ? "border-[#fbbf24]/25" :
+                    "border-[#93c5fd]/20"
+                  }`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                          alert.severity === "crit" ? "bg-[#fb7185]" :
+                          alert.severity === "warn" ? "bg-[#fbbf24]" :
+                          "bg-[#93c5fd]"
+                        }`} />
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full border uppercase font-[var(--font-mono)] ${
+                              alert.severity === "crit" ? "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/30" :
+                              alert.severity === "warn" ? "bg-[#fef3c7]/30 text-[#d97706] border-[#fbbf24]/20" :
+                              "bg-[#93c5fd]/15 text-[#3b82f6] border-[#93c5fd]/20"
+                            }`}>
+                              {alert.severity}
+                            </Badge>
+                            <span className="text-[10px] text-[#b0bdd5]">{alert.type}</span>
+                          </div>
+                          <p className="text-xs text-[#3b4563]">{alert.message}</p>
+                          <p className="text-[10px] text-[#b0bdd5] mt-1">
+                            {new Date(alert.triggered_at).toLocaleString("tr-TR")}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleResolveAlert(alert.id)}
+                        className="text-[10px] border-[#34d399]/20 text-[#059669] rounded-lg h-7 hover:bg-[#34d399]/10"
+                      >
+                        Çöz
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))
+            )}
+          </TabsContent>
+
+          {/* AI Tab */}
+          <TabsContent value="ai" className="space-y-4">
+            <Card className="p-6 bg-white/80 border-[#c4b5fd]/10 rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#c4b5fd]" />
+                  <h3 className="text-sm font-semibold text-[#3b4563]">AI Analiz</h3>
+                </div>
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={analyzeLoading}
+                  className="bg-linear-to-r from-[#c4b5fd] to-[#93c5fd] text-white rounded-xl text-xs h-8"
+                >
+                  {analyzeLoading ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analiz Ediliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 mr-1" /> Analiz Başlat
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {analysisResult ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-[#f5f8ff] rounded-xl border border-[#c4b5fd]/10">
+                    <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Özet</h4>
+                    <p className="text-sm text-[#3b4563]">{analysisResult.summary}</p>
+                  </div>
+                  {analysisResult.root_cause && (
+                    <div className="p-4 bg-[#fda4af]/5 rounded-xl border border-[#fda4af]/10">
+                      <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Kök Neden</h4>
+                      <p className="text-sm text-[#3b4563]">{analysisResult.root_cause}</p>
+                    </div>
+                  )}
+                  {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
+                    <div className="p-4 bg-[#39c5bb]/5 rounded-xl border border-[#39c5bb]/10">
+                      <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Öneriler</h4>
+                      <ul className="space-y-2">
+                        {analysisResult.recommendations.map((rec, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full flex-shrink-0 mt-0.5 ${
+                              rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48]" :
+                              rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706]" :
+                              "bg-[#39c5bb]/15 text-[#2da89e]"
+                            }`}>
+                              {rec.priority}
+                            </Badge>
+                            <span className="text-xs text-[#3b4563]">{rec.action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {analysisResult.confidence !== undefined && (
+                    <div className="flex items-center gap-2 text-[10px] text-[#b0bdd5]">
+                      <Eye className="w-3 h-3" /> Güven: {(analysisResult.confidence * 100).toFixed(0)}%
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Sparkles className="w-8 h-8 text-[#c4b5fd]/30 mx-auto mb-3" />
+                  <p className="text-xs text-[#7c8db5]">
+                    AI-powered analiz için "Analiz Başlat" butonuna tıklayın
+                  </p>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
     </div>
   );
 }
