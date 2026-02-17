@@ -1,20 +1,35 @@
 use reqwest::Client;
-use std::time::Duration;
-use crate::error::Result;
+use std::time::{Duration, Instant};
 
-pub async fn check_health(client: &Client, url: &str) -> Result<(String, f32)> {
-    let start = std::time::Instant::now();
-    
-    match client.get(url).timeout(Duration::from_secs(5)).send().await {
+pub struct HealthResult {
+    pub status: String,
+    pub latency_ms: f32,
+}
+
+pub async fn check_health(client: &Client, url: &str) -> HealthResult {
+    let start = Instant::now();
+
+    match client
+        .get(url)
+        .timeout(Duration::from_secs(5))
+        .send()
+        .await
+    {
         Ok(response) => {
-            let latency_ms = start.elapsed().as_millis() as f32;
+            let latency_ms = start.elapsed().as_secs_f32() * 1000.0;
             let status = if response.status().is_success() {
                 "up"
             } else {
                 "degraded"
             };
-            Ok((status.to_string(), latency_ms))
+            HealthResult {
+                status: status.to_string(),
+                latency_ms,
+            }
         }
-        Err(_) => Ok(("down".to_string(), 0.0)),
+        Err(_) => HealthResult {
+            status: "down".to_string(),
+            latency_ms: 0.0,
+        },
     }
 }

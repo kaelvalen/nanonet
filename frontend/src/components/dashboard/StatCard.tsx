@@ -32,19 +32,23 @@ export default function StatCard({
     stable: 'text-gray-600',
   };
 
+  const noData = value === '-' || value === '' || value === undefined;
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-gray-600">{title}</span>
-        <Icon className="w-5 h-5 text-gray-400" />
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</span>
+        <Icon className={`w-4 h-4 ${noData ? 'text-gray-300' : 'text-gray-400'}`} />
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-gray-900">{value}</span>
-        {unit && <span className="text-lg text-gray-500">{unit}</span>}
+      <div className="flex items-baseline gap-1.5">
+        <span className={`text-2xl font-bold ${noData ? 'text-gray-300' : 'text-gray-900'}`}>
+          {noData ? '—' : value}
+        </span>
+        {!noData && unit && <span className="text-sm text-gray-400">{unit}</span>}
       </div>
-      <div className="mt-3 flex items-center gap-3">
+      <div className="mt-2 flex items-center gap-3">
         {trend && trendValue && (
-          <span className={`text-sm font-medium ${trendColors[trend]}`}>
+          <span className={`text-xs font-medium ${trendColors[trend]}`}>
             {trend === 'up' && '↑'}
             {trend === 'down' && '↓'}
             {trend === 'stable' && '→'}
@@ -55,6 +59,9 @@ export default function StatCard({
           <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[status]}`}>
             {status}
           </span>
+        )}
+        {noData && !status && (
+          <span className="text-xs text-gray-400">Veri bekleniyor</span>
         )}
       </div>
     </div>
