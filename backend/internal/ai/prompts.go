@@ -29,5 +29,5 @@ Yanıtını YALNIZCA aşağıdaki JSON formatında ver, başka hiçbir metin ekl
   "confidence": 0.0
 }`
 
-const DefaultModel = "claude-3-5-sonnet-20241022"
+const DefaultModel = "claude-3-5-haiku-20241022"
 const MaxTokensDefault = 1024

@@ -55,20 +55,17 @@ services:
     profiles:
       - agent
     environment:
+      # Zorunlu — agent-setup.sh çalıştırıldıktan sonra .env otomatik dolar
       NANONET_BACKEND: ws://backend:8080
-      NANONET_SERVICE_ID: ${AGENT_SERVICE_ID:-}
-      NANONET_TOKEN: ${AGENT_TOKEN:-}
+      NANONET_SERVICE_ID: ${AGENT_SERVICE_ID:?AGENT_SERVICE_ID eksik — once ./agent-setup.sh calistirin}
+      NANONET_TOKEN: ${AGENT_TOKEN:?AGENT_TOKEN eksik — once ./agent-setup.sh calistirin}
+      NANONET_HOST: ${AGENT_TARGET_HOST:-backend}
+      NANONET_PORT: ${AGENT_TARGET_PORT:-8080}
+      NANONET_HEALTH_ENDPOINT: ${AGENT_HEALTH_ENDPOINT:-/health}
+      NANONET_POLL_INTERVAL: ${AGENT_POLL_INTERVAL:-10}
+      NANONET_ERROR_RATE_WINDOW: ${AGENT_ERROR_RATE_WINDOW:-20}
       NANONET_RESTART_CMD: ${AGENT_RESTART_CMD:-}
       NANONET_STOP_CMD: ${AGENT_STOP_CMD:-}
-      NANONET_ERROR_RATE_WINDOW: ${AGENT_ERROR_RATE_WINDOW:-20}
-    command:
-      - --backend=ws://backend:8080
-      - --service-id=${AGENT_SERVICE_ID}
-      - --token=${AGENT_TOKEN}
-      - --host=${AGENT_TARGET_HOST:-backend}
-      - --port=${AGENT_TARGET_PORT:-8080}
-      - --health-endpoint=${AGENT_HEALTH_ENDPOINT:-/health}
-      - --poll-interval=${AGENT_POLL_INTERVAL:-10}
     depends_on:
       - backend
 

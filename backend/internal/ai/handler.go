@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"log"
 	"strconv"
 
 	"nanonet-backend/pkg/response"
@@ -47,7 +48,8 @@ func (h *Handler) Analyze(c *gin.Context) {
 			response.Error(c, 429, err.Error())
 			return
 		}
-		response.InternalError(c, "analiz geçici olarak kullanılamıyor")
+		log.Printf("[AI Analyze ERROR] service=%s user=%s: %v", serviceID, userID, err)
+		response.InternalError(c, "analiz geçici olarak kullanılamıyor: "+err.Error())
 		return
 	}
 

@@ -33,7 +33,7 @@ type MetricsResponse struct {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3000"
+		port = "8001"
 	}
 
 	rand.Seed(time.Now().UnixNano())
@@ -111,8 +111,8 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 	response := MetricsResponse{
 		Requests:      atomic.LoadUint64(&requestCount),
 		Uptime:        time.Since(startTime),
-		MemoryUsageMB: 50.0 + rand.Float64()*50.0,  // 50-100 MB
-		CPUPercent:    10.0 + rand.Float64()*30.0,  // 10-40%
+		MemoryUsageMB: 50.0 + rand.Float64()*50.0, // 50-100 MB
+		CPUPercent:    10.0 + rand.Float64()*30.0, // 10-40%
 	}
 
 	json.NewEncoder(w).Encode(response)
