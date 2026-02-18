@@ -95,8 +95,13 @@ export function useWebSocket() {
       if (!token || !wsUrl) return;
 
       // Clean up existing connection
-      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-        wsRef.current.close();
+      if (wsRef.current) {
+        const prev = wsRef.current;
+        wsRef.current = null;
+        if (prev.readyState !== WebSocket.CLOSED) {
+          prev.onclose = null; // önceki onclose'u kapat, yeniden bağlanma tetiklenmesin
+          prev.close(1000, 'reconnect');
+        }
       }
 
       try {

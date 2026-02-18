@@ -18,12 +18,12 @@ import (
 )
 
 type Service struct {
-	db            *gorm.DB
-	apiKey        string
-	client        *http.Client
-	repo          *Repository
-	metricsRepo   *metrics.Repository
-	rateLimiter   *RateLimiter
+	db          *gorm.DB
+	apiKey      string
+	client      *http.Client
+	repo        *Repository
+	metricsRepo *metrics.Repository
+	rateLimiter *RateLimiter
 }
 
 type RateLimiter struct {
@@ -200,9 +200,19 @@ func (s *Service) callClaude(prompt string) (*AnalysisResult, error) {
 		return nil, fmt.Errorf("Claude boş yanıt döndü")
 	}
 
+	rawText := claudeResp.Content[0].Text
+	// Markdown code fence varsa temizle (```json ... ``` veya ``` ... ```)
+	rawText = strings.TrimSpace(rawText)
+	if idx := strings.Index(rawText, "{"); idx > 0 {
+		rawText = rawText[idx:]
+	}
+	if idx := strings.LastIndex(rawText, "}"); idx >= 0 && idx < len(rawText)-1 {
+		rawText = rawText[:idx+1]
+	}
+
 	var result AnalysisResult
-	if err := json.Unmarshal([]byte(claudeResp.Content[0].Text), &result); err != nil {
-		return nil, fmt.Errorf("AI yanıtı parse edilemedi: %w", err)
+	if err := json.Unmarshal([]byte(rawText), &result); err != nil {
+		return nil, fmt.Errorf("AI yanıtı parse edilemedi (raw: %.200s): %w", rawText, err)
 	}
 
 	return &result, nil
