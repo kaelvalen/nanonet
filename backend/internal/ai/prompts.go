@@ -18,16 +18,9 @@ const AnalysisPromptTemplate = `Sen deneyimli bir DevOps ve SRE uzmanısın. Aş
 2. Olası kök nedeni belirle
 3. Somut ve uygulanabilir aksiyonlar öner
 
-Yanıtını YALNIZCA aşağıdaki JSON formatında ver, başka hiçbir metin ekleme:
-{
-  "summary": "2-3 cümlelik genel durum özeti",
-  "root_cause": "Tespit edilen ana sorun veya performans darboğazı",
-  "recommendations": [
-    {"action": "Somut aksiyon önerisi", "priority": "high|medium|low"},
-    {"action": "Somut aksiyon önerisi", "priority": "high|medium|low"}
-  ],
-  "confidence": 0.0
-}`
+Yanıtın SADECE saf JSON olmalı. Markdown, kod bloğu veya ekstra metin KULLANMA.
+İlk karakter { olmalı, son karakter } olmalı. Örnek format:
+{"summary":"...","root_cause":"...","recommendations":[{"action":"...","priority":"high"}],"confidence":0.85}`
 
-const DefaultModel = "claude-haiku-4-5-20251001"
-const MaxTokensDefault = 1024
+const DefaultModel = "claude-3-5-sonnet-20241022"
+const MaxTokensDefault = 4096
