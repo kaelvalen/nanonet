@@ -72,6 +72,7 @@ func main() {
 			authGroup.POST("/login", authHandler.Login)
 			authGroup.POST("/refresh", authHandler.Refresh)
 			authGroup.POST("/logout", authMiddleware.Required(), authHandler.Logout)
+			authGroup.POST("/agent-token", authMiddleware.Required(), authHandler.AgentToken)
 		}
 
 		svcGroup := v1.Group("/services", authMiddleware.Required())

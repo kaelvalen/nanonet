@@ -87,6 +87,11 @@ func (s *Service) generateToken(userID uuid.UUID, duration time.Duration, tokenT
 }
 
 // ValidateRefreshToken refresh token'ını doğrular; access token ile kullanılamaz.
+// GenerateAgentToken uzun ömürlü (1 yıl) agent token'ı üretir.
+func (s *Service) GenerateAgentToken(userID uuid.UUID) (string, error) {
+	return s.generateToken(userID, 3650*24*time.Hour, "agent")
+}
+
 func (s *Service) ValidateRefreshToken(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

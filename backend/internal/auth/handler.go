@@ -2,10 +2,12 @@ package auth
 
 import (
 	"strings"
+	"time"
 
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -97,6 +99,32 @@ func (h *Handler) Refresh(c *gin.Context) {
 	}
 
 	response.Success(c, tokens)
+}
+
+// AgentToken generates a long-lived token suitable for agent processes.
+func (h *Handler) AgentToken(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	if userIDStr == "" {
+		response.Unauthorized(c, "authorization gerekli")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.BadRequest(c, "geçersiz user_id")
+		return
+	}
+
+	token, err := h.service.GenerateAgentToken(userID)
+	if err != nil {
+		response.InternalError(c, "agent token oluşturulamadı")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"agent_token": token,
+		"expires_in":  int64((3650 * 24 * time.Hour).Seconds()),
+	})
 }
 
 func (h *Handler) Logout(c *gin.Context) {
