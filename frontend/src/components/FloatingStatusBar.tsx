@@ -53,16 +53,16 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-5xl">
       <div className="relative">
-        <div className="absolute -inset-1 bg-linear-to-r from-[#39c5bb]/10 via-[#c4b5fd]/10 to-[#fda4af]/10 rounded-2xl blur-lg" />
+        <div className="absolute -inset-1 bg-linear-to-r from-[#39c5bb]/10 via-[#c4b5fd]/10 to-[#fda4af]/10 dark:from-[#00e6ff]/8 dark:via-[#a78bfa]/8 dark:to-[#00e6ff]/8 rounded-2xl blur-lg" />
 
-        <div className="relative bg-white/75 backdrop-blur-xl border border-[#39c5bb]/15 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm shadow-[#39c5bb]/5">
+        <div className="relative bg-white/75 dark:bg-[#0d1c24]/90 backdrop-blur-xl border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm shadow-[#39c5bb]/5 dark:shadow-[#00e6ff]/5">
 
           {/* Logo */}
           <button
             onClick={() => navigate("/")}
             className="flex items-center gap-2 group cursor-pointer shrink-0"
           >
-            <div className="w-7 h-7 bg-linear-to-br from-[#39c5bb] to-[#93c5fd] rounded-lg flex items-center justify-center shadow-sm shadow-[#39c5bb]/20 group-hover:shadow-[#39c5bb]/35 transition-all">
+            <div className="w-7 h-7 bg-linear-to-br from-[#00b4d8] to-[#a78bfa] dark:from-[#00e6ff] dark:to-[#a78bfa] rounded-lg flex items-center justify-center shadow-sm shadow-[#39c5bb]/20 dark:shadow-[#00e6ff]/20 group-hover:shadow-[#39c5bb]/35 transition-all">
               <span className="text-white text-xs">✦</span>
             </div>
             <span className="font-(--font-quicksand) text-sm bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent hidden sm:inline">
@@ -75,13 +75,13 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
             <nav className="hidden sm:flex items-center gap-1 min-w-0">
               {crumbs.map((crumb, i) => (
                 <span key={crumb.path} className="flex items-center gap-1 min-w-0">
-                  {i > 0 && <ChevronRight className="w-3 h-3 text-[#b0bdd5] shrink-0" />}
+                  {i > 0 && <ChevronRight className="w-3 h-3 text-[#b0bdd5] dark:text-[#3a6070] shrink-0" />}
                   {i === crumbs.length - 1 ? (
-                    <span className="text-xs font-(--font-mono) text-[#39c5bb] truncate max-w-28">{crumb.label}</span>
+                    <span className="text-xs font-(--font-mono) text-[#00b4d8] dark:text-[#00e6ff] truncate max-w-28">{crumb.label}</span>
                   ) : (
                     <Link
                       to={crumb.path}
-                      className="text-xs text-[#7c8db5] hover:text-[#39c5bb] transition-colors truncate max-w-20"
+                      className="text-xs text-[#7c8db5] dark:text-[#527a8a] hover:text-[#00b4d8] dark:hover:text-[#00e6ff] transition-colors truncate max-w-20"
                     >
                       {crumb.label}
                     </Link>
@@ -123,7 +123,7 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
                 <Link
                   key={path}
                   to={path}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] text-[#7c8db5] hover:text-[#39c5bb] hover:bg-[#39c5bb]/8 transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] text-[#7c8db5] dark:text-[#527a8a] hover:text-[#00b4d8] dark:hover:text-[#00e6ff] hover:bg-[#00b4d8]/8 dark:hover:bg-[#00e6ff]/8 transition-all"
                 >
                   <Icon className="w-3 h-3" />
                   {label}
@@ -135,11 +135,11 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           {/* Search trigger */}
           <button
             onClick={onOpenCommandPalette}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#f0f7ff] rounded-lg border border-[#39c5bb]/15 hover:border-[#39c5bb]/30 transition-all text-[#7c8db5] hover:text-[#3b4563]"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#f0f7ff] dark:bg-[#0f1e28] rounded-lg border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 hover:border-[#39c5bb]/30 dark:hover:border-[#00e6ff]/25 transition-all text-[#7c8db5] dark:text-[#527a8a] hover:text-[#3b4563] dark:hover:text-[#d0f4ff]"
           >
             <Search className="w-3.5 h-3.5" />
             <span className="text-xs">Search...</span>
-            <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 bg-white border border-[#39c5bb]/15 rounded text-[#7c8db5] ml-3">
+            <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 bg-white dark:bg-[#071012] border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded text-[#7c8db5] dark:text-[#527a8a] ml-3">
               ⌘K
             </kbd>
           </button>
@@ -181,13 +181,13 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-[#39c5bb]/20 shadow-lg rounded-xl">
-              <DropdownMenuLabel className="text-[#3b4563] text-xs">{user?.email || "My Account"}</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-[#39c5bb]/10" />
-              <DropdownMenuItem className="text-[#3b4563] text-xs cursor-pointer" onClick={() => navigate("/settings")}>
+            <DropdownMenuContent align="end" className="bg-white/95 dark:bg-[#0d1c24]/95 backdrop-blur-xl border-[#39c5bb]/20 dark:border-[#00e6ff]/12 shadow-lg rounded-xl">
+              <DropdownMenuLabel className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">{user?.email || "My Account"}</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#39c5bb]/10 dark:bg-[#00e6ff]/8" />
+              <DropdownMenuItem className="text-[#3b4563] dark:text-[#d0f4ff] text-xs cursor-pointer" onClick={() => navigate("/settings")}>
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[#39c5bb]/10" />
+              <DropdownMenuSeparator className="bg-[#39c5bb]/10 dark:bg-[#00e6ff]/8" />
               <DropdownMenuItem className="text-[#f43f5e] text-xs cursor-pointer" onClick={() => logout()}>
                 Logout
               </DropdownMenuItem>

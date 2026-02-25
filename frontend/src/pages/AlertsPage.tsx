@@ -173,7 +173,7 @@ export function AlertsPage() {
                     : s === "crit" ? "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/25"
                     : s === "warn" ? "bg-[#fbbf24]/15 text-[#d97706] border-[#fbbf24]/25"
                     : "bg-[#93c5fd]/15 text-[#3b82f6] border-[#93c5fd]/25"
-                  : "text-[#7c8db5] hover:bg-[#f5f8ff] border-transparent"
+                  : "text-[#7c8db5] dark:text-[#527a8a] hover:bg-[#f5f8ff] dark:hover:bg-[#0f1e28] border-transparent"
               }`}
             >
               {s === "all" ? `All (${severityCounts.all})` :
@@ -187,7 +187,7 @@ export function AlertsPage() {
             className={`ml-auto px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all border ${
               showResolved
                 ? "bg-[#34d399]/10 text-[#059669] border-[#34d399]/20"
-                : "text-[#7c8db5] hover:bg-[#f5f8ff] border-transparent"
+                : "text-[#7c8db5] dark:text-[#527a8a] hover:bg-[#f5f8ff] dark:hover:bg-[#0f1e28] border-transparent"
             }`}
           >
             {showResolved ? "✓ Showing Resolved" : "Show Resolved"}
@@ -199,7 +199,7 @@ export function AlertsPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+            <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[#39c5bb]/10 shrink-0" />
                 <div className="flex-1">
@@ -212,12 +212,12 @@ export function AlertsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
-          <Card className="p-14 bg-white/80 border-[#34d399]/15 rounded-xl text-center">
+          <Card className="p-14 bg-white/80 dark:bg-[#0d1c24]/85 border-[#34d399]/15 dark:border-[#34d399]/10 rounded-xl text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#34d399]/10 flex items-center justify-center mx-auto mb-4">
               <Shield className="w-8 h-8 text-[#34d399]/50" />
             </div>
-            <h3 className="text-sm font-semibold text-[#3b4563] mb-1">All Systems Operational</h3>
-            <p className="text-xs text-[#7c8db5]">
+            <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff] mb-1">All Systems Operational</h3>
+            <p className="text-xs text-[#7c8db5] dark:text-[#527a8a]">
               {severityFilter !== "all" ? "No alerts match this filter" : "No active alerts at this time"}
             </p>
           </Card>
@@ -250,14 +250,14 @@ export function AlertsPage() {
                       </div>
 
                       {/* Card */}
-                      <Card className={`flex-1 bg-white/80 backdrop-blur-sm border ${config.border} rounded-xl p-4 transition-all duration-200 hover:shadow-sm ${alert.resolved_at ? "opacity-60" : ""}`}>
+                      <Card className={`flex-1 bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${config.border} rounded-xl p-4 transition-all duration-200 hover:shadow-sm ${alert.resolved_at ? "opacity-60" : ""}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                               <Badge className={`text-[9px] px-1.5 py-0 rounded-full border uppercase font-(--font-mono) ${config.badge}`}>
                                 {config.label}
                               </Badge>
-                              <span className="text-[10px] text-[#b0bdd5] font-(--font-mono) bg-[#f5f8ff] px-1.5 py-0.5 rounded">
+                              <span className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070] font-(--font-mono) bg-[#f5f8ff] dark:bg-[#0f1e28] px-1.5 py-0.5 rounded">
                                 {alert.type}
                               </span>
                               {alert.resolved_at && (
@@ -266,7 +266,7 @@ export function AlertsPage() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-[#3b4563] leading-relaxed">{alert.message}</p>
+                            <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff] leading-relaxed">{alert.message}</p>
                             <div className="flex items-center gap-3 mt-2 text-[10px] text-[#b0bdd5]">
                               <span className="flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" />

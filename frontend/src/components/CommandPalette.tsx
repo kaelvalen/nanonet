@@ -102,7 +102,7 @@ export function CommandPalette() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-60 bg-[#3b4563]/20 backdrop-blur-sm"
+            className="fixed inset-0 z-60 bg-[#3b4563]/20 dark:bg-black/60 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
         )}
@@ -117,31 +117,31 @@ export function CommandPalette() {
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className="fixed top-[15%] left-1/2 -translate-x-1/2 z-61 w-full max-w-[640px] px-4"
           >
-            <div className="absolute -inset-4 bg-gradient-to-b from-[#39c5bb]/10 via-[#c4b5fd]/8 to-transparent rounded-3xl blur-2xl" />
+            <div className="absolute -inset-4 bg-linear-to-b from-[#00b4d8]/10 via-[#a78bfa]/8 dark:from-[#00e6ff]/8 dark:via-[#a78bfa]/6 to-transparent rounded-3xl blur-2xl" />
 
             <div className="relative">
               <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/30 to-transparent z-10 rounded-full" />
 
-              <Command className="bg-white/95 backdrop-blur-xl border border-[#39c5bb]/15 rounded-2xl shadow-xl shadow-[#39c5bb]/5 overflow-hidden">
+              <Command className="bg-white/95 dark:bg-[#0a161e]/97 backdrop-blur-xl border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl shadow-xl shadow-[#39c5bb]/5 dark:shadow-[#00e6ff]/5 overflow-hidden">
                 <div className="flex items-center gap-3 px-4 pt-3 pb-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#39c5bb]">✦</span>
-                    <span className="text-xs text-[#7c8db5] tracking-wide">NanoNet Command</span>
+                    <span className="text-[#00b4d8] dark:text-[#00e6ff]">✦</span>
+                    <span className="text-xs text-[#7c8db5] dark:text-[#527a8a] tracking-wide">NanoNet Command</span>
                   </div>
                   <div className="flex-1" />
                   <div className="flex items-center gap-1">
-                    <kbd className="text-[10px] font-[var(--font-mono)] px-1.5 py-0.5 bg-[#f0f7ff] border border-[#39c5bb]/15 rounded text-[#7c8db5]">ESC</kbd>
-                    <span className="text-[10px] text-[#b0bdd5]">to close</span>
+                    <kbd className="text-[10px] font-[var(--font-mono)] px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded text-[#7c8db5] dark:text-[#527a8a]">ESC</kbd>
+                    <span className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070]">to close</span>
                   </div>
                 </div>
 
                 <CommandInput
                   placeholder="Type a command or search..."
-                  className="text-[#3b4563] placeholder:text-[#b0bdd5]"
+                  className="text-[#3b4563] dark:text-[#d0f4ff] placeholder:text-[#b0bdd5] dark:placeholder:text-[#3a6070] dark:bg-transparent"
                 />
 
                 <CommandList className="max-h-[400px] p-2">
-                  <CommandEmpty className="text-[#7c8db5] text-xs">
+                  <CommandEmpty className="text-[#7c8db5] dark:text-[#527a8a] text-xs">
                     <div className="flex flex-col items-center gap-2 py-8">
                       <Search className="w-8 h-8 text-[#c4b5fd]" />
                       <span>No results found</span>
@@ -156,18 +156,18 @@ export function CommandPalette() {
                       <CommandItem
                         key={item.path}
                         onSelect={() => handleNavigate(item.path)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] data-[selected=true]:bg-[#39c5bb]/8 data-[selected=true]:text-[#2da89e] data-[selected=true]:border-l-2 data-[selected=true]:border-[#39c5bb]"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#00b4d8]/8 dark:data-[selected=true]:bg-[#00e6ff]/8 data-[selected=true]:text-[#00b4d8] dark:data-[selected=true]:text-[#00e6ff] data-[selected=true]:border-l-2 data-[selected=true]:border-[#00b4d8] dark:data-[selected=true]:border-[#00e6ff]"
                       >
                         <item.icon className="w-4 h-4" />
                         <span className="flex-1">{item.label}</span>
-                        <kbd className="text-[10px] font-[var(--font-mono)] px-1.5 py-0.5 bg-[#f0f7ff] border border-[#39c5bb]/10 rounded text-[#7c8db5]">
+                        <kbd className="text-[10px] font-[var(--font-mono)] px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded text-[#7c8db5] dark:text-[#527a8a]">
                           {item.shortcut}
                         </kbd>
                       </CommandItem>
                     ))}
                   </CommandGroup>
 
-                  <CommandSeparator className="bg-[#39c5bb]/8 my-2" />
+                  <CommandSeparator className="bg-[#39c5bb]/8 dark:bg-[#00e6ff]/6 my-2" />
 
                   {/* Real Services */}
                   {services.length > 0 && (
@@ -179,7 +179,7 @@ export function CommandPalette() {
                           <CommandItem
                             key={service.id}
                             onSelect={() => handleNavigate(`/services/${service.id}`)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] data-[selected=true]:bg-[#93c5fd]/10 data-[selected=true]:text-[#3b82f6]"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#00b4d8]/8 dark:data-[selected=true]:bg-[#00e6ff]/8 data-[selected=true]:text-[#00b4d8] dark:data-[selected=true]:text-[#00e6ff]"
                           >
                             <div className="relative">
                               <Cpu className="w-4 h-4 text-[#7c8db5]" />
@@ -209,7 +209,7 @@ export function CommandPalette() {
                         ))}
                       </CommandGroup>
 
-                      <CommandSeparator className="bg-[#c4b5fd]/10 my-2" />
+                      <CommandSeparator className="bg-[#a78bfa]/10 dark:bg-[#a78bfa]/8 my-2" />
                     </>
                   )}
 
@@ -221,7 +221,7 @@ export function CommandPalette() {
                       <CommandItem
                         key={action.action}
                         onSelect={() => handleAction(action.action)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] data-[selected=true]:bg-[#c4b5fd]/10 data-[selected=true]:text-[#7c3aed]"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#a78bfa]/10 dark:data-[selected=true]:bg-[#a78bfa]/8 data-[selected=true]:text-[#7c3aed] dark:data-[selected=true]:text-[#a78bfa]"
                       >
                         <action.icon className="w-4 h-4" />
                         <span className="flex-1">{action.label}</span>
@@ -232,17 +232,17 @@ export function CommandPalette() {
                 </CommandList>
 
                 {/* Footer */}
-                <div className="flex items-center gap-4 px-4 py-2 border-t border-[#39c5bb]/10 text-[10px] text-[#b0bdd5] font-[var(--font-mono)]">
+                <div className="flex items-center gap-4 px-4 py-2 border-t border-[#39c5bb]/10 dark:border-[#00e6ff]/8 text-[10px] text-[#b0bdd5] dark:text-[#3a6070] font-[var(--font-mono)]">
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] border border-[#39c5bb]/10 rounded">↑↓</kbd>
+                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded">↑↓</kbd>
                     navigate
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] border border-[#39c5bb]/10 rounded">↵</kbd>
+                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded">↵</kbd>
                     select
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] border border-[#39c5bb]/10 rounded">⌘K</kbd>
+                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded">⌘K</kbd>
                     toggle
                   </span>
                 </div>

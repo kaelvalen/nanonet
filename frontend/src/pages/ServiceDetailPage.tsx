@@ -171,7 +171,7 @@ export function ServiceDetailPage() {
         <div className="h-8 w-48 bg-[#39c5bb]/10 rounded animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+            <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
               <div className="h-4 w-20 bg-[#39c5bb]/10 rounded mb-2" />
               <div className="h-6 w-16 bg-[#39c5bb]/10 rounded" />
             </Card>
@@ -185,7 +185,7 @@ export function ServiceDetailPage() {
     return (
       <div className="text-center py-20">
         <Server className="w-16 h-16 text-[#b0bdd5] mx-auto mb-4" />
-        <h2 className="text-lg font-semibold text-[#3b4563]">Servis bulunamadı</h2>
+        <h2 className="text-lg font-semibold text-[#3b4563] dark:text-[#d0f4ff]">Servis bulunamadı</h2>
         <Link to="/services" className="text-sm text-[#39c5bb] hover:underline mt-2 inline-block">
           ← Servislere dön
         </Link>
@@ -212,7 +212,7 @@ export function ServiceDetailPage() {
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-[#3b4563] truncate">{service?.name ?? ''}</h1>
+              <h1 className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] truncate">{service?.name ?? ''}</h1>
               <Badge className={`text-[10px] font-([--font-mono]) px-2 py-0.5 rounded-full border ${statusBg}`}>
                 {service?.status?.toUpperCase() ?? 'UNKNOWN'}
               </Badge>
@@ -234,10 +234,10 @@ export function ServiceDetailPage() {
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-white border-[#fda4af]/20 rounded-2xl">
+              <DialogContent className="bg-white dark:bg-[#0a161e] border-[#fda4af]/20 dark:border-[#fda4af]/15 rounded-2xl">
                 <DialogHeader>
                   <DialogTitle className="text-[#e11d48]">Servisi Sil</DialogTitle>
-                  <DialogDescription className="text-[#7c8db5]">
+                  <DialogDescription className="text-[#7c8db5] dark:text-[#527a8a]">
                     <strong>{service?.name}</strong> servisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
                   </DialogDescription>
                 </DialogHeader>
@@ -255,7 +255,7 @@ export function ServiceDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* CPU */}
-          <Card className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl overflow-hidden">
+          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-[#39c5bb]" />
@@ -267,10 +267,10 @@ export function ServiceDetailPage() {
                 </span>
               )}
             </div>
-            <p className="text-xl font-bold text-[#3b4563] mb-2">
+            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
               {latestMetric ? `${latestMetric.cpu_percent?.toFixed(1)}%` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
               <motion.div
                 className={`h-full rounded-full ${!latestMetric ? "w-0" : (latestMetric.cpu_percent ?? 0) > 80 ? "bg-[#fb7185]" : (latestMetric.cpu_percent ?? 0) > 60 ? "bg-[#fbbf24]" : "bg-[#39c5bb]"}`}
                 initial={{ width: 0 }}
@@ -280,17 +280,17 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Memory */}
-          <Card className="p-4 bg-white/80 border-[#93c5fd]/10 rounded-xl overflow-hidden">
+          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 dark:border-[#00b4d8]/8 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <HardDrive className="w-3.5 h-3.5 text-[#93c5fd]" />
                 <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Memory</span>
               </div>
             </div>
-            <p className="text-xl font-bold text-[#3b4563] mb-2">
+            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
               {latestMetric ? `${latestMetric.memory_used_mb?.toFixed(0)} MB` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-[#93c5fd]"
                 initial={{ width: 0 }}
@@ -300,7 +300,7 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Latency */}
-          <Card className="p-4 bg-white/80 border-[#c4b5fd]/10 rounded-xl overflow-hidden">
+          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-[#c4b5fd]" />
@@ -312,10 +312,10 @@ export function ServiceDetailPage() {
                 </span>
               )}
             </div>
-            <p className="text-xl font-bold text-[#3b4563] mb-2">
+            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
               {latestMetric ? `${latestMetric.latency_ms?.toFixed(0)} ms` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
               <motion.div
                 className={`h-full rounded-full ${!latestMetric ? "w-0" : (latestMetric.latency_ms ?? 0) > 500 ? "bg-[#fb7185]" : (latestMetric.latency_ms ?? 0) > 200 ? "bg-[#fbbf24]" : "bg-[#c4b5fd]"}`}
                 initial={{ width: 0 }}
@@ -325,17 +325,17 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Uptime */}
-          <Card className="p-4 bg-white/80 border-[#34d399]/10 rounded-xl overflow-hidden">
+          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#34d399]/10 dark:border-[#34d399]/8 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-[#34d399]" />
                 <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Uptime</span>
               </div>
             </div>
-            <p className="text-xl font-bold text-[#3b4563] mb-2">
+            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
               {uptime ? `${uptime.uptime_percent.toFixed(1)}%` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
               <motion.div
                 className={`h-full rounded-full ${!uptime ? "w-0" : uptime.uptime_percent >= 99 ? "bg-[#34d399]" : uptime.uptime_percent >= 95 ? "bg-[#fbbf24]" : "bg-[#fb7185]"}`}
                 initial={{ width: 0 }}
@@ -351,7 +351,7 @@ export function ServiceDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
         <Tabs defaultValue="metrics" className="space-y-4">
           <div className="flex items-center justify-between">
-            <TabsList className="bg-white/80 border border-[#39c5bb]/10 rounded-xl p-1">
+            <TabsList className="bg-white/80 dark:bg-[#0d1c24]/85 border border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl p-1">
               <TabsTrigger value="metrics" className="rounded-lg text-xs data-[state=active]:bg-[#39c5bb]/10 data-[state=active]:text-[#2da89e]">
                 <TrendingUp className="w-3 h-3 mr-1" /> Metrics
               </TabsTrigger>
@@ -375,7 +375,7 @@ export function ServiceDetailPage() {
                   className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
                     metricsDuration === d
                       ? "bg-[#39c5bb]/15 text-[#2da89e] border border-[#39c5bb]/20"
-                      : "text-[#7c8db5] hover:bg-[#f5f8ff] border border-transparent"
+                      : "text-[#7c8db5] dark:text-[#527a8a] hover:bg-[#f5f8ff] dark:hover:bg-[#0f1e28] border border-transparent"
                   }`}
                 >
                   {d}
@@ -387,18 +387,18 @@ export function ServiceDetailPage() {
           {/* Metrics Tab */}
           <TabsContent value="metrics" className="space-y-4">
             {metricsLoading ? (
-              <Card className="p-8 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+              <Card className="p-8 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
                 <div className="h-64 bg-[#39c5bb]/5 rounded-lg" />
               </Card>
             ) : chartData.length === 0 ? (
-              <Card className="p-12 bg-white/80 border-[#39c5bb]/10 rounded-xl text-center">
+              <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl text-center">
                 <Activity className="w-10 h-10 text-[#b0bdd5] mx-auto mb-3" />
                 <p className="text-sm text-[#7c8db5]">Bu zaman aralığında metrik verisi yok</p>
               </Card>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* CPU Chart */}
-                <Card className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl">
+                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl">
                   <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <Cpu className="w-3 h-3 text-[#39c5bb]" /> CPU Usage (%)
                   </h3>
@@ -420,7 +420,7 @@ export function ServiceDetailPage() {
                 </Card>
 
                 {/* Memory Chart */}
-                <Card className="p-4 bg-white/80 border-[#93c5fd]/10 rounded-xl">
+                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 dark:border-[#00b4d8]/8 rounded-xl">
                   <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <HardDrive className="w-3 h-3 text-[#93c5fd]" /> Memory (MB)
                   </h3>
@@ -442,7 +442,7 @@ export function ServiceDetailPage() {
                 </Card>
 
                 {/* Latency Chart */}
-                <Card className="p-4 bg-white/80 border-[#c4b5fd]/10 rounded-xl">
+                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl">
                   <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <Clock className="w-3 h-3 text-[#c4b5fd]" /> Latency (ms)
                   </h3>
@@ -464,7 +464,7 @@ export function ServiceDetailPage() {
                 </Card>
 
                 {/* Error Rate Chart */}
-                <Card className="p-4 bg-white/80 border-[#fda4af]/10 rounded-xl">
+                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#fda4af]/10 dark:border-[#fda4af]/8 rounded-xl">
                   <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <Zap className="w-3 h-3 text-[#fda4af]" /> Error Rate (%)
                   </h3>
@@ -491,14 +491,14 @@ export function ServiceDetailPage() {
           {/* Alerts Tab */}
           <TabsContent value="alerts" className="space-y-3">
             {alerts.length === 0 ? (
-              <Card className="p-12 bg-white/80 border-[#39c5bb]/10 rounded-xl text-center">
+              <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl text-center">
                 <Shield className="w-10 h-10 text-[#34d399] mx-auto mb-3" />
                 <p className="text-sm text-[#7c8db5]">Aktif alert yok — tüm sistemler çalışıyor</p>
               </Card>
             ) : (
               alerts.map((alert, index) => (
                 <motion.div key={alert.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}>
-                  <Card className={`p-4 bg-white/80 border rounded-xl ${
+                  <Card className={`p-4 bg-white/80 dark:bg-[#0d1c24]/85 border rounded-xl ${
                     alert.severity === "crit" ? "border-[#fda4af]/30" :
                     alert.severity === "warn" ? "border-[#fbbf24]/25" :
                     "border-[#93c5fd]/20"
@@ -521,7 +521,7 @@ export function ServiceDetailPage() {
                             </Badge>
                             <span className="text-[10px] text-[#b0bdd5]">{alert.type}</span>
                           </div>
-                          <p className="text-xs text-[#3b4563]">{alert.message}</p>
+                          <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{alert.message}</p>
                           <p className="text-[10px] text-[#b0bdd5] mt-1">
                             {new Date(alert.triggered_at).toLocaleString("tr-TR")}
                           </p>
@@ -614,11 +614,11 @@ export function ServiceDetailPage() {
 
           {/* AI Tab */}
           <TabsContent value="ai" className="space-y-4">
-            <Card className="p-6 bg-white/80 border-[#c4b5fd]/10 rounded-xl">
+            <Card className="p-6 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#c4b5fd]" />
-                  <h3 className="text-sm font-semibold text-[#3b4563]">AI Analiz</h3>
+                  <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff]">AI Analiz</h3>
                 </div>
                 <Button
                   onClick={handleAnalyze}
@@ -639,14 +639,14 @@ export function ServiceDetailPage() {
 
               {analysisResult ? (
                 <div className="space-y-4">
-                  <div className="p-4 bg-[#f5f8ff] rounded-xl border border-[#c4b5fd]/10">
+                  <div className="p-4 bg-[#f5f8ff] dark:bg-[#0f1e28] rounded-xl border border-[#c4b5fd]/10 dark:border-[#a78bfa]/10">
                     <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Özet</h4>
-                    <p className="text-sm text-[#3b4563]">{analysisResult.summary}</p>
+                    <p className="text-sm text-[#3b4563] dark:text-[#d0f4ff]">{analysisResult.summary}</p>
                   </div>
                   {analysisResult.root_cause && (
                     <div className="p-4 bg-[#fda4af]/5 rounded-xl border border-[#fda4af]/10">
                       <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Kök Neden</h4>
-                      <p className="text-sm text-[#3b4563]">{analysisResult.root_cause}</p>
+                      <p className="text-sm text-[#3b4563] dark:text-[#d0f4ff]">{analysisResult.root_cause}</p>
                     </div>
                   )}
                   {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
@@ -662,7 +662,7 @@ export function ServiceDetailPage() {
                             }`}>
                               {rec.priority}
                             </Badge>
-                            <span className="text-xs text-[#3b4563]">{rec.action}</span>
+                            <span className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{rec.action}</span>
                           </li>
                         ))}
                       </ul>

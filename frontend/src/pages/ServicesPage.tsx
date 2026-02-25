@@ -105,37 +105,37 @@ export function ServicesPage() {
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Service
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-125 bg-white border-[#39c5bb]/15 rounded-2xl">
+            <DialogContent className="sm:max-w-125 bg-white dark:bg-[#0a161e] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl">
               <DialogHeader>
-                <DialogTitle className="text-[#39c5bb]">New Service</DialogTitle>
-                <DialogDescription className="text-[#7c8db5]">Add a new microservice to monitor</DialogDescription>
+                <DialogTitle className="text-[#00b4d8] dark:text-[#00e6ff]">New Service</DialogTitle>
+                <DialogDescription className="text-[#7c8db5] dark:text-[#527a8a]">Add a new microservice to monitor</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label className="text-[#3b4563] text-xs">Service Name *</Label>
-                  <Input placeholder="payment-service" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                  <Label className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Service Name *</Label>
+                  <Input placeholder="payment-service" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                 </div>
                 <div className="grid gap-2">
-                  <Label className="text-[#3b4563] text-xs">Host / IP *</Label>
-                  <Input placeholder="192.168.1.42" value={newService.host} onChange={(e) => setNewService({ ...newService, host: e.target.value })} className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                  <Label className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Host / IP *</Label>
+                  <Input placeholder="192.168.1.42" value={newService.host} onChange={(e) => setNewService({ ...newService, host: e.target.value })} className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label className="text-[#3b4563] text-xs">Port *</Label>
-                    <Input type="number" placeholder="8080" value={newService.port} onChange={(e) => setNewService({ ...newService, port: parseInt(e.target.value) || 0 })} className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                    <Label className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Port *</Label>
+                    <Input type="number" placeholder="8080" value={newService.port} onChange={(e) => setNewService({ ...newService, port: parseInt(e.target.value) || 0 })} className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[#3b4563] text-xs">Health Endpoint *</Label>
-                    <Input placeholder="/health" value={newService.health_endpoint} onChange={(e) => setNewService({ ...newService, health_endpoint: e.target.value })} className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                    <Label className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Health Endpoint *</Label>
+                    <Input placeholder="/health" value={newService.health_endpoint} onChange={(e) => setNewService({ ...newService, health_endpoint: e.target.value })} className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label className="text-[#3b4563] text-xs">Poll Interval (seconds)</Label>
-                  <Input type="number" placeholder="10" value={newService.poll_interval_sec} onChange={(e) => setNewService({ ...newService, poll_interval_sec: parseInt(e.target.value) || 10 })} className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                  <Label className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Poll Interval (seconds)</Label>
+                  <Input type="number" placeholder="10" value={newService.poll_interval_sec} onChange={(e) => setNewService({ ...newService, poll_interval_sec: parseInt(e.target.value) || 10 })} className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddOpen(false)} className="border-[#39c5bb]/20 text-[#3b4563] rounded-xl">Cancel</Button>
+                <Button variant="outline" onClick={() => setIsAddOpen(false)} className="border-[#39c5bb]/20 dark:border-[#00e6ff]/15 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl">Cancel</Button>
                 <Button onClick={handleCreate} disabled={!newService.name || !newService.host} className="bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-xl">Deploy</Button>
               </DialogFooter>
             </DialogContent>
@@ -145,7 +145,7 @@ export function ServicesPage() {
 
       {/* Search & Filter Bar */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-        <Card className="bg-white/80 backdrop-blur-sm border-[#39c5bb]/10 rounded-xl p-3">
+        <Card className="bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl p-3">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
             <div className="relative flex-1">
@@ -154,7 +154,7 @@ export function ServicesPage() {
                 placeholder="Search services..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-[#f5f8ff] border-[#39c5bb]/10 text-[#3b4563] rounded-lg text-xs h-9"
+                className="pl-9 bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/10 dark:border-[#00e6ff]/10 text-[#3b4563] dark:text-[#d0f4ff] rounded-lg text-xs h-9"
               />
             </div>
 
@@ -171,7 +171,7 @@ export function ServicesPage() {
                         s === "up" ? "bg-[#34d399]/15 text-[#059669] border border-[#34d399]/20" :
                         s === "degraded" ? "bg-[#fbbf24]/15 text-[#d97706] border border-[#fbbf24]/20" :
                         "bg-[#fda4af]/15 text-[#e11d48] border border-[#fda4af]/20"
-                      : "text-[#7c8db5] hover:bg-[#f5f8ff] border border-transparent"
+                      : "text-[#7c8db5] dark:text-[#527a8a] hover:bg-[#f5f8ff] dark:hover:bg-[#0f1e28] border border-transparent"
                   }`}
                 >
                   {s === "all" ? `All (${statusCounts.all})` :
@@ -205,18 +205,18 @@ export function ServicesPage() {
       {isLoading ? (
         <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" : "space-y-3"}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+            <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
               <div className="h-5 w-40 bg-[#39c5bb]/10 rounded mb-3" />
               <div className="h-3 w-28 bg-[#39c5bb]/10 rounded" />
             </Card>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-12 bg-white/80 border-[#39c5bb]/10 rounded-xl text-center">
+        <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl text-center">
           <div className="w-16 h-16 rounded-2xl bg-[#39c5bb]/8 flex items-center justify-center mx-auto mb-4">
             <Server className="w-8 h-8 text-[#39c5bb]/40" />
           </div>
-          <p className="text-sm font-medium text-[#3b4563] mb-1">
+          <p className="text-sm font-medium text-[#3b4563] dark:text-[#d0f4ff] mb-1">
             {services.length === 0 ? "No services added yet" : "No services match your filter"}
           </p>
           <p className="text-xs text-[#b0bdd5]">
@@ -244,7 +244,7 @@ export function ServicesPage() {
                   layout
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className={`relative bg-white/80 backdrop-blur-sm border ${colors.border} rounded-xl p-5 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden`}>
+                    <Card className={`relative bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${colors.border} rounded-xl p-5 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden`}>
                       {service.status === "up" && (
                         <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/40 to-transparent" />
                       )}
@@ -260,7 +260,7 @@ export function ServicesPage() {
                             </div>
                           </div>
                           <div className="min-w-0">
-                            <h3 className="text-sm font-semibold text-[#3b4563] truncate group-hover:text-[#2a3350] transition-colors">
+                            <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff] truncate group-hover:text-[#2a3350] dark:group-hover:text-white transition-colors">
                               {service.name}
                             </h3>
                             <p className="text-[10px] text-[#b0bdd5] font-(--font-mono) truncate">
@@ -306,13 +306,13 @@ export function ServicesPage() {
                   layout
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className={`bg-white/80 border ${colors.border} rounded-xl px-4 py-3 transition-all duration-200 group-hover:shadow-sm`}>
+                    <Card className={`bg-white/80 dark:bg-[#0d1c24]/85 border ${colors.border} rounded-xl px-4 py-3 transition-all duration-200 group-hover:shadow-sm`}>
                       <div className="flex items-center gap-4">
                         <div className="relative shrink-0">
                           <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
                           {service.status === "up" && <div className="absolute inset-0 w-2 h-2 rounded-full bg-[#34d399] animate-pulse-ring" />}
                         </div>
-                        <span className="text-sm font-semibold text-[#3b4563] w-40 truncate group-hover:text-[#2a3350] transition-colors">{service.name}</span>
+                        <span className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff] w-40 truncate group-hover:text-[#2a3350] dark:group-hover:text-white transition-colors">{service.name}</span>
                         <span className="text-xs text-[#b0bdd5] font-(--font-mono) flex-1 truncate">{service.host}:{service.port}</span>
                         <span className="text-[10px] text-[#b0bdd5] hidden sm:flex items-center gap-1">
                           <Clock className="w-3 h-3" />{service.poll_interval_sec}s
