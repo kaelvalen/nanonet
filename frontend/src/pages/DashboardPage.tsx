@@ -229,7 +229,7 @@ export function DashboardPage() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex items-center gap-4 bg-white/60 backdrop-blur-sm border border-[#39c5bb]/15 rounded-2xl px-5 py-3"
+            className="flex items-center gap-4 bg-white/60 dark:bg-[#0d1c24]/80 backdrop-blur-sm border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl px-5 py-3"
           >
             <div className="relative flex items-center justify-center">
               <UptimeRing percent={healthPercent} size={64} />
@@ -238,8 +238,8 @@ export function DashboardPage() {
               </span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[#3b4563]">System Health</p>
-              <p className="text-[10px] text-[#7c8db5] mt-0.5">{activeServices} of {totalServices} operational</p>
+              <p className="text-xs font-semibold text-[#3b4563] dark:text-[#d0f4ff]">System Health</p>
+              <p className="text-[10px] text-[#7c8db5] dark:text-[#527a8a] mt-0.5">{activeServices} of {totalServices} operational</p>
             </div>
           </motion.div>
         )}
@@ -260,7 +260,7 @@ export function DashboardPage() {
             transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
             className="group relative"
           >
-            <Card className={`p-4 bg-white/80 backdrop-blur-sm border ${stat.border} rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden`}>
+            <Card className={`p-4 bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${stat.border} rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden`}>
               <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-current to-transparent opacity-20" style={{ color: stat.iconColor.replace("text-", "") }} />
               <div className="flex items-start justify-between mb-3">
                 <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
@@ -270,8 +270,8 @@ export function DashboardPage() {
                   <AnimatedCounter value={stat.value} />
                 </span>
               </div>
-              <p className="text-[10px] text-[#7c8db5] uppercase tracking-wider mb-2">{stat.label}</p>
-              <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+              <p className="text-[10px] text-[#7c8db5] dark:text-[#527a8a] uppercase tracking-wider mb-2">{stat.label}</p>
+              <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
                 <motion.div
                   className={`h-full rounded-full ${stat.barColor}`}
                   initial={{ width: 0 }}
@@ -308,7 +308,7 @@ export function DashboardPage() {
               whileHover={{ y: -2 }}
             >
               <Link to={card.to} className="block group">
-                <Card className={`relative bg-white/80 backdrop-blur-sm border ${card.borderColor} rounded-2xl p-5 transition-all duration-300 overflow-hidden shadow-sm group-hover:shadow-lg`}>
+                <Card className={`relative bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${card.borderColor} rounded-2xl p-5 transition-all duration-300 overflow-hidden shadow-sm group-hover:shadow-lg`}>
                   <div className={`absolute inset-0 bg-linear-to-br ${card.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                   <div className={`absolute inset-x-0 top-0 h-0.5 bg-linear-to-r ${card.glowColor} opacity-0 group-hover:opacity-60 transition-opacity duration-300`} />
 
@@ -321,12 +321,12 @@ export function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-[#3b4563] group-hover:text-[#2a3350] transition-colors">
+                        <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff] group-hover:text-[#2a3350] dark:group-hover:text-white transition-colors">
                           {card.label}
                         </h3>
-                        <ArrowRight className="w-4 h-4 text-[#b0bdd5] group-hover:text-[#3b4563] group-hover:translate-x-1 transition-all shrink-0" />
+                        <ArrowRight className="w-4 h-4 text-[#b0bdd5] dark:text-[#3a6070] group-hover:text-[#3b4563] dark:group-hover:text-[#d0f4ff] group-hover:translate-x-1 transition-all shrink-0" />
                       </div>
-                      <p className="text-xs text-[#7c8db5] mt-0.5 truncate">{card.description}</p>
+                      <p className="text-xs text-[#7c8db5] dark:text-[#527a8a] mt-0.5 truncate">{card.description}</p>
                       {card.pulse && (
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <div className="w-1.5 h-1.5 bg-[#fda4af] rounded-full animate-pulse" />
@@ -359,41 +359,41 @@ export function DashboardPage() {
                   <Plus className="w-3 h-3 mr-1" /> Add Service
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-125 bg-white border-[#39c5bb]/15 rounded-2xl">
+              <DialogContent className="sm:max-w-125 bg-white dark:bg-[#0a161e] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl">
                 <DialogHeader>
-                  <DialogTitle className="text-[#39c5bb]">New Service</DialogTitle>
-                  <DialogDescription className="text-[#7c8db5]">Add a new microservice to monitor</DialogDescription>
+                  <DialogTitle className="text-[#00b4d8] dark:text-[#00e6ff]">New Service</DialogTitle>
+                  <DialogDescription className="text-[#7c8db5] dark:text-[#527a8a]">Add a new microservice to monitor</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="name" className="text-[#3b4563] text-xs">Service Name *</Label>
+                    <Label htmlFor="name" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Service Name *</Label>
                     <Input id="name" placeholder="payment-service" value={newService.name}
                       onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                      className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                      className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="host" className="text-[#3b4563] text-xs">Host / IP *</Label>
+                    <Label htmlFor="host" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Host / IP *</Label>
                     <Input id="host" placeholder="192.168.1.42" value={newService.host}
                       onChange={(e) => setNewService({ ...newService, host: e.target.value })}
-                      className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                      className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="port" className="text-[#3b4563] text-xs">Port *</Label>
+                      <Label htmlFor="port" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Port *</Label>
                       <Input id="port" placeholder="8080" type="number" value={newService.port}
                         onChange={(e) => setNewService({ ...newService, port: parseInt(e.target.value) || 0 })}
-                        className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                        className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="endpoint" className="text-[#3b4563] text-xs">Health Endpoint *</Label>
+                      <Label htmlFor="endpoint" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Health Endpoint *</Label>
                       <Input id="endpoint" placeholder="/health" value={newService.health_endpoint}
                         onChange={(e) => setNewService({ ...newService, health_endpoint: e.target.value })}
-                        className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
+                        className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="border-[#39c5bb]/20 text-[#3b4563] rounded-xl">Cancel</Button>
+                  <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="border-[#39c5bb]/20 dark:border-[#00e6ff]/15 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl">Cancel</Button>
                   <Button onClick={handleCreateService} disabled={!newService.name || !newService.host}
                     className="bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-xl">Deploy</Button>
                 </DialogFooter>
@@ -408,7 +408,7 @@ export function DashboardPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+              <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-9 h-9 rounded-lg bg-[#39c5bb]/10" />
                   <div className="flex-1">
@@ -421,12 +421,12 @@ export function DashboardPage() {
             ))}
           </div>
         ) : services.length === 0 ? (
-          <Card className="p-10 bg-white/80 border-[#39c5bb]/15 rounded-xl text-center">
+          <Card className="p-10 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-xl text-center">
             <div className="w-14 h-14 rounded-2xl bg-[#39c5bb]/8 flex items-center justify-center mx-auto mb-3">
               <Server className="w-7 h-7 text-[#39c5bb]/40" />
             </div>
-            <p className="text-sm font-medium text-[#3b4563] mb-1">No services yet</p>
-            <p className="text-xs text-[#b0bdd5]">Click "Add Service" above to get started</p>
+            <p className="text-sm font-medium text-[#3b4563] dark:text-[#d0f4ff] mb-1">No services yet</p>
+            <p className="text-xs text-[#b0bdd5] dark:text-[#3a6070]">Click "Add Service" above to get started</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -446,7 +446,7 @@ export function DashboardPage() {
                   whileHover={{ y: -2 }}
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className={`relative bg-white/80 backdrop-blur-sm border ${cardBorder} rounded-xl p-4 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden`}>
+                    <Card className={`relative bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${cardBorder} rounded-xl p-4 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden`}>
                       {service.status === "up" && (
                         <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/30 to-transparent" />
                       )}
@@ -460,15 +460,15 @@ export function DashboardPage() {
                               <div className={`w-2 h-2 rounded-full ${statusDot}`} />
                               {service.status === "up" && <div className="absolute inset-0 w-2 h-2 bg-[#34d399] rounded-full animate-pulse-ring" />}
                             </div>
-                            <h3 className="text-xs font-(--font-mono) text-[#3b4563] truncate group-hover:text-[#2a3350] transition-colors">
+                            <h3 className="text-xs font-(--font-mono) text-[#3b4563] dark:text-[#d0f4ff] truncate group-hover:text-[#2a3350] dark:group-hover:text-white transition-colors">
                               {service.name}
                             </h3>
                           </div>
                           <div className="flex items-center justify-between mt-1">
-                            <p className="text-[10px] text-[#b0bdd5] font-(--font-mono)">{service.host}:{service.port}</p>
+                            <p className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070] font-(--font-mono)">{service.host}:{service.port}</p>
                             <div className="flex items-center gap-1">
                               <Clock className="w-2.5 h-2.5 text-[#b0bdd5]" />
-                              <span className="text-[10px] text-[#b0bdd5]">{service.poll_interval_sec}s</span>
+                              <span className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070]">{service.poll_interval_sec}s</span>
                             </div>
                           </div>
                         </div>
@@ -488,7 +488,7 @@ export function DashboardPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.9 }}
-        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-[10px] text-[#b0bdd5]"
+        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-[10px] text-[#b0bdd5] dark:text-[#3a6070]"
       >
         <span className="flex items-center gap-1.5">
           <Shield className="w-3 h-3 text-[#34d399]" />

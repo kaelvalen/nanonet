@@ -78,12 +78,12 @@ export function AIInsightsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
-              <SelectTrigger className="w-48 bg-white/80 border-[#c4b5fd]/15 text-[#3b4563] rounded-xl text-xs h-9">
+              <SelectTrigger className="w-48 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/15 dark:border-[#a78bfa]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl text-xs h-9">
                 <SelectValue placeholder="Select service..." />
               </SelectTrigger>
-              <SelectContent className="bg-white border-[#c4b5fd]/15 rounded-xl">
+              <SelectContent className="bg-white dark:bg-[#0a161e] border-[#c4b5fd]/15 dark:border-[#a78bfa]/12 rounded-xl">
                 {services.map((s) => (
-                  <SelectItem key={s.id} value={s.id} className="text-xs text-[#3b4563]">{s.name}</SelectItem>
+                  <SelectItem key={s.id} value={s.id} className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -103,7 +103,7 @@ export function AIInsightsPage() {
       {/* Analyzing skeleton */}
       {analyzeLoading && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <Card className="bg-white/80 border-[#c4b5fd]/15 rounded-xl p-5 space-y-3">
+          <Card className="bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/15 dark:border-[#a78bfa]/12 rounded-xl p-5 space-y-3">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-9 h-9 rounded-xl bg-[#c4b5fd]/15 flex items-center justify-center">
                 <Brain className="w-4.5 h-4.5 text-[#c4b5fd] animate-pulse" />
@@ -123,7 +123,7 @@ export function AIInsightsPage() {
       {/* Live Analysis Result */}
       {analysisResult && !analyzeLoading && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <Card className="bg-white/80 border-[#c4b5fd]/20 rounded-xl overflow-hidden shadow-sm">
+          <Card className="bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/20 dark:border-[#a78bfa]/15 rounded-xl overflow-hidden shadow-sm">
             <div className="h-1 bg-linear-to-r from-[#c4b5fd] via-[#93c5fd] to-[#39c5bb]" />
             <div className="p-5 space-y-4">
               {/* Header row */}
@@ -132,8 +132,8 @@ export function AIInsightsPage() {
                   <Brain className="w-5 h-5 text-[#c4b5fd]" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-[#3b4563]">Live Analysis Result</h3>
-                  <p className="text-[10px] text-[#b0bdd5]">Last 30 minutes analyzed</p>
+                  <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff]">Live Analysis Result</h3>
+                  <p className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070]">Last 30 minutes analyzed</p>
                 </div>
                 {analysisResult.confidence !== undefined && (
                   <div className="flex items-center gap-2 shrink-0">
@@ -147,7 +147,7 @@ export function AIInsightsPage() {
                       <span className="absolute text-[10px] font-bold text-[#7c3aed]">{confPct}%</span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium text-[#3b4563]">Confidence</p>
+                      <p className="text-[10px] font-medium text-[#3b4563] dark:text-[#d0f4ff]">Confidence</p>
                       <p className="text-[9px] text-[#b0bdd5]">{confPct >= 80 ? "High" : confPct >= 60 ? "Medium" : "Low"}</p>
                     </div>
                   </div>
@@ -155,12 +155,12 @@ export function AIInsightsPage() {
               </div>
 
               {/* Summary */}
-              <div className="p-4 bg-[#f5f8ff] rounded-xl border border-[#c4b5fd]/10">
+              <div className="p-4 bg-[#f5f8ff] dark:bg-[#0f1e28] rounded-xl border border-[#c4b5fd]/10 dark:border-[#a78bfa]/10">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Activity className="w-3 h-3 text-[#c4b5fd]" />
                   <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Summary</span>
                 </div>
-                <p className="text-xs text-[#3b4563] leading-relaxed">{analysisResult.summary}</p>
+                <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff] leading-relaxed">{analysisResult.summary}</p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -171,7 +171,7 @@ export function AIInsightsPage() {
                       <Target className="w-3 h-3 text-[#fda4af]" />
                       <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Root Cause</span>
                     </div>
-                    <p className="text-xs text-[#3b4563] leading-relaxed">{analysisResult.root_cause}</p>
+                    <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff] leading-relaxed">{analysisResult.root_cause}</p>
                   </div>
                 )}
 
@@ -190,7 +190,7 @@ export function AIInsightsPage() {
                             : rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706] border-[#fbbf24]/20"
                             : "bg-[#39c5bb]/15 text-[#2da89e] border-[#39c5bb]/20"
                           }`}>{rec.priority}</Badge>
-                          <span className="text-xs text-[#3b4563]">{rec.action}</span>
+                          <span className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{rec.action}</span>
                         </li>
                       ))}
                     </ul>
@@ -213,22 +213,22 @@ export function AIInsightsPage() {
         </div>
 
         {!selectedServiceId ? (
-          <Card className="p-16 bg-white/80 border-[#c4b5fd]/10 rounded-xl text-center">
+          <Card className="p-16 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl text-center">
             <Sparkles className="w-14 h-14 text-[#c4b5fd]/20 mx-auto mb-4" />
-            <h3 className="text-sm font-semibold text-[#3b4563] mb-1">Servis Seçin</h3>
+            <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff] mb-1">Servis Seçin</h3>
             <p className="text-xs text-[#7c8db5]">AI iç görülerini görüntülemek için yukarıdan bir servis seçin</p>
           </Card>
         ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-4 bg-white/80 border-[#c4b5fd]/10 rounded-xl animate-pulse">
+              <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl animate-pulse">
                 <div className="h-4 w-60 bg-[#c4b5fd]/10 rounded mb-2" />
                 <div className="h-3 w-40 bg-[#c4b5fd]/10 rounded" />
               </Card>
             ))}
           </div>
         ) : insights.length === 0 ? (
-          <Card className="p-12 bg-white/80 border-[#c4b5fd]/10 rounded-xl text-center">
+          <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl text-center">
             <Brain className="w-10 h-10 text-[#c4b5fd]/20 mx-auto mb-3" />
             <p className="text-sm text-[#7c8db5]">Bu servis için henüz AI iç görüsü yok</p>
             <p className="text-xs text-[#b0bdd5] mt-1">Yukarıdaki "Analyze" butonuyla analiz başlatın</p>
@@ -242,7 +242,7 @@ export function AIInsightsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
-                <Card className="bg-white/80 border-[#c4b5fd]/10 rounded-xl overflow-hidden transition-all duration-200 hover:border-[#c4b5fd]/25">
+                <Card className="bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl overflow-hidden transition-all duration-200 hover:border-[#c4b5fd]/25 dark:hover:border-[#a78bfa]/20">
                   <button
                     className="w-full p-4 text-left"
                     onClick={() => setExpandedInsight(expandedInsight === insight.id ? null : insight.id)}
@@ -253,7 +253,7 @@ export function AIInsightsPage() {
                           <Zap className="w-4 h-4 text-[#c4b5fd]" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-[#3b4563] font-medium leading-relaxed line-clamp-2">{insight.summary}</p>
+                          <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff] font-medium leading-relaxed line-clamp-2">{insight.summary}</p>
                           <div className="flex items-center gap-3 mt-1.5 text-[10px] text-[#b0bdd5]">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
@@ -287,7 +287,7 @@ export function AIInsightsPage() {
                             <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider flex items-center gap-1 mb-1">
                               <Target className="w-3 h-3 text-[#fda4af]" /> Kök Neden
                             </span>
-                            <p className="text-xs text-[#3b4563]">{insight.root_cause}</p>
+                            <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{insight.root_cause}</p>
                           </div>
                         )}
                         {insight.recommendations && insight.recommendations.length > 0 && (
@@ -305,7 +305,7 @@ export function AIInsightsPage() {
                                   }`}>
                                     {rec.priority}
                                   </Badge>
-                                  <span className="text-[11px] text-[#3b4563]">{rec.action}</span>
+                                  <span className="text-[11px] text-[#3b4563] dark:text-[#d0f4ff]">{rec.action}</span>
                                 </li>
                               ))}
                             </ul>

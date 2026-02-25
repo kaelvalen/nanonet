@@ -21,24 +21,30 @@ export function DashboardLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0f7ff] via-[#f5f0ff] to-[#fdf2f8] text-[#3b4563] relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+      {/* Theme gradient overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ background: "var(--gradient-light)", opacity: 0.45 }}
+      />
+
       {/* Pastel floating shapes background */}
       <MatrixBackground />
 
-      {/* Soft dot pattern overlay */}
+      {/* Dot pattern overlay */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
-          backgroundImage: `radial-gradient(rgba(57, 197, 187, 0.06) 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(rgba(0, 180, 216, 0.07) 1px, transparent 1px)`,
           backgroundSize: "32px 32px",
         }}
       />
 
-      {/* Soft gradient blobs for ambiance */}
+      {/* Ambient gradient blobs */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#39c5bb]/8 rounded-full blur-3xl animate-blob" />
-        <div className="absolute top-1/3 -right-32 w-80 h-80 bg-[#c4b5fd]/10 rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-[#fda4af]/8 rounded-full blur-3xl animate-blob animation-delay-4000" />
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#D0FAFF]/30 rounded-full blur-3xl animate-blob" />
+        <div className="absolute top-1/3 -right-32 w-80 h-80 bg-[#FED7FF]/25 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-[#D0FAFF]/20 rounded-full blur-3xl animate-blob animation-delay-4000" />
       </div>
 
       {/* Floating Status Bar */}
