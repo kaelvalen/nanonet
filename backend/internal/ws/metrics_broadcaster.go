@@ -153,7 +153,7 @@ func (mb *MetricsBroadcaster) broadcastLatestMetrics(ctx context.Context) {
 	}
 
 	for _, svc := range services {
-		latestMetrics, err := mb.metricsRepo.GetHistory(ctx, svc.ID, 1*time.Minute)
+		latestMetrics, err := mb.metricsRepo.GetHistory(ctx, svc.ID, 1*time.Minute, 1)
 		if err != nil || len(latestMetrics) == 0 {
 			continue
 		}

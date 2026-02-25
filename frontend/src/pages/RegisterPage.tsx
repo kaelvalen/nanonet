@@ -23,142 +23,155 @@ export function RegisterPage() {
     register({ email, password });
   };
 
+  const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
+  const strengthLabel = ["", "Weak", "Good", "Strong"][passwordStrength];
+  const strengthColor = ["", "#fb7185", "#fbbf24", "#34d399"][passwordStrength];
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+  const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0f7ff] via-[#f5f0ff] to-[#fdf2f8] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorations */}
+    <div className="min-h-screen bg-linear-to-br from-[#f0f7ff] via-[#f5f0ff] to-[#fdf2f8] flex items-center justify-center p-4 relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#c4b5fd]/10 rounded-full blur-3xl animate-blob" />
-        <div className="absolute top-1/3 -right-32 w-80 h-80 bg-[#39c5bb]/12 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute top-1/3 -right-32 w-80 h-80 bg-[#39c5bb]/10 rounded-full blur-3xl animate-blob animation-delay-2000" />
         <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-[#fda4af]/10 rounded-full blur-3xl animate-blob animation-delay-4000" />
       </div>
-
       <div
         className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          backgroundImage: `radial-gradient(rgba(57, 197, 187, 0.06) 1px, transparent 1px)`,
-          backgroundSize: "32px 32px",
-        }}
+        style={{ backgroundImage: `radial-gradient(rgba(196,181,253,0.05) 1px, transparent 1px)`, backgroundSize: "32px 32px" }}
       />
 
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
-        className="relative z-10 w-full max-w-md"
+        transition={{ duration: 0.5, type: "spring", stiffness: 220, damping: 20 }}
+        className="relative z-10 w-full max-w-sm"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-            className="inline-block"
+            initial={{ scale: 0, rotate: 10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 18 }}
+            className="inline-block mb-4"
           >
-            <div className="w-16 h-16 bg-gradient-to-br from-[#c4b5fd] to-[#93c5fd] rounded-2xl flex items-center justify-center shadow-lg shadow-[#c4b5fd]/20 mx-auto mb-4">
+            <div className="w-16 h-16 bg-linear-to-br from-[#c4b5fd] to-[#93c5fd] rounded-2xl flex items-center justify-center shadow-lg shadow-[#c4b5fd]/25 mx-auto">
               <span className="text-white text-2xl">✦</span>
             </div>
           </motion.div>
-          <h1 className="text-3xl font-bold bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent font-[var(--font-quicksand)]">
+          <motion.h1
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="text-3xl bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent font-(--font-quicksand)"
+          >
             NanoNet
-          </h1>
-          <p className="text-sm text-[#7c8db5] mt-1">Yeni hesap oluşturun</p>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35 }}
+            className="text-sm text-[#7c8db5] mt-1"
+          >
+            Create your account
+          </motion.p>
         </div>
 
-        <Card className="bg-white/80 backdrop-blur-xl border-[#c4b5fd]/15 rounded-2xl shadow-xl shadow-[#c4b5fd]/5 p-8">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-[#3b4563]">Kayıt Ol</h2>
-            <p className="text-xs text-[#7c8db5] mt-1">Platformu kullanmaya başlayın</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email" className="text-[#3b4563] text-xs">
-                E-posta
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@nanonet.dev"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-[#f5f8ff] border-[#c4b5fd]/15 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl"
-                required
-              />
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="bg-white/85 backdrop-blur-xl border-[#c4b5fd]/15 rounded-2xl shadow-2xl shadow-[#c4b5fd]/8 p-8">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-[#3b4563]">Get started</h2>
+              <p className="text-xs text-[#7c8db5] mt-0.5">Fill in the details below</p>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="password" className="text-[#3b4563] text-xs">
-                Şifre
-              </Label>
-              <div className="relative">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="grid gap-2">
+                <Label htmlFor="email" className="text-[#3b4563] text-xs font-medium">Email</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-[#f5f8ff] border-[#c4b5fd]/15 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl pr-10"
+                  id="email" type="email" placeholder="you@nanonet.dev"
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="bg-[#f5f8ff] border-[#c4b5fd]/20 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl focus:border-[#c4b5fd]/50 focus:ring-2 focus:ring-[#c4b5fd]/10 transition-all"
                   required
-                  minLength={6}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7c8db5] hover:text-[#c4b5fd] transition-colors"
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.38 }} className="grid gap-2">
+                <Label htmlFor="password" className="text-[#3b4563] text-xs font-medium">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password" type={showPassword ? "text" : "password"} placeholder="Min. 6 characters"
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                    className="bg-[#f5f8ff] border-[#c4b5fd]/20 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl pr-10 focus:border-[#c4b5fd]/50 focus:ring-2 focus:ring-[#c4b5fd]/10 transition-all"
+                    required minLength={6}
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b0bdd5] hover:text-[#c4b5fd] transition-colors">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {password.length > 0 && (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex gap-1 flex-1">
+                      {[1, 2, 3].map((level) => (
+                        <div key={level} className="h-1 flex-1 rounded-full transition-all duration-300"
+                          style={{ backgroundColor: passwordStrength >= level ? strengthColor : "#e2e8f0" }} />
+                      ))}
+                    </div>
+                    <span className="text-[10px] transition-colors" style={{ color: strengthColor }}>{strengthLabel}</span>
+                  </div>
+                )}
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.46 }} className="grid gap-2">
+                <Label htmlFor="confirm-password" className="text-[#3b4563] text-xs font-medium">Confirm Password</Label>
+                <Input
+                  id="confirm-password" type={showPassword ? "text" : "password"} placeholder="••••••••"
+                  value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`bg-[#f5f8ff] text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl transition-all ${
+                    passwordMismatch ? "border-[#fb7185]/60 focus:ring-[#fb7185]/10"
+                    : passwordsMatch ? "border-[#34d399]/40 focus:ring-[#34d399]/10"
+                    : "border-[#c4b5fd]/20 focus:ring-[#c4b5fd]/10"
+                  } focus:ring-2`}
+                  required
+                />
+                {passwordMismatch && <p className="text-[10px] text-[#fb7185]">Passwords don't match</p>}
+                {passwordsMatch && <p className="text-[10px] text-[#059669]">Passwords match ✓</p>}
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.54 }}>
+                <Button
+                  type="submit"
+                  disabled={isRegistering || passwordMismatch || !email || !password || !confirmPassword}
+                  className="w-full bg-linear-to-r from-[#c4b5fd] to-[#93c5fd] hover:from-[#a78bfa] hover:to-[#60a5fa] text-white rounded-xl h-10 shadow-sm hover:shadow-md transition-all disabled:opacity-60"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+                  {isRegistering ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Creating account...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Create Account
+                    </div>
+                  )}
+                </Button>
+              </motion.div>
+            </form>
 
-            <div className="grid gap-2">
-              <Label htmlFor="confirm-password" className="text-[#3b4563] text-xs">
-                Şifre Tekrar
-              </Label>
-              <Input
-                id="confirm-password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`bg-[#f5f8ff] border-[#c4b5fd]/15 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl ${
-                  confirmPassword && password !== confirmPassword ? "border-[#fb7185]/50" : ""
-                }`}
-                required
-              />
-              {confirmPassword && password !== confirmPassword && (
-                <p className="text-[10px] text-[#fb7185]">Şifreler eşleşmiyor</p>
-              )}
-            </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.62 }} className="mt-6 text-center">
+              <p className="text-xs text-[#7c8db5]">
+                Already have an account?{" "}
+                <Link to="/login" className="text-[#c4b5fd] hover:text-[#a78bfa] font-medium transition-colors">
+                  Sign In
+                </Link>
+              </p>
+            </motion.div>
+          </Card>
+        </motion.div>
 
-            <Button
-              type="submit"
-              disabled={isRegistering || (!!confirmPassword && password !== confirmPassword)}
-              className="w-full bg-linear-to-r from-[#c4b5fd] to-[#93c5fd] hover:from-[#a78bfa] hover:to-[#60a5fa] text-white rounded-xl h-10"
-            >
-              {isRegistering ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Kayıt yapılıyor...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Kayıt Ol
-                </div>
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-xs text-[#7c8db5]">
-              Zaten hesabınız var mı?{" "}
-              <Link to="/login" className="text-[#c4b5fd] hover:text-[#a78bfa] font-medium transition-colors">
-                Giriş Yap
-              </Link>
-            </p>
-          </div>
-        </Card>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.68 }} className="text-center mt-5">
+          <p className="text-[10px] text-[#b0bdd5]">NanoNet v2.0 · Powered by AI</p>
+        </motion.div>
       </motion.div>
     </div>
   );

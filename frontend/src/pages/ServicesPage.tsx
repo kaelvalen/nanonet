@@ -19,16 +19,27 @@ import {
   Server,
   Search,
   Plus,
-  Activity,
   Clock,
   ArrowUpRight,
   Filter,
   LayoutGrid,
   List,
-  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  HelpCircle,
+  Globe,
+  Zap,
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import type { CreateServiceRequest } from "@/types/service";
+
+function StatusIcon({ status }: { status: string }) {
+  if (status === "up") return <CheckCircle2 className="w-3.5 h-3.5 text-[#34d399]" />;
+  if (status === "degraded") return <AlertTriangle className="w-3.5 h-3.5 text-[#fbbf24]" />;
+  if (status === "down") return <XCircle className="w-3.5 h-3.5 text-[#fb7185]" />;
+  return <HelpCircle className="w-3.5 h-3.5 text-[#b0bdd5]" />;
+}
 
 export function ServicesPage() {
   const { services, isLoading, createService, restartService, stopService } = useServices();
@@ -94,7 +105,7 @@ export function ServicesPage() {
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Service
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] bg-white border-[#39c5bb]/15 rounded-2xl">
+            <DialogContent className="sm:max-w-125 bg-white border-[#39c5bb]/15 rounded-2xl">
               <DialogHeader>
                 <DialogTitle className="text-[#39c5bb]">New Service</DialogTitle>
                 <DialogDescription className="text-[#7c8db5]">Add a new microservice to monitor</DialogDescription>
@@ -202,9 +213,14 @@ export function ServicesPage() {
         </div>
       ) : filtered.length === 0 ? (
         <Card className="p-12 bg-white/80 border-[#39c5bb]/10 rounded-xl text-center">
-          <Server className="w-12 h-12 text-[#b0bdd5] mx-auto mb-3" />
-          <p className="text-sm text-[#7c8db5]">
-            {services.length === 0 ? "Henüz servis eklenmemiş" : "Filtreye uygun servis bulunamadı"}
+          <div className="w-16 h-16 rounded-2xl bg-[#39c5bb]/8 flex items-center justify-center mx-auto mb-4">
+            <Server className="w-8 h-8 text-[#39c5bb]/40" />
+          </div>
+          <p className="text-sm font-medium text-[#3b4563] mb-1">
+            {services.length === 0 ? "No services added yet" : "No services match your filter"}
+          </p>
+          <p className="text-xs text-[#b0bdd5]">
+            {services.length === 0 ? 'Click "Add Service" to get started' : "Try adjusting your search or filter criteria"}
           </p>
         </Card>
       ) : viewMode === "grid" ? (
@@ -212,55 +228,60 @@ export function ServicesPage() {
           <AnimatePresence mode="popLayout">
             {filtered.map((service, index) => {
               const colors = statusColor(service.status);
+              const iconBg = service.status === "up" ? "from-[#39c5bb]/10 to-[#a8ede8]/10"
+                : service.status === "degraded" ? "from-[#fbbf24]/10 to-[#fef3c7]/10"
+                : "from-[#fda4af]/10 to-[#ffd1dc]/10";
+              const iconColor = service.status === "up" ? "text-[#39c5bb]"
+                : service.status === "degraded" ? "text-[#fbbf24]" : "text-[#fb7185]";
               return (
                 <motion.div
                   key={service.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3, delay: index * 0.04 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.25, delay: index * 0.04 }}
+                  whileHover={{ y: -2 }}
                   layout
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className={`relative bg-white/80 backdrop-blur-sm border ${colors.border} rounded-xl p-5 transition-all duration-300 group-hover:translate-y-[-2px] shadow-sm group-hover:shadow-md overflow-hidden`}>
+                    <Card className={`relative bg-white/80 backdrop-blur-sm border ${colors.border} rounded-xl p-5 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden`}>
                       {service.status === "up" && (
-                        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/30 to-transparent" />
+                        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/40 to-transparent" />
                       )}
 
                       <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="relative flex-shrink-0">
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center bg-gradient-to-br ${
-                              service.status === "up" ? "from-[#39c5bb]/10 to-[#a8ede8]/10" :
-                              service.status === "degraded" ? "from-[#fbbf24]/10 to-[#fef3c7]/10" :
-                              "from-[#fda4af]/10 to-[#ffd1dc]/10"
-                            }`}>
-                              <Server className={`w-4 h-4 ${
-                                service.status === "up" ? "text-[#39c5bb]" :
-                                service.status === "degraded" ? "text-[#fbbf24]" :
-                                "text-[#fb7185]"
-                              }`} />
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="relative shrink-0">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-linear-to-br ${iconBg}`}>
+                              <Server className={`w-4.5 h-4.5 ${iconColor}`} />
                             </div>
-                            <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${colors.dot}`} />
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${colors.dot} flex items-center justify-center`}>
+                              {service.status === "up" && <div className="absolute inset-0 rounded-full animate-pulse-ring bg-[#34d399]" />}
+                            </div>
                           </div>
                           <div className="min-w-0">
                             <h3 className="text-sm font-semibold text-[#3b4563] truncate group-hover:text-[#2a3350] transition-colors">
                               {service.name}
                             </h3>
-                            <p className="text-[10px] text-[#b0bdd5] font-[var(--font-mono)]">
+                            <p className="text-[10px] text-[#b0bdd5] font-(--font-mono) truncate">
                               {service.host}:{service.port}
                             </p>
                           </div>
                         </div>
-                        <Badge className={`text-[9px] font-[var(--font-mono)] px-1.5 py-0.5 rounded-full border ${colors.badge}`}>
-                          {service.status?.toUpperCase() ?? 'UNKNOWN'}
+                        <Badge className={`text-[9px] font-(--font-mono) px-2 py-0.5 rounded-full border shrink-0 ${colors.badge}`}>
+                          {service.status?.toUpperCase() ?? "UNKNOWN"}
                         </Badge>
                       </div>
 
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#e2e8f0]/50">
-                        <span className="text-[10px] text-[#b0bdd5] flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {service.poll_interval_sec}s interval
-                        </span>
+                      <div className="flex items-center justify-between pt-3 border-t border-[#e2e8f0]/50">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] text-[#b0bdd5] flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {service.poll_interval_sec}s
+                          </span>
+                          <span className="text-[10px] text-[#b0bdd5] flex items-center gap-1">
+                            <Globe className="w-3 h-3" /> {service.health_endpoint}
+                          </span>
+                        </div>
                         <ArrowUpRight className="w-3.5 h-3.5 text-[#b0bdd5] group-hover:text-[#39c5bb] transition-colors" />
                       </div>
                     </Card>
@@ -285,16 +306,21 @@ export function ServicesPage() {
                   layout
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className={`bg-white/80 border ${colors.border} rounded-xl p-3 transition-all duration-200 group-hover:bg-white/95 shadow-sm`}>
+                    <Card className={`bg-white/80 border ${colors.border} rounded-xl px-4 py-3 transition-all duration-200 group-hover:shadow-sm`}>
                       <div className="flex items-center gap-4">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colors.dot}`} />
-                        <span className="text-sm font-semibold text-[#3b4563] w-40 truncate">{service.name}</span>
-                        <span className="text-xs text-[#b0bdd5] font-[var(--font-mono)] flex-1">{service.host}:{service.port}</span>
-                        <span className="text-[10px] text-[#b0bdd5]">{service.poll_interval_sec}s</span>
-                        <Badge className={`text-[9px] font-[var(--font-mono)] px-1.5 py-0.5 rounded-full border ${colors.badge}`}>
-                          {service.status?.toUpperCase() ?? 'UNKNOWN'}
+                        <div className="relative shrink-0">
+                          <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                          {service.status === "up" && <div className="absolute inset-0 w-2 h-2 rounded-full bg-[#34d399] animate-pulse-ring" />}
+                        </div>
+                        <span className="text-sm font-semibold text-[#3b4563] w-40 truncate group-hover:text-[#2a3350] transition-colors">{service.name}</span>
+                        <span className="text-xs text-[#b0bdd5] font-(--font-mono) flex-1 truncate">{service.host}:{service.port}</span>
+                        <span className="text-[10px] text-[#b0bdd5] hidden sm:flex items-center gap-1">
+                          <Clock className="w-3 h-3" />{service.poll_interval_sec}s
+                        </span>
+                        <Badge className={`text-[9px] font-(--font-mono) px-1.5 py-0.5 rounded-full border shrink-0 ${colors.badge}`}>
+                          {service.status?.toUpperCase() ?? "UNKNOWN"}
                         </Badge>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-[#b0bdd5] group-hover:text-[#39c5bb] transition-colors" />
+                        <StatusIcon status={service.status} />
                       </div>
                     </Card>
                   </Link>

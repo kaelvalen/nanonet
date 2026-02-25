@@ -125,6 +125,7 @@ async fn main() -> error::Result<()> {
             let message = json!({
                 "type": "metrics",
                 "agent_id": agent_id,
+                "agent_version": env!("CARGO_PKG_VERSION"),
                 "service_id": service_id,
                 "timestamp": Utc::now().to_rfc3339(),
                 "system": {
@@ -135,6 +136,7 @@ async fn main() -> error::Result<()> {
                 "service": {
                     "status": health.status,
                     "latency_ms": health.latency_ms,
+                    "http_status": health.http_status,
                     "error_rate": error_rate,
                 },
                 "process": {

@@ -59,6 +59,12 @@ export function AIInsightsPage() {
     }
   };
 
+  const confidence = analysisResult?.confidence ?? 0;
+  const confPct = Math.round(confidence * 100);
+  const r = 22;
+  const circ = 2 * Math.PI * r;
+  const confOffset = circ - (confPct / 100) * circ;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -72,54 +78,79 @@ export function AIInsightsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
-              <SelectTrigger className="w-[200px] bg-white/80 border-[#c4b5fd]/15 text-[#3b4563] rounded-xl text-xs h-9">
-                <SelectValue placeholder="Servis seçin..." />
+              <SelectTrigger className="w-48 bg-white/80 border-[#c4b5fd]/15 text-[#3b4563] rounded-xl text-xs h-9">
+                <SelectValue placeholder="Select service..." />
               </SelectTrigger>
               <SelectContent className="bg-white border-[#c4b5fd]/15 rounded-xl">
                 {services.map((s) => (
-                  <SelectItem key={s.id} value={s.id} className="text-xs text-[#3b4563]">
-                    {s.name}
-                  </SelectItem>
+                  <SelectItem key={s.id} value={s.id} className="text-xs text-[#3b4563]">{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Button
               onClick={handleAnalyze}
               disabled={analyzeLoading || !selectedServiceId}
-              className="bg-linear-to-r from-[#c4b5fd] to-[#93c5fd] text-white rounded-xl text-xs h-9"
+              className="bg-linear-to-r from-[#c4b5fd] to-[#93c5fd] text-white rounded-xl text-xs h-9 shadow-sm hover:shadow-md transition-all"
             >
-              {analyzeLoading ? (
-                <>
-                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analyzing...
-                </>
-              ) : (
-                <>
-                  <Brain className="w-3 h-3 mr-1" /> Analyze
-                </>
-              )}
+              {analyzeLoading
+                ? <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analyzing...</>
+                : <><Brain className="w-3 h-3 mr-1" /> Analyze</>}
             </Button>
           </div>
         </div>
       </motion.div>
 
+      {/* Analyzing skeleton */}
+      {analyzeLoading && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <Card className="bg-white/80 border-[#c4b5fd]/15 rounded-xl p-5 space-y-3">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-[#c4b5fd]/15 flex items-center justify-center">
+                <Brain className="w-4.5 h-4.5 text-[#c4b5fd] animate-pulse" />
+              </div>
+              <div>
+                <div className="h-3.5 w-36 bg-[#c4b5fd]/15 rounded animate-pulse mb-1.5" />
+                <div className="h-2.5 w-24 bg-[#c4b5fd]/8 rounded animate-pulse" />
+              </div>
+            </div>
+            {[80, 60, 90, 50].map((w, i) => (
+              <div key={i} className="h-2.5 rounded animate-pulse bg-[#c4b5fd]/10" style={{ width: `${w}%`, animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </Card>
+        </motion.div>
+      )}
+
       {/* Live Analysis Result */}
-      {analysisResult && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <Card className="bg-white/80 border-[#c4b5fd]/15 rounded-xl overflow-hidden">
-            <div className="p-1 bg-linear-to-r from-[#c4b5fd]/20 via-[#93c5fd]/20 to-[#39c5bb]/20" />
+      {analysisResult && !analyzeLoading && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <Card className="bg-white/80 border-[#c4b5fd]/20 rounded-xl overflow-hidden shadow-sm">
+            <div className="h-1 bg-linear-to-r from-[#c4b5fd] via-[#93c5fd] to-[#39c5bb]" />
             <div className="p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#c4b5fd]/20 to-[#93c5fd]/20 flex items-center justify-center">
-                  <Brain className="w-4 h-4 text-[#c4b5fd]" />
+              {/* Header row */}
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#c4b5fd]/15 to-[#93c5fd]/15 flex items-center justify-center shrink-0">
+                  <Brain className="w-5 h-5 text-[#c4b5fd]" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[#3b4563]">Canlı Analiz Sonucu</h3>
-                  <p className="text-[10px] text-[#b0bdd5]">Son 30 dakikalık veriler analiz edildi</p>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-[#3b4563]">Live Analysis Result</h3>
+                  <p className="text-[10px] text-[#b0bdd5]">Last 30 minutes analyzed</p>
                 </div>
                 {analysisResult.confidence !== undefined && (
-                  <Badge className="ml-auto text-[9px] bg-[#c4b5fd]/10 text-[#7c3aed] border border-[#c4b5fd]/20 rounded-full">
-                    Güven: {(analysisResult.confidence * 100).toFixed(0)}%
-                  </Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative flex items-center justify-center">
+                      <svg width="56" height="56" className="-rotate-90">
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="#e2e8f0" strokeWidth="4" />
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="#c4b5fd" strokeWidth="4"
+                          strokeDasharray={circ} strokeDashoffset={confOffset}
+                          strokeLinecap="round" style={{ transition: "stroke-dashoffset 1s ease" }} />
+                      </svg>
+                      <span className="absolute text-[10px] font-bold text-[#7c3aed]">{confPct}%</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-[#3b4563]">Confidence</p>
+                      <p className="text-[9px] text-[#b0bdd5]">{confPct >= 80 ? "High" : confPct >= 60 ? "Medium" : "Low"}</p>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -127,45 +158,45 @@ export function AIInsightsPage() {
               <div className="p-4 bg-[#f5f8ff] rounded-xl border border-[#c4b5fd]/10">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Activity className="w-3 h-3 text-[#c4b5fd]" />
-                  <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Özet</span>
+                  <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Summary</span>
                 </div>
                 <p className="text-xs text-[#3b4563] leading-relaxed">{analysisResult.summary}</p>
               </div>
 
-              {/* Root Cause */}
-              {analysisResult.root_cause && (
-                <div className="p-4 bg-[#fda4af]/5 rounded-xl border border-[#fda4af]/10">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Target className="w-3 h-3 text-[#fda4af]" />
-                    <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Kök Neden</span>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* Root Cause */}
+                {analysisResult.root_cause && (
+                  <div className="p-4 bg-[#fda4af]/5 rounded-xl border border-[#fda4af]/10">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Target className="w-3 h-3 text-[#fda4af]" />
+                      <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Root Cause</span>
+                    </div>
+                    <p className="text-xs text-[#3b4563] leading-relaxed">{analysisResult.root_cause}</p>
                   </div>
-                  <p className="text-xs text-[#3b4563] leading-relaxed">{analysisResult.root_cause}</p>
-                </div>
-              )}
+                )}
 
-              {/* Recommendations */}
-              {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-                <div className="p-4 bg-[#39c5bb]/5 rounded-xl border border-[#39c5bb]/10">
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <Lightbulb className="w-3 h-3 text-[#39c5bb]" />
-                    <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Öneriler</span>
+                {/* Recommendations */}
+                {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
+                  <div className="p-4 bg-[#39c5bb]/5 rounded-xl border border-[#39c5bb]/10">
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <Lightbulb className="w-3 h-3 text-[#39c5bb]" />
+                      <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Recommendations</span>
+                    </div>
+                    <ul className="space-y-2">
+                      {analysisResult.recommendations.map((rec, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Badge className={`text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5 border ${
+                            rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/20"
+                            : rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706] border-[#fbbf24]/20"
+                            : "bg-[#39c5bb]/15 text-[#2da89e] border-[#39c5bb]/20"
+                          }`}>{rec.priority}</Badge>
+                          <span className="text-xs text-[#3b4563]">{rec.action}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="space-y-2">
-                    {analysisResult.recommendations.map((rec, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <Badge className={`text-[9px] px-1.5 py-0 rounded-full flex-shrink-0 mt-0.5 ${
-                          rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48] border border-[#fda4af]/20" :
-                          rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706] border border-[#fbbf24]/20" :
-                          "bg-[#39c5bb]/15 text-[#2da89e] border border-[#39c5bb]/20"
-                        }`}>
-                          {rec.priority}
-                        </Badge>
-                        <span className="text-xs text-[#3b4563]">{rec.action}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </Card>
         </motion.div>
@@ -218,7 +249,7 @@ export function AIInsightsPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#c4b5fd]/10 to-[#93c5fd]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#c4b5fd]/10 to-[#93c5fd]/10 flex items-center justify-center shrink-0 mt-0.5">
                           <Zap className="w-4 h-4 text-[#c4b5fd]" />
                         </div>
                         <div className="min-w-0">
@@ -235,9 +266,9 @@ export function AIInsightsPage() {
                         </div>
                       </div>
                       {expandedInsight === insight.id ? (
-                        <ChevronDown className="w-4 h-4 text-[#b0bdd5] flex-shrink-0" />
+                        <ChevronDown className="w-4 h-4 text-[#b0bdd5] shrink-0" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-[#b0bdd5] flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-[#b0bdd5] shrink-0" />
                       )}
                     </div>
                   </button>
@@ -267,7 +298,7 @@ export function AIInsightsPage() {
                             <ul className="space-y-1.5">
                               {insight.recommendations.map((rec, i) => (
                                 <li key={i} className="flex items-start gap-2">
-                                  <Badge className={`text-[8px] px-1 py-0 rounded-full flex-shrink-0 mt-0.5 ${
+                                  <Badge className={`text-[8px] px-1 py-0 rounded-full shrink-0 mt-0.5 ${
                                     rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48]" :
                                     rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706]" :
                                     "bg-[#39c5bb]/15 text-[#2da89e]"

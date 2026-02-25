@@ -22,8 +22,8 @@ func (s *Service) InsertMetric(ctx context.Context, metric *Metric) error {
 	return s.repo.Insert(ctx, metric)
 }
 
-func (s *Service) GetHistory(ctx context.Context, serviceID uuid.UUID, duration time.Duration) ([]Metric, error) {
-	return s.repo.GetHistory(ctx, serviceID, duration)
+func (s *Service) GetHistory(ctx context.Context, serviceID uuid.UUID, duration time.Duration, limit int) ([]Metric, error) {
+	return s.repo.GetHistory(ctx, serviceID, duration, limit)
 }
 
 func (s *Service) GetAggregated(ctx context.Context, serviceID uuid.UUID, duration time.Duration, bucketSize string) ([]map[string]interface{}, error) {
@@ -31,7 +31,7 @@ func (s *Service) GetAggregated(ctx context.Context, serviceID uuid.UUID, durati
 }
 
 func (s *Service) GetLatestMetric(ctx context.Context, serviceID uuid.UUID) (*Metric, error) {
-	metrics, err := s.repo.GetHistory(ctx, serviceID, 1*time.Minute)
+	metrics, err := s.repo.GetHistory(ctx, serviceID, 1*time.Minute, 1)
 	if err != nil {
 		return nil, err
 	}
