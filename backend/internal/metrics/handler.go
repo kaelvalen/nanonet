@@ -136,7 +136,7 @@ func (h *Handler) GetAggregated(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"data":       metrics,
+		"metrics":    metrics,
 		"duration":   durationStr,
 		"bucket":     bucketSize,
 		"service_id": serviceID,

@@ -1,0 +1,62 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: nanonet-db
+    environment:
+      POSTGRES_DB: nanonet
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: nanonet-backend
+    environment:
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres}@db:5432/nanonet?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-change-me-secret-key-min-32-chars-here!}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      PORT: "8080"
+      FRONTEND_URL: http://localhost:3000
+      POLL_DEFAULT_SEC: "10"
+      WS_MAX_CONNECTIONS: "1000"
+      MIGRATIONS_PATH: /migrations
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - ./backend/migrations:/migrations:ro
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: nanonet-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_URL: /api/v1
+      VITE_WS_URL: ws://localhost:8080/ws
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  go_mod_cache:

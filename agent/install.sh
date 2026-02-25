@@ -98,29 +98,29 @@ esac
 echo -e "${YELLOW}📦 Platform: $OS-$ARCH${NC}"
 
 # Download binary
-BINARY_NAME="nanonet-agent-$OS-$ARCH"
-DOWNLOAD_URL="https://github.com/nanonet/agent/releases/latest/download/$BINARY_NAME"
+echo -e "${YELLOW}⬇️  Agent hazırlanıyor...${NC}"
 
-echo -e "${YELLOW}⬇️  Agent indiriliyor...${NC}"
-
-# Script'in bulunduğu dizine göre binary yolunu belirle
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_BINARY="$SCRIPT_DIR/target/release/nanonet-agent"
 
-# For now, use local binary if available (production'da GitHub releases kullanılır)
-if [ -f "$LOCAL_BINARY" ]; then
-  echo -e "${GREEN}✅ Yerel binary bulundu${NC}"
-  sudo cp "$LOCAL_BINARY" /usr/local/bin/nanonet-agent
-else
-  echo -e "${YELLOW}Binary GitHub'dan indirilecek (şu an mock)${NC}"
-  # Production:
-  # curl -sSL "$DOWNLOAD_URL" -o /tmp/nanonet-agent
-  # sudo mv /tmp/nanonet-agent /usr/local/bin/nanonet-agent
-  echo -e "${RED}❌ Binary bulunamadı: $LOCAL_BINARY${NC}"
-  echo -e "${YELLOW}Önce derleyin: cd $SCRIPT_DIR && cargo build --release${NC}"
-  exit 1
+if [ ! -f "$LOCAL_BINARY" ]; then
+  echo -e "${YELLOW}Release binary bulunamadı, derleniyor...${NC}"
+  (cd "$SCRIPT_DIR" && cargo build --release) || {
+    echo -e "${RED}❌ Derleme başarısız${NC}"
+    exit 1
+  }
 fi
 
+echo -e "${GREEN}✅ Binary hazır${NC}"
+
+# Önce çalışan agent'ı durdur (Text file busy hatasını önler)
+if pgrep -x nanonet-agent >/dev/null 2>&1; then
+  echo -e "${YELLOW}⚡ Çalışan agent durduruluyor...${NC}"
+  sudo systemctl stop nanonet-agent 2>/dev/null || pkill -x nanonet-agent 2>/dev/null || true
+  sleep 1
+fi
+
+sudo cp "$LOCAL_BINARY" /usr/local/bin/nanonet-agent
 sudo chmod +x /usr/local/bin/nanonet-agent
 
 # Create systemd service
