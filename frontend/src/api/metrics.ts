@@ -49,18 +49,20 @@ export interface CommandLog {
 }
 
 export const metricsApi = {
-  getHistory: async (serviceId: string, duration: string = '1h'): Promise<ServiceMetrics[]> => {
+  getHistory: async (serviceId: string, duration: string = '1h', limit: number = 500): Promise<ServiceMetrics[]> => {
     const response = await apiClient.get(`/services/${serviceId}/metrics`, {
-      params: { duration },
+      params: { duration, limit },
     });
-    return response.data.data || [];
+    const payload = response.data.data;
+    return payload?.metrics ?? payload ?? [];
   },
 
   getAggregated: async (serviceId: string, duration: string = '24h', bucket: string = '1 minute'): Promise<AggregatedMetric[]> => {
     const response = await apiClient.get(`/services/${serviceId}/metrics/aggregated`, {
       params: { duration, bucket },
     });
-    return response.data.data || [];
+    const payload = response.data.data;
+    return payload?.metrics ?? payload ?? [];
   },
 
   getUptime: async (serviceId: string, duration: string = '24h'): Promise<{ uptime_percent: number; service_id: string; duration: string }> => {

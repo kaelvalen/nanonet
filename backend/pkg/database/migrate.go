@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -9,8 +10,13 @@ import (
 )
 
 func RunMigrations(databaseURL string) error {
+	migrationsPath := os.Getenv("MIGRATIONS_PATH")
+	if migrationsPath == "" {
+		migrationsPath = "/migrations"
+	}
+
 	m, err := migrate.New(
-		"file:///migrations",
+		"file://"+migrationsPath,
 		databaseURL,
 	)
 	if err != nil {
