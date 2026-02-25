@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion } from "motion/react";
+import { motion, useInView } from "motion/react";
 import {
   Server,
   AlertCircle,
@@ -10,13 +10,16 @@ import {
   Settings,
   Plus,
   Activity,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   ArrowRight,
   Shield,
   Eye,
   Heart,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  HelpCircle,
+  Zap,
+  Clock,
 } from "lucide-react";
 import {
   Dialog,
@@ -81,6 +84,46 @@ const navCards = [
   },
 ];
 
+function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [display, setDisplay] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+
+  useEffect(() => {
+    if (!inView) return;
+    let start = 0;
+    const steps = 20;
+    const inc = value / steps;
+    const timer = setInterval(() => {
+      start += inc;
+      if (start >= value) { setDisplay(value); clearInterval(timer); }
+      else setDisplay(Math.floor(start));
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [value, duration, inView]);
+
+  return <span ref={ref}>{display}</span>;
+}
+
+function UptimeRing({ percent, size = 56 }: { percent: number; size?: number }) {
+  const r = (size - 8) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (percent / 100) * circ;
+  const color = percent >= 95 ? "#34d399" : percent >= 80 ? "#fbbf24" : "#fb7185";
+  return (
+    <svg width={size} height={size} className="-rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth={4} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke={color} strokeWidth={4}
+        strokeDasharray={circ} strokeDashoffset={offset}
+        strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 1s ease" }}
+      />
+    </svg>
+  );
+}
+
 export function DashboardPage() {
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [newService, setNewService] = useState<CreateServiceRequest>({
@@ -97,43 +140,58 @@ export function DashboardPage() {
   const activeServices = services.filter((s) => s.status === "up").length;
   const degradedServices = services.filter((s) => s.status === "degraded").length;
   const offlineServices = services.filter((s) => s.status === "down" || s.status === "unknown").length;
+  const healthPercent = totalServices > 0 ? Math.round((activeServices / totalServices) * 100) : 0;
 
   const stats = [
-    { label: "Total Services", value: totalServices, color: "teal" },
-    { label: "Active", value: activeServices, color: "mint" },
-    { label: "Degraded", value: degradedServices, color: "pink" },
-    { label: "Offline", value: offlineServices, color: "lavender" },
+    {
+      label: "Total",
+      value: totalServices,
+      icon: Server,
+      color: "teal",
+      gradient: "from-[#39c5bb] to-[#2da89e]",
+      bg: "bg-[#39c5bb]/8",
+      border: "border-[#39c5bb]/15",
+      iconColor: "text-[#39c5bb]",
+      bar: totalServices > 0 ? 100 : 0,
+      barColor: "bg-[#39c5bb]",
+    },
+    {
+      label: "Online",
+      value: activeServices,
+      icon: CheckCircle2,
+      color: "mint",
+      gradient: "from-[#34d399] to-[#059669]",
+      bg: "bg-[#34d399]/8",
+      border: "border-[#34d399]/15",
+      iconColor: "text-[#34d399]",
+      bar: totalServices > 0 ? (activeServices / totalServices) * 100 : 0,
+      barColor: "bg-[#34d399]",
+    },
+    {
+      label: "Degraded",
+      value: degradedServices,
+      icon: AlertTriangle,
+      color: "yellow",
+      gradient: "from-[#fbbf24] to-[#d97706]",
+      bg: "bg-[#fbbf24]/8",
+      border: "border-[#fbbf24]/15",
+      iconColor: "text-[#fbbf24]",
+      bar: totalServices > 0 ? (degradedServices / totalServices) * 100 : 0,
+      barColor: "bg-[#fbbf24]",
+    },
+    {
+      label: "Offline",
+      value: offlineServices,
+      icon: XCircle,
+      color: "pink",
+      gradient: "from-[#fb7185] to-[#e11d48]",
+      bg: "bg-[#fda4af]/8",
+      border: "border-[#fda4af]/15",
+      iconColor: "text-[#fb7185]",
+      bar: totalServices > 0 ? (offlineServices / totalServices) * 100 : 0,
+      barColor: "bg-[#fb7185]",
+    },
   ];
-
-  const [animatedStats, setAnimatedStats] = useState(stats.map((s) => ({ ...s, displayValue: 0 })));
-
-  useEffect(() => {
-    const duration = 800;
-    const steps = 20;
-    const interval = duration / steps;
-    const timers: ReturnType<typeof setInterval>[] = [];
-
-    stats.forEach((stat, index) => {
-      let current = 0;
-      const increment = stat.value / steps;
-
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= stat.value) {
-          current = stat.value;
-          clearInterval(timer);
-        }
-        setAnimatedStats((prev) => {
-          const newStats = [...prev];
-          newStats[index] = { ...stat, displayValue: Math.floor(current) };
-          return newStats;
-        });
-      }, interval);
-      timers.push(timer);
-    });
-
-    return () => timers.forEach(clearInterval);
-  }, [services]);
 
   const handleCreateService = () => {
     createService(newService);
@@ -148,33 +206,43 @@ export function DashboardPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center py-4"
+        className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2"
       >
-        <div className="relative inline-block">
-          <h1 className="text-4xl sm:text-5xl font-bold bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent mb-2 font-[var(--font-quicksand)]">
-            Command Center
-          </h1>
-          <div className="absolute -left-6 top-1/2 -translate-y-1/2 text-[#39c5bb] opacity-40 animate-twinkle">✦</div>
-          <div className="absolute -right-6 top-1/2 -translate-y-1/2 text-[#fda4af] opacity-40 animate-twinkle" style={{ animationDelay: "1s" }}>✦</div>
-        </div>
-        <div className="flex items-center justify-center gap-3 mt-2">
-          <div className="w-2 h-2 bg-[#34d399] rounded-full animate-pulse" />
-          <p className="text-xs text-[#7c8db5] tracking-wider">
-            Real-time Monitoring · {activeServices === totalServices && totalServices > 0 ? "All Systems Operational" : `${activeServices}/${totalServices} Online`}
+        <div>
+          <div className="relative inline-block">
+            <h1 className="text-4xl sm:text-5xl font-bold bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent mb-1">
+              Command Center
+            </h1>
+            <div className="absolute -left-6 top-1/2 -translate-y-1/2 text-[#39c5bb] opacity-40 animate-twinkle">✦</div>
+          </div>
+          <p className="text-xs text-[#7c8db5] tracking-wider flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-[#34d399] rounded-full animate-pulse inline-block" />
+            {activeServices === totalServices && totalServices > 0
+              ? "All Systems Operational"
+              : `${activeServices}/${totalServices} Services Online`}
           </p>
         </div>
 
-        <div className="flex items-center justify-center gap-4 mt-3">
-          <span className="text-[10px] text-[#b0bdd5] flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-white border border-[#39c5bb]/15 rounded text-[#7c8db5] font-[var(--font-mono)]">⌘K</kbd>
-            Command Palette
-          </span>
-          <span className="text-[#c4b5fd]">·</span>
-          <span className="text-[10px] text-[#b0bdd5] flex items-center gap-1">
-            <span className="text-[#39c5bb]">✦</span>
-            Radial Menu (bottom-left)
-          </span>
-        </div>
+        {/* System Health Ring */}
+        {totalServices > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex items-center gap-4 bg-white/60 backdrop-blur-sm border border-[#39c5bb]/15 rounded-2xl px-5 py-3"
+          >
+            <div className="relative flex items-center justify-center">
+              <UptimeRing percent={healthPercent} size={64} />
+              <span className={`absolute text-xs font-bold ${healthPercent >= 95 ? "text-[#059669]" : healthPercent >= 80 ? "text-[#d97706]" : "text-[#e11d48]"}`}>
+                {healthPercent}%
+              </span>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-[#3b4563]">System Health</p>
+              <p className="text-[10px] text-[#7c8db5] mt-0.5">{activeServices} of {totalServices} operational</p>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Stats Row */}
@@ -184,39 +252,35 @@ export function DashboardPage() {
         transition={{ duration: 0.6, delay: 0.1 }}
         className="grid grid-cols-2 lg:grid-cols-4 gap-3"
       >
-        {animatedStats.map((stat) => (
-          <div key={stat.label} className="relative group">
-            <div
-              className={`absolute -inset-0.5 bg-linear-to-r ${
-                stat.color === "teal" ? "from-[#39c5bb] to-[#7eddd3]" :
-                stat.color === "mint" ? "from-[#34d399] to-[#a7f3d0]" :
-                stat.color === "pink" ? "from-[#fda4af] to-[#ffd1dc]" :
-                "from-[#c4b5fd] to-[#e0d6ff]"
-              } rounded-xl blur opacity-10 group-hover:opacity-20 transition duration-300`}
-            />
-            <Card
-              className={`relative p-3 bg-white/80 backdrop-blur-sm border ${
-                stat.color === "teal" ? "border-[#39c5bb]/15" :
-                stat.color === "mint" ? "border-[#34d399]/15" :
-                stat.color === "pink" ? "border-[#fda4af]/15" :
-                "border-[#c4b5fd]/15"
-              } transition-all duration-300 rounded-xl shadow-sm`}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] text-[#7c8db5] uppercase tracking-wider">{stat.label}</p>
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
+            className="group relative"
+          >
+            <Card className={`p-4 bg-white/80 backdrop-blur-sm border ${stat.border} rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden`}>
+              <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-current to-transparent opacity-20" style={{ color: stat.iconColor.replace("text-", "") }} />
+              <div className="flex items-start justify-between mb-3">
+                <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                  <stat.icon className={`w-4 h-4 ${stat.iconColor}`} />
+                </div>
+                <span className={`text-2xl font-bold bg-linear-to-br ${stat.gradient} bg-clip-text text-transparent tabular-nums`}>
+                  <AnimatedCounter value={stat.value} />
+                </span>
               </div>
-              <p
-                className={`text-2xl font-bold bg-gradient-to-br ${
-                  stat.color === "teal" ? "from-[#39c5bb] to-[#2da89e]" :
-                  stat.color === "mint" ? "from-[#34d399] to-[#059669]" :
-                  stat.color === "pink" ? "from-[#fb7185] to-[#e11d48]" :
-                  "from-[#a78bfa] to-[#7c3aed]"
-                } bg-clip-text text-transparent`}
-              >
-                {stat.displayValue}
-              </p>
+              <p className="text-[10px] text-[#7c8db5] uppercase tracking-wider mb-2">{stat.label}</p>
+              <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full ${stat.barColor}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${stat.bar}%` }}
+                  transition={{ duration: 0.8, delay: 0.3 + i * 0.07 }}
+                />
+              </div>
             </Card>
-          </div>
+          </motion.div>
         ))}
       </motion.div>
 
@@ -241,42 +305,37 @@ export function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 + index * 0.08 }}
+              whileHover={{ y: -2 }}
             >
               <Link to={card.to} className="block group">
-                <div className="relative">
-                  <div className={`absolute -inset-0.5 bg-linear-to-r ${card.glowColor} rounded-2xl blur opacity-8 group-hover:opacity-20 transition duration-500`} />
+                <Card className={`relative bg-white/80 backdrop-blur-sm border ${card.borderColor} rounded-2xl p-5 transition-all duration-300 overflow-hidden shadow-sm group-hover:shadow-lg`}>
+                  <div className={`absolute inset-0 bg-linear-to-br ${card.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                  <div className={`absolute inset-x-0 top-0 h-0.5 bg-linear-to-r ${card.glowColor} opacity-0 group-hover:opacity-60 transition-opacity duration-300`} />
 
-                  <Card className={`relative bg-white/80 backdrop-blur-sm border ${card.borderColor} rounded-2xl p-6 transition-all duration-500 overflow-hidden group-hover:translate-y-[-2px] shadow-sm group-hover:shadow-md`}>
-                    <div className={`absolute inset-0 bg-gradient-to-br ${card.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-
-                    <div className="relative z-10">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-300 group-hover:scale-110"
-                            style={{ backgroundColor: `${card.color}12`, borderColor: `${card.color}25` }}
-                          >
-                            <card.icon className="w-6 h-6" style={{ color: card.color }} />
-                          </div>
-                          <div>
-                            <h3 className="text-[#3b4563] tracking-wide group-hover:text-[#2a3350] transition-colors font-semibold">
-                              {card.label}
-                            </h3>
-                            <p className="text-xs text-[#7c8db5] mt-0.5">{card.description}</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-[#b0bdd5] group-hover:text-[#3b4563] group-hover:translate-x-1 transition-all" />
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 group-hover:scale-110 shrink-0"
+                      style={{ backgroundColor: `${card.color}15`, borderColor: `${card.color}30` }}
+                    >
+                      <card.icon className="w-5 h-5" style={{ color: card.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-[#3b4563] group-hover:text-[#2a3350] transition-colors">
+                          {card.label}
+                        </h3>
+                        <ArrowRight className="w-4 h-4 text-[#b0bdd5] group-hover:text-[#3b4563] group-hover:translate-x-1 transition-all shrink-0" />
                       </div>
-
+                      <p className="text-xs text-[#7c8db5] mt-0.5 truncate">{card.description}</p>
                       {card.pulse && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 bg-[#fda4af] rounded-full animate-pulse" />
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <div className="w-1.5 h-1.5 bg-[#fda4af] rounded-full animate-pulse" />
                           <span className="text-[10px] text-[#e11d48]">Needs attention</span>
                         </div>
                       )}
                     </div>
-                  </Card>
-                </div>
+                  </div>
+                </Card>
               </Link>
             </motion.div>
           ))}
@@ -290,22 +349,17 @@ export function DashboardPage() {
         transition={{ duration: 0.6, delay: 0.5 }}
       >
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="h-px w-8 bg-linear-to-r from-transparent to-[#39c5bb]/20" />
-            <h2 className="text-xs text-[#7c8db5] uppercase tracking-widest flex items-center gap-2">
-              <Activity className="w-3 h-3" /> Service Overview
-            </h2>
-            <div className="h-px w-8 bg-gradient-to-l from-transparent to-[#39c5bb]/20" />
-          </div>
+          <h2 className="text-xs text-[#7c8db5] uppercase tracking-widest flex items-center gap-2">
+            <Activity className="w-3 h-3" /> Recent Services
+          </h2>
           <div className="flex items-center gap-2">
             <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
               <DialogTrigger asChild>
-                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#39c5bb]/8 border border-[#39c5bb]/20 text-[#2da89e] hover:bg-[#39c5bb]/15 hover:border-[#39c5bb]/35 transition-all text-xs">
-                  <Plus className="w-3 h-3" />
-                  Add
-                </button>
+                <Button size="sm" className="h-7 px-3 text-xs bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-lg shadow-sm hover:shadow-md transition-all">
+                  <Plus className="w-3 h-3 mr-1" /> Add Service
+                </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px] bg-white border-[#39c5bb]/15 rounded-2xl">
+              <DialogContent className="sm:max-w-125 bg-white border-[#39c5bb]/15 rounded-2xl">
                 <DialogHeader>
                   <DialogTitle className="text-[#39c5bb]">New Service</DialogTitle>
                   <DialogDescription className="text-[#7c8db5]">Add a new microservice to monitor</DialogDescription>
@@ -313,55 +367,35 @@ export function DashboardPage() {
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name" className="text-[#3b4563] text-xs">Service Name *</Label>
-                    <Input
-                      id="name"
-                      placeholder="payment-service"
-                      value={newService.name}
+                    <Input id="name" placeholder="payment-service" value={newService.name}
                       onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                      className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl"
-                    />
+                      className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="host" className="text-[#3b4563] text-xs">Host / IP *</Label>
-                    <Input
-                      id="host"
-                      placeholder="192.168.1.42"
-                      value={newService.host}
+                    <Input id="host" placeholder="192.168.1.42" value={newService.host}
                       onChange={(e) => setNewService({ ...newService, host: e.target.value })}
-                      className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl"
-                    />
+                      className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="port" className="text-[#3b4563] text-xs">Port *</Label>
-                      <Input
-                        id="port"
-                        placeholder="8080"
-                        type="number"
-                        value={newService.port}
+                      <Input id="port" placeholder="8080" type="number" value={newService.port}
                         onChange={(e) => setNewService({ ...newService, port: parseInt(e.target.value) || 0 })}
-                        className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl"
-                      />
+                        className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="endpoint" className="text-[#3b4563] text-xs">Health Endpoint *</Label>
-                      <Input
-                        id="endpoint"
-                        placeholder="/health"
-                        value={newService.health_endpoint}
+                      <Input id="endpoint" placeholder="/health" value={newService.health_endpoint}
                         onChange={(e) => setNewService({ ...newService, health_endpoint: e.target.value })}
-                        className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl"
-                      />
+                        className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] rounded-xl" />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="border-[#39c5bb]/20 text-[#3b4563] rounded-xl">
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateService} className="bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-xl">
-                    Deploy
-                  </Button>
+                  <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="border-[#39c5bb]/20 text-[#3b4563] rounded-xl">Cancel</Button>
+                  <Button onClick={handleCreateService} disabled={!newService.name || !newService.host}
+                    className="bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-xl">Deploy</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -374,95 +408,99 @@ export function DashboardPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-4 bg-white/80 border-[#39c5bb]/15 rounded-xl animate-pulse">
-                <div className="h-4 w-32 bg-[#39c5bb]/10 rounded mb-3" />
-                <div className="h-3 w-20 bg-[#39c5bb]/10 rounded" />
+              <Card key={i} className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-[#39c5bb]/10" />
+                  <div className="flex-1">
+                    <div className="h-3.5 w-28 bg-[#39c5bb]/10 rounded mb-1.5" />
+                    <div className="h-2.5 w-20 bg-[#39c5bb]/8 rounded" />
+                  </div>
+                </div>
+                <div className="h-1.5 w-full bg-[#39c5bb]/8 rounded-full" />
               </Card>
             ))}
           </div>
         ) : services.length === 0 ? (
-          <Card className="p-8 bg-white/80 border-[#39c5bb]/15 rounded-xl text-center">
-            <Server className="w-12 h-12 text-[#b0bdd5] mx-auto mb-3" />
-            <p className="text-sm text-[#7c8db5]">Henüz servis eklenmemiş</p>
-            <p className="text-xs text-[#b0bdd5] mt-1">Yukarıdaki "Add" butonunu kullanarak bir servis ekleyin</p>
+          <Card className="p-10 bg-white/80 border-[#39c5bb]/15 rounded-xl text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#39c5bb]/8 flex items-center justify-center mx-auto mb-3">
+              <Server className="w-7 h-7 text-[#39c5bb]/40" />
+            </div>
+            <p className="text-sm font-medium text-[#3b4563] mb-1">No services yet</p>
+            <p className="text-xs text-[#b0bdd5]">Click "Add Service" above to get started</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {services.slice(0, 6).map((service, index) => (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.6 + index * 0.05 }}
-              >
-                <Link to={`/services/${service.id}`} className="block group">
-                  <Card
-                    className={`relative bg-white/80 backdrop-blur-sm border transition-all duration-300 overflow-hidden p-4 group-hover:translate-y-[-1px] rounded-xl shadow-sm group-hover:shadow-md ${
-                      service.status === "up"
-                        ? "border-[#39c5bb]/15 hover:border-[#39c5bb]/30"
-                        : service.status === "degraded"
-                        ? "border-[#fbbf24]/20 hover:border-[#fbbf24]/40"
-                        : "border-[#fda4af]/20 hover:border-[#fda4af]/40"
-                    }`}
-                  >
-                    {service.status === "up" && (
-                      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/20 to-transparent" />
-                    )}
-
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="relative flex-shrink-0">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              service.status === "up" ? "bg-[#34d399]" :
-                              service.status === "degraded" ? "bg-[#fbbf24]" :
-                              "bg-[#fb7185]"
-                            }`}
-                          />
-                          {service.status === "up" && (
-                            <div className="absolute inset-0 w-2 h-2 bg-[#34d399] rounded-full animate-pulse-ring" />
-                          )}
+            {services.slice(0, 6).map((service, index) => {
+              const statusDot = service.status === "up" ? "bg-[#34d399]" : service.status === "degraded" ? "bg-[#fbbf24]" : "bg-[#fb7185]";
+              const statusIcon = service.status === "up" ? CheckCircle2 : service.status === "degraded" ? AlertTriangle : XCircle;
+              const StatusIcon = statusIcon;
+              const cardBorder = service.status === "up" ? "border-[#39c5bb]/15 hover:border-[#39c5bb]/30" : service.status === "degraded" ? "border-[#fbbf24]/20 hover:border-[#fbbf24]/35" : "border-[#fda4af]/20 hover:border-[#fda4af]/35";
+              const iconBg = service.status === "up" ? "bg-[#39c5bb]/10" : service.status === "degraded" ? "bg-[#fbbf24]/10" : "bg-[#fda4af]/10";
+              const iconColor = service.status === "up" ? "text-[#39c5bb]" : service.status === "degraded" ? "text-[#fbbf24]" : "text-[#fb7185]";
+              return (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.55 + index * 0.06 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Link to={`/services/${service.id}`} className="block group">
+                    <Card className={`relative bg-white/80 backdrop-blur-sm border ${cardBorder} rounded-xl p-4 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden`}>
+                      {service.status === "up" && (
+                        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/30 to-transparent" />
+                      )}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center shrink-0`}>
+                          <Server className={`w-4 h-4 ${iconColor}`} />
                         </div>
-                        <h3 className="text-xs font-[var(--font-mono)] text-[#3b4563] truncate group-hover:text-[#2a3350] transition-colors">
-                          {service.name}
-                        </h3>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="relative shrink-0">
+                              <div className={`w-2 h-2 rounded-full ${statusDot}`} />
+                              {service.status === "up" && <div className="absolute inset-0 w-2 h-2 bg-[#34d399] rounded-full animate-pulse-ring" />}
+                            </div>
+                            <h3 className="text-xs font-(--font-mono) text-[#3b4563] truncate group-hover:text-[#2a3350] transition-colors">
+                              {service.name}
+                            </h3>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-[10px] text-[#b0bdd5] font-(--font-mono)">{service.host}:{service.port}</p>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5 text-[#b0bdd5]" />
+                              <span className="text-[10px] text-[#b0bdd5]">{service.poll_interval_sec}s</span>
+                            </div>
+                          </div>
+                        </div>
+                        <StatusIcon className={`w-4 h-4 shrink-0 ${iconColor} opacity-60 group-hover:opacity-100 transition-opacity`} />
                       </div>
-                      <Badge
-                        variant={service.status === "up" ? "default" : service.status === "degraded" ? "secondary" : "destructive"}
-                        className={`text-[9px] font-[var(--font-mono)] px-1.5 py-0 rounded-full ${
-                          service.status === "up" ? "bg-[#a7f3d0]/30 text-[#059669] border-[#a7f3d0]/50" : ""
-                        }`}
-                      >
-                        {service.status === "up" ? "ON" : service.status === "degraded" ? "DEG" : "OFF"}
-                      </Badge>
-                    </div>
-
-                    <div className="text-[10px] text-[#7c8db5] font-[var(--font-mono)]">
-                      {service.host}:{service.port}
-                    </div>
-                  </Card>
-                </Link>
-              </motion.div>
-            ))}
+                    </Card>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </motion.div>
 
-      {/* System Telemetry Footer */}
+      {/* Footer */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
-        className="flex items-center justify-center gap-6 py-4 text-[10px] text-[#b0bdd5]"
+        transition={{ duration: 0.6, delay: 0.9 }}
+        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-[10px] text-[#b0bdd5]"
       >
         <span className="flex items-center gap-1.5">
           <Shield className="w-3 h-3 text-[#34d399]" />
-          System Health: {totalServices > 0 ? `${Math.round((activeServices / totalServices) * 100)}%` : "N/A"}
+          {totalServices > 0 ? `${healthPercent}% uptime` : "No services monitored"}
         </span>
         <span className="text-[#c4b5fd]">·</span>
-        <span>{totalServices} Services Registered</span>
+        <span className="flex items-center gap-1.5">
+          <Zap className="w-3 h-3 text-[#93c5fd]" />
+          {totalServices} registered
+        </span>
         <span className="text-[#c4b5fd] hidden sm:inline">·</span>
-        <span className="hidden sm:inline flex items-center gap-1">
+        <span className="hidden sm:flex items-center gap-1.5">
           <Heart className="w-3 h-3 text-[#fda4af]" />
           NanoNet v2.0
         </span>

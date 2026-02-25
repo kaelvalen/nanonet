@@ -9,6 +9,11 @@ use crate::commands;
 use crate::config::Config;
 use crate::error::AgentError;
 
+/// Max backoff delay in seconds
+const MAX_BACKOFF_SECS: u64 = 32;
+/// Jitter range in milliseconds (0..JITTER_MAX_MS)
+const JITTER_MAX_MS: u64 = 1000;
+
 pub type OutgoingTx = mpsc::UnboundedSender<String>;
 pub type OutgoingRx = mpsc::UnboundedReceiver<String>;
 
@@ -19,27 +24,36 @@ pub fn channel() -> (OutgoingTx, OutgoingRx) {
 /// Ana yeniden bağlanma döngüsü — asla sonlanmaz.
 pub async fn run(config: &Config, mut outgoing_rx: OutgoingRx, restart_count: Arc<AtomicU64>) -> ! {
     let ws_url = config.ws_url();
-    let mut delay = Duration::from_secs(1);
+    let mut delay_secs: u64 = 1;
+    let mut attempt: u32 = 0;
 
     loop {
-        tracing::info!("WebSocket bağlantısı deneniyor: {}", config.backend);
+        attempt += 1;
+        tracing::info!(attempt, url = %config.backend, "WS connection attempt");
 
         match connect_and_run(&ws_url, &mut outgoing_rx, config, Arc::clone(&restart_count)).await {
             Ok(()) => {
-                tracing::info!("WebSocket bağlantısı kapandı, yeniden bağlanılıyor...");
-                delay = Duration::from_secs(1);
+                tracing::info!("WS connection closed cleanly — reconnecting immediately");
+                delay_secs = 1;
+                attempt = 0;
             }
             Err(e) => {
+                let jitter_ms = (std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .subsec_millis() as u64)
+                    % JITTER_MAX_MS;
+                let sleep = Duration::from_millis(delay_secs * 1000 + jitter_ms);
                 tracing::warn!(
-                    "WS bağlantı hatası: {}  —  {}s sonra yeniden deneniyor",
-                    e,
-                    delay.as_secs()
+                    attempt,
+                    error = %e,
+                    retry_in_ms = sleep.as_millis(),
+                    "WS connection failed — will retry"
                 );
+                tokio::time::sleep(sleep).await;
+                delay_secs = (delay_secs * 2).min(MAX_BACKOFF_SECS);
             }
         }
-
-        tokio::time::sleep(delay).await;
-        delay = (delay * 2).min(Duration::from_secs(32));
     }
 }
 

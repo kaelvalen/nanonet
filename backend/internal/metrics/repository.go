@@ -23,14 +23,19 @@ func (r *Repository) Insert(ctx context.Context, metric *Metric) error {
 	return r.db.WithContext(ctx).Create(metric).Error
 }
 
-func (r *Repository) GetHistory(ctx context.Context, serviceID uuid.UUID, duration time.Duration) ([]Metric, error) {
+func (r *Repository) GetHistory(ctx context.Context, serviceID uuid.UUID, duration time.Duration, limit int) ([]Metric, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+
+	if limit <= 0 {
+		limit = 500
+	}
 
 	var metrics []Metric
 	err := r.db.WithContext(ctx).
 		Where("service_id = ? AND time > ?", serviceID, time.Now().Add(-duration)).
 		Order("time ASC").
+		Limit(limit).
 		Find(&metrics).Error
 
 	return metrics, err

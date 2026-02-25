@@ -18,7 +18,7 @@ export function ErrorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] via-[#e8f4ff] to-[#f5f0ff] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-linear-to-br from-[#f0f4ff] via-[#e8f4ff] to-[#f5f0ff] flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -46,7 +46,7 @@ export function ErrorPage() {
           <Button
             size="sm"
             onClick={() => navigate("/", { replace: true })}
-            className="bg-gradient-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-lg text-xs h-8 border-0 hover:opacity-90"
+            className="bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-lg text-xs h-8 border-0 hover:opacity-90"
           >
             <Home className="w-3 h-3 mr-1.5" /> Dashboard
           </Button>

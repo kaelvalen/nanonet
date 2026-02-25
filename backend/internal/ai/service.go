@@ -105,7 +105,7 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 	}
 
 	// Metrikleri al
-	metricsData, err := s.metricsRepo.GetHistory(ctx, serviceID, duration)
+	metricsData, err := s.metricsRepo.GetHistory(ctx, serviceID, duration, 500)
 	if err != nil {
 		return nil, fmt.Errorf("metrikler alınamadı: %w", err)
 	}

@@ -212,13 +212,13 @@ export function ServiceDetailPage() {
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-[#3b4563] truncate">{service.name}</h1>
-              <Badge className={`text-[10px] font-[var(--font-mono)] px-2 py-0.5 rounded-full border ${statusBg}`}>
-                {service.status?.toUpperCase() ?? 'UNKNOWN'}
+              <h1 className="text-xl font-bold text-[#3b4563] truncate">{service?.name ?? ''}</h1>
+              <Badge className={`text-[10px] font-([--font-mono]) px-2 py-0.5 rounded-full border ${statusBg}`}>
+                {service?.status?.toUpperCase() ?? 'UNKNOWN'}
               </Badge>
             </div>
-            <p className="text-xs text-[#b0bdd5] font-[var(--font-mono)] mt-0.5">
-              {service.host}:{service.port} · {service.health_endpoint} · {service.poll_interval_sec}s poll
+            <p className="text-xs text-[#b0bdd5] font-([--font-mono]) mt-0.5">
+              {service?.host}:{service?.port} · {service?.health_endpoint} · {service?.poll_interval_sec}s poll
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -238,7 +238,7 @@ export function ServiceDetailPage() {
                 <DialogHeader>
                   <DialogTitle className="text-[#e11d48]">Servisi Sil</DialogTitle>
                   <DialogDescription className="text-[#7c8db5]">
-                    <strong>{service.name}</strong> servisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                    <strong>{service?.name}</strong> servisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -254,41 +254,95 @@ export function ServiceDetailPage() {
       {/* Quick Stats Row */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card className="p-3 bg-white/80 border-[#39c5bb]/10 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Cpu className="w-3.5 h-3.5 text-[#39c5bb]" />
-              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">CPU</span>
+          {/* CPU */}
+          <Card className="p-4 bg-white/80 border-[#39c5bb]/10 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-[#39c5bb]" />
+                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">CPU</span>
+              </div>
+              {latestMetric && (
+                <span className={`text-[10px] font-medium ${(latestMetric.cpu_percent ?? 0) > 80 ? "text-[#e11d48]" : (latestMetric.cpu_percent ?? 0) > 60 ? "text-[#d97706]" : "text-[#059669]"}`}>
+                  {(latestMetric.cpu_percent ?? 0) > 80 ? "High" : (latestMetric.cpu_percent ?? 0) > 60 ? "Mod" : "OK"}
+                </span>
+              )}
             </div>
-            <p className="text-lg font-bold text-[#3b4563]">
+            <p className="text-xl font-bold text-[#3b4563] mb-2">
               {latestMetric ? `${latestMetric.cpu_percent?.toFixed(1)}%` : "—"}
             </p>
-          </Card>
-          <Card className="p-3 bg-white/80 border-[#93c5fd]/10 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Activity className="w-3.5 h-3.5 text-[#93c5fd]" />
-              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Memory</span>
+            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${!latestMetric ? "w-0" : (latestMetric.cpu_percent ?? 0) > 80 ? "bg-[#fb7185]" : (latestMetric.cpu_percent ?? 0) > 60 ? "bg-[#fbbf24]" : "bg-[#39c5bb]"}`}
+                initial={{ width: 0 }}
+                animate={{ width: latestMetric ? `${Math.min(latestMetric.cpu_percent ?? 0, 100)}%` : "0%" }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+              />
             </div>
-            <p className="text-lg font-bold text-[#3b4563]">
+          </Card>
+          {/* Memory */}
+          <Card className="p-4 bg-white/80 border-[#93c5fd]/10 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <HardDrive className="w-3.5 h-3.5 text-[#93c5fd]" />
+                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Memory</span>
+              </div>
+            </div>
+            <p className="text-xl font-bold text-[#3b4563] mb-2">
               {latestMetric ? `${latestMetric.memory_used_mb?.toFixed(0)} MB` : "—"}
             </p>
-          </Card>
-          <Card className="p-3 bg-white/80 border-[#c4b5fd]/10 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-3.5 h-3.5 text-[#c4b5fd]" />
-              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Latency</span>
+            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-[#93c5fd]"
+                initial={{ width: 0 }}
+                animate={{ width: latestMetric ? `${Math.min(((latestMetric.memory_used_mb ?? 0) / 4096) * 100, 100)}%` : "0%" }}
+                transition={{ duration: 0.7, delay: 0.25 }}
+              />
             </div>
-            <p className="text-lg font-bold text-[#3b4563]">
+          </Card>
+          {/* Latency */}
+          <Card className="p-4 bg-white/80 border-[#c4b5fd]/10 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-[#c4b5fd]" />
+                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Latency</span>
+              </div>
+              {latestMetric && (
+                <span className={`text-[10px] font-medium ${(latestMetric.latency_ms ?? 0) > 500 ? "text-[#e11d48]" : (latestMetric.latency_ms ?? 0) > 200 ? "text-[#d97706]" : "text-[#059669]"}`}>
+                  {(latestMetric.latency_ms ?? 0) > 500 ? "Slow" : (latestMetric.latency_ms ?? 0) > 200 ? "Mod" : "Fast"}
+                </span>
+              )}
+            </div>
+            <p className="text-xl font-bold text-[#3b4563] mb-2">
               {latestMetric ? `${latestMetric.latency_ms?.toFixed(0)} ms` : "—"}
             </p>
-          </Card>
-          <Card className="p-3 bg-white/80 border-[#fda4af]/10 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-3.5 h-3.5 text-[#34d399]" />
-              <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Uptime</span>
+            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${!latestMetric ? "w-0" : (latestMetric.latency_ms ?? 0) > 500 ? "bg-[#fb7185]" : (latestMetric.latency_ms ?? 0) > 200 ? "bg-[#fbbf24]" : "bg-[#c4b5fd]"}`}
+                initial={{ width: 0 }}
+                animate={{ width: latestMetric ? `${Math.min(((latestMetric.latency_ms ?? 0) / 1000) * 100, 100)}%` : "0%" }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+              />
             </div>
-            <p className="text-lg font-bold text-[#3b4563]">
+          </Card>
+          {/* Uptime */}
+          <Card className="p-4 bg-white/80 border-[#34d399]/10 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-[#34d399]" />
+                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Uptime</span>
+              </div>
+            </div>
+            <p className="text-xl font-bold text-[#3b4563] mb-2">
               {uptime ? `${uptime.uptime_percent.toFixed(1)}%` : "—"}
             </p>
+            <div className="h-1 rounded-full bg-[#e2e8f0] overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${!uptime ? "w-0" : uptime.uptime_percent >= 99 ? "bg-[#34d399]" : uptime.uptime_percent >= 95 ? "bg-[#fbbf24]" : "bg-[#fb7185]"}`}
+                initial={{ width: 0 }}
+                animate={{ width: uptime ? `${uptime.uptime_percent}%` : "0%" }}
+                transition={{ duration: 0.8, delay: 0.35 }}
+              />
+            </div>
           </Card>
         </div>
       </motion.div>
@@ -451,14 +505,14 @@ export function ServiceDetailPage() {
                   }`}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
                           alert.severity === "crit" ? "bg-[#fb7185]" :
                           alert.severity === "warn" ? "bg-[#fbbf24]" :
                           "bg-[#93c5fd]"
                         }`} />
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full border uppercase font-[var(--font-mono)] ${
+                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full border uppercase font-([--font-mono]) ${
                               alert.severity === "crit" ? "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/30" :
                               alert.severity === "warn" ? "bg-[#fef3c7]/30 text-[#d97706] border-[#fbbf24]/20" :
                               "bg-[#93c5fd]/15 text-[#3b82f6] border-[#93c5fd]/20"
@@ -492,9 +546,9 @@ export function ServiceDetailPage() {
           <TabsContent value="terminal" className="space-y-3">
             <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden">
               {/* Output area */}
-              <div className="p-4 min-h-[280px] max-h-[400px] overflow-y-auto space-y-2 font-mono text-xs">
+              <div className="p-4 min-h-70 max-h-100 overflow-y-auto space-y-2 font-mono text-xs">
                 {execHistory.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-[240px] gap-2">
+                  <div className="flex flex-col items-center justify-center h-60 gap-2">
                     <Terminal className="w-8 h-8 text-[#334155]" />
                     <p className="text-[#475569] text-[11px]">Çalıştırmak istediğiniz komutu girin</p>
                   </div>
@@ -502,7 +556,7 @@ export function ServiceDetailPage() {
                   execHistory.map((entry, i) => (
                     <div key={i} className="space-y-1">
                       <div className="flex items-center gap-1.5 text-[#38bdf8]">
-                        <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                        <ChevronRight className="w-3 h-3 shrink-0" />
                         <span>{entry.command}</span>
                       </div>
                       <div className="pl-4 text-[#64748b] space-y-0.5">
@@ -529,7 +583,7 @@ export function ServiceDetailPage() {
               </div>
               {/* Input area */}
               <div className="flex items-center gap-2 px-4 py-3 border-t border-[#1e293b] bg-[#0f172a]">
-                <span className="text-[#38bdf8] font-mono text-xs flex-shrink-0">$</span>
+                <span className="text-[#38bdf8] font-mono text-xs shrink-0">$</span>
                 <Input
                   value={execCommand}
                   onChange={(e) => setExecCommand(e.target.value)}
@@ -542,7 +596,7 @@ export function ServiceDetailPage() {
                   size="sm"
                   onClick={handleExec}
                   disabled={execLoading || !execCommand.trim()}
-                  className="h-7 px-3 bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/20 rounded-lg flex-shrink-0"
+                  className="h-7 px-3 bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/20 rounded-lg shrink-0"
                   variant="outline"
                 >
                   {execLoading ? (
@@ -601,7 +655,7 @@ export function ServiceDetailPage() {
                       <ul className="space-y-2">
                         {analysisResult.recommendations.map((rec, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full flex-shrink-0 mt-0.5 ${
+                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5 ${
                               rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48]" :
                               rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706]" :
                               "bg-[#39c5bb]/15 text-[#2da89e]"

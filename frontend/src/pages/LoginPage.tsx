@@ -20,7 +20,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0f7ff] via-[#f5f0ff] to-[#fdf2f8] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-[#f0f7ff] via-[#f5f0ff] to-[#fdf2f8] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background decorations */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#39c5bb]/10 rounded-full blur-3xl animate-blob" />
@@ -37,108 +37,147 @@ export function LoginPage() {
       />
 
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
-        className="relative z-10 w-full max-w-md"
+        transition={{ duration: 0.5, type: "spring", stiffness: 220, damping: 20 }}
+        className="relative z-10 w-full max-w-sm"
       >
         {/* Logo */}
         <div className="text-center mb-8">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-            className="inline-block"
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 18 }}
+            className="inline-block mb-4"
           >
-            <div className="w-16 h-16 bg-gradient-to-br from-[#39c5bb] to-[#93c5fd] rounded-2xl flex items-center justify-center shadow-lg shadow-[#39c5bb]/20 mx-auto mb-4">
+            <div className="w-16 h-16 bg-linear-to-br from-[#39c5bb] to-[#93c5fd] rounded-2xl flex items-center justify-center shadow-lg shadow-[#39c5bb]/25 mx-auto">
               <span className="text-white text-2xl">✦</span>
             </div>
           </motion.div>
-          <h1 className="text-3xl font-bold bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent font-[var(--font-quicksand)]">
+          <motion.h1
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="text-3xl bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent font-(--font-quicksand)"
+          >
             NanoNet
-          </h1>
-          <p className="text-sm text-[#7c8db5] mt-1">Mikroservis İzleme Platformu</p>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35 }}
+            className="text-sm text-[#7c8db5] mt-1"
+          >
+            Microservice Monitoring Platform
+          </motion.p>
         </div>
 
-        <Card className="bg-white/80 backdrop-blur-xl border-[#39c5bb]/15 rounded-2xl shadow-xl shadow-[#39c5bb]/5 p-8">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-[#3b4563]">Giriş Yap</h2>
-            <p className="text-xs text-[#7c8db5] mt-1">Hesabınıza giriş yapın</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email" className="text-[#3b4563] text-xs">
-                E-posta
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@nanonet.dev"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl"
-                required
-              />
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="bg-white/85 backdrop-blur-xl border-[#39c5bb]/15 rounded-2xl shadow-2xl shadow-[#39c5bb]/8 p-8">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-[#3b4563]">Welcome back</h2>
+              <p className="text-xs text-[#7c8db5] mt-0.5">Sign in to your account</p>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="password" className="text-[#3b4563] text-xs">
-                Şifre
-              </Label>
-              <div className="relative">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="grid gap-2"
+              >
+                <Label htmlFor="email" className="text-[#3b4563] text-xs font-medium">Email</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-[#f5f8ff] border-[#39c5bb]/15 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl pr-10"
+                  id="email"
+                  type="email"
+                  placeholder="admin@nanonet.dev"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-[#f5f8ff] border-[#39c5bb]/20 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl focus:border-[#39c5bb]/50 focus:ring-2 focus:ring-[#39c5bb]/10 transition-all"
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7c8db5] hover:text-[#39c5bb] transition-colors"
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.38 }}
+                className="grid gap-2"
+              >
+                <Label htmlFor="password" className="text-[#3b4563] text-xs font-medium">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="bg-[#f5f8ff] border-[#39c5bb]/20 text-[#3b4563] placeholder:text-[#b0bdd5] rounded-xl pr-10 focus:border-[#39c5bb]/50 focus:ring-2 focus:ring-[#39c5bb]/10 transition-all"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b0bdd5] hover:text-[#39c5bb] transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.46 }}
+              >
+                <Button
+                  type="submit"
+                  disabled={isLoggingIn || !email || !password}
+                  className="w-full bg-linear-to-r from-[#39c5bb] to-[#93c5fd] hover:from-[#2da89e] hover:to-[#60a5fa] text-white rounded-xl h-10 shadow-sm hover:shadow-md transition-all disabled:opacity-60"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+                  {isLoggingIn ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Signing in...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Sign In
+                    </div>
+                  )}
+                </Button>
+              </motion.div>
+            </form>
 
-            <Button
-              type="submit"
-              disabled={isLoggingIn}
-              className="w-full bg-linear-to-r from-[#39c5bb] to-[#93c5fd] hover:from-[#2da89e] hover:to-[#60a5fa] text-white rounded-xl h-10"
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.55 }}
+              className="mt-6 text-center"
             >
-              {isLoggingIn ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Giriş yapılıyor...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Giriş Yap
-                </div>
-              )}
-            </Button>
-          </form>
+              <p className="text-xs text-[#7c8db5]">
+                Don't have an account?{" "}
+                <Link to="/register" className="text-[#39c5bb] hover:text-[#2da89e] font-medium transition-colors">
+                  Register
+                </Link>
+              </p>
+            </motion.div>
+          </Card>
+        </motion.div>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-[#7c8db5]">
-              Hesabınız yok mu?{" "}
-              <Link to="/register" className="text-[#39c5bb] hover:text-[#2da89e] font-medium transition-colors">
-                Kayıt Ol
-              </Link>
-            </p>
-          </div>
-        </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="text-center mt-5"
+        >
           <p className="text-[10px] text-[#b0bdd5]">NanoNet v2.0 · Powered by AI</p>
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
