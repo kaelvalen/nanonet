@@ -22,5 +22,5 @@ Yanıtın SADECE saf JSON olmalı. Markdown, kod bloğu veya ekstra metin KULLAN
 İlk karakter { olmalı, son karakter } olmalı. Örnek format:
 {"summary":"...","root_cause":"...","recommendations":[{"action":"...","priority":"high"}],"confidence":0.85}`
 
-const DefaultModel = "claude-3-5-sonnet-20241022"
+const DefaultModel = "claude-3-haiku-20240307"
 const MaxTokensDefault = 4096

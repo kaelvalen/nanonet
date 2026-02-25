@@ -69,7 +69,7 @@ func NewService(db *gorm.DB, apiKey string) *Service {
 	return &Service{
 		db:          db,
 		apiKey:      apiKey,
-		client:      &http.Client{Timeout: 30 * time.Second},
+		client:      &http.Client{Timeout: 60 * time.Second},
 		repo:        NewRepository(db),
 		metricsRepo: metrics.NewRepository(db),
 		rateLimiter: NewRateLimiter(10, time.Minute),
