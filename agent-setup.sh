@@ -1313,7 +1313,7 @@ while [[ $# -gt 0 ]]; do
     --autostart)       OPT_AUTOSTART=true;            shift ;;
     --no-color)        OPT_NO_COLOR=true; setup_colors; shift ;;
     -h|--help)
-      grep '^#' "$0" | grep -v '!/usr/bin' | sed 's/^# \?//'
+      awk 'NR==1{next} /^$/{exit} /^#/{sub(/^# ?/,""); print}' "$0"
       exit 0 ;;
     *) error "Bilinmeyen parametre: $1\n  Yardım için: $0 --help" ;;
   esac
