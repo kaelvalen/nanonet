@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+d#!/usr/bin/env bash
 # NanoNet Agent Setup — Multiplatform Kurulum Sihirbazı
 # Desteklenen: Ubuntu/Debian · Arch Linux · RHEL/Fedora/CentOS · openSUSE · macOS · WSL
 # Kullanım: ./agent-setup.sh [SEÇENEKLER]
