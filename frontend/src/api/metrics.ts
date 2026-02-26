@@ -76,11 +76,12 @@ export const metricsApi = {
     const response = await apiClient.get(`/services/${serviceId}/alerts`, {
       params: { resolved: resolved.toString() },
     });
-    return response.data.data || [];
+    const payload = response.data.data;
+    return Array.isArray(payload) ? payload : payload?.alerts ?? [];
   },
 
   resolveAlert: async (alertId: string): Promise<void> => {
-    await apiClient.post(`/alerts/${alertId}/resolve`);
+    await apiClient.post(`/services/alerts/${alertId}/resolve`);
   },
 
   getActiveAlerts: async (): Promise<Alert[]> => {
