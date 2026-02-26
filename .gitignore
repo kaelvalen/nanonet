@@ -173,3 +173,5 @@ metrics-data/
 logs-data/
 
 .windsurf/
+.bak*
+.env.bak*
