@@ -14,6 +14,7 @@ type AgentMessage struct {
 	Status    string                 `json:"status,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
 	System    map[string]interface{} `json:"system,omitempty"`
+	App       map[string]interface{} `json:"app,omitempty"`
 	Service   map[string]interface{} `json:"service,omitempty"`
 	Process   map[string]interface{} `json:"process,omitempty"`
 	Timestamp string                 `json:"timestamp,omitempty"`

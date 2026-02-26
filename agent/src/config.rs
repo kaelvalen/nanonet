@@ -49,6 +49,12 @@ pub struct Config {
     /// Hata oranı hesabı için tutulacak health check sayısı
     #[arg(long, default_value = "20", env = "NANONET_ERROR_RATE_WINDOW")]
     pub error_rate_window: usize,
+
+    /// İzlenen servisin /metrics endpoint'i (opsiyonel)
+    /// Varsa cpu_percent ve memory_used_mb bu endpoint'ten alınır.
+    /// Örn: http://localhost:8004/metrics
+    #[arg(long, env = "NANONET_METRICS_ENDPOINT")]
+    pub metrics_endpoint: Option<String>,
 }
 
 impl Config {

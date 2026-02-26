@@ -57,6 +57,62 @@ services:
     depends_on:
       - backend
 
+  # ── Mock Servisler (agent test için) ────────────────────────────────────────
+  mock-healthy:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-healthy
+    environment:
+      PORT: "8001"
+      SERVICE_NAME: "api-gateway"
+      SCENARIO: "healthy"
+    ports:
+      - "8001:8001"
+
+  mock-degraded:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-degraded
+    environment:
+      PORT: "8002"
+      SERVICE_NAME: "payment-service"
+      SCENARIO: "degraded"
+    ports:
+      - "8002:8002"
+
+  mock-spike:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-spike
+    environment:
+      PORT: "8003"
+      SERVICE_NAME: "analytics-worker"
+      SCENARIO: "spike"
+    ports:
+      - "8003:8003"
+
+  mock-memory-leak:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-memory-leak
+    environment:
+      PORT: "8004"
+      SERVICE_NAME: "notification-service"
+      SCENARIO: "memory_leak"
+    ports:
+      - "8004:8004"
+
+  mock-flapping:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-flapping
+    environment:
+      PORT: "8005"
+      SERVICE_NAME: "legacy-monolith"
+      SCENARIO: "flapping"
+    ports:
+      - "8005:8005"
+
 volumes:
   postgres_data:
   go_mod_cache:

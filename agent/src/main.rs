@@ -35,6 +35,10 @@ async fn main() -> error::Result<()> {
     tracing::info!("  Health URL:    {}", config.health_url());
     tracing::info!("  Poll interval: {}s", config.poll_interval);
     tracing::info!("  Error window:  {} checks", config.error_rate_window);
+    match &config.metrics_endpoint {
+        Some(url) => tracing::info!("  App metrics:   {}", url),
+        None => tracing::info!("  App metrics:   (yok — NANONET_METRICS_ENDPOINT ile etkinleştir)"),
+    }
     match &config.restart_cmd {
         Some(cmd) => tracing::info!("  Restart cmd:   {}", cmd),
         None => tracing::warn!("  Restart cmd:   (yapılandırılmamış — NANONET_RESTART_CMD)"),
@@ -76,6 +80,7 @@ async fn main() -> error::Result<()> {
         let health_url = metrics_config.health_url();
         let service_id = metrics_config.service_id.clone();
         let error_window_size = metrics_config.error_rate_window.max(1);
+        let app_metrics_url = metrics_config.metrics_endpoint.clone();
 
         // CPU kullanımı için iki ölçüm noktası gerekli
         sys.refresh_cpu_usage();
@@ -91,7 +96,13 @@ async fn main() -> error::Result<()> {
         loop {
             interval.tick().await;
 
-            let snapshot = metrics::collect(&mut sys, &mut disks);
+            let mut snapshot = metrics::collect_system(&mut sys, &mut disks);
+
+            // Servis /metrics endpoint'i varsa uygulama metriklerini çek
+            if let Some(ref url) = app_metrics_url {
+                metrics::fetch_app_metrics(&http_client, &mut snapshot, url).await;
+            }
+
             let health = health::check_health(&http_client, &health_url).await;
 
             // Kayan hata penceresi güncelle
@@ -114,6 +125,8 @@ async fn main() -> error::Result<()> {
                 cpu = snapshot.cpu_percent,
                 mem_mb = snapshot.memory_used_mb,
                 disk_gb = snapshot.disk_used_gb,
+                app_cpu = ?snapshot.app_cpu_percent,
+                app_mem_mb = ?snapshot.app_memory_used_mb,
                 status = %health.status,
                 latency_ms = health.latency_ms,
                 error_rate = error_rate,
@@ -132,6 +145,10 @@ async fn main() -> error::Result<()> {
                     "cpu_percent": snapshot.cpu_percent,
                     "memory_used_mb": snapshot.memory_used_mb,
                     "disk_used_gb": snapshot.disk_used_gb,
+                },
+                "app": {
+                    "cpu_percent": snapshot.app_cpu_percent,
+                    "memory_used_mb": snapshot.app_memory_used_mb,
                 },
                 "service": {
                     "status": health.status,
