@@ -137,6 +137,18 @@ func (s *Service) ValidateRefreshToken(tokenString string) (uuid.UUID, error) {
 	return uuid.Nil, errors.New("geçersiz token")
 }
 
+func (s *Service) GetUserByID(userID uuid.UUID) (*User, error) {
+	var user User
+	if err := s.db.Where("id = ?", userID).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *Service) UpdatePasswordHash(userID uuid.UUID, hash string) error {
+	return s.db.Model(&User{}).Where("id = ?", userID).Update("password_hash", hash).Error
+}
+
 func (s *Service) ValidateToken(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

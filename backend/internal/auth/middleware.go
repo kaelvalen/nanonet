@@ -4,17 +4,20 @@ import (
 	"strings"
 
 	"nanonet-backend/pkg/response"
+	"nanonet-backend/pkg/tokenblacklist"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Middleware struct {
-	service *Service
+	service   *Service
+	blacklist *tokenblacklist.Blacklist
 }
 
 func NewMiddleware(jwtSecret string) *Middleware {
 	return &Middleware{
-		service: &Service{jwtSecret: jwtSecret},
+		service:   &Service{jwtSecret: jwtSecret},
+		blacklist: tokenblacklist.Default,
 	}
 }
 
@@ -40,6 +43,12 @@ func (m *Middleware) Required() gin.HandlerFunc {
 			return
 		}
 
+		if m.blacklist.IsBlacklisted(tokenString) {
+			response.Unauthorized(c, "token geçersiz kılınmış, lütfen tekrar giriş yapın")
+			c.Abort()
+			return
+		}
+
 		userID, err := m.service.ValidateToken(tokenString)
 		if err != nil {
 			response.Unauthorized(c, "geçersiz token")
@@ -48,6 +57,7 @@ func (m *Middleware) Required() gin.HandlerFunc {
 		}
 
 		c.Set("user_id", userID.String())
+		c.Set("token", tokenString)
 		c.Next()
 	}
 }

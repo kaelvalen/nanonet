@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useWSStore } from '../store/wsStore';
 import { useServiceStore } from '../store/serviceStore';
+import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 
 const MAX_RECONNECT_DELAY = 30000;
@@ -90,7 +91,7 @@ export function useWebSocket() {
       if (!mountedRef.current) return;
 
       const wsUrl = import.meta.env.VITE_WS_URL;
-      const token = localStorage.getItem('access_token');
+      const token = useAuthStore.getState().accessToken;
 
       if (!token || !wsUrl) return;
 
@@ -148,7 +149,7 @@ export function useWebSocket() {
           incrementReconnect();
 
           reconnectTimeoutRef.current = setTimeout(() => {
-            if (mountedRef.current && localStorage.getItem('access_token')) {
+            if (mountedRef.current && useAuthStore.getState().accessToken) {
               connect();
             }
           }, delay);

@@ -1,6 +1,8 @@
 package alerts
 
 import (
+	"strconv"
+
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -27,13 +29,31 @@ func (h *Handler) List(c *gin.Context) {
 
 	includeResolved := c.DefaultQuery("resolved", "false") == "true"
 
-	alerts, err := h.service.GetAlerts(c.Request.Context(), serviceID, includeResolved)
+	limit := 50
+	offset := 0
+	if l := c.Query("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 && v <= 200 {
+			limit = v
+		}
+	}
+	if o := c.Query("offset"); o != "" {
+		if v, err := strconv.Atoi(o); err == nil && v >= 0 {
+			offset = v
+		}
+	}
+
+	alerts, total, err := h.service.GetAlertsPage(c.Request.Context(), serviceID, includeResolved, limit, offset)
 	if err != nil {
 		response.InternalError(c, "alertler alınamadı")
 		return
 	}
 
-	response.Success(c, alerts)
+	response.Success(c, gin.H{
+		"alerts": alerts,
+		"total":  total,
+		"limit":  limit,
+		"offset": offset,
+	})
 }
 
 func (h *Handler) Resolve(c *gin.Context) {

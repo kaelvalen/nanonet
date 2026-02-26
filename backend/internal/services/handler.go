@@ -260,55 +260,6 @@ func (h *Handler) Stop(c *gin.Context) {
 	})
 }
 
-func (h *Handler) Exec(c *gin.Context) {
-	userID, err := uuid.Parse(c.GetString("user_id"))
-	if err != nil {
-		response.Unauthorized(c, "geçersiz kullanıcı")
-		return
-	}
-
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		response.BadRequest(c, "geçersiz servis ID")
-		return
-	}
-
-	if _, err := h.service.Get(c.Request.Context(), id, userID); err != nil {
-		response.NotFound(c, "servis bulunamadı")
-		return
-	}
-
-	var req struct {
-		Command string `json:"command" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "command alanı zorunlu")
-		return
-	}
-
-	commandID := uuid.New().String()
-	command := map[string]interface{}{
-		"type":       "command",
-		"command_id": commandID,
-		"action":     "exec",
-		"command":    req.Command,
-	}
-
-	go h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "exec", command)
-
-	sent := h.hub.SendCommandToAgent(id.String(), command)
-	if !sent {
-		response.Error(c, 503, "agent bağlı değil, komut gönderilemedi")
-		return
-	}
-
-	response.Success(c, gin.H{
-		"command_id": commandID,
-		"status":     "queued",
-		"queued_at":  time.Now(),
-	})
-}
-
 func (h *Handler) Ping(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {
