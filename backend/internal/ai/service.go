@@ -142,8 +142,13 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 	}
 
 	prompt := fmt.Sprintf(AnalysisPromptTemplate,
-		svc.Name, svc.Host, svc.Port, svc.HealthEndpoint,
-		windowMinutes, string(metricsJSON), otherSvcInfo.String(),
+		SanitizeForPrompt(svc.Name),
+		SanitizeForPrompt(svc.Host),
+		svc.Port,
+		SanitizeForPrompt(svc.HealthEndpoint),
+		windowMinutes,
+		string(metricsJSON),
+		otherSvcInfo.String(),
 	)
 
 	result, err := s.callClaude(prompt)

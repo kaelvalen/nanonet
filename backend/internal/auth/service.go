@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"time"
+
+	"nanonet-backend/pkg/audit"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -11,14 +14,16 @@ import (
 )
 
 type Service struct {
-	db        *gorm.DB
-	jwtSecret string
+	db          *gorm.DB
+	jwtSecret   string
+	auditLogger *audit.Logger
 }
 
 func NewService(db *gorm.DB, jwtSecret string) *Service {
 	return &Service{
-		db:        db,
-		jwtSecret: jwtSecret,
+		db:          db,
+		jwtSecret:   jwtSecret,
+		auditLogger: audit.New(db),
 	}
 }
 
@@ -44,12 +49,26 @@ func (s *Service) Login(email, password string) (*User, error) {
 	var user User
 	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.auditLogger.Record(context.Background(), audit.Entry{
+				Action:       audit.ActionLoginFailed,
+				ResourceType: "user",
+				Status:       audit.StatusFailure,
+				Details:      map[string]any{"reason": "user_not_found", "email": email},
+			})
 			return nil, errors.New("geçersiz email veya şifre")
 		}
 		return nil, err
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		s.auditLogger.Record(context.Background(), audit.Entry{
+			UserID:       &user.ID,
+			Action:       audit.ActionLoginFailed,
+			ResourceType: "user",
+			ResourceID:   &user.ID,
+			Status:       audit.StatusFailure,
+			Details:      map[string]any{"reason": "invalid_password"},
+		})
 		return nil, errors.New("geçersiz email veya şifre")
 	}
 

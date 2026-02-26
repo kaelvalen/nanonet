@@ -13,21 +13,22 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
-  accessToken: localStorage.getItem('access_token'),
+  // Access token yalnızca memory'de tutulur — localStorage XSS saldırılarına açıktır.
+  // Sayfa yenilenmesinde refresh token ile yeniden alınır.
+  accessToken: null,
+  // Refresh token localStorage'da kalır; kalıcı oturum için gereklidir.
   refreshToken: localStorage.getItem('refresh_token'),
-  isAuthenticated: !!localStorage.getItem('access_token'),
-  
+  isAuthenticated: !!localStorage.getItem('refresh_token'),
+
   setAuth: (user, accessToken, refreshToken) => {
-    localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
     set({ user, accessToken, refreshToken, isAuthenticated: true });
   },
-  
+
   clearAuth: () => {
-    localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
   },
-  
+
   updateUser: (user) => set({ user }),
 }));
