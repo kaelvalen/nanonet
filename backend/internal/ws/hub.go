@@ -30,18 +30,23 @@ type Hub struct {
 	register         chan *Client
 	unregister       chan *Client
 	mu               sync.RWMutex
+	maxConnections   int
 
 	onMetric        OnMetricFunc
 	onCommandResult OnCommandResultFunc
 }
 
-func NewHub() *Hub {
+func NewHub(maxConnections int) *Hub {
+	if maxConnections <= 0 {
+		maxConnections = 1000
+	}
 	return &Hub{
 		dashboardClients: make(map[*Client]bool),
 		agentClients:     make(map[*Client]bool),
 		broadcast:        make(chan []byte, 256),
 		register:         make(chan *Client),
 		unregister:       make(chan *Client),
+		maxConnections:   maxConnections,
 	}
 }
 
@@ -62,6 +67,13 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.mu.Lock()
+			totalConnections := len(h.dashboardClients) + len(h.agentClients)
+			if totalConnections >= h.maxConnections {
+				log.Printf("[WARN] Max bağlantı limiti aşıldı (%d), bağlantı reddedildi: %s", h.maxConnections, client.id)
+				close(client.send)
+				h.mu.Unlock()
+				break
+			}
 			if client.clientType == AgentClient {
 				h.agentClients[client] = true
 				log.Printf("Agent bağlandı: %s (service: %s)", client.id, client.serviceID)
@@ -237,7 +249,7 @@ func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{
 			}
 			select {
 			case client.send <- jsonData:
-				log.Printf("Komut agent'a gönderildi: service=%s, command=%v", serviceID, command)
+				log.Printf("Komut agent'a gönderildi: service=%s", serviceID)
 				return true
 			default:
 				log.Printf("Agent send buffer dolu: %s", client.id)

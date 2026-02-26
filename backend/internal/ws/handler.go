@@ -3,8 +3,10 @@ package ws
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
@@ -18,11 +20,30 @@ var upgrader = websocket.Upgrader{
 }
 
 type Handler struct {
-	hub *Hub
+	hub       *Hub
+	jwtSecret string
 }
 
-func NewHandler(hub *Hub) *Handler {
-	return &Handler{hub: hub}
+func NewHandler(hub *Hub, jwtSecret string) *Handler {
+	return &Handler{hub: hub, jwtSecret: jwtSecret}
+}
+
+func (h *Handler) extractTokenType(tokenString string) string {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(h.jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return ""
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return ""
+	}
+	typ, _ := claims["typ"].(string)
+	return typ
 }
 
 func (h *Handler) Dashboard(c *gin.Context) {
@@ -51,6 +72,25 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 	serviceID := c.Query("service_id")
 	if serviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "service_id gerekli"})
+		return
+	}
+
+	// Token'ı header veya query'den al ve tip kontrolü yap
+	var tokenString string
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString = parts[1]
+		}
+	}
+	if tokenString == "" {
+		tokenString = c.Query("token")
+	}
+
+	tokenType := h.extractTokenType(tokenString)
+	if tokenType != "agent" && tokenType != "access" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "geçersiz token tipi: agent veya access token gerekli"})
 		return
 	}
 

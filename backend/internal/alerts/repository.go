@@ -28,7 +28,7 @@ func (r *Repository) GetByServiceID(ctx context.Context, serviceID uuid.UUID, in
 	defer cancel()
 
 	query := r.db.WithContext(ctx).Where("service_id = ?", serviceID)
-	
+
 	if !includeResolved {
 		query = query.Where("resolved_at IS NULL")
 	}
@@ -36,6 +36,25 @@ func (r *Repository) GetByServiceID(ctx context.Context, serviceID uuid.UUID, in
 	var alerts []Alert
 	err := query.Order("triggered_at DESC").Find(&alerts).Error
 	return alerts, err
+}
+
+func (r *Repository) GetByServiceIDPage(ctx context.Context, serviceID uuid.UUID, includeResolved bool, limit, offset int) ([]Alert, int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	query := r.db.WithContext(ctx).Model(&Alert{}).Where("service_id = ?", serviceID)
+	if !includeResolved {
+		query = query.Where("resolved_at IS NULL")
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var alerts []Alert
+	err := query.Order("triggered_at DESC").Limit(limit).Offset(offset).Find(&alerts).Error
+	return alerts, total, err
 }
 
 func (r *Repository) Resolve(ctx context.Context, alertID uuid.UUID) error {
@@ -72,6 +91,17 @@ func (r *Repository) HasActiveAlert(ctx context.Context, serviceID uuid.UUID, al
 		Where("service_id = ? AND type = ? AND resolved_at IS NULL", serviceID, alertType).
 		Count(&count).Error
 	return count > 0, err
+}
+
+func (r *Repository) ResolveByType(ctx context.Context, serviceID uuid.UUID, alertType string) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	now := time.Now()
+	return r.db.WithContext(ctx).
+		Model(&Alert{}).
+		Where("service_id = ? AND type = ? AND resolved_at IS NULL", serviceID, alertType).
+		Update("resolved_at", now).Error
 }
 
 func (r *Repository) ResolveByUser(ctx context.Context, alertID, userID uuid.UUID) error {

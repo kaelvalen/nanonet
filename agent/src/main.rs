@@ -15,6 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use sysinfo::{Disks, System};
+use tokio::sync::watch;
 
 #[tokio::main]
 async fn main() -> error::Result<()> {
@@ -57,6 +58,10 @@ async fn main() -> error::Result<()> {
     // restart/stop komutlarından güncellenen paylaşımlı sayaç
     let restart_count = Arc::new(AtomicU64::new(0));
 
+    // Graceful shutdown kanalı
+    let (shutdown_tx, mut shutdown_rx) = watch::channel(false);
+    let shutdown_rx_ws = shutdown_tx.subscribe();
+
     // WebSocket task — bağlanma, yeniden bağlanma döngüsü
     let ws_config = config.clone();
     let ws_restart_count = Arc::clone(&restart_count);
@@ -67,6 +72,7 @@ async fn main() -> error::Result<()> {
     // Metrik toplama task
     let metrics_config = config.clone();
     let metrics_restart_count = Arc::clone(&restart_count);
+    let mut metrics_shutdown_rx = shutdown_tx.subscribe();
     let metrics_task = tokio::spawn(async move {
         let mut sys = System::new();
         let mut disks = Disks::new_with_refreshed_list();
@@ -94,7 +100,13 @@ async fn main() -> error::Result<()> {
         let mut error_window: VecDeque<bool> = VecDeque::with_capacity(error_window_size);
 
         loop {
-            interval.tick().await;
+            tokio::select! {
+                _ = interval.tick() => {},
+                _ = metrics_shutdown_rx.changed() => {
+                    tracing::info!("Metrics task kapatılıyor (shutdown sinyali)");
+                    break;
+                }
+            }
 
             let mut snapshot = metrics::collect_system(&mut sys, &mut disks);
 
@@ -169,6 +181,29 @@ async fn main() -> error::Result<()> {
         }
     });
 
+    // Sinyal dinleyici task
+    let signal_task = tokio::spawn(async move {
+        #[cfg(unix)]
+        {
+            use tokio::signal::unix::{signal, SignalKind};
+            let mut sigterm = signal(SignalKind::terminate()).expect("SIGTERM handler kurulamadı");
+            let mut sigint  = signal(SignalKind::interrupt()).expect("SIGINT handler kurulamadı");
+            tokio::select! {
+                _ = sigterm.recv() => tracing::info!("SIGTERM alındı, kapatılıyor..."),
+                _ = sigint.recv()  => tracing::info!("SIGINT alındı, kapatılıyor..."),
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            tokio::signal::ctrl_c().await.expect("Ctrl+C handler kurulamadı");
+            tracing::info!("Ctrl+C alındı, kapatılıyor...");
+        }
+        let _ = shutdown_tx.send(true);
+    });
+
+    // shutdown_rx_ws kullanılmıyor şimdilik (ws::run kendi kopma mantığı ile)
+    drop(shutdown_rx_ws);
+
     tokio::select! {
         result = ws_task => {
             if let Err(e) = result {
@@ -179,6 +214,12 @@ async fn main() -> error::Result<()> {
             if let Err(e) = result {
                 tracing::error!("Metrics task hatası: {}", e);
             }
+        }
+        _ = signal_task => {
+            tracing::info!("Agent temiz şekilde kapatıldı.");
+        }
+        _ = shutdown_rx.changed() => {
+            tracing::info!("Shutdown sinyali alındı, agent kapatılıyor.");
         }
     }
 

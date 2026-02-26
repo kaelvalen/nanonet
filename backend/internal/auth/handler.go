@@ -1,23 +1,28 @@
 package auth
 
 import (
+	"errors"
 	"strings"
 	"time"
 
 	"nanonet-backend/pkg/response"
+	"nanonet-backend/pkg/tokenblacklist"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type Handler struct {
-	service *Service
+	service   *Service
+	blacklist *tokenblacklist.Blacklist
 }
 
 func NewHandler(db *gorm.DB, jwtSecret string) *Handler {
 	return &Handler{
-		service: NewService(db, jwtSecret),
+		service:   NewService(db, jwtSecret),
+		blacklist: tokenblacklist.Default,
 	}
 }
 
@@ -128,5 +133,82 @@ func (h *Handler) AgentToken(c *gin.Context) {
 }
 
 func (h *Handler) Logout(c *gin.Context) {
+	tokenString := c.GetString("token")
+	if tokenString != "" {
+		h.blacklist.Add(tokenString, time.Now().Add(24*time.Hour))
+	}
 	response.Success(c, gin.H{"message": "çıkış başarılı"})
+}
+
+func (h *Handler) Me(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	if userIDStr == "" {
+		response.Unauthorized(c, "authorization gerekli")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.BadRequest(c, "geçersiz user_id")
+		return
+	}
+
+	user, err := h.service.GetUserByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.NotFound(c, "kullanıcı bulunamadı")
+			return
+		}
+		response.InternalError(c, "kullanıcı bilgisi alınamadı")
+		return
+	}
+
+	response.Success(c, user)
+}
+
+func (h *Handler) ChangePassword(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	var req struct {
+		CurrentPassword string `json:"current_password" binding:"required"`
+		NewPassword     string `json:"new_password" binding:"required,min=12"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	user, err := h.service.GetUserByID(userID)
+	if err != nil {
+		response.NotFound(c, "kullanıcı bulunamadı")
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+		response.Unauthorized(c, "mevcut şifre hatalı")
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 12)
+	if err != nil {
+		response.InternalError(c, "şifre işlenemedi")
+		return
+	}
+
+	if err := h.service.UpdatePasswordHash(userID, string(hash)); err != nil {
+		response.InternalError(c, "şifre güncellenemedi")
+		return
+	}
+
+	tokenString := c.GetString("token")
+	if tokenString != "" {
+		h.blacklist.Add(tokenString, time.Now().Add(24*time.Hour))
+	}
+
+	response.Success(c, gin.H{"message": "şifre güncellendi, lütfen tekrar giriş yapın"})
 }

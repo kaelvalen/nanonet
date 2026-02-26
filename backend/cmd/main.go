@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -15,11 +16,15 @@ import (
 	"nanonet-backend/internal/commands"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/services"
+	"nanonet-backend/internal/settings"
 	"nanonet-backend/internal/ws"
+	"nanonet-backend/pkg/audit"
 	"nanonet-backend/pkg/config"
 	"nanonet-backend/pkg/database"
+	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -42,7 +47,7 @@ func main() {
 	authLimiter := auth.NewRateLimiter(10, time.Minute)
 	router.Use(auth.RateLimitMiddleware(generalLimiter))
 
-	hub := ws.NewHub()
+	hub := ws.NewHub(cfg.WSMaxConnections)
 	go hub.Run()
 
 	broadcaster := ws.NewMetricsBroadcaster(hub, db, time.Duration(cfg.PollDefaultSec)*time.Second)
@@ -55,10 +60,11 @@ func main() {
 	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)
 	alertHandler := alerts.NewHandler(db)
-	wsHandler := ws.NewHandler(hub)
+	wsHandler := ws.NewHandler(hub, cfg.JWTSecret)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
 	cmdHandler := commands.NewHandler(db)
 	cmdService := commands.NewService(db)
+	settingsHandler := settings.NewHandler(db)
 
 	hub.SetOnCommandResult(func(commandID, status string, msg ws.AgentMessage) {
 		cmdService.UpdateStatus(context.Background(), commandID, status, nil)
@@ -74,6 +80,8 @@ func main() {
 			authGroup.POST("/refresh", authHandler.Refresh)
 			authGroup.POST("/logout", authMiddleware.Required(), authHandler.Logout)
 			authGroup.POST("/agent-token", authMiddleware.Required(), authHandler.AgentToken)
+			authGroup.GET("/me", authMiddleware.Required(), authHandler.Me)
+			authGroup.PUT("/password", authMiddleware.Required(), authHandler.ChangePassword)
 		}
 
 		svcGroup := v1.Group("/services", authMiddleware.Required())
@@ -91,7 +99,6 @@ func main() {
 			svcGroup.POST("/:id/restart", serviceHandler.Restart)
 			svcGroup.POST("/:id/stop", serviceHandler.Stop)
 			svcGroup.POST("/:id/ping", serviceHandler.Ping)
-			svcGroup.POST("/:id/exec", serviceHandler.Exec)
 			svcGroup.POST("/:id/analyze", aiHandler.Analyze)
 			svcGroup.GET("/:id/commands", cmdHandler.GetHistory)
 		}
@@ -101,9 +108,20 @@ func main() {
 			alertsGroup.GET("", alertHandler.GetActive)
 			alertsGroup.POST("/:alertId/resolve", alertHandler.Resolve)
 		}
+
+		settingsGroup := v1.Group("/settings", authMiddleware.Required())
+		{
+			settingsGroup.GET("", settingsHandler.Get)
+			settingsGroup.PUT("", settingsHandler.Update)
+		}
+
+		auditGroup := v1.Group("/audit", authMiddleware.Required())
+		{
+			auditGroup.GET("", handleAuditLogs(db))
+		}
 	}
 
-	router.POST("/api/v1/metrics", metricsHandler.InsertMetric)
+	router.POST("/api/v1/metrics", authMiddleware.Required(), metricsHandler.InsertMetric)
 
 	wsGroup := router.Group("/ws")
 	{
@@ -146,6 +164,49 @@ func main() {
 	}
 
 	log.Println("Server kapatıldı")
+}
+
+func handleAuditLogs(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("user_id")
+		if userID == "" {
+			response.Unauthorized(c, "geçersiz kullanıcı")
+			return
+		}
+
+		limit := 50
+		offset := 0
+		if l := c.Query("limit"); l != "" {
+			if v, err := strconv.Atoi(l); err == nil && v > 0 && v <= 200 {
+				limit = v
+			}
+		}
+		if o := c.Query("offset"); o != "" {
+			if v, err := strconv.Atoi(o); err == nil && v >= 0 {
+				offset = v
+			}
+		}
+
+		var logs []audit.Log
+		var total int64
+
+		q := db.WithContext(c.Request.Context()).
+			Where("user_id = ?", userID).
+			Order("created_at DESC")
+
+		q.Model(&audit.Log{}).Count(&total)
+		if err := q.Limit(limit).Offset(offset).Find(&logs).Error; err != nil {
+			response.InternalError(c, "audit loglar alınamadı")
+			return
+		}
+
+		response.Success(c, gin.H{
+			"logs":   logs,
+			"total":  total,
+			"limit":  limit,
+			"offset": offset,
+		})
+	}
 }
 
 func securityHeadersMiddleware() gin.HandlerFunc {
