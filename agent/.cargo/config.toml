@@ -1,5 +1,44 @@
+# ── Linux musl (statik binary — Docker/CI/Alpine uyumlu) ─────────────────────
 [target.x86_64-unknown-linux-musl]
 linker = "x86_64-linux-musl-gcc"
 
 [target.aarch64-unknown-linux-musl]
 linker = "aarch64-linux-musl-gcc"
+
+# ── Linux GNU (dinamik — standart Ubuntu/Debian/Arch/RHEL) ───────────────────
+[target.x86_64-unknown-linux-gnu]
+linker = "cc"
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+
+# ARM v7 (Raspberry Pi 2/3, eski Armbian)
+[target.armv7-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
+
+# ── macOS (cross-compile — osxcross gerektirir) ───────────────────────────────
+# macOS'ta yerel build için linker belirtmeye gerek yok.
+# Linux'tan cross-compile için: https://github.com/tpoechtrager/osxcross
+[target.x86_64-apple-darwin]
+# linker = "x86_64-apple-darwin21.4-clang"   # osxcross kuruluysa aktif et
+
+[target.aarch64-apple-darwin]
+# linker = "aarch64-apple-darwin21.4-clang"  # osxcross kuruluysa aktif et
+
+# ── Windows (mingw-w64 cross-compile) ────────────────────────────────────────
+# Gerekli: sudo apt install mingw-w64  (Debian/Ubuntu)
+#           sudo pacman -S mingw-w64-gcc  (Arch)
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar     = "x86_64-w64-mingw32-ar"
+
+[target.aarch64-pc-windows-msvc]
+# Windows ARM64 — MSVC toolchain (sadece Windows'ta native build)
+
+# ── Genel optimizasyon ayarları ───────────────────────────────────────────────
+[profile.release]
+opt-level     = 3
+lto           = true       # Link Time Optimization — daha küçük binary
+codegen-units = 1          # Daha iyi optimizasyon için tekil codegen birimi
+strip         = true       # Debug sembollerini sil — küçük binary
+panic         = "abort"    # Unwind yerine abort — MUSL ile uyumlu

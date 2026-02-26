@@ -81,6 +81,18 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 		}
 	}
 
+	// App bloğu varsa (mock servis / uygulama metrikleri) system değerlerini override et
+	if msg.App != nil {
+		if v, ok := msg.App["cpu_percent"].(float64); ok && v > 0 {
+			f := float32(v)
+			metric.CPUPercent = &f
+		}
+		if v, ok := msg.App["memory_used_mb"].(float64); ok && v > 0 {
+			f := float32(v)
+			metric.MemoryUsedMB = &f
+		}
+	}
+
 	if msg.Service != nil {
 		if v, ok := msg.Service["latency_ms"].(float64); ok {
 			f := float32(v)

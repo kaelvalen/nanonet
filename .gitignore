@@ -133,6 +133,7 @@ releases/
 nanonet-agent*
 agent-*
 !agent-setup.sh*
+!agent-setup.ps1
 
 # TimescaleDB data
 pgdata/
