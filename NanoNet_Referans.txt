@@ -4,7 +4,7 @@ Mikroservis İzleme ve Yönetim Platformu
 ================================================================================
 Hazırlayan  : Kael Valen
 Ders        : YMH354 Web Tasarım ve Programlama
-Tarih       : 2025
+Tarih       : 2026
 Versiyon    : 1.0 — Kapsamlı Referans
 ================================================================================
 
@@ -428,11 +428,11 @@ AUTH HEADER : Authorization: Bearer {access_token}
   GET /services/{id}/metrics  (response):
   {
     "service_id": "svc_a3f8b2",
-    "range": { "from": "2025-02-17T10:00:00Z", "to": "2025-02-17T11:00:00Z" },
+    "range": { "from": "2026-02-17T10:00:00Z", "to": "2026-02-17T11:00:00Z" },
     "data": [
-      { "time": "2025-02-17T10:00:10Z", "cpu": 23.4, "memory_mb": 412,
+      { "time": "2026-02-17T10:00:10Z", "cpu": 23.4, "memory_mb": 412,
         "latency_ms": 42, "status": "up" },
-      { "time": "2025-02-17T10:00:20Z", "cpu": 67.1, "memory_mb": 418,
+      { "time": "2026-02-17T10:00:20Z", "cpu": 67.1, "memory_mb": 418,
         "latency_ms": 89, "status": "up" }
     ]
   }
@@ -475,7 +475,7 @@ METRİK GÖNDERİMİ (her poll_interval_sec saniyede bir push):
     "type": "metrics",
     "agent_id": "agt_xyz123",
     "service_id": "svc_a3f8b2",
-    "timestamp": "2025-02-17T10:00:10Z",
+    "timestamp": "2026-02-17T10:00:10Z",
     "system": {
       "cpu_percent": 23.4,
       "memory_used_mb": 412.0,
@@ -1157,7 +1157,7 @@ SUNUM:
 NOTLAR VE KARARLAR (geliştirilirken güncellenir)
 ================================================================================
 
-2025 — İlk karar:
+2026 — İlk karar:
   - Proje adı NanoNet olarak belirlendi
   - Stack kararları finalize edildi (Go backend, Rust agent, React frontend)
   - TimescaleDB seçildi; gerekçe yukarıda belgelendi
@@ -1166,7 +1166,7 @@ NOTLAR VE KARARLAR (geliştirilirken güncellenir)
 TODO (henüz karar verilmemiş):
   - Go ORM: GORM mi sqlx mi? (GORM daha hızlı; sqlx daha kontrollü)
   - Frontend build tool: Vite (önerilen, Create React App deprecated)
-  - AI model varsayılanı: Claude Sonnet 4 (değiştirilebilir)
+  - AI model varsayılanı: Claude haiku 3.5 (değiştirilebilir)
   - Agent config: env mi YAML mi? (env daha basit, H4'te karar)
 
 ================================================================================
@@ -1174,5 +1174,5 @@ SON
 ================================================================================
 Dosya boyutu    : ~12 KB
 Toplam madde    : 100+
-Son güncelleme  : 2025
+Son güncelleme  : 2026
 ================================================================================

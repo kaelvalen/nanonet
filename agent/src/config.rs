@@ -12,9 +12,13 @@ pub struct Config {
     #[arg(long, env = "NANONET_SERVICE_ID")]
     pub service_id: String,
 
-    /// Kimlik doğrulama için JWT token
+    /// Kimlik doğrulama için JWT token (user access token - geçici)
     #[arg(long, env = "NANONET_TOKEN")]
-    pub token: String,
+    pub token: Option<String>,
+
+    /// Agent için özel uzun ömürlü token (önerilen)
+    #[arg(long, env = "NANONET_AGENT_TOKEN")]
+    pub agent_token: Option<String>,
 
     /// Health check için hedef host
     #[arg(long, default_value = "localhost", env = "NANONET_HOST")]
@@ -53,9 +57,13 @@ impl Config {
     }
 
     pub fn ws_url(&self) -> String {
+        let token = self.agent_token.clone()
+            .or_else(|| self.token.clone())
+            .unwrap_or_else(|| "no-token".to_string());
+        
         format!(
             "{}/ws/agent?service_id={}&token={}",
-            self.backend, self.service_id, self.token
+            self.backend, self.service_id, token
         )
     }
 }
