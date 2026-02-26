@@ -15,8 +15,6 @@ pub struct IncomingCommand {
     pub timeout_sec: Option<u64>,
     /// stop komutu için
     pub graceful: Option<bool>,
-    /// exec komutu için çalıştırılacak shell komutu
-    pub command: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -59,8 +57,21 @@ impl IncomingCommand {
     }
 }
 
-/// Komutu çalıştırır. Başarılı olursa stdout çıktısını döner.
+/// İzin verilen komut listesi (allowlist). Bu liste dışında hiçbir komut çalıştırılmaz.
+const ALLOWED_ACTIONS: &[&str] = &["ping", "restart", "stop"];
+
+/// Komutu çalıştırır. Yalnızca allowlist komutları kabul eder.
+/// Arbitrary shell execution kesinlikle yasaktır.
 pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<String>, String> {
+    if !ALLOWED_ACTIONS.contains(&cmd.action.as_str()) {
+        tracing::warn!(
+            "[{}] Allowlist dışı komut reddedildi: {}",
+            cmd.command_id,
+            cmd.action
+        );
+        return Err(format!("izin verilmeyen komut: {}", cmd.action));
+    }
+
     match cmd.action.as_str() {
         "ping" => {
             tracing::info!("[{}] Ping alındı", cmd.command_id);
@@ -72,10 +83,9 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
             match &config.restart_cmd {
                 Some(restart_cmd) => {
                     tracing::info!(
-                        "[{}] Restart komutu çalıştırılıyor (timeout: {}s): {}",
+                        "[{}] Restart komutu çalıştırılıyor (timeout: {}s)",
                         cmd.command_id,
                         timeout,
-                        restart_cmd
                     );
                     run_shell(restart_cmd, timeout).await
                 }
@@ -94,10 +104,9 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
             match &config.stop_cmd {
                 Some(stop_cmd) => {
                     tracing::info!(
-                        "[{}] Stop komutu çalıştırılıyor (graceful: {}): {}",
+                        "[{}] Stop komutu çalıştırılıyor (graceful: {})",
                         cmd.command_id,
                         graceful,
-                        stop_cmd
                     );
                     run_shell(stop_cmd, 30).await
                 }
@@ -111,18 +120,7 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
             }
         }
 
-        "exec" => match &cmd.command {
-            Some(shell_cmd) => {
-                tracing::info!("[{}] Exec: {}", cmd.command_id, shell_cmd);
-                run_shell(shell_cmd, 60).await
-            }
-            None => Err("exec komutu için 'command' alanı gerekli".to_string()),
-        },
-
-        other => {
-            tracing::warn!("[{}] Bilinmeyen komut: {}", cmd.command_id, other);
-            Err(format!("bilinmeyen komut: {}", other))
-        }
+        _ => unreachable!("allowlist kontrolü yukarıda yapıldı"),
     }
 }
 

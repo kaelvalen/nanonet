@@ -36,6 +36,7 @@ func main() {
 
 	router := gin.Default()
 	router.Use(corsMiddleware(cfg.FrontendURL))
+	router.Use(securityHeadersMiddleware())
 
 	generalLimiter := auth.NewRateLimiter(100, time.Minute)
 	authLimiter := auth.NewRateLimiter(10, time.Minute)
@@ -145,6 +146,18 @@ func main() {
 	}
 
 	log.Println("Server kapatıldı")
+}
+
+func securityHeadersMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		c.Next()
+	}
 }
 
 func corsMiddleware(frontendURL string) gin.HandlerFunc {
