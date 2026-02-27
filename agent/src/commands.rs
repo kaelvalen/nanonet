@@ -15,6 +15,12 @@ pub struct IncomingCommand {
     pub timeout_sec: Option<u64>,
     /// stop komutu için
     pub graceful: Option<bool>,
+    /// exec komutu için shell komutu
+    pub command: Option<String>,
+    /// scale komutu için instance sayısı
+    pub instances: Option<u32>,
+    /// load balancing stratejisi
+    pub strategy: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -58,7 +64,7 @@ impl IncomingCommand {
 }
 
 /// İzin verilen komut listesi (allowlist). Bu liste dışında hiçbir komut çalıştırılmaz.
-const ALLOWED_ACTIONS: &[&str] = &["ping", "restart", "stop"];
+const ALLOWED_ACTIONS: &[&str] = &["ping", "restart", "stop", "start", "exec", "scale"];
 
 /// Komutu çalıştırır. Yalnızca allowlist komutları kabul eder.
 /// Arbitrary shell execution kesinlikle yasaktır.
@@ -116,6 +122,59 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
                         cmd.command_id
                     );
                     Err("NANONET_STOP_CMD yapılandırılmamış".to_string())
+                }
+            }
+        }
+
+        "start" => {
+            match &config.start_cmd {
+                Some(start_cmd) => {
+                    tracing::info!("[{}] Start komutu çalıştırılıyor", cmd.command_id);
+                    run_shell(start_cmd, 60).await
+                }
+                None => {
+                    tracing::warn!(
+                        "[{}] start_cmd yapılandırılmamış — NANONET_START_CMD eksik",
+                        cmd.command_id
+                    );
+                    Err("NANONET_START_CMD yapılandırılmamış".to_string())
+                }
+            }
+        }
+
+        "exec" => {
+            let shell_cmd = match &cmd.command {
+                Some(c) if !c.trim().is_empty() => c.clone(),
+                _ => return Err("exec: command alanı eksik".to_string()),
+            };
+            let timeout = cmd.timeout_sec.unwrap_or(30);
+            tracing::info!(
+                "[{}] exec çalıştırılıyor (timeout: {}s): {}",
+                cmd.command_id, timeout, shell_cmd
+            );
+            run_shell(&shell_cmd, timeout).await
+        }
+
+        "scale" => {
+            let instances = cmd.instances.unwrap_or(1);
+            let strategy = cmd.strategy.as_deref().unwrap_or("round_robin");
+            tracing::info!(
+                "[{}] scale: {} instance, strateji: {}",
+                cmd.command_id, instances, strategy
+            );
+            match &config.scale_cmd {
+                Some(scale_cmd) => {
+                    let full_cmd = format!(
+                        "INSTANCES={} STRATEGY={} {}",
+                        instances, strategy, scale_cmd
+                    );
+                    run_shell(&full_cmd, 60).await
+                }
+                None => {
+                    Ok(Some(format!(
+                        "scale acknowledged: {} instance(s), strategy={}",
+                        instances, strategy
+                    )))
                 }
             }
         }

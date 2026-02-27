@@ -28,3 +28,17 @@ export interface UpdateServiceRequest {
   health_endpoint?: string;
   poll_interval_sec?: number;
 }
+
+export interface CommandLog {
+  id: string;
+  service_id: string;
+  user_id: string;
+  command_id: string;
+  action: string;
+  status: 'queued' | 'received' | 'success' | 'failed' | 'timeout';
+  payload?: unknown;
+  output?: string;
+  queued_at: string;
+  completed_at?: string;
+  duration_ms?: number;
+}

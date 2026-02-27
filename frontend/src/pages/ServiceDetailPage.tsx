@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
@@ -34,6 +34,14 @@ import {
   Terminal,
   Send,
   ChevronRight,
+  Play,
+  Layers,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  History,
+  Minus,
+  Plus,
 } from "lucide-react";
 import {
   LineChart,
@@ -55,9 +63,79 @@ import { toast } from "sonner";
 type ExecEntry = {
   command: string;
   command_id: string;
-  status: string;
+  status: 'queued' | 'received' | 'success' | 'failed' | 'timeout';
   queued_at: string;
+  output?: string;
+  error?: string;
+  duration_ms?: number;
 };
+
+function CommandHistoryTab({ serviceId }: { serviceId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['commandHistory', serviceId],
+    queryFn: () => servicesApi.getCommandHistory(serviceId, 30, 1),
+    enabled: !!serviceId,
+    refetchInterval: 15000,
+  });
+
+  const logs = data?.commands ?? [];
+
+  const statusIcon = (status: string) => {
+    if (status === 'success') return <CheckCircle2 className="w-3.5 h-3.5 text-[#34d399]" />;
+    if (status === 'failed' || status === 'timeout') return <XCircle className="w-3.5 h-3.5 text-[#fb7185]" />;
+    return <Loader2 className="w-3.5 h-3.5 text-[#fbbf24] animate-spin" />;
+  };
+
+  const actionColor: Record<string, string> = {
+    restart: 'text-[#39c5bb] bg-[#39c5bb]/10',
+    stop:    'text-[#d97706] bg-[#fbbf24]/10',
+    start:   'text-[#059669] bg-[#34d399]/10',
+    exec:    'text-[#38bdf8] bg-[#38bdf8]/10',
+    scale:   'text-[#a78bfa] bg-[#c4b5fd]/10',
+    ping:    'text-[#b0bdd5] bg-[#b0bdd5]/10',
+  };
+
+  if (isLoading) return (
+    <Card className="p-6 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 rounded-xl animate-pulse">
+      <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-10 bg-[#93c5fd]/5 rounded-lg" />)}</div>
+    </Card>
+  );
+
+  if (logs.length === 0) return (
+    <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 rounded-xl text-center">
+      <History className="w-10 h-10 text-[#b0bdd5] mx-auto mb-3" />
+      <p className="text-sm text-[#7c8db5]">Henüz komut geçmişi yok</p>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-2">
+      {logs.map((log) => (
+        <Card key={log.id} className="p-3 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 dark:border-[#93c5fd]/6 rounded-xl">
+          <div className="flex items-center gap-3">
+            {statusIcon(log.status)}
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full font-mono ${
+              actionColor[log.action] ?? 'text-[#7c8db5] bg-[#7c8db5]/10'
+            }`}>{log.action}</span>
+            <span className="text-xs text-[#3b4563] dark:text-[#d0f4ff] font-mono flex-1 truncate">
+              {log.command_id.slice(0, 12)}...
+            </span>
+            {log.duration_ms != null && (
+              <span className="text-[10px] text-[#b0bdd5]">{log.duration_ms}ms</span>
+            )}
+            <span className="text-[10px] text-[#b0bdd5]">
+              {new Date(log.queued_at).toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          </div>
+          {log.output && (
+            <pre className="mt-2 ml-6 text-[10px] text-[#64748b] font-mono bg-[#f8fafc] dark:bg-[#0a1520] rounded-lg p-2 border border-[#e2e8f0] dark:border-[#1e3a4a] whitespace-pre-wrap break-all line-clamp-3">{log.output}</pre>
+          )}
+        </Card>
+      ))}
+      <p className="text-[10px] text-[#b0bdd5] px-1 text-right">Son {logs.length} komut · 15s yenileme</p>
+    </div>
+  );
+}
 
 export function ServiceDetailPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -70,6 +148,11 @@ export function ServiceDetailPage() {
   const [execCommand, setExecCommand] = useState("");
   const [execLoading, setExecLoading] = useState(false);
   const [execHistory, setExecHistory] = useState<ExecEntry[]>([]);
+  const [startLoading, setStartLoading] = useState(false);
+  const [scaleInstances, setScaleInstances] = useState(1);
+  const [scaleStrategy, setScaleStrategy] = useState<'round_robin' | 'least_conn' | 'ip_hash'>('round_robin');
+  const [scaleLoading, setScaleLoading] = useState(false);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
 
   const { data: service, isLoading: serviceLoading } = useQuery({
     queryKey: ["service", serviceId],
@@ -105,12 +188,58 @@ export function ServiceDetailPage() {
     }
   };
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ command_id: string; status: string; output?: string; error?: string; service_id?: string }>;
+      const { command_id, status, output, error } = ev.detail;
+      setExecHistory((prev) =>
+        prev.map((entry) =>
+          entry.command_id === command_id
+            ? { ...entry, status: status as ExecEntry['status'], output, error }
+            : entry
+        )
+      );
+    };
+    window.addEventListener('nanonet:command_result', handler);
+    return () => window.removeEventListener('nanonet:command_result', handler);
+  }, []);
+
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [execHistory]);
+
   const handleRestart = () => {
     if (serviceId) restartService(serviceId);
   };
 
   const handleStop = () => {
     if (serviceId) stopService(serviceId);
+  };
+
+  const handleStart = async () => {
+    if (!serviceId) return;
+    setStartLoading(true);
+    try {
+      await servicesApi.start(serviceId);
+      toast.success('Start komutu gönderildi');
+    } catch {
+      toast.error('Start komutu gönderilemedi');
+    } finally {
+      setStartLoading(false);
+    }
+  };
+
+  const handleScale = async () => {
+    if (!serviceId) return;
+    setScaleLoading(true);
+    try {
+      await servicesApi.scale(serviceId, scaleInstances, scaleStrategy);
+      toast.success(`Scale komutu gönderildi: ${scaleInstances} instance`);
+    } catch {
+      toast.error('Scale komutu gönderilemedi');
+    } finally {
+      setScaleLoading(false);
+    }
   };
 
   const handleExec = async () => {
@@ -121,10 +250,9 @@ export function ServiceDetailPage() {
     try {
       const result = await servicesApi.exec(serviceId, cmd);
       setExecHistory((prev) => [
-        { command: cmd, ...result },
         ...prev,
+        { command: cmd, ...result, status: result.status as ExecEntry['status'] },
       ]);
-      toast.success("Komut gönderildi");
     } catch {
       toast.error("Komut gönderilemedi");
     } finally {
@@ -222,6 +350,9 @@ export function ServiceDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleStart} disabled={startLoading} className="border-[#34d399]/20 text-[#059669] rounded-lg text-xs h-8 hover:bg-[#34d399]/10">
+              {startLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />} Start
+            </Button>
             <Button variant="outline" size="sm" onClick={handleRestart} className="border-[#39c5bb]/20 text-[#39c5bb] rounded-lg text-xs h-8 hover:bg-[#39c5bb]/10">
               <RefreshCw className="w-3 h-3 mr-1" /> Restart
             </Button>
@@ -361,8 +492,14 @@ export function ServiceDetailPage() {
               <TabsTrigger value="ai" className="rounded-lg text-xs data-[state=active]:bg-[#c4b5fd]/10 data-[state=active]:text-[#7c3aed]">
                 <Sparkles className="w-3 h-3 mr-1" /> AI Analysis
               </TabsTrigger>
-              <TabsTrigger value="terminal" className="rounded-lg text-xs data-[state=active]:bg-[#1e293b]/10 data-[state=active]:text-[#334155]">
+              <TabsTrigger value="terminal" className="rounded-lg text-xs data-[state=active]:bg-[#1e293b]/80 dark:data-[state=active]:bg-[#0f172a]/80 data-[state=active]:text-[#38bdf8]">
                 <Terminal className="w-3 h-3 mr-1" /> Terminal
+              </TabsTrigger>
+              <TabsTrigger value="scale" className="rounded-lg text-xs data-[state=active]:bg-[#34d399]/10 data-[state=active]:text-[#059669]">
+                <Layers className="w-3 h-3 mr-1" /> Load Balancing
+              </TabsTrigger>
+              <TabsTrigger value="history" className="rounded-lg text-xs data-[state=active]:bg-[#93c5fd]/10 data-[state=active]:text-[#3b82f6]">
+                <History className="w-3 h-3 mr-1" /> History
               </TabsTrigger>
             </TabsList>
 
@@ -544,72 +681,180 @@ export function ServiceDetailPage() {
 
           {/* Terminal Tab */}
           <TabsContent value="terminal" className="space-y-3">
-            <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden">
+            <Card className="bg-[#0a0f1a] border-[#1e293b] rounded-xl overflow-hidden shadow-xl">
+              {/* Title bar */}
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#1e293b] bg-[#0d1525]">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+                </div>
+                <span className="text-[10px] text-[#475569] font-mono ml-2">{service?.name ?? 'terminal'} — exec</span>
+                <div className="ml-auto flex items-center gap-2">
+                  {execHistory.length > 0 && (
+                    <button onClick={() => setExecHistory([])} className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors">
+                      clear
+                    </button>
+                  )}
+                </div>
+              </div>
               {/* Output area */}
-              <div className="p-4 min-h-70 max-h-100 overflow-y-auto space-y-2 font-mono text-xs">
+              <div className="p-4 h-80 overflow-y-auto space-y-3 font-mono text-xs">
                 {execHistory.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-60 gap-2">
-                    <Terminal className="w-8 h-8 text-[#334155]" />
-                    <p className="text-[#475569] text-[11px]">Çalıştırmak istediğiniz komutu girin</p>
+                  <div className="flex flex-col items-center justify-center h-full gap-3 select-none">
+                    <Terminal className="w-10 h-10 text-[#1e3a4a]" />
+                    <p className="text-[#334155] text-[11px]">Komut girin ve Enter'a basın</p>
+                    <div className="flex flex-wrap gap-2 mt-1 justify-center">
+                      {['uptime', 'ps aux', 'df -h', 'free -m'].map((s) => (
+                        <button key={s} onClick={() => setExecCommand(s)}
+                          className="px-2 py-1 rounded bg-[#1e293b] text-[#38bdf8] text-[10px] hover:bg-[#253347] transition-colors">
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : (
-                  execHistory.map((entry, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-[#38bdf8]">
-                        <ChevronRight className="w-3 h-3 shrink-0" />
-                        <span>{entry.command}</span>
-                      </div>
-                      <div className="pl-4 text-[#64748b] space-y-0.5">
-                        <p>
-                          <span className="text-[#22d3ee]">status:</span>{" "}
-                          <span className={entry.status === "queued" ? "text-[#a3e635]" : "text-[#fbbf24]"}>
-                            {entry.status}
+                  <>
+                    {execHistory.map((entry, i) => (
+                      <div key={i} className="space-y-1">
+                        {/* Command line */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[#22d3ee] shrink-0">$</span>
+                          <span className="text-[#e2e8f0]">{entry.command}</span>
+                          <span className="ml-auto text-[#334155] text-[10px]">
+                            {new Date(entry.queued_at).toLocaleTimeString('tr-TR')}
                           </span>
-                        </p>
-                        <p>
-                          <span className="text-[#22d3ee]">id:</span>{" "}
-                          <span className="text-[#94a3b8]">{entry.command_id}</span>
-                        </p>
-                        <p>
-                          <span className="text-[#22d3ee]">queued_at:</span>{" "}
-                          <span className="text-[#94a3b8]">
-                            {new Date(entry.queued_at).toLocaleTimeString("tr-TR")}
-                          </span>
-                        </p>
+                        </div>
+                        {/* Status indicator */}
+                        <div className="flex items-center gap-1.5 pl-3">
+                          {entry.status === 'queued' || entry.status === 'received' ? (
+                            <><Loader2 className="w-3 h-3 text-[#fbbf24] animate-spin" />
+                            <span className="text-[#fbbf24] text-[10px]">{entry.status}...</span></>
+                          ) : entry.status === 'success' ? (
+                            <><CheckCircle2 className="w-3 h-3 text-[#34d399]" />
+                            <span className="text-[#34d399] text-[10px]">success</span></>
+                          ) : (
+                            <><XCircle className="w-3 h-3 text-[#fb7185]" />
+                            <span className="text-[#fb7185] text-[10px]">{entry.status}</span></>
+                          )}
+                          {entry.duration_ms !== undefined && (
+                            <span className="text-[#475569] text-[10px] ml-auto">{entry.duration_ms}ms</span>
+                          )}
+                        </div>
+                        {/* Output */}
+                        {entry.output && (
+                          <pre className="pl-3 text-[#94a3b8] text-[11px] leading-relaxed whitespace-pre-wrap break-all bg-[#0f172a] rounded-lg p-2 border border-[#1e293b]">{entry.output}</pre>
+                        )}
+                        {/* Error */}
+                        {entry.error && (
+                          <pre className="pl-3 text-[#fb7185] text-[11px] leading-relaxed whitespace-pre-wrap break-all bg-[#1f0a0e] rounded-lg p-2 border border-[#fb7185]/20">{entry.error}</pre>
+                        )}
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    <div ref={terminalEndRef} />
+                  </>
                 )}
               </div>
               {/* Input area */}
-              <div className="flex items-center gap-2 px-4 py-3 border-t border-[#1e293b] bg-[#0f172a]">
-                <span className="text-[#38bdf8] font-mono text-xs shrink-0">$</span>
+              <div className="flex items-center gap-2 px-4 py-3 border-t border-[#1e293b] bg-[#0d1525]">
+                <span className="text-[#22d3ee] font-mono text-xs shrink-0">❯</span>
                 <Input
                   value={execCommand}
                   onChange={(e) => setExecCommand(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !execLoading) handleExec(); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !execLoading) handleExec(); }}
                   placeholder="komut girin..."
                   disabled={execLoading}
-                  className="bg-transparent border-none text-[#e2e8f0] font-mono text-xs h-7 px-0 focus-visible:ring-0 placeholder:text-[#334155]"
+                  className="bg-transparent border-none text-[#e2e8f0] font-mono text-xs h-7 px-0 focus-visible:ring-0 placeholder:text-[#2d3f52]"
                 />
-                <Button
-                  size="sm"
-                  onClick={handleExec}
+                <Button size="sm" onClick={handleExec}
                   disabled={execLoading || !execCommand.trim()}
                   className="h-7 px-3 bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/20 rounded-lg shrink-0"
-                  variant="outline"
-                >
-                  {execLoading ? (
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Send className="w-3 h-3" />
-                  )}
+                  variant="outline">
+                  {execLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                 </Button>
               </div>
             </Card>
-            <p className="text-[10px] text-[#b0bdd5] px-1">
-              Komutlar agent üzerinden asenkron olarak çalıştırılır. Sonuçlar agent loglarında görünür.
-            </p>
+          </TabsContent>
+
+          {/* Load Balancing Tab */}
+          <TabsContent value="scale" className="space-y-4">
+            <Card className="p-6 bg-white/80 dark:bg-[#0d1c24]/85 border-[#34d399]/10 dark:border-[#34d399]/8 rounded-xl">
+              <div className="flex items-center gap-2 mb-6">
+                <Layers className="w-4 h-4 text-[#34d399]" />
+                <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff]">Load Balancing & Scale</h3>
+              </div>
+
+              {/* Instance count */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] text-[#7c8db5] uppercase tracking-wider block mb-2">Instance Sayısı</label>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setScaleInstances(Math.max(0, scaleInstances - 1))}
+                      className="w-8 h-8 rounded-lg border border-[#34d399]/20 text-[#34d399] hover:bg-[#34d399]/10 flex items-center justify-center transition-all">
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-2xl font-bold text-[#3b4563] dark:text-[#d0f4ff] w-10 text-center">{scaleInstances}</span>
+                    <button onClick={() => setScaleInstances(Math.min(32, scaleInstances + 1))}
+                      className="w-8 h-8 rounded-lg border border-[#34d399]/20 text-[#34d399] hover:bg-[#34d399]/10 flex items-center justify-center transition-all">
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="flex gap-1 ml-2">
+                      {[1, 2, 4, 8].map((n) => (
+                        <button key={n} onClick={() => setScaleInstances(n)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all ${
+                            scaleInstances === n
+                              ? 'bg-[#34d399]/15 text-[#059669] border-[#34d399]/30'
+                              : 'text-[#7c8db5] border-[#e2e8f0] dark:border-[#1e3a4a] hover:border-[#34d399]/20'
+                          }`}>{n}x</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Strategy */}
+                <div>
+                  <label className="text-[10px] text-[#7c8db5] uppercase tracking-wider block mb-2">Load Balancing Stratejisi</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'round_robin', label: 'Round Robin', desc: 'Sırayla dağıt' },
+                      { value: 'least_conn', label: 'Least Conn', desc: 'En az bağlantı' },
+                      { value: 'ip_hash', label: 'IP Hash', desc: 'IP bazlı sticky' },
+                    ] as const).map((s) => (
+                      <button key={s.value} onClick={() => setScaleStrategy(s.value)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          scaleStrategy === s.value
+                            ? 'border-[#34d399]/40 bg-[#34d399]/8 dark:bg-[#34d399]/6'
+                            : 'border-[#e2e8f0] dark:border-[#1e3a4a] hover:border-[#34d399]/20'
+                        }`}>
+                        <p className={`text-xs font-semibold mb-0.5 ${
+                          scaleStrategy === s.value ? 'text-[#059669]' : 'text-[#3b4563] dark:text-[#d0f4ff]'
+                        }`}>{s.label}</p>
+                        <p className="text-[10px] text-[#b0bdd5]">{s.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Info box */}
+                <div className="p-3 rounded-xl bg-[#f0fdf4] dark:bg-[#0a1f15] border border-[#34d399]/15 text-[10px] text-[#7c8db5] dark:text-[#4a9a6a] leading-relaxed">
+                  Komut agent'a iletilir. Agent'ta <code className="font-mono bg-[#34d399]/10 px-1 rounded">NANONET_SCALE_CMD</code> tanımlıysa
+                  çalıştırılır; tanımlı değilse acknowledge edilir.
+                  <br />Örn: <code className="font-mono bg-[#34d399]/10 px-1 rounded">docker service scale myapp=$INSTANCES</code>
+                </div>
+
+                <Button onClick={handleScale} disabled={scaleLoading}
+                  className="w-full bg-[#34d399] hover:bg-[#22c55e] text-white rounded-xl h-9 text-sm font-medium">
+                  {scaleLoading
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gönderiliyor...</>
+                    : <><Layers className="w-4 h-4 mr-2" /> {scaleInstances} Instance'a Scale Et ({scaleStrategy})</>}
+                </Button>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Command History Tab */}
+          <TabsContent value="history" className="space-y-3">
+            <CommandHistoryTab serviceId={serviceId!} />
           </TabsContent>
 
           {/* AI Tab */}

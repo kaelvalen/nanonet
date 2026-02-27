@@ -15,6 +15,7 @@ type CommandLog struct {
 	Action      string          `gorm:"type:varchar(50);not null" json:"action"`
 	Status      string          `gorm:"type:varchar(20);not null;default:'queued'" json:"status"`
 	Payload     json.RawMessage `gorm:"type:jsonb" json:"payload,omitempty"`
+	Output      *string         `gorm:"type:text" json:"output,omitempty"`
 	QueuedAt    time.Time       `gorm:"not null;default:now()" json:"queued_at"`
 	CompletedAt *time.Time      `json:"completed_at,omitempty"`
 	DurationMS  *int            `json:"duration_ms,omitempty"`

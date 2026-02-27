@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Service, CreateServiceRequest, UpdateServiceRequest } from '../types/service';
+import type { Service, CreateServiceRequest, UpdateServiceRequest, CommandLog } from '../types/service';
 
 export const servicesApi = {
   list: async (): Promise<Service[]> => {
@@ -34,8 +34,23 @@ export const servicesApi = {
     await apiClient.post(`/services/${id}/stop`);
   },
 
-  exec: async (id: string, command: string): Promise<{ command_id: string; status: string; queued_at: string }> => {
-    const response = await apiClient.post(`/services/${id}/exec`, { command });
+  exec: async (id: string, command: string, timeoutSec = 30): Promise<{ command_id: string; status: string; queued_at: string }> => {
+    const response = await apiClient.post(`/services/${id}/exec`, { command, timeout_sec: timeoutSec });
+    return response.data.data;
+  },
+
+  start: async (id: string): Promise<{ command_id: string; status: string; queued_at: string }> => {
+    const response = await apiClient.post(`/services/${id}/start`);
+    return response.data.data;
+  },
+
+  scale: async (id: string, instances: number, strategy = 'round_robin'): Promise<{ command_id: string; status: string; instances: number; strategy: string; queued_at: string }> => {
+    const response = await apiClient.post(`/services/${id}/scale`, { instances, strategy });
+    return response.data.data;
+  },
+
+  getCommandHistory: async (id: string, limit = 20, page = 1): Promise<{ commands: CommandLog[]; total: number; page: number }> => {
+    const response = await apiClient.get(`/services/${id}/commands`, { params: { limit, page } });
     return response.data.data;
   },
 };
