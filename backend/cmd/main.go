@@ -39,7 +39,8 @@ func main() {
 		log.Fatalf("Migration başarısız: %v", err)
 	}
 
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
 	router.Use(corsMiddleware(cfg.FrontendURL))
 	router.Use(securityHeadersMiddleware())
 

@@ -43,7 +43,7 @@ func NewHub(maxConnections int) *Hub {
 	return &Hub{
 		dashboardClients: make(map[*Client]bool),
 		agentClients:     make(map[*Client]bool),
-		broadcast:        make(chan []byte, 256),
+		broadcast:        make(chan []byte, 1024),
 		register:         make(chan *Client),
 		unregister:       make(chan *Client),
 		maxConnections:   maxConnections,

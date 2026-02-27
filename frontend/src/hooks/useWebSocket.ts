@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useWSStore } from '../store/wsStore';
 import { useServiceStore } from '../store/serviceStore';
 import { useAuthStore } from '../store/authStore';
@@ -9,6 +10,7 @@ const INITIAL_RECONNECT_DELAY = 1000;
 const HEARTBEAT_INTERVAL = 30000;
 
 export function useWebSocket() {
+  const queryClient = useQueryClient();
   const {
     setConnected, setWS,
     incrementReconnect, resetReconnect,
@@ -30,6 +32,14 @@ export function useWebSocket() {
         case 'metric_update':
           if (message.service_id && message.data?.status) {
             updateServiceStatus(message.service_id, message.data.status);
+            queryClient.setQueryData(['services'], (old: unknown) => {
+              if (!Array.isArray(old)) return old;
+              return old.map((s: { id: string; status: string }) =>
+                s.id === message.service_id
+                  ? { ...s, status: message.data.status }
+                  : s
+              );
+            });
           }
           break;
 
@@ -62,7 +72,7 @@ export function useWebSocket() {
     } catch (error) {
       console.error('WebSocket mesaj parse hatası:', error);
     }
-  }, [updateServiceStatus, setLastMessageTime]);
+  }, [updateServiceStatus, setLastMessageTime, queryClient]);
 
   const startHeartbeat = useCallback((ws: WebSocket) => {
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);

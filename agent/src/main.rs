@@ -175,7 +175,7 @@ async fn main() -> error::Result<()> {
                 }
             });
 
-            if let Err(e) = ws_tx.send(message.to_string()) {
+            if let Err(e) = ws_tx.send(message.to_string()).await {
                 tracing::warn!("Metrik WS kanalına gönderilemedi: {}", e);
             }
         }

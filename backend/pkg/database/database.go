@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -23,7 +24,9 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 	}
 
 	sqlDB.SetMaxOpenConns(20)
-	sqlDB.SetMaxIdleConns(2)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(2 * time.Minute)
 
 	log.Println("Veritabanı bağlantısı başarılı")
 	return db, nil
