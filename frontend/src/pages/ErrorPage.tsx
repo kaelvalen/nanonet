@@ -18,35 +18,38 @@ export function ErrorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#f0f4ff] via-[#e8f4ff] to-[#f5f0ff] flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--gradient-bg)" }}>
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-white/80 backdrop-blur-sm border border-[#e2e8f0] rounded-2xl shadow-lg p-10 max-w-md w-full text-center"
+        className="backdrop-blur-sm rounded-2xl shadow-lg p-10 max-w-md w-full text-center"
+        style={{ background: "var(--surface-glass)", border: "1px solid var(--border-default)" }}
       >
         <div className="flex justify-center mb-6">
-          <div className="w-14 h-14 rounded-full bg-[#fda4af]/20 flex items-center justify-center">
-            <AlertTriangle className="w-7 h-7 text-[#e11d48]" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--status-down-subtle)" }}>
+            <AlertTriangle className="w-7 h-7" style={{ color: "var(--status-down-text)" }} />
           </div>
         </div>
 
-        <h1 className="text-lg font-bold text-[#3b4563] mb-2">{title}</h1>
-        <p className="text-sm text-[#7c8db5] mb-8 leading-relaxed">{message}</p>
+        <h1 className="text-lg font-bold mb-2" style={{ color: "var(--text-secondary)" }}>{title}</h1>
+        <p className="text-sm mb-8 leading-relaxed" style={{ color: "var(--text-muted)" }}>{message}</p>
 
         <div className="flex gap-3 justify-center">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigate(-1)}
-            className="border-[#e2e8f0] text-[#7c8db5] rounded-lg text-xs h-8 hover:bg-[#f8faff]"
+            className="rounded-lg text-xs h-8"
+            style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}
           >
             <RefreshCw className="w-3 h-3 mr-1.5" /> Go back
           </Button>
           <Button
             size="sm"
             onClick={() => navigate("/", { replace: true })}
-            className="bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-lg text-xs h-8 border-0 hover:opacity-90"
+            className="text-white rounded-lg text-xs h-8 border-0 hover:opacity-90"
+            style={{ background: "var(--gradient-btn-primary)" }}
           >
             <Home className="w-3 h-3 mr-1.5" /> Dashboard
           </Button>

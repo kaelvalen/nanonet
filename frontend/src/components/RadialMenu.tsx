@@ -4,11 +4,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { Home, Server, AlertCircle, Sparkles, Settings, X } from "lucide-react";
 
 const navItems = [
-  { to: "/", label: "Hub", icon: Home, color: "#39c5bb", glowColor: "rgba(57, 197, 187, 0.3)" },
-  { to: "/services", label: "Services", icon: Server, color: "#93c5fd", glowColor: "rgba(147, 197, 253, 0.3)" },
-  { to: "/alerts", label: "Alerts", icon: AlertCircle, color: "#fda4af", glowColor: "rgba(253, 164, 175, 0.3)" },
-  { to: "/ai-insights", label: "AI Insights", icon: Sparkles, color: "#c4b5fd", glowColor: "rgba(196, 181, 253, 0.3)" },
-  { to: "/settings", label: "Settings", icon: Settings, color: "#fda4af", glowColor: "rgba(253, 164, 175, 0.3)" },
+  { to: "/", label: "Hub", icon: Home, colorVar: "var(--color-teal)", glowVar: "var(--color-teal-subtle)" },
+  { to: "/services", label: "Services", icon: Server, colorVar: "var(--color-blue)", glowVar: "var(--color-blue-subtle)" },
+  { to: "/alerts", label: "Alerts", icon: AlertCircle, colorVar: "var(--color-pink)", glowVar: "var(--color-pink-subtle)" },
+  { to: "/ai-insights", label: "AI Insights", icon: Sparkles, colorVar: "var(--color-lavender)", glowVar: "var(--color-lavender-subtle)" },
+  { to: "/settings", label: "Settings", icon: Settings, colorVar: "var(--color-pink)", glowVar: "var(--color-pink-subtle)" },
 ];
 
 export function RadialMenu() {
@@ -36,7 +36,8 @@ export function RadialMenu() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white/40 dark:bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 backdrop-blur-sm"
+            style={{ backgroundColor: "var(--surface-glass)" }}
             onClick={() => setIsOpen(false)}
           />
         )}
@@ -65,27 +66,27 @@ export function RadialMenu() {
                 <button onClick={() => handleNavigate(item.to)} className="group relative flex flex-col items-center gap-1">
                   <div
                     className="absolute inset-0 rounded-full blur-md opacity-30 group-hover:opacity-60 transition-opacity"
-                    style={{ backgroundColor: item.glowColor, transform: "scale(1.5)" }}
+                    style={{ backgroundColor: item.glowVar, transform: "scale(1.5)" }}
                   />
 
                   <div
-                    className={`relative w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-200 group-hover:scale-110 ${
-                      isActive ? "bg-white dark:bg-[#0d1c24] scale-110 shadow-md" : "bg-white/90 dark:bg-[#0d1c24]/90 hover:bg-white dark:hover:bg-[#0d1c24] shadow-sm"
-                    }`}
+                    className="relative w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-200 group-hover:scale-110"
                     style={{
-                      borderColor: item.color,
-                      boxShadow: isActive ? `0 4px 15px ${item.glowColor}` : `0 2px 8px ${item.glowColor}`,
+                      background: "var(--surface-raised)",
+                      borderColor: item.colorVar,
+                      boxShadow: isActive ? `0 4px 15px ${item.glowVar}` : `0 2px 8px ${item.glowVar}`,
+                      transform: isActive ? "scale(1.1)" : undefined,
                     }}
                   >
-                    <item.icon className="w-5 h-5" style={{ color: item.color }} />
+                    <item.icon className="w-5 h-5" style={{ color: item.colorVar }} />
                   </div>
 
                   <motion.span
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 + 0.15 }}
-                    className="text-[10px] font-(--font-mono) tracking-wider whitespace-nowrap px-2 py-0.5 rounded-full bg-white/90 dark:bg-[#0d1c24]/90 border border-[#39c5bb]/15 dark:border-[#00e6ff]/15 shadow-sm"
-                    style={{ color: item.color }}
+                    className="text-[10px] font-(--font-mono) tracking-wider whitespace-nowrap px-2 py-0.5 rounded-full shadow-sm"
+                    style={{ background: "var(--surface-raised)", border: "1px solid var(--color-teal-border)", color: item.colorVar }}
                   >
                     {item.label}
                   </motion.span>
@@ -103,20 +104,19 @@ export function RadialMenu() {
       >
         {!isOpen && (
           <>
-            <div className="absolute inset-0 rounded-full bg-linear-to-br from-[#00b4d8] to-[#a78bfa] dark:from-[#00e6ff] dark:to-[#a78bfa] opacity-20 animate-pulse-ring" />
+            <div className="absolute inset-0 rounded-full opacity-20 animate-pulse-ring" style={{ background: "var(--gradient-logo)" }} />
             <div
-              className="absolute inset-0 rounded-full bg-linear-to-br from-[#00b4d8] to-[#a78bfa] dark:from-[#00e6ff] dark:to-[#a78bfa] opacity-15 animate-pulse-ring"
-              style={{ animationDelay: "0.75s" }}
+              className="absolute inset-0 rounded-full opacity-15 animate-pulse-ring"
+              style={{ background: "var(--gradient-logo)", animationDelay: "0.75s" }}
             />
           </>
         )}
 
         <div
-          className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
-            isOpen
-              ? "bg-white dark:bg-[#0d1c24] border-2 border-[#fda4af]/50 dark:border-[#00e6ff]/30 shadow-lg shadow-[#fda4af]/20"
-              : "bg-linear-to-br from-[#00b4d8] via-[#a78bfa] to-[#f0abfc] dark:from-[#00e6ff] dark:via-[#a78bfa] dark:to-[#324758] shadow-lg shadow-[#39c5bb]/30 dark:shadow-[#00e6ff]/20"
-          }`}
+          className="relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300"
+          style={isOpen
+            ? { background: "var(--surface-raised)", border: "2px solid var(--color-pink-border)", boxShadow: "0 8px 24px var(--shadow-card)" }
+            : { background: "var(--gradient-logo)", boxShadow: "0 8px 24px var(--shadow-brand)" }}
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
@@ -127,7 +127,7 @@ export function RadialMenu() {
                 exit={{ rotate: 90, opacity: 0 }}
                 transition={{ duration: 0.15 }}
               >
-                <X className="w-6 h-6 text-[#fb7185]" />
+                <X className="w-6 h-6" style={{ color: "var(--status-down)" }} />
               </motion.div>
             ) : (
               <motion.div
@@ -146,7 +146,7 @@ export function RadialMenu() {
 
       {!isOpen && (
         <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-          <div className="text-[9px] text-[#7c8db5] dark:text-[#527a8a] whitespace-nowrap bg-white/90 dark:bg-[#0d1c24]/90 px-2 py-1 rounded-full border border-[#39c5bb]/15 dark:border-[#00e6ff]/15 shadow-sm">
+          <div className="text-[9px] whitespace-nowrap px-2 py-1 rounded-full shadow-sm" style={{ background: "var(--surface-raised)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>
             Navigate ✦
           </div>
         </div>

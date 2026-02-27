@@ -128,7 +128,8 @@ export function CommandPalette() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-60 bg-[#3b4563]/20 dark:bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-60 backdrop-blur-sm"
+            style={{ backgroundColor: "var(--surface-glass)" }}
             onClick={() => setOpen(false)}
           />
         )}
@@ -143,91 +144,87 @@ export function CommandPalette() {
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className="fixed top-[15%] left-1/2 -translate-x-1/2 z-61 w-full max-w-160 px-4"
           >
-            <div className="absolute -inset-4 bg-linear-to-b from-[#00b4d8]/10 via-[#a78bfa]/8 dark:from-[#00e6ff]/8 dark:via-[#a78bfa]/6 to-transparent rounded-3xl blur-2xl" />
+            <div className="absolute -inset-4 rounded-3xl blur-2xl" style={{ background: "linear-gradient(to bottom, var(--color-teal-subtle), var(--color-lavender-subtle), transparent)" }} />
 
             <div className="relative">
-              <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/30 to-transparent z-10 rounded-full" />
+              <div className="absolute inset-x-0 top-0 h-px z-10 rounded-full" style={{ background: "linear-gradient(to right, transparent, var(--color-teal-border), transparent)" }} />
 
-              <Command className="bg-white/95 dark:bg-[#0a161e]/97 backdrop-blur-xl border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl shadow-xl shadow-[#39c5bb]/5 dark:shadow-[#00e6ff]/5 overflow-hidden">
+              <Command className="backdrop-blur-xl rounded-2xl overflow-hidden" style={{ background: "var(--surface-glass-heavy)", border: "1px solid var(--color-teal-border)" }}>
                 <div className="flex items-center gap-3 px-4 pt-3 pb-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#00b4d8] dark:text-[#00e6ff]">✦</span>
-                    <span className="text-xs text-[#7c8db5] dark:text-[#527a8a] tracking-wide">NanoNet Command</span>
+                    <span style={{ color: "var(--color-teal)" }}>✦</span>
+                    <span className="text-xs tracking-wide" style={{ color: "var(--text-muted)" }}>NanoNet Command</span>
                   </div>
                   <div className="flex-1" />
                   <div className="flex items-center gap-1">
-                    <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded text-[#7c8db5] dark:text-[#527a8a]">ESC</kbd>
-                    <span className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070]">to close</span>
+                    <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>ESC</kbd>
+                    <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>to close</span>
                   </div>
                 </div>
 
                 <CommandInput
                   placeholder="Type a command or search..."
-                  className="text-[#3b4563] dark:text-[#d0f4ff] placeholder:text-[#b0bdd5] dark:placeholder:text-[#3a6070] dark:bg-transparent"
+                  style={{ color: "var(--text-secondary)" }}
                 />
 
                 <CommandList className="max-h-100 p-2">
-                  <CommandEmpty className="text-[#7c8db5] dark:text-[#527a8a] text-xs">
+                  <CommandEmpty className="text-xs" style={{ color: "var(--text-muted)" }}>
                     <div className="flex flex-col items-center gap-2 py-8">
-                      <Search className="w-8 h-8 text-[#c4b5fd]" />
+                      <Search className="w-8 h-8" style={{ color: "var(--color-lavender)" }} />
                       <span>No results found</span>
                     </div>
                   </CommandEmpty>
 
                   {/* Navigation */}
                   <CommandGroup
-                    heading={<span className="text-[10px] tracking-widest text-[#39c5bb] uppercase">Navigation</span>}
+                    heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-teal)" }}>Navigation</span>}
                   >
                     {navigationItems.map((item) => (
                       <CommandItem
                         key={item.path}
                         onSelect={() => handleNavigate(item.path)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#00b4d8]/8 dark:data-[selected=true]:bg-[#00e6ff]/8 data-[selected=true]:text-[#00b4d8] dark:data-[selected=true]:text-[#00e6ff] data-[selected=true]:border-l-2 data-[selected=true]:border-[#00b4d8] dark:data-[selected=true]:border-[#00e6ff]"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
+                        style={{ color: "var(--text-secondary)" }}
                       >
                         <item.icon className="w-4 h-4" />
                         <span className="flex-1">{item.label}</span>
-                        <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded text-[#7c8db5] dark:text-[#527a8a]">
+                        <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>
                           {item.shortcut}
                         </kbd>
                       </CommandItem>
                     ))}
                   </CommandGroup>
 
-                  <CommandSeparator className="bg-[#39c5bb]/8 dark:bg-[#00e6ff]/6 my-2" />
+                  <CommandSeparator className="my-2" style={{ backgroundColor: "var(--border-subtle)" }} />
 
                   {/* Real Services */}
                   {services.length > 0 && (
                     <>
                       <CommandGroup
-                        heading={<span className="text-[10px] tracking-widest text-[#93c5fd] uppercase">Services</span>}
+                        heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-blue)" }}>Services</span>}
                       >
                         {services.map((service) => (
                           <CommandItem
                             key={service.id}
                             onSelect={() => handleNavigate(`/services/${service.id}`)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#00b4d8]/8 dark:data-[selected=true]:bg-[#00e6ff]/8 data-[selected=true]:text-[#00b4d8] dark:data-[selected=true]:text-[#00e6ff]"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
+                            style={{ color: "var(--text-secondary)" }}
                           >
                             <div className="relative">
-                              <Cpu className="w-4 h-4 text-[#7c8db5]" />
+                              <Cpu className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
                               <div
-                                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${
-                                  service.status === "up"
-                                    ? "bg-[#34d399]"
-                                    : service.status === "degraded"
-                                    ? "bg-[#fbbf24]"
-                                    : "bg-[#fb7185]"
-                                }`}
+                                className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+                                style={{ backgroundColor: service.status === "up" ? "var(--status-up)" : service.status === "degraded" ? "var(--status-warn)" : "var(--status-down)" }}
                               />
                             </div>
                             <span className="flex-1 font-(--font-mono) text-xs">{service.name}</span>
                             <span
-                              className={`text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded-full ${
-                                service.status === "up"
-                                  ? "bg-[#a7f3d0]/30 text-[#059669] border border-[#a7f3d0]/50"
-                                  : service.status === "degraded"
-                                  ? "bg-[#fef3c7]/50 text-[#d97706] border border-[#fcd34d]/50"
-                                  : "bg-[#fda4af]/20 text-[#e11d48] border border-[#fda4af]/30"
-                              }`}
+                              className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded-full border"
+                              style={{
+                                background: service.status === "up" ? "var(--status-up-subtle)" : service.status === "degraded" ? "var(--status-warn-subtle)" : "var(--status-down-subtle)",
+                                color: service.status === "up" ? "var(--status-up-text)" : service.status === "degraded" ? "var(--status-warn-text)" : "var(--status-down-text)",
+                                borderColor: service.status === "up" ? "var(--status-up-border)" : service.status === "degraded" ? "var(--status-warn-border)" : "var(--status-down-border)",
+                              }}
                             >
                               {service.status?.toUpperCase() ?? 'UNKNOWN'}
                             </span>
@@ -235,80 +232,82 @@ export function CommandPalette() {
                         ))}
                       </CommandGroup>
 
-                      <CommandSeparator className="bg-[#a78bfa]/10 dark:bg-[#a78bfa]/8 my-2" />
+                      <CommandSeparator className="my-2" style={{ backgroundColor: "var(--border-subtle)" }} />
 
                       {/* Per-service quick actions */}
                       <CommandGroup
-                        heading={<span className="text-[10px] tracking-widest text-[#34d399] uppercase">Service Controls</span>}
+                        heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--status-up)" }}>Service Controls</span>}
                       >
                         {services.slice(0, 5).flatMap((service) => [
                           {
                             key: `${service.id}-start`,
                             icon: Play,
                             label: `Start  ${service.name}`,
-                            color: 'text-[#059669]',
+                            colorVar: 'var(--status-up-text)',
                             action: () => handleServiceAction(service.id, service.name, 'start'),
                           },
                           {
                             key: `${service.id}-restart`,
                             icon: RefreshCw,
                             label: `Restart  ${service.name}`,
-                            color: 'text-[#39c5bb]',
+                            colorVar: 'var(--color-teal)',
                             action: () => handleServiceAction(service.id, service.name, 'restart'),
                           },
                           {
                             key: `${service.id}-stop`,
                             icon: Power,
                             label: `Stop  ${service.name}`,
-                            color: 'text-[#d97706]',
+                            colorVar: 'var(--status-warn-text)',
                             action: () => handleServiceAction(service.id, service.name, 'stop'),
                           },
                         ]).map((item) => (
                           <CommandItem
                             key={item.key}
                             onSelect={item.action}
-                            className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#34d399]/8 dark:data-[selected=true]:bg-[#34d399]/6"
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer"
+                            style={{ color: "var(--text-secondary)" }}
                           >
-                            <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
+                            <item.icon className="w-3.5 h-3.5" style={{ color: item.colorVar }} />
                             <span className="flex-1 text-xs">{item.label}</span>
                           </CommandItem>
                         ))}
                       </CommandGroup>
 
-                      <CommandSeparator className="bg-[#a78bfa]/10 dark:bg-[#a78bfa]/8 my-2" />
+                      <CommandSeparator className="my-2" style={{ backgroundColor: "var(--color-lavender-subtle)" }} />
                     </>
                   )}
 
                   {/* Actions */}
                   <CommandGroup
-                    heading={<span className="text-[10px] tracking-widest text-[#c4b5fd] uppercase">Actions</span>}
+                    heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-lavender)" }}>Actions</span>}
                   >
                     {actionItems.map((action) => (
                       <CommandItem
                         key={action.action}
                         onSelect={() => handleAction(action.action)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#a78bfa]/10 dark:data-[selected=true]:bg-[#a78bfa]/8 data-[selected=true]:text-[#7c3aed] dark:data-[selected=true]:text-[#a78bfa]"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
+                        style={{ color: "var(--text-secondary)" }}
                       >
                         <action.icon className="w-4 h-4" />
                         <span className="flex-1">{action.label}</span>
-                        <Globe className="w-3 h-3 text-[#b0bdd5]" />
+                        <Globe className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
                       </CommandItem>
                     ))}
                   </CommandGroup>
                 </CommandList>
 
                 {/* Footer */}
-                <div className="flex items-center gap-4 px-4 py-2 border-t border-[#39c5bb]/10 dark:border-[#00e6ff]/8 text-[10px] text-[#b0bdd5] dark:text-[#3a6070] font-(--font-mono)">
+                <div className="flex items-center gap-4 px-4 py-2 text-[10px] font-(--font-mono)" style={{ borderTop: "1px solid var(--color-teal-border)", color: "var(--text-faint)" }}>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded">↑↓</kbd>
+                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)" }}>↑↓</kbd>
                     navigate
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded">↵</kbd>
+                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)" }}>↵</kbd>
                     select
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded">⌘K</kbd>
+                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)" }}>⌘K</kbd>
                     toggle
                   </span>
                 </div>

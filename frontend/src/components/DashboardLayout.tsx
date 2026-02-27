@@ -35,16 +35,16 @@ export function DashboardLayout() {
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
-          backgroundImage: `radial-gradient(rgba(0, 180, 216, 0.07) 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(var(--dot-pattern) 1px, transparent 1px)`,
           backgroundSize: "32px 32px",
         }}
       />
 
       {/* Ambient gradient blobs */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#D0FAFF]/30 rounded-full blur-3xl animate-blob" />
-        <div className="absolute top-1/3 -right-32 w-80 h-80 bg-[#FED7FF]/25 rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-[#D0FAFF]/20 rounded-full blur-3xl animate-blob animation-delay-4000" />
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl animate-blob" style={{ backgroundColor: "var(--blob-1)" }} />
+        <div className="absolute top-1/3 -right-32 w-80 h-80 rounded-full blur-3xl animate-blob animation-delay-2000" style={{ backgroundColor: "var(--blob-2)" }} />
+        <div className="absolute -bottom-32 left-1/3 w-96 h-96 rounded-full blur-3xl animate-blob animation-delay-4000" style={{ backgroundColor: "var(--blob-3)" }} />
       </div>
 
       {/* Floating Status Bar */}

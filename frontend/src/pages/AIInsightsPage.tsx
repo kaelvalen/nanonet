@@ -71,26 +71,27 @@ export function AIInsightsPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold bg-linear-to-r from-[#c4b5fd] via-[#93c5fd] to-[#39c5bb] bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-heading)" }}>
               AI Insights
             </h1>
-            <p className="text-xs text-[#7c8db5] mt-1">AI-powered anomaly detection and recommendations</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>AI-powered anomaly detection and recommendations</p>
           </div>
           <div className="flex items-center gap-2">
             <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
-              <SelectTrigger className="w-48 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/15 dark:border-[#a78bfa]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl text-xs h-9">
+              <SelectTrigger className="w-48 rounded-xl text-xs h-9" style={{ background: "var(--surface-glass)", borderColor: "var(--color-lavender-border)", color: "var(--text-secondary)" }}>
                 <SelectValue placeholder="Select service..." />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-[#0a161e] border-[#c4b5fd]/15 dark:border-[#a78bfa]/12 rounded-xl">
+              <SelectContent className="rounded-xl" style={{ background: "var(--surface-overlay)", borderColor: "var(--color-lavender-border)" }}>
                 {services.map((s) => (
-                  <SelectItem key={s.id} value={s.id} className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{s.name}</SelectItem>
+                  <SelectItem key={s.id} value={s.id} className="text-xs" style={{ color: "var(--text-secondary)" }}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Button
               onClick={handleAnalyze}
               disabled={analyzeLoading || !selectedServiceId}
-              className="bg-linear-to-r from-[#c4b5fd] to-[#93c5fd] text-white rounded-xl text-xs h-9 shadow-sm hover:shadow-md transition-all"
+              className="text-white rounded-xl text-xs h-9 shadow-sm hover:shadow-md transition-all"
+              style={{ background: "var(--gradient-btn-primary)" }}
             >
               {analyzeLoading
                 ? <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analyzing...</>
@@ -103,18 +104,18 @@ export function AIInsightsPage() {
       {/* Analyzing skeleton */}
       {analyzeLoading && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <Card className="bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/15 dark:border-[#a78bfa]/12 rounded-xl p-5 space-y-3">
+          <Card className="rounded-xl p-5 space-y-3" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-[#c4b5fd]/15 flex items-center justify-center">
-                <Brain className="w-4.5 h-4.5 text-[#c4b5fd] animate-pulse" />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--color-lavender-subtle)" }}>
+                <Brain className="w-4.5 h-4.5 animate-pulse" style={{ color: "var(--color-lavender)" }} />
               </div>
               <div>
-                <div className="h-3.5 w-36 bg-[#c4b5fd]/15 rounded animate-pulse mb-1.5" />
-                <div className="h-2.5 w-24 bg-[#c4b5fd]/8 rounded animate-pulse" />
+                <div className="h-3.5 w-36 rounded animate-pulse mb-1.5" style={{ backgroundColor: "var(--color-lavender-subtle)" }} />
+                <div className="h-2.5 w-24 rounded animate-pulse" style={{ backgroundColor: "var(--color-lavender-subtle)" }} />
               </div>
             </div>
             {[80, 60, 90, 50].map((w, i) => (
-              <div key={i} className="h-2.5 rounded animate-pulse bg-[#c4b5fd]/10" style={{ width: `${w}%`, animationDelay: `${i * 0.15}s` }} />
+              <div key={i} className="h-2.5 rounded animate-pulse" style={{ width: `${w}%`, animationDelay: `${i * 0.15}s`, backgroundColor: "var(--color-lavender-subtle)" }} />
             ))}
           </Card>
         </motion.div>
@@ -123,74 +124,75 @@ export function AIInsightsPage() {
       {/* Live Analysis Result */}
       {analysisResult && !analyzeLoading && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <Card className="bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/20 dark:border-[#a78bfa]/15 rounded-xl overflow-hidden shadow-sm">
-            <div className="h-1 bg-linear-to-r from-[#c4b5fd] via-[#93c5fd] to-[#39c5bb]" />
+          <Card className="rounded-xl overflow-hidden shadow-sm" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+            <div className="h-1" style={{ background: "var(--gradient-btn-primary)" }} />
             <div className="p-5 space-y-4">
               {/* Header row */}
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#c4b5fd]/15 to-[#93c5fd]/15 flex items-center justify-center shrink-0">
-                  <Brain className="w-5 h-5 text-[#c4b5fd]" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--color-lavender-subtle)" }}>
+                  <Brain className="w-5 h-5" style={{ color: "var(--color-lavender)" }} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff]">Live Analysis Result</h3>
-                  <p className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070]">Last 30 minutes analyzed</p>
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Live Analysis Result</h3>
+                  <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>Last 30 minutes analyzed</p>
                 </div>
                 {analysisResult.confidence !== undefined && (
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="relative flex items-center justify-center">
                       <svg width="56" height="56" className="-rotate-90">
-                        <circle cx="28" cy="28" r={r} fill="none" stroke="#e2e8f0" strokeWidth="4" />
-                        <circle cx="28" cy="28" r={r} fill="none" stroke="#c4b5fd" strokeWidth="4"
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="var(--border-track)" strokeWidth="4" />
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="var(--color-lavender)" strokeWidth="4"
                           strokeDasharray={circ} strokeDashoffset={confOffset}
                           strokeLinecap="round" style={{ transition: "stroke-dashoffset 1s ease" }} />
                       </svg>
-                      <span className="absolute text-[10px] font-bold text-[#7c3aed]">{confPct}%</span>
+                      <span className="absolute text-[10px] font-bold" style={{ color: "var(--color-lavender)" }}>{confPct}%</span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium text-[#3b4563] dark:text-[#d0f4ff]">Confidence</p>
-                      <p className="text-[9px] text-[#b0bdd5]">{confPct >= 80 ? "High" : confPct >= 60 ? "Medium" : "Low"}</p>
+                      <p className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>Confidence</p>
+                      <p className="text-[9px]" style={{ color: "var(--text-faint)" }}>{confPct >= 80 ? "High" : confPct >= 60 ? "Medium" : "Low"}</p>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Summary */}
-              <div className="p-4 bg-[#f5f8ff] dark:bg-[#0f1e28] rounded-xl border border-[#c4b5fd]/10 dark:border-[#a78bfa]/10">
+              <div className="p-4 rounded-xl" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-lavender-border)" }}>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Activity className="w-3 h-3 text-[#c4b5fd]" />
-                  <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Summary</span>
+                  <Activity className="w-3 h-3" style={{ color: "var(--color-lavender)" }} />
+                  <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Summary</span>
                 </div>
-                <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff] leading-relaxed">{analysisResult.summary}</p>
+                <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{analysisResult.summary}</p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 {/* Root Cause */}
                 {analysisResult.root_cause && (
-                  <div className="p-4 bg-[#fda4af]/5 rounded-xl border border-[#fda4af]/10">
+                  <div className="p-4 rounded-xl" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
                     <div className="flex items-center gap-1.5 mb-2">
-                      <Target className="w-3 h-3 text-[#fda4af]" />
-                      <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Root Cause</span>
+                      <Target className="w-3 h-3" style={{ color: "var(--color-pink)" }} />
+                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Root Cause</span>
                     </div>
-                    <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff] leading-relaxed">{analysisResult.root_cause}</p>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{analysisResult.root_cause}</p>
                   </div>
                 )}
 
                 {/* Recommendations */}
                 {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-                  <div className="p-4 bg-[#39c5bb]/5 rounded-xl border border-[#39c5bb]/10">
+                  <div className="p-4 rounded-xl" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
                     <div className="flex items-center gap-1.5 mb-3">
-                      <Lightbulb className="w-3 h-3 text-[#39c5bb]" />
-                      <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Recommendations</span>
+                      <Lightbulb className="w-3 h-3" style={{ color: "var(--color-teal)" }} />
+                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Recommendations</span>
                     </div>
                     <ul className="space-y-2">
                       {analysisResult.recommendations.map((rec, i) => (
                         <li key={i} className="flex items-start gap-2">
-                          <Badge className={`text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5 border ${
-                            rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/20"
-                            : rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706] border-[#fbbf24]/20"
-                            : "bg-[#39c5bb]/15 text-[#2da89e] border-[#39c5bb]/20"
-                          }`}>{rec.priority}</Badge>
-                          <span className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{rec.action}</span>
+                          <Badge className="text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5 border"
+                            style={{
+                              background: rec.priority === "high" ? "var(--status-down-subtle)" : rec.priority === "medium" ? "var(--status-warn-subtle)" : "var(--color-teal-subtle)",
+                              color: rec.priority === "high" ? "var(--status-down-text)" : rec.priority === "medium" ? "var(--status-warn-text)" : "var(--color-teal)",
+                              borderColor: rec.priority === "high" ? "var(--status-down-border)" : rec.priority === "medium" ? "var(--status-warn-border)" : "var(--color-teal-border)",
+                            }}>{rec.priority}</Badge>
+                          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{rec.action}</span>
                         </li>
                       ))}
                     </ul>
@@ -205,33 +207,33 @@ export function AIInsightsPage() {
       {/* Historical Insights */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
         <div className="flex items-center gap-2 mb-4">
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-[#c4b5fd]/20 to-transparent" />
-          <h2 className="text-xs text-[#7c8db5] uppercase tracking-widest flex items-center gap-2">
+          <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, var(--color-lavender-border), transparent)" }} />
+          <h2 className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
             <Sparkles className="w-3 h-3" /> Geçmiş İç Görüler
           </h2>
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-[#c4b5fd]/20 to-transparent" />
+          <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, var(--color-lavender-border), transparent)" }} />
         </div>
 
         {!selectedServiceId ? (
-          <Card className="p-16 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl text-center">
-            <Sparkles className="w-14 h-14 text-[#c4b5fd]/20 mx-auto mb-4" />
-            <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff] mb-1">Servis Seçin</h3>
-            <p className="text-xs text-[#7c8db5]">AI iç görülerini görüntülemek için yukarıdan bir servis seçin</p>
+          <Card className="p-16 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+            <Sparkles className="w-14 h-14 mx-auto mb-4 opacity-20" style={{ color: "var(--color-lavender)" }} />
+            <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Servis Seçin</h3>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>AI iç görülerini görüntülemek için yukarıdan bir servis seçin</p>
           </Card>
         ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl animate-pulse">
-                <div className="h-4 w-60 bg-[#c4b5fd]/10 rounded mb-2" />
-                <div className="h-3 w-40 bg-[#c4b5fd]/10 rounded" />
+              <Card key={i} className="p-4 rounded-xl animate-pulse" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+                <div className="h-4 w-60 rounded mb-2" style={{ backgroundColor: "var(--color-lavender-subtle)" }} />
+                <div className="h-3 w-40 rounded" style={{ backgroundColor: "var(--color-lavender-subtle)" }} />
               </Card>
             ))}
           </div>
         ) : insights.length === 0 ? (
-          <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl text-center">
-            <Brain className="w-10 h-10 text-[#c4b5fd]/20 mx-auto mb-3" />
-            <p className="text-sm text-[#7c8db5]">Bu servis için henüz AI iç görüsü yok</p>
-            <p className="text-xs text-[#b0bdd5] mt-1">Yukarıdaki "Analyze" butonuyla analiz başlatın</p>
+          <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+            <Brain className="w-10 h-10 mx-auto mb-3 opacity-20" style={{ color: "var(--color-lavender)" }} />
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Bu servis için henüz AI iç görüsü yok</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>Yukarıdaki "Analyze" butonuyla analiz başlatın</p>
           </Card>
         ) : (
           <div className="space-y-3">
@@ -242,33 +244,34 @@ export function AIInsightsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
-                <Card className="bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl overflow-hidden transition-all duration-200 hover:border-[#c4b5fd]/25 dark:hover:border-[#a78bfa]/20">
+                <Card className="rounded-xl overflow-hidden transition-all duration-200" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
                   <button
                     className="w-full p-4 text-left"
                     onClick={() => setExpandedInsight(expandedInsight === insight.id ? null : insight.id)}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#c4b5fd]/10 to-[#93c5fd]/10 flex items-center justify-center shrink-0 mt-0.5">
-                          <Zap className="w-4 h-4 text-[#c4b5fd]" />
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--color-lavender-subtle)" }}>
+                          <Zap className="w-4 h-4" style={{ color: "var(--color-lavender)" }} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff] font-medium leading-relaxed line-clamp-2">{insight.summary}</p>
-                          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-[#b0bdd5]">
+                          <p className="text-xs font-medium leading-relaxed line-clamp-2" style={{ color: "var(--text-secondary)" }}>{insight.summary}</p>
+                          <div className="flex items-center gap-3 mt-1.5 text-[10px]" style={{ color: "var(--text-faint)" }}>
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {new Date(insight.created_at).toLocaleString("tr-TR")}
                             </span>
-                            <Badge className="text-[8px] bg-[#93c5fd]/10 text-[#3b82f6] border border-[#93c5fd]/15 rounded-full px-1.5 py-0">
+                            <Badge className="text-[8px] rounded-full px-1.5 py-0 border"
+                              style={{ background: "var(--color-blue-subtle)", color: "var(--color-blue-text)", borderColor: "var(--color-blue-border)" }}>
                               {insight.model}
                             </Badge>
                           </div>
                         </div>
                       </div>
                       {expandedInsight === insight.id ? (
-                        <ChevronDown className="w-4 h-4 text-[#b0bdd5] shrink-0" />
+                        <ChevronDown className="w-4 h-4 shrink-0" style={{ color: "var(--text-faint)" }} />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-[#b0bdd5] shrink-0" />
+                        <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-faint)" }} />
                       )}
                     </div>
                   </button>
@@ -279,33 +282,33 @@ export function AIInsightsPage() {
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="border-t border-[#c4b5fd]/10 px-4 pb-4"
+                      className="px-4 pb-4" style={{ borderTop: "1px solid var(--color-lavender-border)" }}
                     >
                       <div className="pt-3 space-y-3">
                         {insight.root_cause && (
-                          <div className="p-3 bg-[#fda4af]/5 rounded-lg border border-[#fda4af]/10">
-                            <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider flex items-center gap-1 mb-1">
-                              <Target className="w-3 h-3 text-[#fda4af]" /> Kök Neden
+                          <div className="p-3 rounded-lg" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+                            <span className="text-[10px] uppercase tracking-wider flex items-center gap-1 mb-1" style={{ color: "var(--text-muted)" }}>
+                              <Target className="w-3 h-3" style={{ color: "var(--color-pink)" }} /> Kök Neden
                             </span>
-                            <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{insight.root_cause}</p>
+                            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{insight.root_cause}</p>
                           </div>
                         )}
                         {insight.recommendations && insight.recommendations.length > 0 && (
-                          <div className="p-3 bg-[#39c5bb]/5 rounded-lg border border-[#39c5bb]/10">
-                            <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider flex items-center gap-1 mb-2">
-                              <Lightbulb className="w-3 h-3 text-[#39c5bb]" /> Öneriler
+                          <div className="p-3 rounded-lg" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                            <span className="text-[10px] uppercase tracking-wider flex items-center gap-1 mb-2" style={{ color: "var(--text-muted)" }}>
+                              <Lightbulb className="w-3 h-3" style={{ color: "var(--color-teal)" }} /> Öneriler
                             </span>
                             <ul className="space-y-1.5">
                               {insight.recommendations.map((rec, i) => (
                                 <li key={i} className="flex items-start gap-2">
-                                  <Badge className={`text-[8px] px-1 py-0 rounded-full shrink-0 mt-0.5 ${
-                                    rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48]" :
-                                    rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706]" :
-                                    "bg-[#39c5bb]/15 text-[#2da89e]"
-                                  }`}>
+                                  <Badge className="text-[8px] px-1 py-0 rounded-full shrink-0 mt-0.5"
+                                    style={{
+                                      background: rec.priority === "high" ? "var(--status-down-subtle)" : rec.priority === "medium" ? "var(--status-warn-subtle)" : "var(--color-teal-subtle)",
+                                      color: rec.priority === "high" ? "var(--status-down-text)" : rec.priority === "medium" ? "var(--status-warn-text)" : "var(--color-teal)",
+                                    }}>
                                     {rec.priority}
                                   </Badge>
-                                  <span className="text-[11px] text-[#3b4563] dark:text-[#d0f4ff]">{rec.action}</span>
+                                  <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{rec.action}</span>
                                 </li>
                               ))}
                             </ul>

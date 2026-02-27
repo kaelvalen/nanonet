@@ -42,22 +42,17 @@ const navCards = [
     label: "Services",
     description: "Monitor and manage all microservices",
     icon: Server,
-    color: "#39c5bb",
-    bgGradient: "from-[#39c5bb]/8 to-[#a8ede8]/5",
-    borderColor: "border-[#39c5bb]/15 hover:border-[#39c5bb]/35",
-    glowColor: "from-[#39c5bb] to-[#7eddd3]",
-    statColor: "text-[#2da89e]",
+    colorVar: "var(--color-teal)",
+    borderVar: "var(--color-teal-border)",
+    pulse: false,
   },
   {
     to: "/alerts",
     label: "Alerts",
     description: "Real-time incident alerts and notifications",
     icon: AlertCircle,
-    color: "#fda4af",
-    bgGradient: "from-[#fda4af]/8 to-[#ffd1dc]/5",
-    borderColor: "border-[#fda4af]/15 hover:border-[#fda4af]/35",
-    glowColor: "from-[#fda4af] to-[#ffd1dc]",
-    statColor: "text-[#e11d48]",
+    colorVar: "var(--color-pink)",
+    borderVar: "var(--color-pink-border)",
     pulse: true,
   },
   {
@@ -65,22 +60,18 @@ const navCards = [
     label: "AI Insights",
     description: "AI-powered anomaly detection and recommendations",
     icon: Sparkles,
-    color: "#c4b5fd",
-    bgGradient: "from-[#c4b5fd]/8 to-[#e0d6ff]/5",
-    borderColor: "border-[#c4b5fd]/15 hover:border-[#c4b5fd]/35",
-    glowColor: "from-[#c4b5fd] to-[#e0d6ff]",
-    statColor: "text-[#7c3aed]",
+    colorVar: "var(--color-lavender)",
+    borderVar: "var(--color-lavender-border)",
+    pulse: false,
   },
   {
     to: "/settings",
     label: "Settings",
     description: "Platform configuration and preferences",
     icon: Settings,
-    color: "#93c5fd",
-    bgGradient: "from-[#93c5fd]/8 to-[#b8dafb]/5",
-    borderColor: "border-[#93c5fd]/15 hover:border-[#93c5fd]/35",
-    glowColor: "from-[#93c5fd] to-[#b8dafb]",
-    statColor: "text-[#3b82f6]",
+    colorVar: "var(--color-blue)",
+    borderVar: "var(--color-blue-border)",
+    pulse: false,
   },
 ];
 
@@ -109,10 +100,10 @@ function UptimeRing({ percent, size = 56 }: { percent: number; size?: number }) 
   const r = (size - 8) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
-  const color = percent >= 95 ? "#34d399" : percent >= 80 ? "#fbbf24" : "#fb7185";
+  const color = percent >= 95 ? "var(--status-up)" : percent >= 80 ? "var(--status-warn)" : "var(--status-down)";
   return (
     <svg width={size} height={size} className="-rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth={4} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-track)" strokeWidth={4} />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
         stroke={color} strokeWidth={4}
@@ -147,49 +138,41 @@ export function DashboardPage() {
       label: "Total",
       value: totalServices,
       icon: Server,
-      color: "teal",
-      gradient: "from-[#39c5bb] to-[#2da89e]",
-      bg: "bg-[#39c5bb]/8",
-      border: "border-[#39c5bb]/15",
-      iconColor: "text-[#39c5bb]",
+      iconVar: "var(--color-teal)",
+      bgVar: "var(--color-teal-subtle)",
+      borderVar: "var(--color-teal-border)",
+      barVar: "var(--color-teal)",
       bar: totalServices > 0 ? 100 : 0,
-      barColor: "bg-[#39c5bb]",
     },
     {
       label: "Online",
       value: activeServices,
       icon: CheckCircle2,
-      color: "mint",
-      gradient: "from-[#34d399] to-[#059669]",
-      bg: "bg-[#34d399]/8",
-      border: "border-[#34d399]/15",
-      iconColor: "text-[#34d399]",
+      iconVar: "var(--status-up)",
+      bgVar: "var(--status-up-subtle)",
+      borderVar: "var(--status-up-border)",
+      barVar: "var(--status-up)",
       bar: totalServices > 0 ? (activeServices / totalServices) * 100 : 0,
-      barColor: "bg-[#34d399]",
     },
     {
       label: "Degraded",
       value: degradedServices,
       icon: AlertTriangle,
-      color: "yellow",
-      gradient: "from-[#fbbf24] to-[#d97706]",
-      bg: "bg-[#fbbf24]/8",
-      border: "border-[#fbbf24]/15",
-      iconColor: "text-[#fbbf24]",
+      iconVar: "var(--status-warn)",
+      bgVar: "var(--status-warn-subtle)",
+      borderVar: "var(--status-warn-border)",
+      barVar: "var(--status-warn)",
       bar: totalServices > 0 ? (degradedServices / totalServices) * 100 : 0,
-      barColor: "bg-[#fbbf24]",
     },
     {
       label: "Offline",
       value: offlineServices,
       icon: XCircle,
-      color: "pink",
-      gradient: "from-[#fb7185] to-[#e11d48]",
-      bg: "bg-[#fda4af]/8",
-      border: "border-[#fda4af]/15",
-      iconColor: "text-[#fb7185]",
+      iconVar: "var(--status-down)",
+      bgVar: "var(--status-down-subtle)",
+      borderVar: "var(--status-down-border)",
+      barVar: "var(--status-down)",
       bar: totalServices > 0 ? (offlineServices / totalServices) * 100 : 0,
-      barColor: "bg-[#fb7185]",
     },
   ];
 
@@ -210,13 +193,13 @@ export function DashboardPage() {
       >
         <div>
           <div className="relative inline-block">
-            <h1 className="text-4xl sm:text-5xl font-bold bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent mb-1">
+            <h1 className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent mb-1" style={{ backgroundImage: "var(--gradient-heading)" }}>
               Command Center
             </h1>
-            <div className="absolute -left-6 top-1/2 -translate-y-1/2 text-[#39c5bb] opacity-40 animate-twinkle">✦</div>
+            <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-40 animate-twinkle" style={{ color: "var(--color-teal)" }}>✦</div>
           </div>
-          <p className="text-xs text-[#7c8db5] tracking-wider flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-[#34d399] rounded-full animate-pulse inline-block" />
+          <p className="text-xs tracking-wider flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ backgroundColor: "var(--status-up)" }} />
             {activeServices === totalServices && totalServices > 0
               ? "All Systems Operational"
               : `${activeServices}/${totalServices} Services Online`}
@@ -229,17 +212,18 @@ export function DashboardPage() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex items-center gap-4 bg-white/60 dark:bg-[#0d1c24]/80 backdrop-blur-sm border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl px-5 py-3"
+            className="flex items-center gap-4 backdrop-blur-sm rounded-2xl px-5 py-3"
+            style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}
           >
             <div className="relative flex items-center justify-center">
               <UptimeRing percent={healthPercent} size={64} />
-              <span className={`absolute text-xs font-bold ${healthPercent >= 95 ? "text-[#059669]" : healthPercent >= 80 ? "text-[#d97706]" : "text-[#e11d48]"}`}>
+              <span className="absolute text-xs font-bold" style={{ color: healthPercent >= 95 ? "var(--status-up-text)" : healthPercent >= 80 ? "var(--status-warn-text)" : "var(--status-down-text)" }}>
                 {healthPercent}%
               </span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[#3b4563] dark:text-[#d0f4ff]">System Health</p>
-              <p className="text-[10px] text-[#7c8db5] dark:text-[#527a8a] mt-0.5">{activeServices} of {totalServices} operational</p>
+              <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>System Health</p>
+              <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{activeServices} of {totalServices} operational</p>
             </div>
           </motion.div>
         )}
@@ -260,20 +244,22 @@ export function DashboardPage() {
             transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
             className="group relative"
           >
-            <Card className={`p-4 bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${stat.border} rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden`}>
-              <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-current to-transparent opacity-20" style={{ color: stat.iconColor.replace("text-", "") }} />
+            <Card className="p-4 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+              style={{ background: "var(--surface-glass)", border: `1px solid ${stat.borderVar}` }}>
+              <div className="absolute inset-x-0 top-0 h-px opacity-20" style={{ background: `linear-gradient(to right, transparent, ${stat.iconVar}, transparent)` }} />
               <div className="flex items-start justify-between mb-3">
-                <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                  <stat.icon className={`w-4 h-4 ${stat.iconColor}`} />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: stat.bgVar }}>
+                  <stat.icon className="w-4 h-4" style={{ color: stat.iconVar }} />
                 </div>
-                <span className={`text-2xl font-bold bg-linear-to-br ${stat.gradient} bg-clip-text text-transparent tabular-nums`}>
+                <span className="text-2xl font-bold tabular-nums" style={{ color: stat.iconVar }}>
                   <AnimatedCounter value={stat.value} />
                 </span>
               </div>
-              <p className="text-[10px] text-[#7c8db5] dark:text-[#527a8a] uppercase tracking-wider mb-2">{stat.label}</p>
-              <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+              <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: "var(--border-track)" }}>
                 <motion.div
-                  className={`h-full rounded-full ${stat.barColor}`}
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: stat.barVar }}
                   initial={{ width: 0 }}
                   animate={{ width: `${stat.bar}%` }}
                   transition={{ duration: 0.8, delay: 0.3 + i * 0.07 }}
@@ -291,11 +277,11 @@ export function DashboardPage() {
         transition={{ duration: 0.6, delay: 0.2 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-[#39c5bb]/20 to-transparent" />
-          <h2 className="text-xs text-[#7c8db5] uppercase tracking-widest flex items-center gap-2">
+          <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, var(--color-teal-border), transparent)" }} />
+          <h2 className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
             <Eye className="w-3 h-3" /> Navigate
           </h2>
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-[#39c5bb]/20 to-transparent" />
+          <div className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, var(--color-teal-border), transparent)" }} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -308,29 +294,30 @@ export function DashboardPage() {
               whileHover={{ y: -2 }}
             >
               <Link to={card.to} className="block group">
-                <Card className={`relative bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${card.borderColor} rounded-2xl p-5 transition-all duration-300 overflow-hidden shadow-sm group-hover:shadow-lg`}>
-                  <div className={`absolute inset-0 bg-linear-to-br ${card.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                  <div className={`absolute inset-x-0 top-0 h-0.5 bg-linear-to-r ${card.glowColor} opacity-0 group-hover:opacity-60 transition-opacity duration-300`} />
+                <Card className="relative backdrop-blur-sm rounded-2xl p-5 transition-all duration-300 overflow-hidden shadow-sm group-hover:shadow-lg"
+                  style={{ background: "var(--surface-glass)", border: `1px solid ${card.borderVar}` }}>
+                  <div className="absolute inset-x-0 top-0 h-0.5 opacity-0 group-hover:opacity-60 transition-opacity duration-300"
+                    style={{ background: `linear-gradient(to right, transparent, ${card.colorVar}, transparent)` }} />
 
                   <div className="relative z-10 flex items-center gap-4">
                     <div
                       className="w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 group-hover:scale-110 shrink-0"
-                      style={{ backgroundColor: `${card.color}15`, borderColor: `${card.color}30` }}
+                      style={{ backgroundColor: `color-mix(in srgb, ${card.colorVar} 12%, transparent)`, borderColor: `color-mix(in srgb, ${card.colorVar} 25%, transparent)` }}
                     >
-                      <card.icon className="w-5 h-5" style={{ color: card.color }} />
+                      <card.icon className="w-5 h-5" style={{ color: card.colorVar }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff] group-hover:text-[#2a3350] dark:group-hover:text-white transition-colors">
+                        <h3 className="text-sm font-semibold transition-colors" style={{ color: "var(--text-secondary)" }}>
                           {card.label}
                         </h3>
-                        <ArrowRight className="w-4 h-4 text-[#b0bdd5] dark:text-[#3a6070] group-hover:text-[#3b4563] dark:group-hover:text-[#d0f4ff] group-hover:translate-x-1 transition-all shrink-0" />
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-all shrink-0" style={{ color: "var(--text-faint)" }} />
                       </div>
-                      <p className="text-xs text-[#7c8db5] dark:text-[#527a8a] mt-0.5 truncate">{card.description}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{card.description}</p>
                       {card.pulse && (
                         <div className="flex items-center gap-1.5 mt-1.5">
-                          <div className="w-1.5 h-1.5 bg-[#fda4af] rounded-full animate-pulse" />
-                          <span className="text-[10px] text-[#e11d48]">Needs attention</span>
+                          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "var(--color-pink)" }} />
+                          <span className="text-[10px]" style={{ color: "var(--status-down-text)" }}>Needs attention</span>
                         </div>
                       )}
                     </div>
@@ -349,57 +336,57 @@ export function DashboardPage() {
         transition={{ duration: 0.6, delay: 0.5 }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs text-[#7c8db5] uppercase tracking-widest flex items-center gap-2">
+          <h2 className="text-xs uppercase tracking-widest flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
             <Activity className="w-3 h-3" /> Recent Services
           </h2>
           <div className="flex items-center gap-2">
             <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="h-7 px-3 text-xs bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-lg shadow-sm hover:shadow-md transition-all">
+                <Button size="sm" className="h-7 px-3 text-xs text-white rounded-lg shadow-sm hover:shadow-md transition-all" style={{ background: "var(--gradient-btn-primary)" }}>
                   <Plus className="w-3 h-3 mr-1" /> Add Service
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-125 bg-white dark:bg-[#0a161e] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl">
+              <DialogContent className="sm:max-w-125 rounded-2xl" style={{ background: "var(--surface-overlay)", border: "1px solid var(--color-teal-border)" }}>
                 <DialogHeader>
-                  <DialogTitle className="text-[#00b4d8] dark:text-[#00e6ff]">New Service</DialogTitle>
-                  <DialogDescription className="text-[#7c8db5] dark:text-[#527a8a]">Add a new microservice to monitor</DialogDescription>
+                  <DialogTitle style={{ color: "var(--text-link)" }}>New Service</DialogTitle>
+                  <DialogDescription style={{ color: "var(--text-muted)" }}>Add a new microservice to monitor</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="name" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Service Name *</Label>
+                    <Label htmlFor="name" className="text-xs" style={{ color: "var(--text-secondary)" }}>Service Name *</Label>
                     <Input id="name" placeholder="payment-service" value={newService.name}
                       onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                      className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
+                      className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="host" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Host / IP *</Label>
+                    <Label htmlFor="host" className="text-xs" style={{ color: "var(--text-secondary)" }}>Host / IP *</Label>
                     <Input id="host" placeholder="192.168.1.42" value={newService.host}
                       onChange={(e) => setNewService({ ...newService, host: e.target.value })}
-                      className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
+                      className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="port" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Port *</Label>
+                      <Label htmlFor="port" className="text-xs" style={{ color: "var(--text-secondary)" }}>Port *</Label>
                       <Input id="port" placeholder="8080" type="number" value={newService.port}
                         onChange={(e) => setNewService({ ...newService, port: parseInt(e.target.value) || 0 })}
-                        className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
+                        className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="endpoint" className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">Health Endpoint *</Label>
+                      <Label htmlFor="endpoint" className="text-xs" style={{ color: "var(--text-secondary)" }}>Health Endpoint *</Label>
                       <Input id="endpoint" placeholder="/health" value={newService.health_endpoint}
                         onChange={(e) => setNewService({ ...newService, health_endpoint: e.target.value })}
-                        className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#39c5bb]/15 dark:border-[#00e6ff]/12 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl" />
+                        className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="border-[#39c5bb]/20 dark:border-[#00e6ff]/15 text-[#3b4563] dark:text-[#d0f4ff] rounded-xl">Cancel</Button>
+                  <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="rounded-xl" style={{ borderColor: "var(--color-teal-border)", color: "var(--text-secondary)" }}>Cancel</Button>
                   <Button onClick={handleCreateService} disabled={!newService.name || !newService.host}
-                    className="bg-linear-to-r from-[#39c5bb] to-[#93c5fd] text-white rounded-xl">Deploy</Button>
+                    className="text-white rounded-xl" style={{ background: "var(--gradient-btn-primary)" }}>Deploy</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Link to="/services" className="text-xs text-[#7c8db5] hover:text-[#39c5bb] transition-colors flex items-center gap-1">
+            <Link to="/services" className="text-xs transition-colors flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
               View All <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -408,35 +395,34 @@ export function DashboardPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
+              <Card key={i} className="p-4 rounded-xl animate-pulse" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#39c5bb]/10" />
+                  <div className="w-9 h-9 rounded-lg" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
                   <div className="flex-1">
-                    <div className="h-3.5 w-28 bg-[#39c5bb]/10 rounded mb-1.5" />
-                    <div className="h-2.5 w-20 bg-[#39c5bb]/8 rounded" />
+                    <div className="h-3.5 w-28 rounded mb-1.5" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
+                    <div className="h-2.5 w-20 rounded" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
                   </div>
                 </div>
-                <div className="h-1.5 w-full bg-[#39c5bb]/8 rounded-full" />
+                <div className="h-1.5 w-full rounded-full" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
               </Card>
             ))}
           </div>
         ) : services.length === 0 ? (
-          <Card className="p-10 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-xl text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#39c5bb]/8 flex items-center justify-center mx-auto mb-3">
-              <Server className="w-7 h-7 text-[#39c5bb]/40" />
+          <Card className="p-10 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "var(--color-teal-subtle)" }}>
+              <Server className="w-7 h-7 opacity-40" style={{ color: "var(--color-teal)" }} />
             </div>
-            <p className="text-sm font-medium text-[#3b4563] dark:text-[#d0f4ff] mb-1">No services yet</p>
-            <p className="text-xs text-[#b0bdd5] dark:text-[#3a6070]">Click "Add Service" above to get started</p>
+            <p className="text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>No services yet</p>
+            <p className="text-xs" style={{ color: "var(--text-faint)" }}>Click "Add Service" above to get started</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {services.slice(0, 6).map((service, index) => {
-              const statusDot = service.status === "up" ? "bg-[#34d399]" : service.status === "degraded" ? "bg-[#fbbf24]" : "bg-[#fb7185]";
-              const statusIcon = service.status === "up" ? CheckCircle2 : service.status === "degraded" ? AlertTriangle : XCircle;
-              const StatusIcon = statusIcon;
-              const cardBorder = service.status === "up" ? "border-[#39c5bb]/15 hover:border-[#39c5bb]/30" : service.status === "degraded" ? "border-[#fbbf24]/20 hover:border-[#fbbf24]/35" : "border-[#fda4af]/20 hover:border-[#fda4af]/35";
-              const iconBg = service.status === "up" ? "bg-[#39c5bb]/10" : service.status === "degraded" ? "bg-[#fbbf24]/10" : "bg-[#fda4af]/10";
-              const iconColor = service.status === "up" ? "text-[#39c5bb]" : service.status === "degraded" ? "text-[#fbbf24]" : "text-[#fb7185]";
+              const statusDotVar = service.status === "up" ? "var(--status-up)" : service.status === "degraded" ? "var(--status-warn)" : "var(--status-down)";
+              const StatusIcon = service.status === "up" ? CheckCircle2 : service.status === "degraded" ? AlertTriangle : XCircle;
+              const cardBorderVar = service.status === "up" ? "var(--color-teal-border)" : service.status === "degraded" ? "var(--status-warn-border)" : "var(--status-down-border)";
+              const iconBgVar = service.status === "up" ? "var(--color-teal-subtle)" : service.status === "degraded" ? "var(--status-warn-subtle)" : "var(--status-down-subtle)";
+              const iconColorVar = service.status === "up" ? "var(--color-teal)" : service.status === "degraded" ? "var(--status-warn)" : "var(--status-down)";
               return (
                 <motion.div
                   key={service.id}
@@ -446,33 +432,34 @@ export function DashboardPage() {
                   whileHover={{ y: -2 }}
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className={`relative bg-white/80 dark:bg-[#0d1c24]/85 backdrop-blur-sm border ${cardBorder} rounded-xl p-4 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden`}>
+                    <Card className="relative backdrop-blur-sm rounded-xl p-4 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden"
+                      style={{ background: "var(--surface-glass)", border: `1px solid ${cardBorderVar}` }}>
                       {service.status === "up" && (
-                        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#39c5bb]/30 to-transparent" />
+                        <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(to right, transparent, var(--color-teal-border), transparent)` }} />
                       )}
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center shrink-0`}>
-                          <Server className={`w-4 h-4 ${iconColor}`} />
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: iconBgVar }}>
+                          <Server className="w-4 h-4" style={{ color: iconColorVar }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <div className="relative shrink-0">
-                              <div className={`w-2 h-2 rounded-full ${statusDot}`} />
-                              {service.status === "up" && <div className="absolute inset-0 w-2 h-2 bg-[#34d399] rounded-full animate-pulse-ring" />}
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: statusDotVar }} />
+                              {service.status === "up" && <div className="absolute inset-0 w-2 h-2 rounded-full animate-pulse-ring" style={{ backgroundColor: "var(--status-up)" }} />}
                             </div>
-                            <h3 className="text-xs font-(--font-mono) text-[#3b4563] dark:text-[#d0f4ff] truncate group-hover:text-[#2a3350] dark:group-hover:text-white transition-colors">
+                            <h3 className="text-xs font-(--font-mono) truncate transition-colors" style={{ color: "var(--text-secondary)" }}>
                               {service.name}
                             </h3>
                           </div>
                           <div className="flex items-center justify-between mt-1">
-                            <p className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070] font-(--font-mono)">{service.host}:{service.port}</p>
+                            <p className="text-[10px] font-(--font-mono)" style={{ color: "var(--text-faint)" }}>{service.host}:{service.port}</p>
                             <div className="flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5 text-[#b0bdd5]" />
-                              <span className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070]">{service.poll_interval_sec}s</span>
+                              <Clock className="w-2.5 h-2.5" style={{ color: "var(--text-faint)" }} />
+                              <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{service.poll_interval_sec}s</span>
                             </div>
                           </div>
                         </div>
-                        <StatusIcon className={`w-4 h-4 shrink-0 ${iconColor} opacity-60 group-hover:opacity-100 transition-opacity`} />
+                        <StatusIcon className="w-4 h-4 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" style={{ color: iconColorVar }} />
                       </div>
                     </Card>
                   </Link>
@@ -488,20 +475,21 @@ export function DashboardPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.9 }}
-        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-[10px] text-[#b0bdd5] dark:text-[#3a6070]"
+        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-[10px]"
+        style={{ color: "var(--text-faint)" }}
       >
         <span className="flex items-center gap-1.5">
-          <Shield className="w-3 h-3 text-[#34d399]" />
+          <Shield className="w-3 h-3" style={{ color: "var(--status-up)" }} />
           {totalServices > 0 ? `${healthPercent}% uptime` : "No services monitored"}
         </span>
-        <span className="text-[#c4b5fd]">·</span>
+        <span style={{ color: "var(--color-lavender)" }}>·</span>
         <span className="flex items-center gap-1.5">
-          <Zap className="w-3 h-3 text-[#93c5fd]" />
+          <Zap className="w-3 h-3" style={{ color: "var(--color-blue)" }} />
           {totalServices} registered
         </span>
-        <span className="text-[#c4b5fd] hidden sm:inline">·</span>
+        <span className="hidden sm:inline" style={{ color: "var(--color-lavender)" }}>·</span>
         <span className="hidden sm:flex items-center gap-1.5">
-          <Heart className="w-3 h-3 text-[#fda4af]" />
+          <Heart className="w-3 h-3" style={{ color: "var(--color-pink)" }} />
           NanoNet v2.0
         </span>
       </motion.div>
