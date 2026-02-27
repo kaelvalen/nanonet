@@ -108,7 +108,12 @@ export function LoginPage() {
                 transition={{ delay: 0.38 }}
                 className="grid gap-2"
               >
-                <Label htmlFor="password" className="text-foreground text-xs font-medium">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-foreground text-xs font-medium">Password</Label>
+                  <Link to="/forgot-password" className="text-[10px] text-[#7c8db5] hover:text-[#00b4d8] transition-colors">
+                    Şifremi Unuttum
+                  </Link>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"

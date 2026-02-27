@@ -10,6 +10,8 @@ import { AlertsPage } from "@/pages/AlertsPage";
 import { AIInsightsPage } from "@/pages/AIInsightsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { ErrorPage } from "@/pages/ErrorPage";
+import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -38,6 +40,24 @@ export const router = createBrowserRouter([
     element: (
       <GuestGuard>
         <RegisterPage />
+      </GuestGuard>
+    ),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <GuestGuard>
+        <ForgotPasswordPage />
+      </GuestGuard>
+    ),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/reset-password",
+    element: (
+      <GuestGuard>
+        <ResetPasswordPage />
       </GuestGuard>
     ),
     errorElement: <ErrorPage />,
