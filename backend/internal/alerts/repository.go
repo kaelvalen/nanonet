@@ -115,13 +115,20 @@ func (r *Repository) GetActiveAlertTypes(ctx context.Context, serviceID uuid.UUI
 }
 
 func (r *Repository) ResolveByType(ctx context.Context, serviceID uuid.UUID, alertType string) error {
+	return r.ResolveByTypes(ctx, serviceID, []string{alertType})
+}
+
+func (r *Repository) ResolveByTypes(ctx context.Context, serviceID uuid.UUID, alertTypes []string) error {
+	if len(alertTypes) == 0 {
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	now := time.Now()
 	return r.db.WithContext(ctx).
 		Model(&Alert{}).
-		Where("service_id = ? AND type = ? AND resolved_at IS NULL", serviceID, alertType).
+		Where("service_id = ? AND type IN ? AND resolved_at IS NULL", serviceID, alertTypes).
 		Update("resolved_at", now).Error
 }
 

@@ -192,7 +192,10 @@ func (h *Handler) Restart(c *gin.Context) {
 		"timeout_sec": req.TimeoutSec,
 	}
 
-	go h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "restart", command)
+	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "restart", command); err != nil {
+		response.InternalError(c, "komut kaydedilemedi")
+		return
+	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
 	if !sent {
@@ -245,7 +248,10 @@ func (h *Handler) Stop(c *gin.Context) {
 		"graceful":   *req.Graceful,
 	}
 
-	go h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "stop", command)
+	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "stop", command); err != nil {
+		response.InternalError(c, "komut kaydedilemedi")
+		return
+	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
 	if !sent {
@@ -302,7 +308,10 @@ func (h *Handler) Exec(c *gin.Context) {
 		"timeout_sec": req.TimeoutSec,
 	}
 
-	go h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "exec", command)
+	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "exec", command); err != nil {
+		response.InternalError(c, "komut kaydedilemedi")
+		return
+	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
 	if !sent {
@@ -342,7 +351,10 @@ func (h *Handler) Start(c *gin.Context) {
 		"action":     "start",
 	}
 
-	go h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "start", command)
+	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "start", command); err != nil {
+		response.InternalError(c, "komut kaydedilemedi")
+		return
+	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
 	if !sent {
@@ -398,7 +410,10 @@ func (h *Handler) Scale(c *gin.Context) {
 		"weight_config": req.WeightJSON,
 	}
 
-	go h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "scale", command)
+	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "scale", command); err != nil {
+		response.InternalError(c, "komut kaydedilemedi")
+		return
+	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
 	if !sent {
