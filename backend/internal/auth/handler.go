@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -164,6 +165,49 @@ func (h *Handler) Me(c *gin.Context) {
 	}
 
 	response.Success(c, user)
+}
+
+func (h *Handler) ForgotPassword(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	token, email, err := h.service.ForgotPassword(req.Email)
+	if err != nil {
+		response.InternalError(c, "işlem gerçekleştirilemedi")
+		return
+	}
+
+	if token != "" {
+		// Production'da burada email gönderilir.
+		// Şimdilik token'ı log'a yazıyoruz — geliştirme ortamı için.
+		log.Printf("[PASSWORD RESET] email=%s token=%s", email, token)
+	}
+
+	// Enumeration saldırılarını önlemek için her durumda aynı yanıt
+	response.Success(c, gin.H{"message": "Eğer bu email kayıtlıysa sıfırlama bağlantısı gönderildi"})
+}
+
+func (h *Handler) ResetPassword(c *gin.Context) {
+	var req struct {
+		Token       string `json:"token" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required,min=12"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	if err := h.service.ResetPassword(req.Token, req.NewPassword); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"message": "Şifre başarıyla sıfırlandı, lütfen giriş yapın"})
 }
 
 func (h *Handler) ChangePassword(c *gin.Context) {

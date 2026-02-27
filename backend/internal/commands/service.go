@@ -43,3 +43,7 @@ func (s *Service) GetHistory(ctx context.Context, serviceID uuid.UUID, limit, of
 	}
 	return s.repo.GetByServiceID(ctx, serviceID, limit, offset)
 }
+
+func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
+	return s.repo.IsServiceOwner(ctx, serviceID, userID)
+}

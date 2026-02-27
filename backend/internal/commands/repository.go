@@ -46,6 +46,18 @@ func (r *Repository) UpdateStatus(ctx context.Context, commandID, status string,
 		Updates(updates).Error
 }
 
+func (r *Repository) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var count int64
+	r.db.WithContext(ctx).
+		Table("services").
+		Where("id = ? AND user_id = ?", serviceID, userID).
+		Count(&count)
+	return count > 0
+}
+
 func (r *Repository) GetByServiceID(ctx context.Context, serviceID uuid.UUID, limit, offset int) ([]CommandLog, int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

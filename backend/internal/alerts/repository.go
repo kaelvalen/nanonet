@@ -132,6 +132,18 @@ func (r *Repository) ResolveByTypes(ctx context.Context, serviceID uuid.UUID, al
 		Update("resolved_at", now).Error
 }
 
+func (r *Repository) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var count int64
+	r.db.WithContext(ctx).
+		Table("services").
+		Where("id = ? AND user_id = ?", serviceID, userID).
+		Count(&count)
+	return count > 0
+}
+
 func (r *Repository) ResolveByUser(ctx context.Context, alertID, userID uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

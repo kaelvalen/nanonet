@@ -84,7 +84,7 @@ export function RadialMenu() {
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 + 0.15 }}
-                    className="text-[10px] font-[var(--font-mono)] tracking-wider whitespace-nowrap px-2 py-0.5 rounded-full bg-white/90 dark:bg-[#0d1c24]/90 border border-[#39c5bb]/15 dark:border-[#00e6ff]/15 shadow-sm"
+                    className="text-[10px] font-(--font-mono) tracking-wider whitespace-nowrap px-2 py-0.5 rounded-full bg-white/90 dark:bg-[#0d1c24]/90 border border-[#39c5bb]/15 dark:border-[#00e6ff]/15 shadow-sm"
                     style={{ color: item.color }}
                   >
                     {item.label}
@@ -115,7 +115,7 @@ export function RadialMenu() {
           className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
             isOpen
               ? "bg-white dark:bg-[#0d1c24] border-2 border-[#fda4af]/50 dark:border-[#00e6ff]/30 shadow-lg shadow-[#fda4af]/20"
-              : "bg-gradient-to-br from-[#00b4d8] via-[#a78bfa] to-[#f0abfc] dark:from-[#00e6ff] dark:via-[#a78bfa] dark:to-[#324758] shadow-lg shadow-[#39c5bb]/30 dark:shadow-[#00e6ff]/20"
+              : "bg-linear-to-br from-[#00b4d8] via-[#a78bfa] to-[#f0abfc] dark:from-[#00e6ff] dark:via-[#a78bfa] dark:to-[#324758] shadow-lg shadow-[#39c5bb]/30 dark:shadow-[#00e6ff]/20"
           }`}
         >
           <AnimatePresence mode="wait">

@@ -132,3 +132,7 @@ func (s *Service) ResolveAlert(ctx context.Context, alertID, userID uuid.UUID) e
 func (s *Service) GetActiveAlerts(ctx context.Context, userID uuid.UUID) ([]Alert, error) {
 	return s.repo.GetActiveAlerts(ctx, userID)
 }
+
+func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
+	return s.repo.IsServiceOwner(ctx, serviceID, userID)
+}
