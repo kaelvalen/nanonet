@@ -53,19 +53,19 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-5xl">
       <div className="relative">
-        <div className="absolute -inset-1 bg-linear-to-r from-[#39c5bb]/10 via-[#c4b5fd]/10 to-[#fda4af]/10 dark:from-[#00e6ff]/8 dark:via-[#a78bfa]/8 dark:to-[#00e6ff]/8 rounded-2xl blur-lg" />
+        <div className="absolute -inset-1 rounded-2xl blur-lg" style={{ background: "linear-gradient(to right, var(--color-teal-subtle), var(--color-lavender-subtle), var(--color-pink-subtle))" }} />
 
-        <div className="relative bg-white/75 dark:bg-[#0d1c24]/90 backdrop-blur-xl border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm shadow-[#39c5bb]/5 dark:shadow-[#00e6ff]/5">
+        <div className="relative backdrop-blur-xl rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)", boxShadow: "0 1px 4px var(--shadow-card)" }}>
 
           {/* Logo */}
           <button
             onClick={() => navigate("/")}
             className="flex items-center gap-2 group cursor-pointer shrink-0"
           >
-            <div className="w-7 h-7 bg-linear-to-br from-[#00b4d8] to-[#a78bfa] dark:from-[#00e6ff] dark:to-[#a78bfa] rounded-lg flex items-center justify-center shadow-sm shadow-[#39c5bb]/20 dark:shadow-[#00e6ff]/20 group-hover:shadow-[#39c5bb]/35 transition-all">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center transition-all" style={{ background: "var(--gradient-logo)" }}>
               <span className="text-white text-xs">✦</span>
             </div>
-            <span className="font-(--font-quicksand) text-sm bg-linear-to-r from-[#39c5bb] via-[#93c5fd] to-[#c4b5fd] bg-clip-text text-transparent hidden sm:inline">
+            <span className="font-(--font-quicksand) text-sm bg-clip-text text-transparent hidden sm:inline" style={{ backgroundImage: "var(--gradient-text)" }}>
               NanoNet
             </span>
           </button>
@@ -75,13 +75,14 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
             <nav className="hidden sm:flex items-center gap-1 min-w-0">
               {crumbs.map((crumb, i) => (
                 <span key={crumb.path} className="flex items-center gap-1 min-w-0">
-                  {i > 0 && <ChevronRight className="w-3 h-3 text-[#b0bdd5] dark:text-[#3a6070] shrink-0" />}
+                  {i > 0 && <ChevronRight className="w-3 h-3 shrink-0" style={{ color: "var(--text-faint)" }} />}
                   {i === crumbs.length - 1 ? (
-                    <span className="text-xs font-(--font-mono) text-[#00b4d8] dark:text-[#00e6ff] truncate max-w-28">{crumb.label}</span>
+                    <span className="text-xs font-(--font-mono) truncate max-w-28" style={{ color: "var(--text-link)" }}>{crumb.label}</span>
                   ) : (
                     <Link
                       to={crumb.path}
-                      className="text-xs text-[#7c8db5] dark:text-[#527a8a] hover:text-[#00b4d8] dark:hover:text-[#00e6ff] transition-colors truncate max-w-20"
+                      className="text-xs transition-colors truncate max-w-20"
+                      style={{ color: "var(--text-muted)" }}
                     >
                       {crumb.label}
                     </Link>
@@ -94,18 +95,18 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           {/* Service count badge (home only) */}
           {isHome && services.length > 0 && (
             <div className="hidden sm:flex items-center gap-2">
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#39c5bb]/8 border border-[#39c5bb]/15">
-                <Server className="w-3 h-3 text-[#39c5bb]" />
-                <span className="text-[10px] text-[#2da89e] font-(--font-mono)">{services.length}</span>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                <Server className="w-3 h-3" style={{ color: "var(--color-teal)" }} />
+                <span className="text-[10px] font-(--font-mono)" style={{ color: "var(--color-teal-hover)" }}>{services.length}</span>
               </div>
               {downCount > 0 && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#fda4af]/10 border border-[#fda4af]/20">
-                  <AlertCircle className="w-3 h-3 text-[#e11d48]" />
-                  <span className="text-[10px] text-[#e11d48] font-(--font-mono)">{downCount}</span>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+                  <AlertCircle className="w-3 h-3" style={{ color: "var(--status-down-text)" }} />
+                  <span className="text-[10px] font-(--font-mono)" style={{ color: "var(--status-down-text)" }}>{downCount}</span>
                 </div>
               )}
               {upCount === services.length && services.length > 0 && (
-                <span className="text-[10px] text-[#059669] hidden md:inline">All systems operational</span>
+                <span className="text-[10px] hidden md:inline" style={{ color: "var(--status-up-text)" }}>All systems operational</span>
               )}
             </div>
           )}
@@ -123,7 +124,8 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
                 <Link
                   key={path}
                   to={path}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] text-[#7c8db5] dark:text-[#527a8a] hover:text-[#00b4d8] dark:hover:text-[#00e6ff] hover:bg-[#00b4d8]/8 dark:hover:bg-[#00e6ff]/8 transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] transition-all"
+                  style={{ color: "var(--text-muted)" }}
                 >
                   <Icon className="w-3 h-3" />
                   {label}
@@ -135,37 +137,37 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           {/* Search trigger */}
           <button
             onClick={onOpenCommandPalette}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#f0f7ff] dark:bg-[#0f1e28] rounded-lg border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 hover:border-[#39c5bb]/30 dark:hover:border-[#00e6ff]/25 transition-all text-[#7c8db5] dark:text-[#527a8a] hover:text-[#3b4563] dark:hover:text-[#d0f4ff]"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
+            style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}
           >
             <Search className="w-3.5 h-3.5" />
             <span className="text-xs">Search...</span>
-            <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 bg-white dark:bg-[#071012] border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded text-[#7c8db5] dark:text-[#527a8a] ml-3">
+            <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded ml-3" style={{ background: "var(--surface-raised)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>
               ⌘K
             </kbd>
           </button>
 
           {/* WS status */}
-          <div className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg border ${
-            isConnected
-              ? "bg-[#a7f3d0]/20 border-[#a7f3d0]/30"
-              : "bg-[#fda4af]/20 border-[#fda4af]/30"
-          }`}>
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg"
+            style={isConnected
+              ? { background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)" }
+              : { background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
             <div className="relative">
-              <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-[#34d399] animate-pulse" : "bg-[#fb7185]"}`} />
-              {isConnected && <div className="absolute inset-0 w-1.5 h-1.5 bg-[#34d399] rounded-full animate-pulse-ring" />}
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isConnected ? "var(--status-up)" : "var(--status-down)" }} />
+              {isConnected && <div className="absolute inset-0 w-1.5 h-1.5 rounded-full animate-pulse-ring" style={{ backgroundColor: "var(--status-up)" }} />}
             </div>
-            <span className={`text-[10px] font-(--font-mono) ${isConnected ? "text-[#059669]" : "text-[#e11d48]"}`}>
+            <span className="text-[10px] font-(--font-mono)" style={{ color: isConnected ? "var(--status-up-text)" : "var(--status-down-text)" }}>
               {isConnected ? "LIVE" : "OFF"}
             </span>
           </div>
 
           {/* AI indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 bg-[#c4b5fd]/15 rounded-lg border border-[#c4b5fd]/25">
-            <Sparkles className="w-3 h-3 text-[#8b5cf6] animate-glow" />
+          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: "var(--color-ai-subtle)", border: "1px solid var(--color-ai-border)" }}>
+            <Sparkles className="w-3 h-3 animate-glow" style={{ color: "var(--color-ai)" }} />
             <div className="flex gap-0.5">
-              <div className="w-0.5 h-2 bg-[#c4b5fd] rounded-sm animate-pulse" style={{ animationDelay: "0s" }} />
-              <div className="w-0.5 h-3 bg-[#c4b5fd] rounded-sm animate-pulse" style={{ animationDelay: "0.2s" }} />
-              <div className="w-0.5 h-1.5 bg-[#c4b5fd] rounded-sm animate-pulse" style={{ animationDelay: "0.4s" }} />
+              <div className="w-0.5 h-2 rounded-sm animate-pulse" style={{ backgroundColor: "var(--color-lavender)", animationDelay: "0s" }} />
+              <div className="w-0.5 h-3 rounded-sm animate-pulse" style={{ backgroundColor: "var(--color-lavender)", animationDelay: "0.2s" }} />
+              <div className="w-0.5 h-1.5 rounded-sm animate-pulse" style={{ backgroundColor: "var(--color-lavender)", animationDelay: "0.4s" }} />
             </div>
           </div>
 
@@ -173,22 +175,22 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="relative group shrink-0">
-                <div className="w-8 h-8 bg-linear-to-br from-[#39c5bb] to-[#93c5fd] rounded-full flex items-center justify-center border-2 border-white shadow-sm group-hover:shadow-[#39c5bb]/30 transition-all">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all" style={{ background: "var(--gradient-logo)" }}>
                   <span className="text-white text-xs font-(--font-quicksand)">{initials}</span>
                 </div>
                 {isConnected && (
-                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#34d399] rounded-full border-2 border-white" />
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white" style={{ backgroundColor: "var(--status-up)" }} />
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white/95 dark:bg-[#0d1c24]/95 backdrop-blur-xl border-[#39c5bb]/20 dark:border-[#00e6ff]/12 shadow-lg rounded-xl">
-              <DropdownMenuLabel className="text-[#3b4563] dark:text-[#d0f4ff] text-xs">{user?.email || "My Account"}</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-[#39c5bb]/10 dark:bg-[#00e6ff]/8" />
-              <DropdownMenuItem className="text-[#3b4563] dark:text-[#d0f4ff] text-xs cursor-pointer" onClick={() => navigate("/settings")}>
+            <DropdownMenuContent align="end" className="backdrop-blur-xl shadow-lg rounded-xl" style={{ background: "var(--surface-overlay)", border: "1px solid var(--color-teal-border)" }}>
+              <DropdownMenuLabel className="text-xs" style={{ color: "var(--text-secondary)" }}>{user?.email || "My Account"}</DropdownMenuLabel>
+              <DropdownMenuSeparator style={{ backgroundColor: "var(--border-subtle)" }} />
+              <DropdownMenuItem className="text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }} onClick={() => navigate("/settings")}>
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[#39c5bb]/10 dark:bg-[#00e6ff]/8" />
-              <DropdownMenuItem className="text-[#f43f5e] text-xs cursor-pointer" onClick={() => logout()}>
+              <DropdownMenuSeparator style={{ backgroundColor: "var(--border-subtle)" }} />
+              <DropdownMenuItem className="text-xs cursor-pointer" style={{ color: "var(--text-danger)" }} onClick={() => logout()}>
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -5,14 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { router } from "./routes";
 import { useAuthStore } from "./store/authStore";
 import { authApi } from "./api/auth";
-
-// Dark mode başlangıçta localStorage'dan okunur ve DOM'a uygulanır
-const savedTheme = localStorage.getItem("nanonet-theme");
-if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-  document.documentElement.classList.add("dark");
-} else {
-  document.documentElement.classList.remove("dark");
-}
+import { useThemeStore } from "./store/themeStore";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -82,22 +75,30 @@ function AppInit() {
   return null;
 }
 
+function ThemeInit() {
+  const { applyTheme } = useThemeStore();
+  useEffect(() => { applyTheme(); }, [applyTheme]);
+  return null;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
+      <ThemeInit />
       <AppInit />
       <RouterProvider router={router} />
       <Toaster
         position="top-right"
         toastOptions={{
           style: {
-            borderRadius: "12px",
-            border: "1px solid rgba(57, 197, 187, 0.15)",
-            background: "rgba(255, 255, 255, 0.95)",
+            borderRadius: "var(--radius)",
+            border: "1px solid var(--toast-border)",
+            background: "var(--toast-bg)",
             backdropFilter: "blur(8px)",
             fontSize: "12px",
             fontFamily: "var(--font-quicksand)",
+            color: "var(--text-primary)",
           },
         }}
       />

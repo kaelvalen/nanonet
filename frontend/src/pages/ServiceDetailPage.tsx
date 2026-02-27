@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
@@ -81,58 +81,57 @@ function CommandHistoryTab({ serviceId }: { serviceId: string }) {
   const logs = data?.commands ?? [];
 
   const statusIcon = (status: string) => {
-    if (status === 'success') return <CheckCircle2 className="w-3.5 h-3.5 text-[#34d399]" />;
-    if (status === 'failed' || status === 'timeout') return <XCircle className="w-3.5 h-3.5 text-[#fb7185]" />;
-    return <Loader2 className="w-3.5 h-3.5 text-[#fbbf24] animate-spin" />;
+    if (status === 'success') return <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />;
+    if (status === 'failed' || status === 'timeout') return <XCircle className="w-3.5 h-3.5" style={{ color: "var(--status-down)" }} />;
+    return <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--status-warn)" }} />;
   };
 
-  const actionColor: Record<string, string> = {
-    restart: 'text-[#39c5bb] bg-[#39c5bb]/10',
-    stop:    'text-[#d97706] bg-[#fbbf24]/10',
-    start:   'text-[#059669] bg-[#34d399]/10',
-    exec:    'text-[#38bdf8] bg-[#38bdf8]/10',
-    scale:   'text-[#a78bfa] bg-[#c4b5fd]/10',
-    ping:    'text-[#b0bdd5] bg-[#b0bdd5]/10',
+  const actionColorStyle: Record<string, React.CSSProperties> = {
+    restart: { color: 'var(--color-teal)', background: 'var(--color-teal-subtle)' },
+    stop:    { color: 'var(--status-warn-text)', background: 'var(--status-warn-subtle)' },
+    start:   { color: 'var(--status-up-text)', background: 'var(--status-up-subtle)' },
+    exec:    { color: 'var(--color-blue)', background: 'var(--color-blue-subtle)' },
+    scale:   { color: 'var(--color-lavender)', background: 'var(--color-lavender-subtle)' },
+    ping:    { color: 'var(--text-muted)', background: 'var(--surface-sunken)' },
   };
 
   if (isLoading) return (
-    <Card className="p-6 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 rounded-xl animate-pulse">
-      <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-10 bg-[#93c5fd]/5 rounded-lg" />)}</div>
+    <Card className="p-6 rounded-xl animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+      <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-10 rounded-lg" style={{ background: "var(--color-blue-subtle)" }} />)}</div>
     </Card>
   );
 
   if (logs.length === 0) return (
-    <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 rounded-xl text-center">
-      <History className="w-10 h-10 text-[#b0bdd5] mx-auto mb-3" />
-      <p className="text-sm text-[#7c8db5]">Henüz komut geçmişi yok</p>
+    <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+      <History className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--text-faint)" }} />
+      <p className="text-sm" style={{ color: "var(--text-muted)" }}>Henüz komut geçmişi yok</p>
     </Card>
   );
 
   return (
     <div className="space-y-2">
       {logs.map((log) => (
-        <Card key={log.id} className="p-3 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 dark:border-[#93c5fd]/6 rounded-xl">
+        <Card key={log.id} className="p-3 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
           <div className="flex items-center gap-3">
             {statusIcon(log.status)}
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full font-mono ${
-              actionColor[log.action] ?? 'text-[#7c8db5] bg-[#7c8db5]/10'
-            }`}>{log.action}</span>
-            <span className="text-xs text-[#3b4563] dark:text-[#d0f4ff] font-mono flex-1 truncate">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full font-mono"
+              style={actionColorStyle[log.action] ?? { color: 'var(--text-muted)', background: 'var(--surface-sunken)' }}>{log.action}</span>
+            <span className="text-xs font-mono flex-1 truncate" style={{ color: "var(--text-secondary)" }}>
               {log.command_id.slice(0, 12)}...
             </span>
             {log.duration_ms != null && (
-              <span className="text-[10px] text-[#b0bdd5]">{log.duration_ms}ms</span>
+              <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{log.duration_ms}ms</span>
             )}
-            <span className="text-[10px] text-[#b0bdd5]">
+            <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
               {new Date(log.queued_at).toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
           {log.output && (
-            <pre className="mt-2 ml-6 text-[10px] text-[#64748b] font-mono bg-[#f8fafc] dark:bg-[#0a1520] rounded-lg p-2 border border-[#e2e8f0] dark:border-[#1e3a4a] whitespace-pre-wrap break-all line-clamp-3">{log.output}</pre>
+            <pre className="mt-2 ml-6 text-[10px] font-mono rounded-lg p-2 whitespace-pre-wrap break-all line-clamp-3" style={{ color: "var(--text-muted)", background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>{log.output}</pre>
           )}
         </Card>
       ))}
-      <p className="text-[10px] text-[#b0bdd5] px-1 text-right">Son {logs.length} komut · 15s yenileme</p>
+      <p className="text-[10px] px-1 text-right" style={{ color: "var(--text-faint)" }}>Son {logs.length} komut · 15s yenileme</p>
     </div>
   );
 }
@@ -296,12 +295,12 @@ export function ServiceDetailPage() {
   if (serviceLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 bg-[#39c5bb]/10 rounded animate-pulse" />
+        <div className="h-8 w-48 rounded animate-pulse" style={{ background: "var(--color-teal-subtle)" }} />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
-              <div className="h-4 w-20 bg-[#39c5bb]/10 rounded mb-2" />
-              <div className="h-6 w-16 bg-[#39c5bb]/10 rounded" />
+            <Card key={i} className="p-4 rounded-xl animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+              <div className="h-4 w-20 rounded mb-2" style={{ background: "var(--color-teal-subtle)" }} />
+              <div className="h-6 w-16 rounded" style={{ background: "var(--color-teal-subtle)" }} />
             </Card>
           ))}
         </div>
@@ -312,69 +311,67 @@ export function ServiceDetailPage() {
   if (!service) {
     return (
       <div className="text-center py-20">
-        <Server className="w-16 h-16 text-[#b0bdd5] mx-auto mb-4" />
-        <h2 className="text-lg font-semibold text-[#3b4563] dark:text-[#d0f4ff]">Servis bulunamadı</h2>
-        <Link to="/services" className="text-sm text-[#39c5bb] hover:underline mt-2 inline-block">
+        <Server className="w-16 h-16 mx-auto mb-4" style={{ color: "var(--text-faint)" }} />
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>Servis bulunamadı</h2>
+        <Link to="/services" className="text-sm hover:underline mt-2 inline-block" style={{ color: "var(--color-teal)" }}>
           ← Servislere dön
         </Link>
       </div>
     );
   }
 
-  const statusColor =
-    service.status === "up" ? "text-[#34d399]" :
-    service.status === "degraded" ? "text-[#fbbf24]" : "text-[#fb7185]";
-
-  const statusBg =
-    service.status === "up" ? "bg-[#a7f3d0]/20 text-[#059669] border-[#a7f3d0]/40" :
-    service.status === "degraded" ? "bg-[#fef3c7]/30 text-[#d97706] border-[#fbbf24]/30" :
-    "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/30";
+  const statusBadgeStyle: React.CSSProperties =
+    service.status === "up"
+      ? { background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }
+      : service.status === "degraded"
+      ? { background: "var(--status-warn-subtle)", color: "var(--status-warn-text)", borderColor: "var(--status-warn-border)" }
+      : { background: "var(--status-down-subtle)", color: "var(--status-down-text)", borderColor: "var(--status-down-border)" };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate("/services")} className="p-2 rounded-lg hover:bg-[#39c5bb]/10 text-[#7c8db5] hover:text-[#39c5bb] transition-all">
+          <button onClick={() => navigate("/services")} className="p-2 rounded-lg transition-all" style={{ color: "var(--text-muted)" }}>
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] truncate">{service?.name ?? ''}</h1>
-              <Badge className={`text-[10px] font-([--font-mono]) px-2 py-0.5 rounded-full border ${statusBg}`}>
+              <h1 className="text-xl font-bold truncate" style={{ color: "var(--text-secondary)" }}>{service?.name ?? ''}</h1>
+              <Badge className="text-[10px] font-([--font-mono]) px-2 py-0.5 rounded-full border" style={statusBadgeStyle}>
                 {service?.status?.toUpperCase() ?? 'UNKNOWN'}
               </Badge>
             </div>
-            <p className="text-xs text-[#b0bdd5] font-([--font-mono]) mt-0.5">
+            <p className="text-xs font-([--font-mono]) mt-0.5" style={{ color: "var(--text-faint)" }}>
               {service?.host}:{service?.port} · {service?.health_endpoint} · {service?.poll_interval_sec}s poll
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleStart} disabled={startLoading} className="border-[#34d399]/20 text-[#059669] rounded-lg text-xs h-8 hover:bg-[#34d399]/10">
+            <Button variant="outline" size="sm" onClick={handleStart} disabled={startLoading} className="rounded-lg text-xs h-8" style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}>
               {startLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />} Start
             </Button>
-            <Button variant="outline" size="sm" onClick={handleRestart} className="border-[#39c5bb]/20 text-[#39c5bb] rounded-lg text-xs h-8 hover:bg-[#39c5bb]/10">
+            <Button variant="outline" size="sm" onClick={handleRestart} className="rounded-lg text-xs h-8" style={{ borderColor: "var(--color-teal-border)", color: "var(--color-teal)" }}>
               <RefreshCw className="w-3 h-3 mr-1" /> Restart
             </Button>
-            <Button variant="outline" size="sm" onClick={handleStop} className="border-[#fbbf24]/20 text-[#d97706] rounded-lg text-xs h-8 hover:bg-[#fbbf24]/10">
+            <Button variant="outline" size="sm" onClick={handleStop} className="rounded-lg text-xs h-8" style={{ borderColor: "var(--status-warn-border)", color: "var(--status-warn-text)" }}>
               <Power className="w-3 h-3 mr-1" /> Stop
             </Button>
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="border-[#fda4af]/20 text-[#e11d48] rounded-lg text-xs h-8 hover:bg-[#fda4af]/10">
+                <Button variant="outline" size="sm" className="rounded-lg text-xs h-8" style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-white dark:bg-[#0a161e] border-[#fda4af]/20 dark:border-[#fda4af]/15 rounded-2xl">
+              <DialogContent className="rounded-2xl" style={{ background: "var(--surface-card)", border: "1px solid var(--status-down-border)" }}>
                 <DialogHeader>
-                  <DialogTitle className="text-[#e11d48]">Servisi Sil</DialogTitle>
-                  <DialogDescription className="text-[#7c8db5] dark:text-[#527a8a]">
+                  <DialogTitle style={{ color: "var(--status-down-text)" }}>Servisi Sil</DialogTitle>
+                  <DialogDescription style={{ color: "var(--text-muted)" }}>
                     <strong>{service?.name}</strong> servisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="rounded-xl">İptal</Button>
-                  <Button onClick={handleDelete} className="bg-[#e11d48] text-white rounded-xl hover:bg-[#be123c]">Sil</Button>
+                  <Button onClick={handleDelete} className="text-white rounded-xl" style={{ background: "var(--status-down-text)" }}>Sil</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -386,24 +383,25 @@ export function ServiceDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* CPU */}
-          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl overflow-hidden">
+          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-[#39c5bb]" />
-                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">CPU</span>
+                <Cpu className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
+                <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>CPU</span>
               </div>
               {latestMetric && (
-                <span className={`text-[10px] font-medium ${(latestMetric.cpu_percent ?? 0) > 80 ? "text-[#e11d48]" : (latestMetric.cpu_percent ?? 0) > 60 ? "text-[#d97706]" : "text-[#059669]"}`}>
+                <span className="text-[10px] font-medium" style={{ color: (latestMetric.cpu_percent ?? 0) > 80 ? "var(--status-down-text)" : (latestMetric.cpu_percent ?? 0) > 60 ? "var(--status-warn-text)" : "var(--status-up-text)" }}>
                   {(latestMetric.cpu_percent ?? 0) > 80 ? "High" : (latestMetric.cpu_percent ?? 0) > 60 ? "Mod" : "OK"}
                 </span>
               )}
             </div>
-            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
+            <p className="text-xl font-bold mb-2" style={{ color: "var(--text-secondary)" }}>
               {latestMetric ? `${latestMetric.cpu_percent?.toFixed(1)}%` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--border-track)" }}>
               <motion.div
-                className={`h-full rounded-full ${!latestMetric ? "w-0" : (latestMetric.cpu_percent ?? 0) > 80 ? "bg-[#fb7185]" : (latestMetric.cpu_percent ?? 0) > 60 ? "bg-[#fbbf24]" : "bg-[#39c5bb]"}`}
+                className="h-full rounded-full"
+                style={{ backgroundColor: !latestMetric ? undefined : (latestMetric.cpu_percent ?? 0) > 80 ? "var(--status-down)" : (latestMetric.cpu_percent ?? 0) > 60 ? "var(--status-warn)" : "var(--color-teal)" }}
                 initial={{ width: 0 }}
                 animate={{ width: latestMetric ? `${Math.min(latestMetric.cpu_percent ?? 0, 100)}%` : "0%" }}
                 transition={{ duration: 0.7, delay: 0.2 }}
@@ -411,19 +409,20 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Memory */}
-          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 dark:border-[#00b4d8]/8 rounded-xl overflow-hidden">
+          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <HardDrive className="w-3.5 h-3.5 text-[#93c5fd]" />
-                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Memory</span>
+                <HardDrive className="w-3.5 h-3.5" style={{ color: "var(--color-blue)" }} />
+                <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Memory</span>
               </div>
             </div>
-            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
+            <p className="text-xl font-bold mb-2" style={{ color: "var(--text-secondary)" }}>
               {latestMetric ? `${latestMetric.memory_used_mb?.toFixed(0)} MB` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--border-track)" }}>
               <motion.div
-                className="h-full rounded-full bg-[#93c5fd]"
+                className="h-full rounded-full"
+                style={{ backgroundColor: "var(--color-blue)" }}
                 initial={{ width: 0 }}
                 animate={{ width: latestMetric ? `${Math.min(((latestMetric.memory_used_mb ?? 0) / 4096) * 100, 100)}%` : "0%" }}
                 transition={{ duration: 0.7, delay: 0.25 }}
@@ -431,24 +430,25 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Latency */}
-          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl overflow-hidden">
+          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-[#c4b5fd]" />
-                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Latency</span>
+                <Zap className="w-3.5 h-3.5" style={{ color: "var(--color-lavender)" }} />
+                <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Latency</span>
               </div>
               {latestMetric && (
-                <span className={`text-[10px] font-medium ${(latestMetric.latency_ms ?? 0) > 500 ? "text-[#e11d48]" : (latestMetric.latency_ms ?? 0) > 200 ? "text-[#d97706]" : "text-[#059669]"}`}>
+                <span className="text-[10px] font-medium" style={{ color: (latestMetric.latency_ms ?? 0) > 500 ? "var(--status-down-text)" : (latestMetric.latency_ms ?? 0) > 200 ? "var(--status-warn-text)" : "var(--status-up-text)" }}>
                   {(latestMetric.latency_ms ?? 0) > 500 ? "Slow" : (latestMetric.latency_ms ?? 0) > 200 ? "Mod" : "Fast"}
                 </span>
               )}
             </div>
-            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
+            <p className="text-xl font-bold mb-2" style={{ color: "var(--text-secondary)" }}>
               {latestMetric ? `${latestMetric.latency_ms?.toFixed(0)} ms` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--border-track)" }}>
               <motion.div
-                className={`h-full rounded-full ${!latestMetric ? "w-0" : (latestMetric.latency_ms ?? 0) > 500 ? "bg-[#fb7185]" : (latestMetric.latency_ms ?? 0) > 200 ? "bg-[#fbbf24]" : "bg-[#c4b5fd]"}`}
+                className="h-full rounded-full"
+                style={{ backgroundColor: !latestMetric ? undefined : (latestMetric.latency_ms ?? 0) > 500 ? "var(--status-down)" : (latestMetric.latency_ms ?? 0) > 200 ? "var(--status-warn)" : "var(--color-lavender)" }}
                 initial={{ width: 0 }}
                 animate={{ width: latestMetric ? `${Math.min(((latestMetric.latency_ms ?? 0) / 1000) * 100, 100)}%` : "0%" }}
                 transition={{ duration: 0.7, delay: 0.3 }}
@@ -456,19 +456,20 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Uptime */}
-          <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#34d399]/10 dark:border-[#34d399]/8 rounded-xl overflow-hidden">
+          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--status-up-border)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-[#34d399]" />
-                <span className="text-[10px] text-[#7c8db5] uppercase tracking-wider">Uptime</span>
+                <Shield className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />
+                <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Uptime</span>
               </div>
             </div>
-            <p className="text-xl font-bold text-[#3b4563] dark:text-[#d0f4ff] mb-2">
+            <p className="text-xl font-bold mb-2" style={{ color: "var(--text-secondary)" }}>
               {uptime ? `${uptime.uptime_percent.toFixed(1)}%` : "—"}
             </p>
-            <div className="h-1 rounded-full bg-[#e2e8f0] dark:bg-[#162534] overflow-hidden">
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--border-track)" }}>
               <motion.div
-                className={`h-full rounded-full ${!uptime ? "w-0" : uptime.uptime_percent >= 99 ? "bg-[#34d399]" : uptime.uptime_percent >= 95 ? "bg-[#fbbf24]" : "bg-[#fb7185]"}`}
+                className="h-full rounded-full"
+                style={{ backgroundColor: !uptime ? undefined : uptime.uptime_percent >= 99 ? "var(--status-up)" : uptime.uptime_percent >= 95 ? "var(--status-warn)" : "var(--status-down)" }}
                 initial={{ width: 0 }}
                 animate={{ width: uptime ? `${uptime.uptime_percent}%` : "0%" }}
                 transition={{ duration: 0.8, delay: 0.35 }}
@@ -482,23 +483,23 @@ export function ServiceDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
         <Tabs defaultValue="metrics" className="space-y-4">
           <div className="flex items-center justify-between">
-            <TabsList className="bg-white/80 dark:bg-[#0d1c24]/85 border border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl p-1">
-              <TabsTrigger value="metrics" className="rounded-lg text-xs data-[state=active]:bg-[#39c5bb]/10 data-[state=active]:text-[#2da89e]">
+            <TabsList className="rounded-xl p-1" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+              <TabsTrigger value="metrics" className="rounded-lg text-xs">
                 <TrendingUp className="w-3 h-3 mr-1" /> Metrics
               </TabsTrigger>
-              <TabsTrigger value="alerts" className="rounded-lg text-xs data-[state=active]:bg-[#fda4af]/10 data-[state=active]:text-[#e11d48]">
+              <TabsTrigger value="alerts" className="rounded-lg text-xs">
                 <AlertCircle className="w-3 h-3 mr-1" /> Alerts ({alerts.length})
               </TabsTrigger>
-              <TabsTrigger value="ai" className="rounded-lg text-xs data-[state=active]:bg-[#c4b5fd]/10 data-[state=active]:text-[#7c3aed]">
+              <TabsTrigger value="ai" className="rounded-lg text-xs">
                 <Sparkles className="w-3 h-3 mr-1" /> AI Analysis
               </TabsTrigger>
-              <TabsTrigger value="terminal" className="rounded-lg text-xs data-[state=active]:bg-[#1e293b]/80 dark:data-[state=active]:bg-[#0f172a]/80 data-[state=active]:text-[#38bdf8]">
+              <TabsTrigger value="terminal" className="rounded-lg text-xs">
                 <Terminal className="w-3 h-3 mr-1" /> Terminal
               </TabsTrigger>
-              <TabsTrigger value="scale" className="rounded-lg text-xs data-[state=active]:bg-[#34d399]/10 data-[state=active]:text-[#059669]">
+              <TabsTrigger value="scale" className="rounded-lg text-xs">
                 <Layers className="w-3 h-3 mr-1" /> Load Balancing
               </TabsTrigger>
-              <TabsTrigger value="history" className="rounded-lg text-xs data-[state=active]:bg-[#93c5fd]/10 data-[state=active]:text-[#3b82f6]">
+              <TabsTrigger value="history" className="rounded-lg text-xs">
                 <History className="w-3 h-3 mr-1" /> History
               </TabsTrigger>
             </TabsList>
@@ -509,11 +510,10 @@ export function ServiceDetailPage() {
                 <button
                   key={d}
                   onClick={() => setMetricsDuration(d)}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
-                    metricsDuration === d
-                      ? "bg-[#39c5bb]/15 text-[#2da89e] border border-[#39c5bb]/20"
-                      : "text-[#7c8db5] dark:text-[#527a8a] hover:bg-[#f5f8ff] dark:hover:bg-[#0f1e28] border border-transparent"
-                  }`}
+                  className="px-2 py-1 rounded-lg text-[10px] font-medium transition-all border"
+                  style={metricsDuration === d
+                    ? { background: "var(--color-teal-subtle)", color: "var(--color-teal)", borderColor: "var(--color-teal-border)" }
+                    : { color: "var(--text-muted)", borderColor: "transparent" }}
                 >
                   {d}
                 </button>
@@ -524,20 +524,20 @@ export function ServiceDetailPage() {
           {/* Metrics Tab */}
           <TabsContent value="metrics" className="space-y-4">
             {metricsLoading ? (
-              <Card className="p-8 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl animate-pulse">
-                <div className="h-64 bg-[#39c5bb]/5 rounded-lg" />
+              <Card className="p-8 rounded-xl animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+                <div className="h-64 rounded-lg" style={{ background: "var(--color-teal-subtle)" }} />
               </Card>
             ) : chartData.length === 0 ? (
-              <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl text-center">
-                <Activity className="w-10 h-10 text-[#b0bdd5] mx-auto mb-3" />
-                <p className="text-sm text-[#7c8db5]">Bu zaman aralığında metrik verisi yok</p>
+              <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+                <Activity className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--text-faint)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Bu zaman aralığında metrik verisi yok</p>
               </Card>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* CPU Chart */}
-                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl">
-                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Cpu className="w-3 h-3 text-[#39c5bb]" /> CPU Usage (%)
+                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+                  <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                    <Cpu className="w-3 h-3" style={{ color: "var(--color-teal)" }} /> CPU Usage (%)
                   </h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <AreaChart data={chartData}>
@@ -557,9 +557,9 @@ export function ServiceDetailPage() {
                 </Card>
 
                 {/* Memory Chart */}
-                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#93c5fd]/10 dark:border-[#00b4d8]/8 rounded-xl">
-                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <HardDrive className="w-3 h-3 text-[#93c5fd]" /> Memory (MB)
+                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+                  <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                    <HardDrive className="w-3 h-3" style={{ color: "var(--color-blue)" }} /> Memory (MB)
                   </h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <AreaChart data={chartData}>
@@ -579,9 +579,9 @@ export function ServiceDetailPage() {
                 </Card>
 
                 {/* Latency Chart */}
-                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl">
-                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Clock className="w-3 h-3 text-[#c4b5fd]" /> Latency (ms)
+                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
+                  <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                    <Clock className="w-3 h-3" style={{ color: "var(--color-lavender)" }} /> Latency (ms)
                   </h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <AreaChart data={chartData}>
@@ -601,9 +601,9 @@ export function ServiceDetailPage() {
                 </Card>
 
                 {/* Error Rate Chart */}
-                <Card className="p-4 bg-white/80 dark:bg-[#0d1c24]/85 border-[#fda4af]/10 dark:border-[#fda4af]/8 rounded-xl">
-                  <h3 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Zap className="w-3 h-3 text-[#fda4af]" /> Error Rate (%)
+                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--status-down-border)" }}>
+                  <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                    <Zap className="w-3 h-3" style={{ color: "var(--status-down)" }} /> Error Rate (%)
                   </h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <AreaChart data={chartData}>
@@ -628,38 +628,26 @@ export function ServiceDetailPage() {
           {/* Alerts Tab */}
           <TabsContent value="alerts" className="space-y-3">
             {alerts.length === 0 ? (
-              <Card className="p-12 bg-white/80 dark:bg-[#0d1c24]/85 border-[#39c5bb]/10 dark:border-[#00e6ff]/8 rounded-xl text-center">
-                <Shield className="w-10 h-10 text-[#34d399] mx-auto mb-3" />
-                <p className="text-sm text-[#7c8db5]">Aktif alert yok — tüm sistemler çalışıyor</p>
+              <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+                <Shield className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--status-up)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Aktif alert yok — tüm sistemler çalışıyor</p>
               </Card>
             ) : (
               alerts.map((alert, index) => (
                 <motion.div key={alert.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}>
-                  <Card className={`p-4 bg-white/80 dark:bg-[#0d1c24]/85 border rounded-xl ${
-                    alert.severity === "crit" ? "border-[#fda4af]/30" :
-                    alert.severity === "warn" ? "border-[#fbbf24]/25" :
-                    "border-[#93c5fd]/20"
-                  }`}>
+                  <Card className="p-4 rounded-xl border" style={{ background: "var(--surface-card)", borderColor: alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)" }}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                          alert.severity === "crit" ? "bg-[#fb7185]" :
-                          alert.severity === "warn" ? "bg-[#fbbf24]" :
-                          "bg-[#93c5fd]"
-                        }`} />
+                        <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: alert.severity === "crit" ? "var(--status-down)" : alert.severity === "warn" ? "var(--status-warn)" : "var(--color-blue)" }} />
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full border uppercase font-([--font-mono]) ${
-                              alert.severity === "crit" ? "bg-[#fda4af]/15 text-[#e11d48] border-[#fda4af]/30" :
-                              alert.severity === "warn" ? "bg-[#fef3c7]/30 text-[#d97706] border-[#fbbf24]/20" :
-                              "bg-[#93c5fd]/15 text-[#3b82f6] border-[#93c5fd]/20"
-                            }`}>
+                            <Badge className="text-[9px] px-1.5 py-0 rounded-full border uppercase font-([--font-mono])" style={{ background: alert.severity === "crit" ? "var(--status-down-subtle)" : alert.severity === "warn" ? "var(--status-warn-subtle)" : "var(--color-blue-subtle)", color: alert.severity === "crit" ? "var(--status-down-text)" : alert.severity === "warn" ? "var(--status-warn-text)" : "var(--color-blue)", borderColor: alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)" }}>
                               {alert.severity}
                             </Badge>
-                            <span className="text-[10px] text-[#b0bdd5]">{alert.type}</span>
+                            <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{alert.type}</span>
                           </div>
-                          <p className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{alert.message}</p>
-                          <p className="text-[10px] text-[#b0bdd5] mt-1">
+                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{alert.message}</p>
+                          <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>
                             {new Date(alert.triggered_at).toLocaleString("tr-TR")}
                           </p>
                         </div>
@@ -668,7 +656,8 @@ export function ServiceDetailPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleResolveAlert(alert.id)}
-                        className="text-[10px] border-[#34d399]/20 text-[#059669] rounded-lg h-7 hover:bg-[#34d399]/10"
+                        className="text-[10px] rounded-lg h-7"
+                        style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}
                       >
                         Çöz
                       </Button>
@@ -681,15 +670,15 @@ export function ServiceDetailPage() {
 
           {/* Terminal Tab */}
           <TabsContent value="terminal" className="space-y-3">
-            <Card className="bg-[#0a0f1a] border-[#1e293b] rounded-xl overflow-hidden shadow-xl">
+            <Card className="rounded-xl overflow-hidden shadow-xl" style={{ background: "var(--terminal-bg, #0a0f1a)", border: "1px solid var(--terminal-border, #1e293b)" }}>
               {/* Title bar */}
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#1e293b] bg-[#0d1525]">
+              <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "1px solid var(--terminal-border, #1e293b)", background: "var(--terminal-header, #0d1525)" }}>
                 <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#febc2e" }} />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#28c840" }} />
                 </div>
-                <span className="text-[10px] text-[#475569] font-mono ml-2">{service?.name ?? 'terminal'} — exec</span>
+                <span className="text-[10px] font-mono ml-2" style={{ color: "#475569" }}>{service?.name ?? 'terminal'} — exec</span>
                 <div className="ml-auto flex items-center gap-2">
                   {execHistory.length > 0 && (
                     <button onClick={() => setExecHistory([])} className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors">
@@ -702,12 +691,12 @@ export function ServiceDetailPage() {
               <div className="p-4 h-80 overflow-y-auto space-y-3 font-mono text-xs">
                 {execHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 select-none">
-                    <Terminal className="w-10 h-10 text-[#1e3a4a]" />
-                    <p className="text-[#334155] text-[11px]">Komut girin ve Enter'a basın</p>
+                    <Terminal className="w-10 h-10" style={{ color: "#1e3a4a" }} />
+                    <p className="text-[11px]" style={{ color: "#334155" }}>Komut girin ve Enter'a basın</p>
                     <div className="flex flex-wrap gap-2 mt-1 justify-center">
                       {['uptime', 'ps aux', 'df -h', 'free -m'].map((s) => (
                         <button key={s} onClick={() => setExecCommand(s)}
-                          className="px-2 py-1 rounded bg-[#1e293b] text-[#38bdf8] text-[10px] hover:bg-[#253347] transition-colors">
+                          className="px-2 py-1 rounded text-[10px] transition-colors" style={{ background: "#1e293b", color: "#38bdf8" }}>
                           {s}
                         </button>
                       ))}
@@ -719,35 +708,35 @@ export function ServiceDetailPage() {
                       <div key={i} className="space-y-1">
                         {/* Command line */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[#22d3ee] shrink-0">$</span>
-                          <span className="text-[#e2e8f0]">{entry.command}</span>
-                          <span className="ml-auto text-[#334155] text-[10px]">
+                          <span className="shrink-0" style={{ color: "#22d3ee" }}>$</span>
+                          <span style={{ color: "#e2e8f0" }}>{entry.command}</span>
+                          <span className="ml-auto text-[10px]" style={{ color: "#334155" }}>
                             {new Date(entry.queued_at).toLocaleTimeString('tr-TR')}
                           </span>
                         </div>
                         {/* Status indicator */}
                         <div className="flex items-center gap-1.5 pl-3">
                           {entry.status === 'queued' || entry.status === 'received' ? (
-                            <><Loader2 className="w-3 h-3 text-[#fbbf24] animate-spin" />
-                            <span className="text-[#fbbf24] text-[10px]">{entry.status}...</span></>
+                            <><Loader2 className="w-3 h-3 animate-spin" style={{ color: "#fbbf24" }} />
+                            <span className="text-[10px]" style={{ color: "#fbbf24" }}>{entry.status}...</span></>
                           ) : entry.status === 'success' ? (
-                            <><CheckCircle2 className="w-3 h-3 text-[#34d399]" />
-                            <span className="text-[#34d399] text-[10px]">success</span></>
+                            <><CheckCircle2 className="w-3 h-3" style={{ color: "#34d399" }} />
+                            <span className="text-[10px]" style={{ color: "#34d399" }}>success</span></>
                           ) : (
-                            <><XCircle className="w-3 h-3 text-[#fb7185]" />
-                            <span className="text-[#fb7185] text-[10px]">{entry.status}</span></>
+                            <><XCircle className="w-3 h-3" style={{ color: "#fb7185" }} />
+                            <span className="text-[10px]" style={{ color: "#fb7185" }}>{entry.status}</span></>
                           )}
                           {entry.duration_ms !== undefined && (
-                            <span className="text-[#475569] text-[10px] ml-auto">{entry.duration_ms}ms</span>
+                            <span className="text-[10px] ml-auto" style={{ color: "#475569" }}>{entry.duration_ms}ms</span>
                           )}
                         </div>
                         {/* Output */}
                         {entry.output && (
-                          <pre className="pl-3 text-[#94a3b8] text-[11px] leading-relaxed whitespace-pre-wrap break-all bg-[#0f172a] rounded-lg p-2 border border-[#1e293b]">{entry.output}</pre>
+                          <pre className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded-lg p-2" style={{ color: "#94a3b8", background: "#0f172a", border: "1px solid #1e293b" }}>{entry.output}</pre>
                         )}
                         {/* Error */}
                         {entry.error && (
-                          <pre className="pl-3 text-[#fb7185] text-[11px] leading-relaxed whitespace-pre-wrap break-all bg-[#1f0a0e] rounded-lg p-2 border border-[#fb7185]/20">{entry.error}</pre>
+                          <pre className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded-lg p-2" style={{ color: "#fb7185", background: "#1f0a0e", border: "1px solid rgba(251,113,133,0.2)" }}>{entry.error}</pre>
                         )}
                       </div>
                     ))}
@@ -756,19 +745,21 @@ export function ServiceDetailPage() {
                 )}
               </div>
               {/* Input area */}
-              <div className="flex items-center gap-2 px-4 py-3 border-t border-[#1e293b] bg-[#0d1525]">
-                <span className="text-[#22d3ee] font-mono text-xs shrink-0">❯</span>
+              <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: "1px solid #1e293b", background: "#0d1525" }}>
+                <span className="font-mono text-xs shrink-0" style={{ color: "#22d3ee" }}>❯</span>
                 <Input
                   value={execCommand}
                   onChange={(e) => setExecCommand(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !execLoading) handleExec(); }}
                   placeholder="komut girin..."
                   disabled={execLoading}
-                  className="bg-transparent border-none text-[#e2e8f0] font-mono text-xs h-7 px-0 focus-visible:ring-0 placeholder:text-[#2d3f52]"
+                  className="bg-transparent border-none font-mono text-xs h-7 px-0 focus-visible:ring-0"
+                  style={{ color: "#e2e8f0" }}
                 />
                 <Button size="sm" onClick={handleExec}
                   disabled={execLoading || !execCommand.trim()}
-                  className="h-7 px-3 bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/20 rounded-lg shrink-0"
+                  className="h-7 px-3 rounded-lg shrink-0"
+                  style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.2)" }}
                   variant="outline">
                   {execLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                 </Button>
@@ -778,34 +769,35 @@ export function ServiceDetailPage() {
 
           {/* Load Balancing Tab */}
           <TabsContent value="scale" className="space-y-4">
-            <Card className="p-6 bg-white/80 dark:bg-[#0d1c24]/85 border-[#34d399]/10 dark:border-[#34d399]/8 rounded-xl">
+            <Card className="p-6 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--status-up-border)" }}>
               <div className="flex items-center gap-2 mb-6">
-                <Layers className="w-4 h-4 text-[#34d399]" />
-                <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff]">Load Balancing & Scale</h3>
+                <Layers className="w-4 h-4" style={{ color: "var(--status-up)" }} />
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Load Balancing &amp; Scale</h3>
               </div>
 
               {/* Instance count */}
               <div className="space-y-4">
                 <div>
-                  <label className="text-[10px] text-[#7c8db5] uppercase tracking-wider block mb-2">Instance Sayısı</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--text-muted)" }}>Instance Sayısı</label>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setScaleInstances(Math.max(0, scaleInstances - 1))}
-                      className="w-8 h-8 rounded-lg border border-[#34d399]/20 text-[#34d399] hover:bg-[#34d399]/10 flex items-center justify-center transition-all">
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                      style={{ border: "1px solid var(--status-up-border)", color: "var(--status-up)" }}>
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="text-2xl font-bold text-[#3b4563] dark:text-[#d0f4ff] w-10 text-center">{scaleInstances}</span>
+                    <span className="text-2xl font-bold w-10 text-center" style={{ color: "var(--text-secondary)" }}>{scaleInstances}</span>
                     <button onClick={() => setScaleInstances(Math.min(32, scaleInstances + 1))}
-                      className="w-8 h-8 rounded-lg border border-[#34d399]/20 text-[#34d399] hover:bg-[#34d399]/10 flex items-center justify-center transition-all">
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                      style={{ border: "1px solid var(--status-up-border)", color: "var(--status-up)" }}>
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                     <div className="flex gap-1 ml-2">
                       {[1, 2, 4, 8].map((n) => (
                         <button key={n} onClick={() => setScaleInstances(n)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all ${
-                            scaleInstances === n
-                              ? 'bg-[#34d399]/15 text-[#059669] border-[#34d399]/30'
-                              : 'text-[#7c8db5] border-[#e2e8f0] dark:border-[#1e3a4a] hover:border-[#34d399]/20'
-                          }`}>{n}x</button>
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all"
+                          style={scaleInstances === n
+                            ? { background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }
+                            : { color: "var(--text-muted)", borderColor: "var(--border-default)" }}>{n}x</button>
                       ))}
                     </div>
                   </div>
@@ -813,7 +805,7 @@ export function ServiceDetailPage() {
 
                 {/* Strategy */}
                 <div>
-                  <label className="text-[10px] text-[#7c8db5] uppercase tracking-wider block mb-2">Load Balancing Stratejisi</label>
+                  <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--text-muted)" }}>Load Balancing Stratejisi</label>
                   <div className="grid grid-cols-3 gap-2">
                     {([
                       { value: 'round_robin', label: 'Round Robin', desc: 'Sırayla dağıt' },
@@ -821,29 +813,26 @@ export function ServiceDetailPage() {
                       { value: 'ip_hash', label: 'IP Hash', desc: 'IP bazlı sticky' },
                     ] as const).map((s) => (
                       <button key={s.value} onClick={() => setScaleStrategy(s.value)}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          scaleStrategy === s.value
-                            ? 'border-[#34d399]/40 bg-[#34d399]/8 dark:bg-[#34d399]/6'
-                            : 'border-[#e2e8f0] dark:border-[#1e3a4a] hover:border-[#34d399]/20'
-                        }`}>
-                        <p className={`text-xs font-semibold mb-0.5 ${
-                          scaleStrategy === s.value ? 'text-[#059669]' : 'text-[#3b4563] dark:text-[#d0f4ff]'
-                        }`}>{s.label}</p>
-                        <p className="text-[10px] text-[#b0bdd5]">{s.desc}</p>
+                        className="p-3 rounded-xl border text-left transition-all"
+                        style={scaleStrategy === s.value
+                          ? { borderColor: "var(--status-up-border)", background: "var(--status-up-subtle)" }
+                          : { borderColor: "var(--border-default)" }}>
+                        <p className="text-xs font-semibold mb-0.5" style={{ color: scaleStrategy === s.value ? "var(--status-up-text)" : "var(--text-secondary)" }}>{s.label}</p>
+                        <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{s.desc}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Info box */}
-                <div className="p-3 rounded-xl bg-[#f0fdf4] dark:bg-[#0a1f15] border border-[#34d399]/15 text-[10px] text-[#7c8db5] dark:text-[#4a9a6a] leading-relaxed">
-                  Komut agent'a iletilir. Agent'ta <code className="font-mono bg-[#34d399]/10 px-1 rounded">NANONET_SCALE_CMD</code> tanımlıysa
+                <div className="p-3 rounded-xl text-[10px] leading-relaxed" style={{ background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)", color: "var(--text-muted)" }}>
+                  Komut agent'a iletilir. Agent'ta <code className="font-mono px-1 rounded" style={{ background: "var(--status-up-subtle)" }}>NANONET_SCALE_CMD</code> tanımlıysa
                   çalıştırılır; tanımlı değilse acknowledge edilir.
-                  <br />Örn: <code className="font-mono bg-[#34d399]/10 px-1 rounded">docker service scale myapp=$INSTANCES</code>
+                  <br />Örn: <code className="font-mono px-1 rounded" style={{ background: "var(--status-up-subtle)" }}>docker service scale myapp=$INSTANCES</code>
                 </div>
 
                 <Button onClick={handleScale} disabled={scaleLoading}
-                  className="w-full bg-[#34d399] hover:bg-[#22c55e] text-white rounded-xl h-9 text-sm font-medium">
+                  className="w-full text-white rounded-xl h-9 text-sm font-medium" style={{ background: "var(--status-up)" }}>
                   {scaleLoading
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gönderiliyor...</>
                     : <><Layers className="w-4 h-4 mr-2" /> {scaleInstances} Instance'a Scale Et ({scaleStrategy})</>}
@@ -859,16 +848,16 @@ export function ServiceDetailPage() {
 
           {/* AI Tab */}
           <TabsContent value="ai" className="space-y-4">
-            <Card className="p-6 bg-white/80 dark:bg-[#0d1c24]/85 border-[#c4b5fd]/10 dark:border-[#a78bfa]/8 rounded-xl">
+            <Card className="p-6 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#c4b5fd]" />
-                  <h3 className="text-sm font-semibold text-[#3b4563] dark:text-[#d0f4ff]">AI Analiz</h3>
+                  <Sparkles className="w-4 h-4" style={{ color: "var(--color-lavender)" }} />
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>AI Analiz</h3>
                 </div>
                 <Button
                   onClick={handleAnalyze}
                   disabled={analyzeLoading}
-                  className="bg-linear-to-r from-[#c4b5fd] to-[#93c5fd] text-white rounded-xl text-xs h-8"
+                  className="text-white rounded-xl text-xs h-8" style={{ background: "var(--gradient-btn-primary)" }}
                 >
                   {analyzeLoading ? (
                     <>
@@ -884,45 +873,41 @@ export function ServiceDetailPage() {
 
               {analysisResult ? (
                 <div className="space-y-4">
-                  <div className="p-4 bg-[#f5f8ff] dark:bg-[#0f1e28] rounded-xl border border-[#c4b5fd]/10 dark:border-[#a78bfa]/10">
-                    <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Özet</h4>
-                    <p className="text-sm text-[#3b4563] dark:text-[#d0f4ff]">{analysisResult.summary}</p>
+                  <div className="p-4 rounded-xl" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-lavender-border)" }}>
+                    <h4 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Özet</h4>
+                    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{analysisResult.summary}</p>
                   </div>
                   {analysisResult.root_cause && (
-                    <div className="p-4 bg-[#fda4af]/5 rounded-xl border border-[#fda4af]/10">
-                      <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Kök Neden</h4>
-                      <p className="text-sm text-[#3b4563] dark:text-[#d0f4ff]">{analysisResult.root_cause}</p>
+                    <div className="p-4 rounded-xl" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+                      <h4 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Kök Neden</h4>
+                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{analysisResult.root_cause}</p>
                     </div>
                   )}
                   {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-                    <div className="p-4 bg-[#39c5bb]/5 rounded-xl border border-[#39c5bb]/10">
-                      <h4 className="text-xs text-[#7c8db5] uppercase tracking-wider mb-2">Öneriler</h4>
+                    <div className="p-4 rounded-xl" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                      <h4 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Öneriler</h4>
                       <ul className="space-y-2">
                         {analysisResult.recommendations.map((rec, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <Badge className={`text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5 ${
-                              rec.priority === "high" ? "bg-[#fda4af]/15 text-[#e11d48]" :
-                              rec.priority === "medium" ? "bg-[#fbbf24]/15 text-[#d97706]" :
-                              "bg-[#39c5bb]/15 text-[#2da89e]"
-                            }`}>
+                            <Badge className="text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5" style={{ background: rec.priority === "high" ? "var(--status-down-subtle)" : rec.priority === "medium" ? "var(--status-warn-subtle)" : "var(--color-teal-subtle)", color: rec.priority === "high" ? "var(--status-down-text)" : rec.priority === "medium" ? "var(--status-warn-text)" : "var(--color-teal)" }}>
                               {rec.priority}
                             </Badge>
-                            <span className="text-xs text-[#3b4563] dark:text-[#d0f4ff]">{rec.action}</span>
+                            <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{rec.action}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
                   {analysisResult.confidence !== undefined && (
-                    <div className="flex items-center gap-2 text-[10px] text-[#b0bdd5]">
+                    <div className="flex items-center gap-2 text-[10px]" style={{ color: "var(--text-faint)" }}>
                       <Eye className="w-3 h-3" /> Güven: {(analysisResult.confidence * 100).toFixed(0)}%
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <Sparkles className="w-8 h-8 text-[#c4b5fd]/30 mx-auto mb-3" />
-                  <p className="text-xs text-[#7c8db5]">
+                  <Sparkles className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--color-lavender-subtle)" }} />
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                     AI-powered analiz için "Analiz Başlat" butonuna tıklayın
                   </p>
                 </div>

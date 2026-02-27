@@ -83,10 +83,11 @@ export function AIAssistant() {
           >
             <button
               onClick={() => setIsOpen(true)}
-              className="relative w-16 h-16 bg-linear-to-br from-[#a78bfa] to-[#00b4d8] dark:from-[#a78bfa] dark:to-[#00e6ff] rounded-full shadow-lg hover:shadow-[#a78bfa]/40 transition-all duration-300 group"
+              className="relative w-16 h-16 rounded-full shadow-lg transition-all duration-300 group"
+              style={{ background: "var(--gradient-logo)" }}
             >
-              <div className="absolute inset-0 rounded-full bg-[#c4b5fd] opacity-15 animate-pulse-ring"></div>
-              <div className="absolute inset-0 rounded-full bg-[#c4b5fd] opacity-10 animate-pulse-ring" style={{ animationDelay: "0.5s" }}></div>
+              <div className="absolute inset-0 rounded-full opacity-15 animate-pulse-ring" style={{ backgroundColor: "var(--color-lavender)" }}></div>
+              <div className="absolute inset-0 rounded-full opacity-10 animate-pulse-ring" style={{ backgroundColor: "var(--color-lavender)", animationDelay: "0.5s" }}></div>
               <Sparkles className="w-8 h-8 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-glow" />
             </button>
           </motion.div>
@@ -102,24 +103,25 @@ export function AIAssistant() {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Card className={`${isMinimized ? "w-80" : "w-96"} ${isMinimized ? "h-16" : "h-150"} bg-white/95 dark:bg-[#0a161e]/97 backdrop-blur-xl border-[#a78bfa]/20 dark:border-[#a78bfa]/15 shadow-xl shadow-[#a78bfa]/10 dark:shadow-[#00e6ff]/5 transition-all duration-300 flex flex-col`}>
+            <Card className={`${isMinimized ? "w-80" : "w-96"} ${isMinimized ? "h-16" : "h-150"} backdrop-blur-xl transition-all duration-300 flex flex-col`}
+              style={{ background: "var(--surface-glass-heavy)", border: "1px solid var(--color-lavender-border)" }}>
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-[#a78bfa]/15 dark:border-[#a78bfa]/12">
+              <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid var(--color-lavender-border)" }}>
                 <div className="flex items-center gap-2">
                   <div className="relative">
-                    <Sparkles className="w-5 h-5 text-[#8b5cf6] animate-glow" />
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#34d399] rounded-full animate-pulse"></div>
+                    <Sparkles className="w-5 h-5 animate-glow" style={{ color: "var(--color-ai)" }} />
+                    <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "var(--status-up)" }}></div>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-[#7c3aed] dark:text-[#a78bfa]">AI Assistant</h3>
-                    <p className="text-xs text-[#7c8db5] dark:text-[#527a8a]">{isAnalyzing ? "Analyzing..." : "Online"}</p>
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--color-ai)" }}>AI Assistant</h3>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{isAnalyzing ? "Analyzing..." : "Online"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#7c8db5] hover:text-[#8b5cf6]" onClick={() => setIsMinimized(!isMinimized)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" style={{ color: "var(--text-muted)" }} onClick={() => setIsMinimized(!isMinimized)}>
                     {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#7c8db5] hover:text-[#fb7185]" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" style={{ color: "var(--text-muted)" }} onClick={() => setIsOpen(false)}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
@@ -132,19 +134,18 @@ export function AIAssistant() {
                     {chatMessages.map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                         {msg.role === "ai" && (
-                          <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#c4b5fd] to-[#93c5fd] flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--gradient-logo)" }}>
                             <Sparkles className="w-4 h-4 text-white" />
                           </div>
                         )}
                         <div className={`flex-1 ${msg.role === "user" ? "max-w-[80%] ml-auto" : ""}`}>
-                          <div className={`rounded-2xl p-3 ${
-                            msg.role === "ai"
-                              ? "bg-[#f5f0ff] dark:bg-[#1a2e3a] border border-[#a78bfa]/15 dark:border-[#a78bfa]/12 rounded-tl-sm"
-                              : "bg-[#00b4d8]/8 dark:bg-[#00e6ff]/6 border border-[#00b4d8]/15 dark:border-[#00e6ff]/12 rounded-tr-sm"
-                          }`}>
-                            <p className="text-sm text-[#3b4563] dark:text-[#d0f4ff]">{msg.text}</p>
+                          <div className={`rounded-2xl p-3 ${msg.role === "ai" ? "rounded-tl-sm" : "rounded-tr-sm"}`}
+                            style={msg.role === "ai"
+                              ? { background: "var(--color-lavender-subtle)", border: "1px solid var(--color-lavender-border)" }
+                              : { background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{msg.text}</p>
                           </div>
-                          <p className="text-xs text-[#b0bdd5] dark:text-[#3a6070] mt-1">{msg.time}</p>
+                          <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>{msg.time}</p>
                         </div>
                       </div>
                     ))}
@@ -152,11 +153,12 @@ export function AIAssistant() {
                     {/* Suggestions (only show initially) */}
                     {chatMessages.length <= 1 && (
                       <div className="space-y-2">
-                        <p className="text-xs text-[#7c8db5] dark:text-[#527a8a] px-2">Önerilen sorular:</p>
+                        <p className="text-xs px-2" style={{ color: "var(--text-muted)" }}>Önerilen sorular:</p>
                         {suggestions.map((suggestion, i) => (
                           <button
                             key={i}
-                            className="w-full text-left px-3 py-2 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#00b4d8]/15 dark:border-[#00e6ff]/12 rounded-xl text-sm text-[#3b4563] dark:text-[#d0f4ff] hover:bg-[#e8f4fd] dark:hover:bg-[#162534] hover:border-[#00b4d8]/30 dark:hover:border-[#00e6ff]/25 transition-all"
+                            className="w-full text-left px-3 py-2 rounded-xl text-sm transition-all"
+                            style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-secondary)" }}
                             onClick={() => setMessage(suggestion)}
                           >
                             {suggestion}
@@ -167,13 +169,14 @@ export function AIAssistant() {
                   </div>
 
                   {/* Input */}
-                  <div className="p-4 border-t border-[#a78bfa]/15 dark:border-[#a78bfa]/10">
+                  <div className="p-4" style={{ borderTop: "1px solid var(--color-lavender-border)" }}>
                     <div className="flex gap-2">
                       <Input
                         placeholder="AI'ya bir şey sorun..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        className="bg-[#f5f8ff] dark:bg-[#0f1e28] border-[#a78bfa]/20 dark:border-[#a78bfa]/15 text-[#3b4563] dark:text-[#d0f4ff] placeholder:text-[#b0bdd5] dark:placeholder:text-[#3a6070] rounded-xl"
+                        className="rounded-xl"
+                        style={{ background: "var(--input-bg)", borderColor: "var(--color-lavender-border)", color: "var(--text-secondary)" }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleSend();
                         }}
@@ -181,7 +184,8 @@ export function AIAssistant() {
                       />
                       <Button
                         size="icon"
-                        className="bg-linear-to-br from-[#c4b5fd] to-[#93c5fd] hover:from-[#a78bfa] hover:to-[#60a5fa] rounded-xl"
+                        className="rounded-xl"
+                        style={{ background: "var(--gradient-btn-primary)" }}
                         onClick={handleSend}
                         disabled={isAnalyzing}
                       >
