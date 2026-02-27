@@ -35,7 +35,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	var req CreateServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.ValidationError(c, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ func (h *Handler) Update(c *gin.Context) {
 
 	var req UpdateServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.ValidationError(c, err)
 		return
 	}
 
@@ -289,7 +289,7 @@ func (h *Handler) Exec(c *gin.Context) {
 		TimeoutSec int    `json:"timeout_sec"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "command alanı zorunlu")
+		response.ValidationError(c, err)
 		return
 	}
 	if req.TimeoutSec <= 0 {
@@ -393,7 +393,7 @@ func (h *Handler) Scale(c *gin.Context) {
 		WeightJSON string `json:"weight_config"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "instances alanı zorunlu (0-32 arası)")
+		response.ValidationError(c, err)
 		return
 	}
 	if req.Strategy == "" {
