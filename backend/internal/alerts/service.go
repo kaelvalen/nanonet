@@ -24,6 +24,7 @@ func NewService(db *gorm.DB) *Service {
 
 func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.UUID, metric *metrics.Metric) error {
 	var newAlerts []Alert
+	var resolveTypes []string
 
 	// CPU
 	if metric.CPUPercent != nil {
@@ -35,7 +36,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 				Message:   fmt.Sprintf("CPU kullanımı yüksek: %.2f%%", *metric.CPUPercent),
 			})
 		} else {
-			_ = s.repo.ResolveByType(ctx, serviceID, "high_cpu")
+			resolveTypes = append(resolveTypes, "high_cpu")
 		}
 	}
 
@@ -49,7 +50,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 				Message:   fmt.Sprintf("Bellek kullanımı yüksek: %.2f MB", *metric.MemoryUsedMB),
 			})
 		} else {
-			_ = s.repo.ResolveByType(ctx, serviceID, "high_memory")
+			resolveTypes = append(resolveTypes, "high_memory")
 		}
 	}
 
@@ -63,7 +64,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 				Message:   fmt.Sprintf("Yüksek gecikme: %.2f ms", *metric.LatencyMS),
 			})
 		} else {
-			_ = s.repo.ResolveByType(ctx, serviceID, "high_latency")
+			resolveTypes = append(resolveTypes, "high_latency")
 		}
 	}
 
@@ -77,7 +78,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 				Message:   fmt.Sprintf("Yüksek hata oranı: %.2f%%", *metric.ErrorRate),
 			})
 		} else {
-			_ = s.repo.ResolveByType(ctx, serviceID, "high_error_rate")
+			resolveTypes = append(resolveTypes, "high_error_rate")
 		}
 	}
 
@@ -90,7 +91,12 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 			Message:   "Servis çalışmıyor",
 		})
 	} else if metric.Status == "up" {
-		_ = s.repo.ResolveByType(ctx, serviceID, "service_down")
+		resolveTypes = append(resolveTypes, "service_down")
+	}
+
+	// Tek bulk UPDATE — tüm resolve edilecek tipleri tek sorguda çöz
+	if len(resolveTypes) > 0 {
+		_ = s.repo.ResolveByTypes(ctx, serviceID, resolveTypes)
 	}
 
 	if len(newAlerts) > 0 {
