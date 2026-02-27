@@ -79,6 +79,8 @@ func main() {
 			authGroup.POST("/register", authHandler.Register)
 			authGroup.POST("/login", authHandler.Login)
 			authGroup.POST("/refresh", authHandler.Refresh)
+			authGroup.POST("/forgot-password", authHandler.ForgotPassword)
+			authGroup.POST("/reset-password", authHandler.ResetPassword)
 			authGroup.POST("/logout", authMiddleware.Required(), authHandler.Logout)
 			authGroup.POST("/agent-token", authMiddleware.Required(), authHandler.AgentToken)
 			authGroup.GET("/me", authMiddleware.Required(), authHandler.Me)

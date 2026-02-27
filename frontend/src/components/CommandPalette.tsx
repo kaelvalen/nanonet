@@ -141,7 +141,7 @@ export function CommandPalette() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="fixed top-[15%] left-1/2 -translate-x-1/2 z-61 w-full max-w-[640px] px-4"
+            className="fixed top-[15%] left-1/2 -translate-x-1/2 z-61 w-full max-w-160 px-4"
           >
             <div className="absolute -inset-4 bg-linear-to-b from-[#00b4d8]/10 via-[#a78bfa]/8 dark:from-[#00e6ff]/8 dark:via-[#a78bfa]/6 to-transparent rounded-3xl blur-2xl" />
 
@@ -156,7 +156,7 @@ export function CommandPalette() {
                   </div>
                   <div className="flex-1" />
                   <div className="flex items-center gap-1">
-                    <kbd className="text-[10px] font-[var(--font-mono)] px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded text-[#7c8db5] dark:text-[#527a8a]">ESC</kbd>
+                    <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/15 dark:border-[#00e6ff]/12 rounded text-[#7c8db5] dark:text-[#527a8a]">ESC</kbd>
                     <span className="text-[10px] text-[#b0bdd5] dark:text-[#3a6070]">to close</span>
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export function CommandPalette() {
                   className="text-[#3b4563] dark:text-[#d0f4ff] placeholder:text-[#b0bdd5] dark:placeholder:text-[#3a6070] dark:bg-transparent"
                 />
 
-                <CommandList className="max-h-[400px] p-2">
+                <CommandList className="max-h-100 p-2">
                   <CommandEmpty className="text-[#7c8db5] dark:text-[#527a8a] text-xs">
                     <div className="flex flex-col items-center gap-2 py-8">
                       <Search className="w-8 h-8 text-[#c4b5fd]" />
@@ -186,7 +186,7 @@ export function CommandPalette() {
                       >
                         <item.icon className="w-4 h-4" />
                         <span className="flex-1">{item.label}</span>
-                        <kbd className="text-[10px] font-[var(--font-mono)] px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded text-[#7c8db5] dark:text-[#527a8a]">
+                        <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded text-[#7c8db5] dark:text-[#527a8a]">
                           {item.shortcut}
                         </kbd>
                       </CommandItem>
@@ -219,9 +219,9 @@ export function CommandPalette() {
                                 }`}
                               />
                             </div>
-                            <span className="flex-1 font-[var(--font-mono)] text-xs">{service.name}</span>
+                            <span className="flex-1 font-(--font-mono) text-xs">{service.name}</span>
                             <span
-                              className={`text-[10px] font-[var(--font-mono)] px-1.5 py-0.5 rounded-full ${
+                              className={`text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded-full ${
                                 service.status === "up"
                                   ? "bg-[#a7f3d0]/30 text-[#059669] border border-[#a7f3d0]/50"
                                   : service.status === "degraded"
@@ -298,7 +298,7 @@ export function CommandPalette() {
                 </CommandList>
 
                 {/* Footer */}
-                <div className="flex items-center gap-4 px-4 py-2 border-t border-[#39c5bb]/10 dark:border-[#00e6ff]/8 text-[10px] text-[#b0bdd5] dark:text-[#3a6070] font-[var(--font-mono)]">
+                <div className="flex items-center gap-4 px-4 py-2 border-t border-[#39c5bb]/10 dark:border-[#00e6ff]/8 text-[10px] text-[#b0bdd5] dark:text-[#3a6070] font-(--font-mono)">
                   <span className="flex items-center gap-1">
                     <kbd className="px-1 py-0.5 bg-[#f0f7ff] dark:bg-[#0f1e28] border border-[#39c5bb]/10 dark:border-[#00e6ff]/10 rounded">↑↓</kbd>
                     navigate
