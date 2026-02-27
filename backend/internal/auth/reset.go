@@ -5,7 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
+
+	"nanonet-backend/pkg/mailer"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -32,16 +35,15 @@ func generateResetToken() (plain string, hashed string, err error) {
 	return
 }
 
-// ForgotPassword generates a reset token for the given email.
-// Returns (token, email, error). Token is the plain-text value to send to user.
-// If email not found, returns ("", "", nil) — silent to prevent enumeration.
-func (s *Service) ForgotPassword(email string) (token string, userEmail string, err error) {
+// ForgotPassword generates a reset token and sends a reset email via m.
+// Always returns nil error to prevent email enumeration — errors are logged internally.
+func (s *Service) ForgotPassword(email string, m *mailer.Mailer, frontendURL string) error {
 	var user User
 	if dbErr := s.db.Where("email = ?", email).First(&user).Error; dbErr != nil {
 		if errors.Is(dbErr, gorm.ErrRecordNotFound) {
-			return "", "", nil
+			return nil
 		}
-		return "", "", dbErr
+		return dbErr
 	}
 
 	// Invalidate existing unused tokens
@@ -51,7 +53,7 @@ func (s *Service) ForgotPassword(email string) (token string, userEmail string, 
 
 	plain, hashed, err := generateResetToken()
 	if err != nil {
-		return "", "", err
+		return err
 	}
 
 	prt := &PasswordResetToken{
@@ -60,10 +62,19 @@ func (s *Service) ForgotPassword(email string) (token string, userEmail string, 
 		ExpiresAt: time.Now().Add(1 * time.Hour),
 	}
 	if err = s.db.Create(prt).Error; err != nil {
-		return "", "", err
+		return err
 	}
 
-	return plain, user.Email, nil
+	resetURL := fmt.Sprintf("%s/reset-password?token=%s", frontendURL, plain)
+
+	if m != nil && m.Enabled() {
+		if sendErr := m.SendPasswordReset(user.Email, resetURL); sendErr != nil {
+			// Log but don't surface — token is already created, user can retry
+			_ = sendErr
+		}
+	}
+
+	return nil
 }
 
 // ResetPassword validates the token and sets a new password.

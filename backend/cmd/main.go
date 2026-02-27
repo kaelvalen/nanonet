@@ -21,6 +21,7 @@ import (
 	"nanonet-backend/pkg/audit"
 	"nanonet-backend/pkg/config"
 	"nanonet-backend/pkg/database"
+	"nanonet-backend/pkg/mailer"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -56,7 +57,18 @@ func main() {
 	defer cancel()
 	go broadcaster.Start(ctx)
 
-	authHandler := auth.NewHandler(db, cfg.JWTSecret)
+	m := mailer.New(mailer.Config{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		User:     cfg.SMTPUser,
+		Password: cfg.SMTPPassword,
+		From:     cfg.SMTPFrom,
+	})
+	if !m.Enabled() {
+		log.Println("Warning: SMTP yapılandırılmamış, şifre sıfırlama emaili gönderilmeyecek")
+	}
+
+	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL)
 	authMiddleware := auth.NewMiddleware(cfg.JWTSecret)
 	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)

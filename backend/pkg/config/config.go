@@ -9,13 +9,19 @@ import (
 )
 
 type Config struct {
-	DatabaseURL       string
-	JWTSecret         string
-	ClaudeAPIKey      string
-	Port              string
-	FrontendURL       string
-	PollDefaultSec    int
-	WSMaxConnections  int
+	DatabaseURL      string
+	JWTSecret        string
+	ClaudeAPIKey     string
+	Port             string
+	FrontendURL      string
+	PollDefaultSec   int
+	WSMaxConnections int
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
 }
 
 func Load() *Config {
@@ -31,6 +37,12 @@ func Load() *Config {
 		FrontendURL:      getEnv("FRONTEND_URL", "http://localhost:3000"),
 		PollDefaultSec:   getEnvInt("POLL_DEFAULT_SEC", 10),
 		WSMaxConnections: getEnvInt("WS_MAX_CONNECTIONS", 1000),
+
+		SMTPHost:     getEnv("SMTP_HOST", ""),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUser:     getEnv("SMTP_USER", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", ""),
 	}
 
 	if cfg.DatabaseURL == "" {
