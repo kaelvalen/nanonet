@@ -23,8 +23,13 @@ import {
   Activity,
   Cpu,
   Globe,
+  Play,
+  Power,
+  RefreshCw,
 } from "lucide-react";
 import { useServiceStore } from "@/store/serviceStore";
+import { servicesApi } from "@/api/services";
+import { toast } from "sonner";
 
 const navigationItems = [
   { label: "Dashboard Hub", icon: Home, path: "/", shortcut: "⌘1" },
@@ -92,6 +97,27 @@ export function CommandPalette() {
       setOpen(false);
     },
     [navigate]
+  );
+
+  const handleServiceAction = useCallback(
+    async (serviceId: string, serviceName: string, action: 'start' | 'restart' | 'stop') => {
+      setOpen(false);
+      try {
+        if (action === 'start') {
+          await servicesApi.start(serviceId);
+          toast.success(`${serviceName}: start komutu gönderildi`);
+        } else if (action === 'restart') {
+          await servicesApi.restart(serviceId);
+          toast.success(`${serviceName}: restart komutu gönderildi`);
+        } else if (action === 'stop') {
+          await servicesApi.stop(serviceId);
+          toast.success(`${serviceName}: stop komutu gönderildi`);
+        }
+      } catch {
+        toast.error(`${serviceName}: komut gönderilemedi`);
+      }
+    },
+    []
   );
 
   return (
@@ -205,6 +231,46 @@ export function CommandPalette() {
                             >
                               {service.status?.toUpperCase() ?? 'UNKNOWN'}
                             </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+
+                      <CommandSeparator className="bg-[#a78bfa]/10 dark:bg-[#a78bfa]/8 my-2" />
+
+                      {/* Per-service quick actions */}
+                      <CommandGroup
+                        heading={<span className="text-[10px] tracking-widest text-[#34d399] uppercase">Service Controls</span>}
+                      >
+                        {services.slice(0, 5).flatMap((service) => [
+                          {
+                            key: `${service.id}-start`,
+                            icon: Play,
+                            label: `Start  ${service.name}`,
+                            color: 'text-[#059669]',
+                            action: () => handleServiceAction(service.id, service.name, 'start'),
+                          },
+                          {
+                            key: `${service.id}-restart`,
+                            icon: RefreshCw,
+                            label: `Restart  ${service.name}`,
+                            color: 'text-[#39c5bb]',
+                            action: () => handleServiceAction(service.id, service.name, 'restart'),
+                          },
+                          {
+                            key: `${service.id}-stop`,
+                            icon: Power,
+                            label: `Stop  ${service.name}`,
+                            color: 'text-[#d97706]',
+                            action: () => handleServiceAction(service.id, service.name, 'stop'),
+                          },
+                        ]).map((item) => (
+                          <CommandItem
+                            key={item.key}
+                            onSelect={item.action}
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer text-[#3b4563] dark:text-[#d0f4ff] data-[selected=true]:bg-[#34d399]/8 dark:data-[selected=true]:bg-[#34d399]/6"
+                          >
+                            <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
+                            <span className="flex-1 text-xs">{item.label}</span>
                           </CommandItem>
                         ))}
                       </CommandGroup>

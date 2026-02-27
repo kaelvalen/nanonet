@@ -57,13 +57,24 @@ export function useWebSocket() {
           }
           break;
 
-        case 'command_status':
+        case 'command_status': {
+          const commandEvent = new CustomEvent('nanonet:command_result', {
+            detail: {
+              command_id: message.command_id,
+              status: message.status,
+              output: message.output,
+              error: message.error,
+              service_id: message.service_id,
+            },
+          });
+          window.dispatchEvent(commandEvent);
           if (message.status === 'success') {
-            toast.success(`Komut başarılı (${message.command_id?.slice(0, 8)})`);
-          } else if (message.status === 'failed') {
-            toast.error(`Komut başarısız (${message.command_id?.slice(0, 8)})`);
+            toast.success(`Komut tamamlandı`, { duration: 2500 });
+          } else if (message.status === 'failed' || message.status === 'timeout') {
+            toast.error(`Komut başarısız: ${message.error ?? 'bilinmeyen hata'}`, { duration: 4000 });
           }
           break;
+        }
 
         case 'pong':
           // Heartbeat response, connection healthy

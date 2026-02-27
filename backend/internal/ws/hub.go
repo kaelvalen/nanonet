@@ -12,6 +12,8 @@ type AgentMessage struct {
 	ServiceID string                 `json:"service_id,omitempty"`
 	CommandID string                 `json:"command_id,omitempty"`
 	Status    string                 `json:"status,omitempty"`
+	Output    *string                `json:"output,omitempty"`
+	Error     *string                `json:"error,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
 	System    map[string]interface{} `json:"system,omitempty"`
 	App       map[string]interface{} `json:"app,omitempty"`
@@ -157,7 +159,7 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 			fn(msg.CommandID, msg.Status, msg)
 		}
 
-		h.BroadcastCommandStatus(client.serviceID, msg.CommandID, msg.Status)
+		h.BroadcastCommandResult(client.serviceID, msg.CommandID, msg.Status, msg.Output, msg.Error)
 
 	default:
 		log.Printf("Agent %s: bilinmeyen mesaj tipi: %s", client.id, msg.Type)
@@ -221,11 +223,21 @@ func (h *Hub) BroadcastAlert(serviceID, alertType, severity, message string) {
 }
 
 func (h *Hub) BroadcastCommandStatus(serviceID, commandID, status string) {
+	h.BroadcastCommandResult(serviceID, commandID, status, nil, nil)
+}
+
+func (h *Hub) BroadcastCommandResult(serviceID, commandID, status string, output *string, errMsg *string) {
 	msg := map[string]interface{}{
 		"type":       "command_status",
 		"service_id": serviceID,
 		"command_id": commandID,
 		"status":     status,
+	}
+	if output != nil {
+		msg["output"] = *output
+	}
+	if errMsg != nil {
+		msg["error"] = *errMsg
 	}
 
 	jsonData, err := json.Marshal(msg)

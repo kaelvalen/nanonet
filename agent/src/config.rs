@@ -46,6 +46,16 @@ pub struct Config {
     #[arg(long, env = "NANONET_STOP_CMD")]
     pub stop_cmd: Option<String>,
 
+    /// Servisi başlatmak için shell komutu
+    /// Örn: "systemctl start myapp" veya "pm2 start myapp"
+    #[arg(long, env = "NANONET_START_CMD")]
+    pub start_cmd: Option<String>,
+
+    /// Scale komutu için shell komutu (INSTANCES ve STRATEGY env ile çağrılır)
+    /// Örn: "docker service scale myapp=$INSTANCES"
+    #[arg(long, env = "NANONET_SCALE_CMD")]
+    pub scale_cmd: Option<String>,
+
     /// Hata oranı hesabı için tutulacak health check sayısı
     #[arg(long, default_value = "20", env = "NANONET_ERROR_RATE_WINDOW")]
     pub error_rate_window: usize,
