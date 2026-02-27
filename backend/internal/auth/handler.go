@@ -2,10 +2,10 @@ package auth
 
 import (
 	"errors"
-	"log"
 	"strings"
 	"time"
 
+	"nanonet-backend/pkg/mailer"
 	"nanonet-backend/pkg/response"
 	"nanonet-backend/pkg/tokenblacklist"
 
@@ -16,14 +16,18 @@ import (
 )
 
 type Handler struct {
-	service   *Service
-	blacklist *tokenblacklist.Blacklist
+	service     *Service
+	blacklist   *tokenblacklist.Blacklist
+	mailer      *mailer.Mailer
+	frontendURL string
 }
 
-func NewHandler(db *gorm.DB, jwtSecret string) *Handler {
+func NewHandler(db *gorm.DB, jwtSecret string, m *mailer.Mailer, frontendURL string) *Handler {
 	return &Handler{
-		service:   NewService(db, jwtSecret),
-		blacklist: tokenblacklist.Default,
+		service:     NewService(db, jwtSecret),
+		blacklist:   tokenblacklist.Default,
+		mailer:      m,
+		frontendURL: frontendURL,
 	}
 }
 
@@ -176,16 +180,9 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	token, email, err := h.service.ForgotPassword(req.Email)
-	if err != nil {
+	if err := h.service.ForgotPassword(req.Email, h.mailer, h.frontendURL); err != nil {
 		response.InternalError(c, "işlem gerçekleştirilemedi")
 		return
-	}
-
-	if token != "" {
-		// Production'da burada email gönderilir.
-		// Şimdilik token'ı log'a yazıyoruz — geliştirme ortamı için.
-		log.Printf("[PASSWORD RESET] email=%s token=%s", email, token)
 	}
 
 	// Enumeration saldırılarını önlemek için her durumda aynı yanıt
