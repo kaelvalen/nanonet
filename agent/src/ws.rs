@@ -14,11 +14,13 @@ const MAX_BACKOFF_SECS: u64 = 32;
 /// Jitter range in milliseconds (0..JITTER_MAX_MS)
 const JITTER_MAX_MS: u64 = 1000;
 
-pub type OutgoingTx = mpsc::UnboundedSender<String>;
-pub type OutgoingRx = mpsc::UnboundedReceiver<String>;
+const OUTGOING_CHANNEL_CAPACITY: usize = 64;
+
+pub type OutgoingTx = mpsc::Sender<String>;
+pub type OutgoingRx = mpsc::Receiver<String>;
 
 pub fn channel() -> (OutgoingTx, OutgoingRx) {
-    mpsc::unbounded_channel()
+    mpsc::channel(OUTGOING_CHANNEL_CAPACITY)
 }
 
 /// Ana yeniden bağlanma döngüsü — asla sonlanmaz.

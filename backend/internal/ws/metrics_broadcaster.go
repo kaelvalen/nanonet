@@ -113,13 +113,17 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 	}
 
 	if metric.Status != "" {
-		mb.db.WithContext(ctx).
-			Table("services").
-			Where("id = ?", svcID).
-			Updates(map[string]interface{}{
-				"status":     metric.Status,
-				"updated_at": time.Now(),
-			})
+		go func(id uuid.UUID, status string) {
+			updateCtx, updateCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer updateCancel()
+			mb.db.WithContext(updateCtx).
+				Table("services").
+				Where("id = ?", id).
+				Updates(map[string]interface{}{
+					"status":     status,
+					"updated_at": time.Now(),
+				})
+		}(svcID, metric.Status)
 	}
 
 	// Normalize and broadcast to dashboards so frontend gets consistent data shape
@@ -150,28 +154,14 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 }
 
 func (mb *MetricsBroadcaster) broadcastLatestMetrics(ctx context.Context) {
-	type svcRow struct {
-		ID     uuid.UUID `gorm:"column:id"`
-		Status string    `gorm:"column:status"`
-	}
-
-	var services []svcRow
-	if err := mb.db.WithContext(ctx).
-		Table("services").
-		Select("id, status").
-		Find(&services).Error; err != nil {
-		log.Printf("Servis listesi alınamadı: %v", err)
+	latestMetrics, err := mb.metricsRepo.GetLatestPerService(ctx)
+	if err != nil {
+		log.Printf("Son metrikler alınamadı: %v", err)
 		return
 	}
 
-	for _, svc := range services {
-		latestMetrics, err := mb.metricsRepo.GetHistory(ctx, svc.ID, 1*time.Minute, 1)
-		if err != nil || len(latestMetrics) == 0 {
-			continue
-		}
-
-		latest := latestMetrics[len(latestMetrics)-1]
-		mb.hub.BroadcastToDashboards(svc.ID.String(), map[string]interface{}{
+	for _, latest := range latestMetrics {
+		mb.hub.BroadcastToDashboards(latest.ServiceID.String(), map[string]interface{}{
 			"time":           latest.Time,
 			"cpu_percent":    latest.CPUPercent,
 			"memory_used_mb": latest.MemoryUsedMB,

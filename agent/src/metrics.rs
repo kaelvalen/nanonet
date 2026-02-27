@@ -25,7 +25,7 @@ struct AppMetricsResponse {
 pub fn collect_system(sys: &mut System, disks: &mut Disks) -> MetricSnapshot {
     sys.refresh_cpu_usage();
     sys.refresh_memory();
-    disks.refresh_list();
+    disks.refresh();
 
     let cpus = sys.cpus();
     let cpu_percent = if cpus.is_empty() {

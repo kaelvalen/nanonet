@@ -64,6 +64,37 @@ func (r *Repository) GetAggregated(ctx context.Context, serviceID uuid.UUID, dur
 	return results, err
 }
 
+func (r *Repository) GetLatestPerService(ctx context.Context) ([]Metric, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var results []Metric
+	err := r.db.WithContext(ctx).
+		Raw(`
+			SELECT DISTINCT ON (service_id) *
+			FROM metrics
+			ORDER BY service_id, time DESC
+		`).
+		Scan(&results).Error
+	return results, err
+}
+
+func (r *Repository) GetLatest(ctx context.Context, serviceID uuid.UUID) (*Metric, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var metric Metric
+	err := r.db.WithContext(ctx).
+		Where("service_id = ?", serviceID).
+		Order("time DESC").
+		Limit(1).
+		First(&metric).Error
+	if err != nil {
+		return nil, err
+	}
+	return &metric, nil
+}
+
 func (r *Repository) GetUptime(ctx context.Context, serviceID uuid.UUID, duration time.Duration) (float64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

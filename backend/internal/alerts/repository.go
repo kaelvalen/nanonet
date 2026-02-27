@@ -93,6 +93,27 @@ func (r *Repository) HasActiveAlert(ctx context.Context, serviceID uuid.UUID, al
 	return count > 0, err
 }
 
+func (r *Repository) GetActiveAlertTypes(ctx context.Context, serviceID uuid.UUID) (map[string]bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var types []string
+	err := r.db.WithContext(ctx).
+		Model(&Alert{}).
+		Where("service_id = ? AND resolved_at IS NULL", serviceID).
+		Distinct("type").
+		Pluck("type", &types).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool, len(types))
+	for _, t := range types {
+		result[t] = true
+	}
+	return result, nil
+}
+
 func (r *Repository) ResolveByType(ctx context.Context, serviceID uuid.UUID, alertType string) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

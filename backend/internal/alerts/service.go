@@ -93,16 +93,18 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 		_ = s.repo.ResolveByType(ctx, serviceID, "service_down")
 	}
 
-	for _, alert := range newAlerts {
-		exists, err := s.repo.HasActiveAlert(ctx, serviceID, alert.Type)
+	if len(newAlerts) > 0 {
+		activeTypes, err := s.repo.GetActiveAlertTypes(ctx, serviceID)
 		if err != nil {
 			return err
 		}
-		if exists {
-			continue
-		}
-		if err := s.repo.Create(ctx, &alert); err != nil {
-			return err
+		for _, alert := range newAlerts {
+			if activeTypes[alert.Type] {
+				continue
+			}
+			if err := s.repo.Create(ctx, &alert); err != nil {
+				return err
+			}
 		}
 	}
 
