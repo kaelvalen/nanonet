@@ -70,8 +70,12 @@ func (s *Service) ForgotPassword(email string, m *mailer.Mailer, frontendURL str
 	if m != nil && m.Enabled() {
 		if sendErr := m.SendPasswordReset(user.Email, resetURL); sendErr != nil {
 			// Log but don't surface — token is already created, user can retry
-			_ = sendErr
+			fmt.Printf("[MAILER ERROR] email=%s err=%v\n", user.Email, sendErr)
+		} else {
+			fmt.Printf("[MAILER OK] reset email sent to %s\n", user.Email)
 		}
+	} else {
+		fmt.Printf("[MAILER SKIP] not configured — reset URL: %s\n", resetURL)
 	}
 
 	return nil
