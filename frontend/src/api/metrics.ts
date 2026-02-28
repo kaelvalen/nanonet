@@ -89,9 +89,10 @@ export const metricsApi = {
     return response.data.data || [];
   },
 
-  analyze: async (serviceId: string, windowMinutes: number = 30): Promise<AnalysisResult> => {
+  analyze: async (serviceId: string, windowMinutes: number = 30, deepAnalysis: boolean = false): Promise<AnalysisResult> => {
     const response = await apiClient.post(`/services/${serviceId}/analyze`, {
       window_minutes: windowMinutes,
+      deep_analysis: deepAnalysis,
     }, { timeout: 60000 });
     return response.data.data?.insight;
   },

@@ -143,6 +143,7 @@ export function ServiceDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [deepAnalysis, setDeepAnalysis] = useState(false);
   const [metricsDuration, setMetricsDuration] = useState("1h");
   const [execCommand, setExecCommand] = useState("");
   const [execLoading, setExecLoading] = useState(false);
@@ -263,7 +264,7 @@ export function ServiceDetailPage() {
     if (!serviceId) return;
     setAnalyzeLoading(true);
     try {
-      const result = await metricsApi.analyze(serviceId);
+      const result = await metricsApi.analyze(serviceId, 30, deepAnalysis);
       setAnalysisResult(result);
     } catch {
       toast.error("AI analiz başarısız oldu");
@@ -854,21 +855,43 @@ export function ServiceDetailPage() {
                   <Sparkles className="w-4 h-4" style={{ color: "var(--color-lavender)" }} />
                   <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>AI Analiz</h3>
                 </div>
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={analyzeLoading}
-                  className="text-white rounded-xl text-xs h-8" style={{ background: "var(--gradient-btn-primary)" }}
-                >
-                  {analyzeLoading ? (
-                    <>
-                      <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analiz Ediliyor...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3 h-3 mr-1" /> Analiz Başlat
-                    </>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: "var(--color-lavender-border)" }}>
+                    <button
+                      onClick={() => setDeepAnalysis(false)}
+                      className="px-3 py-1.5 text-[10px] font-medium transition-all"
+                      style={!deepAnalysis
+                        ? { background: "var(--color-lavender-subtle)", color: "var(--color-lavender)" }
+                        : { color: "var(--text-muted)" }}
+                    >
+                      Hızlı
+                    </button>
+                    <button
+                      onClick={() => setDeepAnalysis(true)}
+                      className="px-3 py-1.5 text-[10px] font-medium transition-all"
+                      style={deepAnalysis
+                        ? { background: "var(--color-lavender-subtle)", color: "var(--color-lavender)" }
+                        : { color: "var(--text-muted)" }}
+                    >
+                      Derin
+                    </button>
+                  </div>
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={analyzeLoading}
+                    className="text-white rounded-xl text-xs h-8" style={{ background: "var(--gradient-btn-primary)" }}
+                  >
+                    {analyzeLoading ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analiz Ediliyor...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 mr-1" /> Analiz Başlat
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {analysisResult ? (
