@@ -1,14 +1,15 @@
 import { useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { Home, Server, AlertCircle, Sparkles, Settings, X } from "lucide-react";
+import { Home, Server, AlertCircle, Sparkles, Settings, X, Cloud } from "lucide-react";
 
 const navItems = [
-  { to: "/", label: "Hub", icon: Home, colorVar: "var(--color-teal)", glowVar: "var(--color-teal-subtle)" },
-  { to: "/services", label: "Services", icon: Server, colorVar: "var(--color-blue)", glowVar: "var(--color-blue-subtle)" },
-  { to: "/alerts", label: "Alerts", icon: AlertCircle, colorVar: "var(--color-pink)", glowVar: "var(--color-pink-subtle)" },
-  { to: "/ai-insights", label: "AI Insights", icon: Sparkles, colorVar: "var(--color-lavender)", glowVar: "var(--color-lavender-subtle)" },
-  { to: "/settings", label: "Settings", icon: Settings, colorVar: "var(--color-pink)", glowVar: "var(--color-pink-subtle)" },
+  { to: "/", label: "Ana Sayfa", icon: Home, colorVar: "var(--color-teal)", glowVar: "var(--color-teal-subtle)" },
+  { to: "/services", label: "Servisler", icon: Server, colorVar: "var(--color-blue)", glowVar: "var(--color-blue-subtle)" },
+  { to: "/alerts", label: "Uyarılar", icon: AlertCircle, colorVar: "var(--color-pink)", glowVar: "var(--color-pink-subtle)" },
+  { to: "/ai-insights", label: "AI Analiz", icon: Sparkles, colorVar: "var(--color-lavender)", glowVar: "var(--color-lavender-subtle)" },
+  { to: "/kubernetes", label: "K8s", icon: Cloud, colorVar: "var(--status-up)", glowVar: "var(--status-up-subtle)" },
+  { to: "/settings", label: "Ayarlar", icon: Settings, colorVar: "var(--color-blue)", glowVar: "var(--color-blue-subtle)" },
 ];
 
 export function RadialMenu() {
@@ -24,32 +25,41 @@ export function RadialMenu() {
     [navigate]
   );
 
-  const radius = 190;
-  const startAngle = -85;
-  const totalAngle = 100;
+  // ─── Düzgün simetrik yerleşim ───
+  // Sol alt köşeden saat yönünün tersine çeyrek daire (0° = sağ, 90° = yukarı)
+  // -10° ile 100° arası → 6 item eşit aralıkla
+  const count = navItems.length;
+  const radius = 140;
+  const arcStart = -5;   // derece — sağ taraftan biraz aşağı
+  const arcEnd = 95;     // derece — neredeyse tam yukarı
+  const arcSpan = arcEnd - arcStart;
 
   return (
     <div className="fixed bottom-6 left-6 z-50">
+      {/* Backdrop */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 backdrop-blur-sm"
-            style={{ backgroundColor: "var(--surface-glass)" }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0"
+            style={{ backgroundColor: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}
             onClick={() => setIsOpen(false)}
           />
         )}
       </AnimatePresence>
 
+      {/* Nav items */}
       <AnimatePresence>
         {isOpen &&
           navItems.map((item, index) => {
-            const angle = startAngle + (totalAngle / (navItems.length - 1)) * index;
+            // Eşit aralıklı açı hesapla
+            const angle = arcStart + (arcSpan / (count - 1)) * index;
             const radian = (angle * Math.PI) / 180;
             const x = Math.cos(radian) * radius;
-            const y = Math.sin(radian) * radius;
+            const y = -Math.sin(radian) * radius; // ekranda yukarı = negatif y
             const isActive =
               location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to));
 
@@ -57,36 +67,61 @@ export function RadialMenu() {
               <motion.div
                 key={item.to}
                 initial={{ scale: 0, x: 0, y: 0, opacity: 0 }}
-                animate={{ scale: 1, x: x, y: y, opacity: 1 }}
+                animate={{ scale: 1, x, y, opacity: 1 }}
                 exit={{ scale: 0, x: 0, y: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20, delay: index * 0.05 }}
-                className="absolute bottom-0 left-0 -translate-x-1/2 -translate-y-1/2"
-                style={{ originX: 0.5, originY: 0.5 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 28,
+                  delay: index * 0.04,
+                }}
+                className="absolute bottom-2 left-2"
+                style={{ zIndex: 51 }}
               >
-                <button onClick={() => handleNavigate(item.to)} className="group relative flex flex-col items-center gap-1">
+                <button
+                  onClick={() => handleNavigate(item.to)}
+                  className="group relative flex flex-col items-center gap-1.5"
+                >
+                  {/* Glow */}
                   <div
-                    className="absolute inset-0 rounded-full blur-md opacity-30 group-hover:opacity-60 transition-opacity"
-                    style={{ backgroundColor: item.glowVar, transform: "scale(1.5)" }}
+                    className="absolute inset-0 rounded-full blur-lg transition-opacity duration-200"
+                    style={{
+                      backgroundColor: item.colorVar,
+                      opacity: isActive ? 0.35 : 0.15,
+                      transform: "scale(2)",
+                    }}
                   />
 
+                  {/* Icon circle */}
                   <div
-                    className="relative w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-200 group-hover:scale-110"
+                    className="relative w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-200 group-hover:scale-110"
                     style={{
                       background: "var(--surface-raised)",
-                      borderColor: item.colorVar,
-                      boxShadow: isActive ? `0 4px 15px ${item.glowVar}` : `0 2px 8px ${item.glowVar}`,
-                      transform: isActive ? "scale(1.1)" : undefined,
+                      borderColor: isActive ? item.colorVar : "var(--border-subtle)",
+                      borderWidth: isActive ? 2 : 1,
+                      boxShadow: isActive
+                        ? `0 0 16px ${item.glowVar}`
+                        : "0 2px 8px rgba(0,0,0,0.15)",
                     }}
                   >
-                    <item.icon className="w-5 h-5" style={{ color: item.colorVar }} />
+                    <item.icon
+                      className="w-4.5 h-4.5"
+                      style={{ color: item.colorVar, width: 18, height: 18 }}
+                    />
                   </div>
 
+                  {/* Label */}
                   <motion.span
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 + 0.15 }}
-                    className="text-[10px] font-(--font-mono) tracking-wider whitespace-nowrap px-2 py-0.5 rounded-full shadow-sm"
-                    style={{ background: "var(--surface-raised)", border: "1px solid var(--color-teal-border)", color: item.colorVar }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.04 + 0.12 }}
+                    className="text-[9px] font-medium tracking-wide whitespace-nowrap px-2 py-0.5 rounded-md"
+                    style={{
+                      background: "var(--surface-raised)",
+                      border: `1px solid ${isActive ? item.colorVar : "var(--border-subtle)"}`,
+                      color: item.colorVar,
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                    }}
                   >
                     {item.label}
                   </motion.span>
@@ -96,27 +131,41 @@ export function RadialMenu() {
           })}
       </AnimatePresence>
 
+      {/* Toggle button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-14 h-14 rounded-full flex items-center justify-center z-10"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+        className="relative w-12 h-12 rounded-full flex items-center justify-center z-[52]"
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
       >
+        {/* Pulse rings */}
         {!isOpen && (
           <>
-            <div className="absolute inset-0 rounded-full opacity-20 animate-pulse-ring" style={{ background: "var(--gradient-logo)" }} />
             <div
-              className="absolute inset-0 rounded-full opacity-15 animate-pulse-ring"
-              style={{ background: "var(--gradient-logo)", animationDelay: "0.75s" }}
+              className="absolute inset-0 rounded-full opacity-20 animate-pulse-ring"
+              style={{ background: "var(--gradient-logo)" }}
+            />
+            <div
+              className="absolute inset-0 rounded-full opacity-10 animate-pulse-ring"
+              style={{ background: "var(--gradient-logo)", animationDelay: "1s" }}
             />
           </>
         )}
 
         <div
-          className="relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300"
-          style={isOpen
-            ? { background: "var(--surface-raised)", border: "2px solid var(--color-pink-border)", boxShadow: "0 8px 24px var(--shadow-card)" }
-            : { background: "var(--gradient-logo)", boxShadow: "0 8px 24px var(--shadow-brand)" }}
+          className="relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300"
+          style={
+            isOpen
+              ? {
+                background: "var(--surface-raised)",
+                border: "2px solid var(--status-down-border)",
+                boxShadow: "0 4px 16px var(--shadow-card)",
+              }
+              : {
+                background: "var(--gradient-logo)",
+                boxShadow: "0 4px 20px var(--shadow-brand)",
+              }
+          }
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
@@ -125,9 +174,9 @@ export function RadialMenu() {
                 initial={{ rotate: -90, opacity: 0 }}
                 animate={{ rotate: 0, opacity: 1 }}
                 exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                transition={{ duration: 0.12 }}
               >
-                <X className="w-6 h-6" style={{ color: "var(--status-down)" }} />
+                <X className="w-5 h-5" style={{ color: "var(--status-down)" }} />
               </motion.div>
             ) : (
               <motion.div
@@ -135,22 +184,14 @@ export function RadialMenu() {
                 initial={{ rotate: 90, opacity: 0 }}
                 animate={{ rotate: 0, opacity: 1 }}
                 exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                transition={{ duration: 0.12 }}
               >
-                <span className="text-white text-xl animate-glow">✦</span>
+                <span className="text-white text-lg">✦</span>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </motion.button>
-
-      {!isOpen && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-          <div className="text-[9px] whitespace-nowrap px-2 py-1 rounded-full shadow-sm" style={{ background: "var(--surface-raised)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>
-            Navigate ✦
-          </div>
-        </div>
-      )}
     </div>
   );
 }

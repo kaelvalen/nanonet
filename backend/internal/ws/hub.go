@@ -36,6 +36,17 @@ type Hub struct {
 
 	onMetric        OnMetricFunc
 	onCommandResult OnCommandResultFunc
+
+	// pendingCommands — agent çevrimdışıyken biriken komutlar.
+	// Agent tekrar bağlandığında otomatik olarak iletilir.
+	pendingCommands map[string][]pendingCommand // serviceID -> []command
+	pendingMu       sync.Mutex
+}
+
+type pendingCommand struct {
+	Data      []byte
+	QueuedAt  string
+	CommandID string
 }
 
 func NewHub(maxConnections int) *Hub {
@@ -49,6 +60,7 @@ func NewHub(maxConnections int) *Hub {
 		register:         make(chan *Client),
 		unregister:       make(chan *Client),
 		maxConnections:   maxConnections,
+		pendingCommands:  make(map[string][]pendingCommand),
 	}
 }
 
@@ -79,11 +91,14 @@ func (h *Hub) Run() {
 			if client.clientType == AgentClient {
 				h.agentClients[client] = true
 				log.Printf("Agent bağlandı: %s (service: %s)", client.id, client.serviceID)
+				h.mu.Unlock()
+				// Bağlanan agent için bekleyen komutları ilet
+				h.deliverPendingCommands(client)
 			} else {
 				h.dashboardClients[client] = true
 				log.Printf("Dashboard client bağlandı: %s (user: %s)", client.id, client.userID)
+				h.mu.Unlock()
 			}
-			h.mu.Unlock()
 
 		case client := <-h.unregister:
 			h.mu.Lock()
@@ -248,30 +263,107 @@ func (h *Hub) BroadcastCommandResult(serviceID, commandID, status string, output
 	h.broadcast <- jsonData
 }
 
+// SendCommandToAgent — komutu servise bağlı TÜM agent'lara gönderir (multi-instance).
+// Hiçbir agent bağlı değilse komut kuyruğa eklenir.
 func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{}) bool {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+	jsonData, err := json.Marshal(command)
+	if err != nil {
+		log.Printf("Komut serialize hatası: %v", err)
+		return false
+	}
 
+	h.mu.RLock()
+	var targets []*Client
 	for client := range h.agentClients {
 		if client.serviceID == serviceID {
-			jsonData, err := json.Marshal(command)
-			if err != nil {
-				log.Printf("Komut serialize hatası: %v", err)
-				return false
-			}
-			select {
-			case client.send <- jsonData:
-				log.Printf("Komut agent'a gönderildi: service=%s", serviceID)
-				return true
-			default:
-				log.Printf("Agent send buffer dolu: %s", client.id)
-				return false
-			}
+			targets = append(targets, client)
+		}
+	}
+	h.mu.RUnlock()
+
+	// Agent bağlı değilse kuyruğa ekle
+	if len(targets) == 0 {
+		cmdID, _ := command["command_id"].(string)
+		h.queueCommand(serviceID, jsonData, cmdID)
+		log.Printf("Agent çevrimdışı, komut kuyruğa eklendi: service=%s, command_id=%s", serviceID, cmdID)
+		return false
+	}
+
+	// Tüm eşleşen agent'lara gönder
+	sentCount := 0
+	for _, client := range targets {
+		select {
+		case client.send <- jsonData:
+			sentCount++
+			log.Printf("Komut agent'a gönderildi: service=%s, agent=%s", serviceID, client.id)
+		default:
+			log.Printf("Agent send buffer dolu: %s", client.id)
 		}
 	}
 
-	log.Printf("Servis için bağlı agent bulunamadı: %s", serviceID)
-	return false
+	log.Printf("Komut %d/%d agent'a iletildi: service=%s", sentCount, len(targets), serviceID)
+	return sentCount > 0
+}
+
+// queueCommand — agent offline iken komutu kuyruğa ekler.
+func (h *Hub) queueCommand(serviceID string, data []byte, commandID string) {
+	h.pendingMu.Lock()
+	defer h.pendingMu.Unlock()
+
+	// Kuyruk boyutunu sınırla (servis başına max 50 komut)
+	queue := h.pendingCommands[serviceID]
+	if len(queue) >= 50 {
+		// En eski komutu çıkar
+		queue = queue[1:]
+	}
+
+	h.pendingCommands[serviceID] = append(queue, pendingCommand{
+		Data:      data,
+		CommandID: commandID,
+	})
+}
+
+// deliverPendingCommands — yeni bağlanan agent'a bekleyen komutları iletir.
+func (h *Hub) deliverPendingCommands(client *Client) {
+	h.pendingMu.Lock()
+	queue, exists := h.pendingCommands[client.serviceID]
+	if !exists || len(queue) == 0 {
+		h.pendingMu.Unlock()
+		return
+	}
+	// Kuyruğu temizle
+	delete(h.pendingCommands, client.serviceID)
+	h.pendingMu.Unlock()
+
+	log.Printf("Agent %s için %d bekleyen komut iletiliyor", client.id, len(queue))
+	for _, cmd := range queue {
+		select {
+		case client.send <- cmd.Data:
+			log.Printf("Kuyruktan komut iletildi: command_id=%s", cmd.CommandID)
+		default:
+			log.Printf("Agent buffer dolu, kuyruk komutu atlanıyor: command_id=%s", cmd.CommandID)
+		}
+	}
+}
+
+// GetConnectedAgentsForService — bir servis için bağlı agent sayısını döndürür.
+func (h *Hub) GetConnectedAgentsForService(serviceID string) int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	count := 0
+	for client := range h.agentClients {
+		if client.serviceID == serviceID {
+			count++
+		}
+	}
+	return count
+}
+
+// GetPendingCommandCount — bekleyen komut sayısını döndürür.
+func (h *Hub) GetPendingCommandCount(serviceID string) int {
+	h.pendingMu.Lock()
+	defer h.pendingMu.Unlock()
+	return len(h.pendingCommands[serviceID])
 }
 
 func (h *Hub) IsAgentConnected(serviceID string) bool {

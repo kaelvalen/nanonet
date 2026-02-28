@@ -1,3 +1,5 @@
+mod agent_health;
+mod buffer;
 mod commands;
 mod config;
 mod error;
@@ -17,14 +19,27 @@ use std::time::Duration;
 use sysinfo::{Disks, System};
 use tokio::sync::watch;
 
+use buffer::MetricBuffer;
+
 #[tokio::main]
 async fn main() -> error::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "nanonet_agent=info".into()),
-        )
-        .init();
+    // ─── Structured Logging ───
+    // NANONET_LOG_JSON=1 ile JSON log formatı aktifleşir
+    let json_logs = std::env::var("NANONET_LOG_JSON").is_ok();
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "nanonet_agent=info".into());
+
+    if json_logs {
+        tracing_subscriber::fmt()
+            .json()
+            .flatten_event(true)
+            .with_env_filter(env_filter)
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .init();
+    }
 
     let config = Config::parse();
 
@@ -36,45 +51,65 @@ async fn main() -> error::Result<()> {
     tracing::info!("  Health URL:    {}", config.health_url());
     tracing::info!("  Poll interval: {}s", config.poll_interval);
     tracing::info!("  Error window:  {} checks", config.error_rate_window);
+    tracing::info!("  Buffer size:   {} metrics", config.buffer_size);
+
     match &config.metrics_endpoint {
         Some(url) => tracing::info!("  App metrics:   {}", url),
-        None => tracing::info!("  App metrics:   (yok — NANONET_METRICS_ENDPOINT ile etkinleştir)"),
+        None => tracing::info!("  App metrics:   (yok)"),
+    }
+    match &config.process {
+        Some(p) => tracing::info!("  Process watch: {}", p),
+        None => tracing::info!("  Process watch: (yok)"),
     }
     match &config.restart_cmd {
         Some(cmd) => tracing::info!("  Restart cmd:   {}", cmd),
-        None => tracing::warn!("  Restart cmd:   (yapılandırılmamış — NANONET_RESTART_CMD)"),
+        None => tracing::warn!("  Restart cmd:   (yapılandırılmamış)"),
     }
     match &config.stop_cmd {
         Some(cmd) => tracing::info!("  Stop cmd:      {}", cmd),
-        None => tracing::warn!("  Stop cmd:      (yapılandırılmamış — NANONET_STOP_CMD)"),
+        None => tracing::warn!("  Stop cmd:      (yapılandırılmamış)"),
+    }
+    if config.agent_port > 0 {
+        tracing::info!("  Agent port:    {}", config.agent_port);
     }
 
     let agent_id = uuid::Uuid::new_v4().to_string();
     tracing::info!("  Agent ID:      {}", agent_id);
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    let (ws_tx, ws_rx) = ws::channel();
+    let start_time = std::time::Instant::now();
 
-    // restart/stop komutlarından güncellenen paylaşımlı sayaç
+    // ─── Channels & Shared State ───
+    let (ws_tx, ws_rx) = ws::channel();
     let restart_count = Arc::new(AtomicU64::new(0));
+    let metric_buffer = MetricBuffer::new(config.buffer_size);
 
     // Graceful shutdown kanalı
-    let (shutdown_tx, mut shutdown_rx) = watch::channel(false);
+    let (shutdown_tx, _) = watch::channel(false);
     let shutdown_rx_ws = shutdown_tx.subscribe();
+    let mut shutdown_rx_metrics = shutdown_tx.subscribe();
 
-    // WebSocket task — bağlanma, yeniden bağlanma döngüsü
+    // ─── WebSocket Task ───
     let ws_config = config.clone();
     let ws_restart_count = Arc::clone(&restart_count);
+    let ws_buffer = metric_buffer.clone();
     let ws_task = tokio::spawn(async move {
-        ws::run(&ws_config, ws_rx, ws_restart_count).await;
+        ws::run(&ws_config, ws_rx, ws_restart_count, ws_buffer, shutdown_rx_ws).await;
     });
 
-    // Metrik toplama task
+    // ─── Agent Health Endpoint ───
+    let health_port = config.agent_port;
+    let health_buffer = metric_buffer.clone();
+    let _health_task = tokio::spawn(async move {
+        agent_health::serve(health_port, start_time, health_buffer).await;
+    });
+
+    // ─── Metrik Toplama Task ───
     let metrics_config = config.clone();
     let metrics_restart_count = Arc::clone(&restart_count);
-    let mut metrics_shutdown_rx = shutdown_tx.subscribe();
+    let metrics_buffer = metric_buffer.clone();
     let metrics_task = tokio::spawn(async move {
-        let mut sys = System::new();
+        let mut sys = System::new_all();
         let mut disks = Disks::new_with_refreshed_list();
 
         let http_client = Client::builder()
@@ -87,6 +122,7 @@ async fn main() -> error::Result<()> {
         let service_id = metrics_config.service_id.clone();
         let error_window_size = metrics_config.error_rate_window.max(1);
         let app_metrics_url = metrics_config.metrics_endpoint.clone();
+        let process_target = metrics_config.process.clone();
 
         // CPU kullanımı için iki ölçüm noktası gerekli
         sys.refresh_cpu_usage();
@@ -94,31 +130,39 @@ async fn main() -> error::Result<()> {
 
         let mut interval =
             tokio::time::interval(Duration::from_secs(metrics_config.poll_interval));
-        let start_time = std::time::Instant::now();
+        let agent_start = std::time::Instant::now();
 
-        // Hata oranı için kayan pencere (true = hatalı istek)
+        // Hata oranı için kayan pencere
         let mut error_window: VecDeque<bool> = VecDeque::with_capacity(error_window_size);
 
         loop {
             tokio::select! {
                 _ = interval.tick() => {},
-                _ = metrics_shutdown_rx.changed() => {
+                _ = shutdown_rx_metrics.changed() => {
                     tracing::info!("Metrics task kapatılıyor (shutdown sinyali)");
                     break;
                 }
             }
 
+            // Sistem metrikleri
             let mut snapshot = metrics::collect_system(&mut sys, &mut disks);
 
-            // Servis /metrics endpoint'i varsa uygulama metriklerini çek
+            // Per-process metrikleri
+            sys.refresh_processes();
+            let process_metrics = process_target
+                .as_deref()
+                .and_then(|t| metrics::collect_process(&sys, t));
+
+            // App metrics endpoint
             if let Some(ref url) = app_metrics_url {
                 metrics::fetch_app_metrics(&http_client, &mut snapshot, url).await;
             }
 
-            let health = health::check_health(&http_client, &health_url).await;
+            // Health check
+            let health_result = health::check_health(&http_client, &health_url).await;
 
-            // Kayan hata penceresi güncelle
-            error_window.push_back(health.is_error);
+            // Hata penceresi güncelle
+            error_window.push_back(health_result.is_error);
             if error_window.len() > error_window_size {
                 error_window.pop_front();
             }
@@ -131,23 +175,20 @@ async fn main() -> error::Result<()> {
             };
 
             let restarts = metrics_restart_count.load(Ordering::Relaxed);
-            let uptime_secs = start_time.elapsed().as_secs();
+            let uptime_secs = agent_start.elapsed().as_secs();
 
             tracing::debug!(
                 cpu = snapshot.cpu_percent,
                 mem_mb = snapshot.memory_used_mb,
-                disk_gb = snapshot.disk_used_gb,
-                app_cpu = ?snapshot.app_cpu_percent,
-                app_mem_mb = ?snapshot.app_memory_used_mb,
-                status = %health.status,
-                latency_ms = health.latency_ms,
+                status = %health_result.status,
+                latency_ms = health_result.latency_ms,
                 error_rate = error_rate,
-                restarts = restarts,
-                uptime_secs = uptime_secs,
+                ws_connected = ws::WS_CONNECTED.load(Ordering::Relaxed),
                 "Metrik"
             );
 
-            let message = json!({
+            // Mesaj oluştur
+            let mut message = json!({
                 "type": "metrics",
                 "agent_id": agent_id,
                 "agent_version": env!("CARGO_PKG_VERSION"),
@@ -163,9 +204,9 @@ async fn main() -> error::Result<()> {
                     "memory_used_mb": snapshot.app_memory_used_mb,
                 },
                 "service": {
-                    "status": health.status,
-                    "latency_ms": health.latency_ms,
-                    "http_status": health.http_status,
+                    "status": health_result.status,
+                    "latency_ms": health_result.latency_ms,
+                    "http_status": health_result.http_status,
                     "error_rate": error_rate,
                 },
                 "process": {
@@ -175,13 +216,43 @@ async fn main() -> error::Result<()> {
                 }
             });
 
-            if let Err(e) = ws_tx.send(message.to_string()).await {
-                tracing::warn!("Metrik WS kanalına gönderilemedi: {}", e);
+            // Process-level metrikler varsa ekle
+            if let Some(ref pm) = process_metrics {
+                message.as_object_mut().unwrap().insert(
+                    "target_process".to_string(),
+                    json!({
+                        "pid": pm.pid,
+                        "name": pm.name,
+                        "cpu_percent": pm.cpu_percent,
+                        "memory_mb": pm.memory_mb,
+                        "status": pm.status,
+                    }),
+                );
+            }
+
+            let msg_str = message.to_string();
+
+            // WS bağlıysa doğrudan gönder, değilse buffer'a ekle
+            if ws::WS_CONNECTED.load(Ordering::Relaxed) {
+                if let Err(e) = ws_tx.send(msg_str.clone()).await {
+                    tracing::warn!("Metrik WS kanalına gönderilemedi: {} — buffer'a alınıyor", e);
+                    metrics_buffer.push(msg_str).await;
+                }
+            } else {
+                metrics_buffer.push(msg_str).await;
+                let buf_len = metrics_buffer.len().await;
+                if buf_len % 10 == 0 {
+                    tracing::info!(
+                        buffered = buf_len,
+                        dropped = metrics_buffer.dropped_count(),
+                        "WS bağlantısız — metrikler biriktiriliyor"
+                    );
+                }
             }
         }
     });
 
-    // Sinyal dinleyici task
+    // ─── Sinyal Dinleyici ───
     let signal_task = tokio::spawn(async move {
         #[cfg(unix)]
         {
@@ -201,9 +272,7 @@ async fn main() -> error::Result<()> {
         let _ = shutdown_tx.send(true);
     });
 
-    // shutdown_rx_ws kullanılmıyor şimdilik (ws::run kendi kopma mantığı ile)
-    drop(shutdown_rx_ws);
-
+    // ─── Ana Bekleme ───
     tokio::select! {
         result = ws_task => {
             if let Err(e) = result {
@@ -218,10 +287,16 @@ async fn main() -> error::Result<()> {
         _ = signal_task => {
             tracing::info!("Agent temiz şekilde kapatıldı.");
         }
-        _ = shutdown_rx.changed() => {
-            tracing::info!("Shutdown sinyali alındı, agent kapatılıyor.");
-        }
     }
+
+    // Final istatistikleri
+    tracing::info!(
+        metrics_sent = ws::METRICS_SENT.load(Ordering::Relaxed),
+        commands_handled = ws::COMMANDS_HANDLED.load(Ordering::Relaxed),
+        metrics_dropped = metric_buffer.dropped_count(),
+        uptime_secs = start_time.elapsed().as_secs(),
+        "Agent kapatıldı — final istatistikleri"
+    );
 
     Ok(())
 }

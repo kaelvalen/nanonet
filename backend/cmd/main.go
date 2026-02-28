@@ -14,6 +14,7 @@ import (
 	"nanonet-backend/internal/alerts"
 	"nanonet-backend/internal/auth"
 	"nanonet-backend/internal/commands"
+	"nanonet-backend/internal/k8s"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/services"
 	"nanonet-backend/internal/settings"
@@ -22,6 +23,7 @@ import (
 	"nanonet-backend/pkg/config"
 	"nanonet-backend/pkg/database"
 	"nanonet-backend/pkg/mailer"
+	"nanonet-backend/pkg/ratelimit"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -79,6 +81,24 @@ func main() {
 	cmdService := commands.NewService(db)
 	settingsHandler := settings.NewHandler(db)
 
+	// Kubernetes entegrasyonu (önemsiz — yoksa devre dışı kalır)
+	var k8sClient *k8s.Client
+	if ns := os.Getenv("K8S_NAMESPACE"); ns != "" {
+		var err error
+		k8sClient, err = k8s.NewClient(ns)
+		if err != nil {
+			log.Printf("[WARN] Kubernetes client oluşturulamadı (devam ediliyor): %v", err)
+		} else {
+			log.Printf("Kubernetes entegrasyonu aktif (namespace: %s)", ns)
+		}
+	} else {
+		log.Println("K8S_NAMESPACE tanımlanmadı — Kubernetes entegrasyonu devre dışı")
+	}
+	k8sHandler := k8s.NewHandler(k8sClient)
+
+	// Kritik endpoint'ler için sıkı rate limiter (dakikada 10 istek)
+	strictLimiter := ratelimit.StrictMiddleware(10, time.Minute)
+
 	hub.SetOnCommandResult(func(commandID, status string, msg ws.AgentMessage) {
 		cmdService.UpdateStatus(context.Background(), commandID, status, nil)
 	})
@@ -111,11 +131,11 @@ func main() {
 			svcGroup.GET("/:id/metrics/uptime", metricsHandler.GetUptime)
 			svcGroup.GET("/:id/alerts", alertHandler.List)
 			svcGroup.GET("/:id/insights", aiHandler.GetInsights)
-			svcGroup.POST("/:id/restart", serviceHandler.Restart)
-			svcGroup.POST("/:id/stop", serviceHandler.Stop)
-			svcGroup.POST("/:id/start", serviceHandler.Start)
-			svcGroup.POST("/:id/exec", serviceHandler.Exec)
-			svcGroup.POST("/:id/scale", serviceHandler.Scale)
+			svcGroup.POST("/:id/restart", strictLimiter, serviceHandler.Restart)
+			svcGroup.POST("/:id/stop", strictLimiter, serviceHandler.Stop)
+			svcGroup.POST("/:id/start", strictLimiter, serviceHandler.Start)
+			svcGroup.POST("/:id/exec", strictLimiter, serviceHandler.Exec)
+			svcGroup.POST("/:id/scale", strictLimiter, serviceHandler.Scale)
 			svcGroup.POST("/:id/ping", serviceHandler.Ping)
 			svcGroup.POST("/:id/analyze", aiHandler.Analyze)
 			svcGroup.GET("/:id/commands", cmdHandler.GetHistory)
@@ -136,6 +156,20 @@ func main() {
 		auditGroup := v1.Group("/audit", authMiddleware.Required())
 		{
 			auditGroup.GET("", handleAuditLogs(db))
+		}
+
+		// Kubernetes API route'ları
+		k8sGroup := v1.Group("/k8s", authMiddleware.Required())
+		{
+			k8sGroup.GET("/status", k8sHandler.GetStatus)
+			k8sGroup.GET("/namespaces", k8sHandler.ListNamespaces)
+			k8sGroup.GET("/pods", k8sHandler.GetPods)
+			k8sGroup.GET("/deployments/:name", k8sHandler.GetDeployment)
+			k8sGroup.POST("/deployments/:name/scale", strictLimiter, k8sHandler.ScaleDeployment)
+			k8sGroup.GET("/hpa/:name", k8sHandler.GetHPA)
+			k8sGroup.POST("/hpa", strictLimiter, k8sHandler.CreateOrUpdateHPA)
+			k8sGroup.DELETE("/hpa/:name", strictLimiter, k8sHandler.DeleteHPA)
+			k8sGroup.GET("/endpoints/:name", k8sHandler.GetServiceEndpoints)
 		}
 	}
 

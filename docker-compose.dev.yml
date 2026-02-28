@@ -30,12 +30,15 @@ services:
       POLL_DEFAULT_SEC: "10"
       WS_MAX_CONNECTIONS: "1000"
       MIGRATIONS_PATH: /migrations
+      K8S_NAMESPACE: ${K8S_NAMESPACE:-}
+      KUBECONFIG: /root/.kube/config
     ports:
       - "8080:8080"
     volumes:
       - ./backend:/app
       - ./backend/migrations:/migrations:ro
       - go_mod_cache:/go/pkg/mod
+      - ${HOME}/.kube:/root/.kube:ro
     depends_on:
       db:
         condition: service_healthy
