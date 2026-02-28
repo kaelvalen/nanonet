@@ -42,7 +42,7 @@ func (h *Handler) Analyze(c *gin.Context) {
 		req.WindowMinutes = 30
 	}
 
-	result, err := h.service.Analyze(c.Request.Context(), userID, serviceID, req.WindowMinutes)
+	result, err := h.service.Analyze(c.Request.Context(), userID, serviceID, req.WindowMinutes, req.DeepAnalysis)
 	if err != nil {
 		if err.Error() == "AI analiz limiti aşıldı, lütfen 1 dakika bekleyin" {
 			response.Error(c, 429, err.Error())

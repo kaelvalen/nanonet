@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -76,7 +77,7 @@ func NewService(db *gorm.DB, apiKey string) *Service {
 	}
 }
 
-func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, windowMinutes int) (*AnalysisResult, error) {
+func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, windowMinutes int, deepAnalysis bool) (*AnalysisResult, error) {
 	if !s.rateLimiter.Allow(userID.String()) {
 		return nil, fmt.Errorf("AI analiz limiti aşıldı, lütfen 1 dakika bekleyin")
 	}
@@ -104,13 +105,13 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		return nil, fmt.Errorf("servis bulunamadı")
 	}
 
-	// Metrikleri al
-	metricsData, err := s.metricsRepo.GetHistory(ctx, serviceID, duration, 500)
+	// İstatistiksel özeti DB'den al (percentile_cont ile doğru P95)
+	dbStats, err := s.metricsRepo.GetStatsSummary(ctx, serviceID, duration)
 	if err != nil {
-		return nil, fmt.Errorf("metrikler alınamadı: %w", err)
+		return nil, fmt.Errorf("metrik özeti alınamadı: %w", err)
 	}
 
-	if len(metricsData) == 0 {
+	if dbStats.SampleCount == 0 {
 		return &AnalysisResult{
 			Summary:   "Analiz edilecek yeterli metrik verisi bulunamadı.",
 			RootCause: "Henüz metrik kaydı yok veya belirtilen zaman aralığında veri bulunmuyor.",
@@ -121,9 +122,12 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		}, nil
 	}
 
-	metricsJSON, err := json.Marshal(metricsData)
+	// Trend ve spike hesabı için sadece küçük bir zaman serisi yeterli (son 50 nokta)
+	recentData, _ := s.metricsRepo.GetHistory(ctx, serviceID, duration, 50)
+	summary := buildSummaryFromDB(dbStats, recentData, windowMinutes)
+	summaryJSON, err := json.Marshal(summary)
 	if err != nil {
-		return nil, fmt.Errorf("metrik serileştirme hatası: %w", err)
+		return nil, fmt.Errorf("metrik özet serileştirme hatası: %w", err)
 	}
 
 	// Diğer servislerin durumu (cross-servis korelasyon)
@@ -147,24 +151,30 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		svc.Port,
 		SanitizeForPrompt(svc.HealthEndpoint),
 		windowMinutes,
-		string(metricsJSON),
+		summary.SampleCount,
+		string(summaryJSON),
 		otherSvcInfo.String(),
 	)
 
-	result, err := s.callClaude(prompt)
+	model := ModelHaiku
+	if deepAnalysis {
+		model = ModelSonnet
+	}
+
+	result, err := s.callClaude(prompt, model)
 	if err != nil {
 		return nil, fmt.Errorf("AI analizi başarısız: %w", err)
 	}
 
 	// Insight'ı kaydet
-	go s.saveInsight(serviceID, result)
+	go s.saveInsight(serviceID, model, result)
 
 	return result, nil
 }
 
-func (s *Service) callClaude(prompt string) (*AnalysisResult, error) {
+func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
 	reqBody := ClaudeRequest{
-		Model:     DefaultModel,
+		Model:     model,
 		MaxTokens: MaxTokensDefault,
 		Messages: []Message{
 			{Role: "user", Content: prompt},
@@ -223,7 +233,7 @@ func (s *Service) callClaude(prompt string) (*AnalysisResult, error) {
 	return &result, nil
 }
 
-func (s *Service) saveInsight(serviceID uuid.UUID, result *AnalysisResult) {
+func (s *Service) saveInsight(serviceID uuid.UUID, model string, result *AnalysisResult) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -238,26 +248,41 @@ func (s *Service) saveInsight(serviceID uuid.UUID, result *AnalysisResult) {
 		Scan(&alertID).Error
 
 	if err != nil || alertID == uuid.Nil {
-		// Analiz için yeni bir alert oluştur
-		alertID = uuid.New()
-		s.db.WithContext(ctx).Exec(
-			`INSERT INTO alerts (id, service_id, type, severity, message, triggered_at)
-			 VALUES (?, ?, 'ai_analysis', 'info', ?, NOW())`,
-			alertID, serviceID, result.Summary,
-		)
+		// Throttle: son 10 dakikada bu servis için ai_analysis alert açıldıysa yenisini oluşturma.
+		var recentCount int64
+		s.db.WithContext(ctx).Table("alerts").
+			Where("service_id = ? AND type = 'ai_analysis' AND triggered_at > NOW() - INTERVAL '10 minutes'", serviceID).
+			Count(&recentCount)
+		if recentCount == 0 {
+			alertID = uuid.New()
+			if execErr := s.db.WithContext(ctx).Exec(
+				`INSERT INTO alerts (id, service_id, type, severity, message, triggered_at)
+				 VALUES (?, ?, 'ai_analysis', 'info', ?, NOW())`,
+				alertID, serviceID, result.Summary,
+			).Error; execErr != nil {
+				log.Printf("[saveInsight] alert oluşturulamadı service=%s: %v", serviceID, execErr)
+				return
+			}
+		} else {
+			// Son aktif alert yoksa ve throttle varsa insight'ı atlama — sadece alert açma
+			log.Printf("[saveInsight] alert throttled service=%s (son 10dk içinde mevcut)", serviceID)
+			return
+		}
 	}
 
 	recsJSON, _ := json.Marshal(result.Recommendations)
 
 	insight := &AIInsight{
 		AlertID:         alertID,
-		Model:           DefaultModel,
+		Model:           model,
 		Summary:         result.Summary,
 		RootCause:       &result.RootCause,
 		Recommendations: recsJSON,
 	}
 
-	s.repo.Create(ctx, insight)
+	if err := s.repo.Create(ctx, insight); err != nil {
+		log.Printf("[saveInsight] insight kaydedilemedi service=%s: %v", serviceID, err)
+	}
 }
 
 func (s *Service) GetInsights(ctx context.Context, serviceID uuid.UUID, limit, offset int) ([]AIInsight, int64, error) {

@@ -22,7 +22,37 @@ func (AIInsight) TableName() string {
 }
 
 type AnalyzeRequest struct {
-	WindowMinutes int `json:"window_minutes" binding:"omitempty,min=1,max=1440"`
+	WindowMinutes int  `json:"window_minutes" binding:"omitempty,min=1,max=1440"`
+	DeepAnalysis  bool `json:"deep_analysis"`
+}
+
+type MetricsSummary struct {
+	SampleCount int     `json:"sample_count"`
+	WindowMin   int     `json:"window_minutes"`
+
+	CPUMean   float64 `json:"cpu_mean"`
+	CPUStddev float64 `json:"cpu_stddev"`
+	CPUMin    float64 `json:"cpu_min"`
+	CPUMax    float64 `json:"cpu_max"`
+
+	MemMean   float64 `json:"mem_mean_mb"`
+	MemStddev float64 `json:"mem_stddev_mb"`
+	MemMin    float64 `json:"mem_min_mb"`
+	MemMax    float64 `json:"mem_max_mb"`
+
+	LatencyMean   float64 `json:"latency_mean_ms"`
+	LatencyStddev float64 `json:"latency_stddev_ms"`
+	LatencyMin    float64 `json:"latency_min_ms"`
+	LatencyMax    float64 `json:"latency_max_ms"`
+	LatencyP95    float64 `json:"latency_p95_ms"`
+
+	ErrorRateMean float64 `json:"error_rate_mean"`
+	SpikeCount    int     `json:"spike_count"`
+	DownCount     int     `json:"down_count"`
+	DegradedCount int     `json:"degraded_count"`
+
+	TrendDirection string  `json:"trend_direction"`
+	TrendDelta     float64 `json:"trend_delta_ms"`
 }
 
 type AnalysisResult struct {
