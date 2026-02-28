@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +20,16 @@ import {
   Sun,
   Monitor,
   Layers,
+  Lock,
+  Eye,
+  EyeOff,
+  ScrollText,
+  Clock,
+  Shield,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore, type ThemeName, type ThemeMode } from "@/store/themeStore";
+import { settingsApi, type UpdateSettingsRequest, type AuditLog } from "@/api/settings";
 import { toast } from "sonner";
 
 function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
@@ -57,54 +65,127 @@ const THEME_OPTIONS: {
   icon: React.ElementType;
   preview: string;
 }[] = [
-  {
-    name: "cinnamiku",
-    mode: "light",
-    label: "CinnaMiku",
-    sublabel: "Pastel Light",
-    icon: Sun,
-    preview: "linear-gradient(110deg, #D0FAFF 0%, #FED7FF 100%)",
-  },
-  {
-    name: "cinnamiku",
-    mode: "dark",
-    label: "CinnaMiku",
-    sublabel: "Deep Ocean",
-    icon: Moon,
-    preview: "linear-gradient(110deg, #071012 0%, #324758 60%, #00E6FF 100%)",
-  },
-  {
-    name: "pro",
-    mode: "light",
-    label: "Pro",
-    sublabel: "Clean Light",
-    icon: Monitor,
-    preview: "linear-gradient(110deg, #f8fafc 0%, #e0e7ff 100%)",
-  },
-  {
-    name: "pro",
-    mode: "dark",
-    label: "Pro",
-    sublabel: "Slate Dark",
-    icon: Layers,
-    preview: "linear-gradient(110deg, #0a0c10 0%, #1e2240 100%)",
-  },
-];
+    { name: "cinnamiku", mode: "light", label: "CinnaMiku", sublabel: "Pastel Light", icon: Sun, preview: "linear-gradient(110deg, #D0FAFF 0%, #FED7FF 100%)" },
+    { name: "cinnamiku", mode: "dark", label: "CinnaMiku", sublabel: "Deep Ocean", icon: Moon, preview: "linear-gradient(110deg, #071012 0%, #324758 60%, #00E6FF 100%)" },
+    { name: "pro", mode: "light", label: "Pro", sublabel: "Clean Light", icon: Monitor, preview: "linear-gradient(110deg, #f8fafc 0%, #e0e7ff 100%)" },
+    { name: "pro", mode: "dark", label: "Pro", sublabel: "Slate Dark", icon: Layers, preview: "linear-gradient(110deg, #0a0c10 0%, #1e2240 100%)" },
+  ];
 
 export function SettingsPage() {
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { themeName, themeMode, setThemeName, setThemeMode } = useThemeStore();
 
-  const [notifs, setNotifs] = useState({ crit: true, warn: true, down: true, ai: false });
-  const [monitoring, setMonitoring] = useState({ pollInterval: 10, autoRecovery: false, wsReconnect: true });
-  const [ai, setAi] = useState({ autoAnalyze: true, window: 30 });
-  const [appearance, setAppearance] = useState({ matrix: true, radial: true });
-  const [saved, setSaved] = useState<string | null>(null);
+  // Backend'den ayarları çek
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => settingsApi.get(),
+  });
 
-  const handleSave = (section: string) => {
-    setSaved(section);
-    toast.success(`${section} settings saved`);
-    setTimeout(() => setSaved(null), 2000);
+  // Local state — backend'den senkronize edilir
+  const [notifs, setNotifs] = useState({ crit: true, warn: true, down: true, ai: false });
+  const [monitoring, setMonitoring] = useState({ pollInterval: 10, autoRecovery: false });
+  const [ai, setAi] = useState({ autoAnalyze: true, window: 30 });
+
+  // Password change
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  // Audit logs
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
+  const { data: auditData } = useQuery({
+    queryKey: ["auditLogs"],
+    queryFn: () => settingsApi.getAuditLogs(20, 0),
+    enabled: showAuditLogs,
+  });
+
+  // Backend verileri geldiğinde local state'i güncelle
+  useEffect(() => {
+    if (settings) {
+      setNotifs({
+        crit: settings.notif_crit,
+        warn: settings.notif_warn,
+        down: settings.notif_down,
+        ai: settings.notif_ai,
+      });
+      setMonitoring({
+        pollInterval: settings.poll_interval_sec,
+        autoRecovery: settings.auto_recovery,
+      });
+      setAi({
+        autoAnalyze: settings.ai_auto_analyze,
+        window: settings.ai_window_minutes,
+      });
+    }
+  }, [settings]);
+
+  // Backend'e kaydet mutation'ları
+  const saveMutation = useMutation({
+    mutationFn: (data: UpdateSettingsRequest) => settingsApi.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast.success("Ayarlar kaydedildi");
+    },
+    onError: () => {
+      toast.error("Ayarlar kaydedilemedi");
+    },
+  });
+
+  const passwordMutation = useMutation({
+    mutationFn: () => settingsApi.changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      toast.success("Şifre başarıyla değiştirildi");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPasswordSection(false);
+    },
+    onError: () => {
+      toast.error("Şifre değiştirilemedi — mevcut şifrenizi kontrol edin");
+    },
+  });
+
+  const handleSaveNotifs = () => {
+    saveMutation.mutate({
+      notif_crit: notifs.crit,
+      notif_warn: notifs.warn,
+      notif_down: notifs.down,
+      notif_ai: notifs.ai,
+    });
+  };
+
+  const handleSaveMonitoring = () => {
+    saveMutation.mutate({
+      poll_interval_sec: monitoring.pollInterval,
+      auto_recovery: monitoring.autoRecovery,
+    });
+  };
+
+  const handleSaveAI = () => {
+    saveMutation.mutate({
+      ai_auto_analyze: ai.autoAnalyze,
+      ai_window_minutes: ai.window,
+    });
+  };
+
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword) {
+      toast.error("Tüm alanları doldurun");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Yeni şifre en az 8 karakter olmalı");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Şifreler eşleşmiyor");
+      return;
+    }
+    passwordMutation.mutate();
   };
 
   const handleThemeSelect = (name: ThemeName, mode: ThemeMode) => {
@@ -112,11 +193,7 @@ export function SettingsPage() {
     setThemeMode(mode);
   };
 
-  const cardStyle = {
-    background: "var(--surface-glass)",
-    borderColor: "var(--border-subtle)",
-  };
-
+  const cardStyle = { background: "var(--surface-glass)", borderColor: "var(--border-subtle)" };
   const dividerStyle = { backgroundColor: "var(--border-divider)" };
 
   return (
@@ -124,9 +201,9 @@ export function SettingsPage() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-heading)" }}>
-          Settings
+          Ayarlar
         </h1>
-        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Platform configuration and preferences</p>
+        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Platform yapılandırması ve tercihler</p>
       </motion.div>
 
       {/* Profile */}
@@ -142,14 +219,74 @@ export function SettingsPage() {
                 {user?.email || "user@nanonet.dev"}
               </h3>
               <p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>
-                Since {user?.created_at ? new Date(user.created_at).toLocaleDateString("en-US") : "—"}
+                Üyelik: {user?.created_at ? new Date(user.created_at).toLocaleDateString("tr-TR") : "—"}
               </p>
             </div>
             <Badge className="text-[9px] rounded-full shrink-0"
               style={{ background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }}>
-              Active
+              Aktif
             </Badge>
           </div>
+        </Card>
+      </motion.div>
+
+      {/* Password Change */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
+        <Card className="rounded-xl p-5 border" style={cardStyle}>
+          <div className="flex items-center justify-between mb-1">
+            <SectionHeader icon={Lock} label="Şifre Değiştir" />
+            <Button size="sm" variant="outline"
+              onClick={() => setShowPasswordSection(!showPasswordSection)}
+              className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
+              style={{ borderColor: "var(--color-teal-border)", color: "var(--text-muted)" }}>
+              {showPasswordSection ? "Kapat" : "Değiştir"}
+            </Button>
+          </div>
+          {showPasswordSection && (
+            <>
+              <Separator className="mb-3" style={dividerStyle} />
+              <div className="space-y-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Mevcut Şifre</Label>
+                  <div className="relative">
+                    <Input type={showCurrent ? "text" : "password"} value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="rounded-xl text-xs h-9 pr-9"
+                      style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
+                    <button onClick={() => setShowCurrent(!showCurrent)} className="absolute right-2 top-1/2 -translate-y-1/2" style={{ color: "var(--text-faint)" }}>
+                      {showCurrent ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Yeni Şifre</Label>
+                  <div className="relative">
+                    <Input type={showNew ? "text" : "password"} value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="rounded-xl text-xs h-9 pr-9"
+                      style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
+                    <button onClick={() => setShowNew(!showNew)} className="absolute right-2 top-1/2 -translate-y-1/2" style={{ color: "var(--text-faint)" }}>
+                      {showNew ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Yeni Şifre (Tekrar)</Label>
+                  <Input type="password" value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="rounded-xl text-xs h-9"
+                    style={{ background: "var(--input-bg)", borderColor: newPassword && confirmPassword && newPassword !== confirmPassword ? "var(--status-down)" : "var(--input-border)", color: "var(--text-secondary)" }} />
+                  {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                    <p className="text-[10px]" style={{ color: "var(--status-down-text)" }}>Şifreler eşleşmiyor</p>
+                  )}
+                </div>
+                <Button size="sm" onClick={handleChangePassword} disabled={passwordMutation.isPending}
+                  className="text-white rounded-xl text-xs" style={{ background: "var(--gradient-btn-primary)" }}>
+                  {passwordMutation.isPending ? "Kaydediliyor..." : "Şifreyi Değiştir"}
+                </Button>
+              </div>
+            </>
+          )}
         </Card>
       </motion.div>
 
@@ -157,22 +294,19 @@ export function SettingsPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
         <Card className="rounded-xl p-5 border" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
-            <SectionHeader icon={Bell} label="Notifications" />
-            <Button size="sm" variant="outline"
-              onClick={() => handleSave("Notifications")}
+            <SectionHeader icon={Bell} label="Bildirimler" />
+            <Button size="sm" variant="outline" onClick={handleSaveNotifs} disabled={saveMutation.isPending}
               className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={saved === "Notifications"
-                ? { borderColor: "var(--status-up-border)", color: "var(--status-up-text)", background: "var(--status-up-subtle)" }
-                : { borderColor: "var(--color-pink-border)", color: "var(--text-muted)" }}>
-              {saved === "Notifications" ? <><CheckCircle2 className="w-3 h-3 mr-1" />Saved</> : "Save"}
+              style={{ borderColor: "var(--color-pink-border)", color: "var(--text-muted)" }}>
+              {saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
           <Separator className="mb-3" style={dividerStyle} />
           <div className="space-y-1 divide-y" style={{ borderColor: "var(--border-divider)" }}>
-            <SettingRow label="Critical Alerts" desc="Get notified on critical severity alerts" checked={notifs.crit} onChange={(v) => setNotifs(p => ({ ...p, crit: v }))} />
-            <SettingRow label="Warning Alerts" desc="Get notified on warning severity alerts" checked={notifs.warn} onChange={(v) => setNotifs(p => ({ ...p, warn: v }))} />
-            <SettingRow label="Service Down" desc="Get notified when a service goes offline" checked={notifs.down} onChange={(v) => setNotifs(p => ({ ...p, down: v }))} />
-            <SettingRow label="AI Insights" desc="Get notified when a new AI insight is ready" checked={notifs.ai} onChange={(v) => setNotifs(p => ({ ...p, ai: v }))} />
+            <SettingRow label="Kritik Uyarılar" desc="Kritik seviye uyarılarında bildirim al" checked={notifs.crit} onChange={(v) => setNotifs(p => ({ ...p, crit: v }))} />
+            <SettingRow label="Uyarı Seviyesi" desc="Orta seviye uyarılarda bildirim al" checked={notifs.warn} onChange={(v) => setNotifs(p => ({ ...p, warn: v }))} />
+            <SettingRow label="Servis Çökmesi" desc="Bir servis çevrimdışı olduğunda bildirim al" checked={notifs.down} onChange={(v) => setNotifs(p => ({ ...p, down: v }))} />
+            <SettingRow label="AI Analiz Bildirimleri" desc="Yeni AI analiz sonucu hazır olduğunda bildirim al" checked={notifs.ai} onChange={(v) => setNotifs(p => ({ ...p, ai: v }))} />
           </div>
         </Card>
       </motion.div>
@@ -181,32 +315,28 @@ export function SettingsPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
         <Card className="rounded-xl p-5 border" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
-            <SectionHeader icon={Zap} label="Monitoring" />
-            <Button size="sm" variant="outline"
-              onClick={() => handleSave("Monitoring")}
+            <SectionHeader icon={Zap} label="İzleme" />
+            <Button size="sm" variant="outline" onClick={handleSaveMonitoring} disabled={saveMutation.isPending}
               className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={saved === "Monitoring"
-                ? { borderColor: "var(--status-up-border)", color: "var(--status-up-text)", background: "var(--status-up-subtle)" }
-                : { borderColor: "var(--color-teal-border)", color: "var(--text-muted)" }}>
-              {saved === "Monitoring" ? <><CheckCircle2 className="w-3 h-3 mr-1" />Saved</> : "Save"}
+              style={{ borderColor: "var(--color-teal-border)", color: "var(--text-muted)" }}>
+              {saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
           <Separator className="mb-3" style={dividerStyle} />
           <div className="space-y-4">
             <div className="grid gap-1.5">
-              <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Default Poll Interval (seconds)</Label>
+              <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Varsayılan Poll Interval (saniye)</Label>
               <div className="flex items-center gap-3">
                 <Input type="number" min={5} max={300} value={monitoring.pollInterval}
                   onChange={(e) => setMonitoring(p => ({ ...p, pollInterval: parseInt(e.target.value) || 10 }))}
                   className="rounded-xl text-xs h-9 w-24"
                   style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Min 5s, Max 300s</span>
+                <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Min 5s, Maks 300s</span>
               </div>
             </div>
             <Separator style={dividerStyle} />
             <div className="space-y-1 divide-y" style={{ borderColor: "var(--border-divider)" }}>
-              <SettingRow label="Auto-Recovery" desc="Automatically restart crashed services" checked={monitoring.autoRecovery} onChange={(v) => setMonitoring(p => ({ ...p, autoRecovery: v }))} />
-              <SettingRow label="WebSocket Auto-Reconnect" desc="Reconnect automatically when connection drops" checked={monitoring.wsReconnect} onChange={(v) => setMonitoring(p => ({ ...p, wsReconnect: v }))} />
+              <SettingRow label="Otomatik Kurtarma" desc="Çöken servisleri otomatik yeniden başlat" checked={monitoring.autoRecovery} onChange={(v) => setMonitoring(p => ({ ...p, autoRecovery: v }))} />
             </div>
           </div>
         </Card>
@@ -216,28 +346,25 @@ export function SettingsPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}>
         <Card className="rounded-xl p-5 border" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
-            <SectionHeader icon={Sparkles} label="AI Analysis" />
-            <Button size="sm" variant="outline"
-              onClick={() => handleSave("AI")}
+            <SectionHeader icon={Sparkles} label="AI Analiz" />
+            <Button size="sm" variant="outline" onClick={handleSaveAI} disabled={saveMutation.isPending}
               className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={saved === "AI"
-                ? { borderColor: "var(--status-up-border)", color: "var(--status-up-text)", background: "var(--status-up-subtle)" }
-                : { borderColor: "var(--color-lavender-border)", color: "var(--text-muted)" }}>
-              {saved === "AI" ? <><CheckCircle2 className="w-3 h-3 mr-1" />Saved</> : "Save"}
+              style={{ borderColor: "var(--color-lavender-border)", color: "var(--text-muted)" }}>
+              {saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
           <Separator className="mb-3" style={dividerStyle} />
           <div className="space-y-4">
-            <SettingRow label="Auto-Analyze on Critical Alert" desc="Run AI analysis automatically after a critical alert fires" checked={ai.autoAnalyze} onChange={(v) => setAi(p => ({ ...p, autoAnalyze: v }))} />
+            <SettingRow label="Kritik Uyarıda Otomatik Analiz" desc="Kritik uyarı sonrası otomatik AI analizi çalıştır" checked={ai.autoAnalyze} onChange={(v) => setAi(p => ({ ...p, autoAnalyze: v }))} />
             <Separator style={dividerStyle} />
             <div className="grid gap-1.5">
-              <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Analysis Window (minutes)</Label>
+              <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Analiz Penceresi (dakika)</Label>
               <div className="flex items-center gap-3">
                 <Input type="number" min={5} max={120} value={ai.window}
                   onChange={(e) => setAi(p => ({ ...p, window: parseInt(e.target.value) || 30 }))}
                   className="rounded-xl text-xs h-9 w-24"
                   style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Min 5m, Max 120m</span>
+                <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Min 5dk, Maks 120dk</span>
               </div>
             </div>
           </div>
@@ -247,12 +374,11 @@ export function SettingsPage() {
       {/* Appearance */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
         <Card className="rounded-xl p-5 border" style={cardStyle}>
-          <SectionHeader icon={Palette} label="Appearance" />
+          <SectionHeader icon={Palette} label="Görünüm" />
           <Separator className="mb-4" style={dividerStyle} />
 
-          {/* Theme grid */}
           <div className="mb-5">
-            <Label className="text-xs font-medium mb-3 block" style={{ color: "var(--text-secondary)" }}>Theme</Label>
+            <Label className="text-xs font-medium mb-3 block" style={{ color: "var(--text-secondary)" }}>Tema</Label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {THEME_OPTIONS.map((opt) => {
                 const isActive = themeName === opt.name && themeMode === opt.mode;
@@ -266,10 +392,9 @@ export function SettingsPage() {
                       borderColor: isActive ? "var(--brand-primary)" : "var(--border-subtle)",
                       boxShadow: isActive ? "0 0 0 3px var(--brand-primary-muted)" : "none",
                     }}
+                    aria-label={`${opt.label} ${opt.sublabel} teması`}
                   >
-                    {/* Preview swatch */}
                     <div className="h-10 w-full" style={{ background: opt.preview }} />
-                    {/* Label row */}
                     <div className="px-2 py-1.5" style={{ background: "var(--surface-sunken)" }}>
                       <div className="flex items-center gap-1">
                         <IconComp className="w-3 h-3" style={{ color: "var(--brand-primary)" }} />
@@ -277,7 +402,6 @@ export function SettingsPage() {
                       </div>
                       <p className="text-[9px] mt-0.5" style={{ color: "var(--text-faint)" }}>{opt.sublabel}</p>
                     </div>
-                    {/* Active checkmark */}
                     {isActive && (
                       <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
                         style={{ background: "var(--brand-primary)" }}>
@@ -289,27 +413,62 @@ export function SettingsPage() {
               })}
             </div>
           </div>
+        </Card>
+      </motion.div>
 
-          <Separator className="mb-4" style={dividerStyle} />
-
-          {/* Effects toggles */}
-          <div className="space-y-1 divide-y" style={{ borderColor: "var(--border-divider)" }}>
-            <SettingRow label="Matrix Background" desc="Show animated background effect" checked={appearance.matrix} onChange={(v) => setAppearance(p => ({ ...p, matrix: v }))} />
-            <SettingRow label="Radial Menu" desc="Show floating radial quick-action menu" checked={appearance.radial} onChange={(v) => setAppearance(p => ({ ...p, radial: v }))} />
+      {/* Audit Logs */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.35 }}>
+        <Card className="rounded-xl p-5 border" style={cardStyle}>
+          <div className="flex items-center justify-between mb-1">
+            <SectionHeader icon={ScrollText} label="İşlem Geçmişi" />
+            <Button size="sm" variant="outline"
+              onClick={() => setShowAuditLogs(!showAuditLogs)}
+              className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
+              style={{ borderColor: "var(--color-blue-border)", color: "var(--text-muted)" }}>
+              {showAuditLogs ? "Gizle" : "Göster"}
+            </Button>
           </div>
+          {showAuditLogs && (
+            <>
+              <Separator className="mb-3" style={dividerStyle} />
+              {auditData?.logs && auditData.logs.length > 0 ? (
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {auditData.logs.map((log: AuditLog) => (
+                    <div key={log.id} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: "var(--surface-sunken)" }}>
+                      <Shield className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--color-blue)" }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                          {log.action} — <span className="font-(--font-mono)" style={{ color: "var(--text-muted)" }}>{log.resource_type}</span>
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: "var(--text-faint)" }}>
+                          <Clock className="w-2.5 h-2.5" />
+                          {new Date(log.created_at).toLocaleString("tr-TR")}
+                          {log.ip_address && <span>· {log.ip_address}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
+                  Henüz işlem geçmişi bulunmuyor
+                </p>
+              )}
+            </>
+          )}
         </Card>
       </motion.div>
 
       {/* About */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.35 }}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.4 }}>
         <Card className="rounded-xl p-5 border" style={cardStyle}>
-          <SectionHeader icon={Info} label="About" />
+          <SectionHeader icon={Info} label="Hakkında" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: "Platform", value: "NanoNet v2.0" },
-              { label: "Theme", value: themeName === "cinnamiku" ? "CinnaMiku" : "Pro" },
+              { label: "Tema", value: themeName === "cinnamiku" ? "CinnaMiku" : "Pro" },
               { label: "Stack", value: "React + Go + Rust" },
-              { label: "Database", value: "TimescaleDB" },
+              { label: "Veritabanı", value: "TimescaleDB" },
             ].map(({ label, value }) => (
               <div key={label} className="p-3 rounded-xl" style={{ background: "var(--surface-sunken)" }}>
                 <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>{label}</span>
@@ -320,7 +479,7 @@ export function SettingsPage() {
           <div className="mt-4 pt-3 flex items-center justify-center gap-1.5 text-[10px]"
             style={{ borderTop: "1px solid var(--border-divider)", color: "var(--text-faint)" }}>
             <Heart className="w-3 h-3" style={{ color: "var(--color-pink)" }} />
-            Built with love · NanoNet Monitoring Platform
+            NanoNet İzleme Platformu
           </div>
         </Card>
       </motion.div>

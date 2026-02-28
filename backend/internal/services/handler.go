@@ -266,6 +266,19 @@ func (h *Handler) Stop(c *gin.Context) {
 	})
 }
 
+// allowedExecCommands — agent üzerinde çalıştırılmasına izin verilen komutların beyaz listesi.
+// Arbitrary shell execution güvenlik riski oluşturur; yalnızca onaylanmış diagnostik komutlar kabul edilir.
+var allowedExecCommands = map[string]bool{
+	"status":       true,
+	"logs":         true,
+	"health-check": true,
+	"version":      true,
+	"uptime":       true,
+	"df-h":         true,
+	"free-m":       true,
+	"top-snapshot": true,
+}
+
 func (h *Handler) Exec(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {
@@ -292,6 +305,13 @@ func (h *Handler) Exec(c *gin.Context) {
 		response.ValidationError(c, err)
 		return
 	}
+
+	// Güvenlik: Yalnızca beyaz listedeki komutlara izin ver
+	if !allowedExecCommands[req.Command] {
+		response.BadRequest(c, "bu komut izin verilmiyor — yalnızca şu komutlar kullanılabilir: status, logs, health-check, version, uptime, df-h, free-m, top-snapshot")
+		return
+	}
+
 	if req.TimeoutSec <= 0 {
 		req.TimeoutSec = 30
 	}
@@ -443,26 +463,34 @@ func (h *Handler) Ping(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.service.Get(c.Request.Context(), id, userID); err != nil {
+	svc, err := h.service.Get(c.Request.Context(), id, userID)
+	if err != nil {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}
 
 	agentReachable := h.hub.IsAgentConnected(id.String())
 
+	var latencyMs *float64
 	commandID := uuid.New().String()
 	if agentReachable {
+		start := time.Now()
 		command := map[string]interface{}{
 			"type":       "command",
 			"command_id": commandID,
 			"action":     "ping",
 		}
 		h.hub.SendCommandToAgent(id.String(), command)
+		elapsed := float64(time.Since(start).Microseconds()) / 1000.0
+		latencyMs = &elapsed
 	}
+
+	serviceStatus := svc.Status
+	serviceReachable := serviceStatus == "up" || serviceStatus == "degraded"
 
 	response.Success(c, gin.H{
 		"agent_reachable":   agentReachable,
-		"service_reachable": agentReachable,
-		"latency_ms":        nil,
+		"service_reachable": serviceReachable,
+		"latency_ms":        latencyMs,
 	})
 }

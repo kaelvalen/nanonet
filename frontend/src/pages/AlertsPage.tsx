@@ -60,17 +60,17 @@ export function AlertsPage() {
       case "crit": return {
         dotVar: "var(--status-down)", badgeBg: "var(--status-down-subtle)", badgeText: "var(--status-down-text)",
         badgeBorder: "var(--status-down-border)", borderVar: "var(--status-down-border)",
-        colorVar: "var(--status-down-text)", label: "Critical",
+        colorVar: "var(--status-down-text)", label: "Kritik",
       };
       case "warn": return {
         dotVar: "var(--status-warn)", badgeBg: "var(--status-warn-subtle)", badgeText: "var(--status-warn-text)",
         badgeBorder: "var(--status-warn-border)", borderVar: "var(--status-warn-border)",
-        colorVar: "var(--status-warn-text)", label: "Warning",
+        colorVar: "var(--status-warn-text)", label: "Uyarı",
       };
       default: return {
         dotVar: "var(--color-blue)", badgeBg: "var(--color-blue-subtle)", badgeText: "var(--color-blue-text)",
         badgeBorder: "var(--color-blue-border)", borderVar: "var(--color-blue-border)",
-        colorVar: "var(--color-blue-text)", label: "Info",
+        colorVar: "var(--color-blue-text)", label: "Bilgi",
       };
     }
   };
@@ -90,18 +90,18 @@ export function AlertsPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-heading)" }}>
-              Alerts
+              Uyarılar
             </h1>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Real-time incident notifications and alerts</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Gerçek zamanlı olay bildirimleri ve uyarılar</p>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border transition-all"
             style={activeCount > 0
               ? { background: "var(--status-down-subtle)", borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }
               : { background: "var(--status-up-subtle)", borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}>
             {activeCount > 0 ? (
-              <><Bell className="w-3 h-3 animate-pulse" />{activeCount} Active</>
+              <><Bell className="w-3 h-3 animate-pulse" />{activeCount} Aktif</>
             ) : (
-              <><BellOff className="w-3 h-3" />All Clear</>
+              <><BellOff className="w-3 h-3" />Sorun Yok</>
             )}
           </div>
         </div>
@@ -114,9 +114,9 @@ export function AlertsPage() {
         className="grid grid-cols-3 gap-3"
       >
         {([
-          { key: "crit" as const, label: "Critical", icon: XOctagon, colorVar: "var(--status-down-text)", bgVar: "var(--status-down-subtle)", borderVar: "var(--status-down-border)", barVar: "var(--status-down)" },
-          { key: "warn" as const, label: "Warning", icon: AlertTriangle, colorVar: "var(--status-warn-text)", bgVar: "var(--status-warn-subtle)", borderVar: "var(--status-warn-border)", barVar: "var(--status-warn)" },
-          { key: "info" as const, label: "Info", icon: Info, colorVar: "var(--color-blue-text)", bgVar: "var(--color-blue-subtle)", borderVar: "var(--color-blue-border)", barVar: "var(--color-blue)" },
+          { key: "crit" as const, label: "Kritik", icon: XOctagon, colorVar: "var(--status-down-text)", bgVar: "var(--status-down-subtle)", borderVar: "var(--status-down-border)", barVar: "var(--status-down)" },
+          { key: "warn" as const, label: "Uyarı", icon: AlertTriangle, colorVar: "var(--status-warn-text)", bgVar: "var(--status-warn-subtle)", borderVar: "var(--status-warn-border)", barVar: "var(--status-warn)" },
+          { key: "info" as const, label: "Bilgi", icon: Info, colorVar: "var(--color-blue-text)", bgVar: "var(--color-blue-subtle)", borderVar: "var(--color-blue-border)", barVar: "var(--color-blue)" },
         ]).map((s, i) => (
           <motion.div
             key={s.key}
@@ -163,10 +163,10 @@ export function AlertsPage() {
                 borderColor: s === "all" ? "var(--color-teal-border)" : s === "crit" ? "var(--status-down-border)" : s === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)",
               } : { color: "var(--text-muted)", borderColor: "transparent" }}
             >
-              {s === "all" ? `All (${severityCounts.all})` :
-               s === "crit" ? `Critical (${severityCounts.crit})` :
-               s === "warn" ? `Warning (${severityCounts.warn})` :
-               `Info (${severityCounts.info})`}
+              {s === "all" ? `Tümü (${severityCounts.all})` :
+                s === "crit" ? `Kritik (${severityCounts.crit})` :
+                  s === "warn" ? `Uyarı (${severityCounts.warn})` :
+                    `Bilgi (${severityCounts.info})`}
             </button>
           ))}
           <button
@@ -176,7 +176,7 @@ export function AlertsPage() {
               ? { background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }
               : { color: "var(--text-muted)", borderColor: "transparent" }}
           >
-            {showResolved ? "✓ Showing Resolved" : "Show Resolved"}
+            {showResolved ? "✓ Çözülmüşleri Göster" : "Çözülmüşleri Göster"}
           </button>
         </div>
       </motion.div>
@@ -202,9 +202,9 @@ export function AlertsPage() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "var(--status-up-subtle)" }}>
               <Shield className="w-8 h-8 opacity-50" style={{ color: "var(--status-up)" }} />
             </div>
-            <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>All Systems Operational</h3>
+            <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Tüm Sistemler Aktif</h3>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              {severityFilter !== "all" ? "No alerts match this filter" : "No active alerts at this time"}
+              {severityFilter !== "all" ? "Bu filtreye uygun uyarı bulunamadı" : "Şu anda aktif uyarı yok"}
             </p>
           </Card>
         </motion.div>
@@ -275,7 +275,7 @@ export function AlertsPage() {
                               className="text-[10px] rounded-lg h-7 px-2.5 shrink-0"
                               style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}
                             >
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Resolve
+                              <CheckCircle2 className="w-3 h-3 mr-1" /> Çöz
                             </Button>
                           )}
                         </div>

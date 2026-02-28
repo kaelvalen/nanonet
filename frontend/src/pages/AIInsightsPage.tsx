@@ -74,12 +74,12 @@ export function AIInsightsPage() {
             <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-heading)" }}>
               AI Insights
             </h1>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>AI-powered anomaly detection and recommendations</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Yapay zeka destekli anomali tespiti ve öneriler</p>
           </div>
           <div className="flex items-center gap-2">
             <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
               <SelectTrigger className="w-48 rounded-xl text-xs h-9" style={{ background: "var(--surface-glass)", borderColor: "var(--color-lavender-border)", color: "var(--text-secondary)" }}>
-                <SelectValue placeholder="Select service..." />
+                <SelectValue placeholder="Servis seçin..." />
               </SelectTrigger>
               <SelectContent className="rounded-xl" style={{ background: "var(--surface-overlay)", borderColor: "var(--color-lavender-border)" }}>
                 {services.map((s) => (
@@ -94,8 +94,8 @@ export function AIInsightsPage() {
               style={{ background: "var(--gradient-btn-primary)" }}
             >
               {analyzeLoading
-                ? <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analyzing...</>
-                : <><Brain className="w-3 h-3 mr-1" /> Analyze</>}
+                ? <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analiz ediliyor...</>
+                : <><Brain className="w-3 h-3 mr-1" /> Analiz Et</>}
             </Button>
           </div>
         </div>
@@ -133,8 +133,8 @@ export function AIInsightsPage() {
                   <Brain className="w-5 h-5" style={{ color: "var(--color-lavender)" }} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Live Analysis Result</h3>
-                  <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>Last 30 minutes analyzed</p>
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Canlı Analiz Sonucu</h3>
+                  <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>Son 30 dakika analiz edildi</p>
                 </div>
                 {analysisResult.confidence !== undefined && (
                   <div className="flex items-center gap-2 shrink-0">
@@ -148,8 +148,8 @@ export function AIInsightsPage() {
                       <span className="absolute text-[10px] font-bold" style={{ color: "var(--color-lavender)" }}>{confPct}%</span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>Confidence</p>
-                      <p className="text-[9px]" style={{ color: "var(--text-faint)" }}>{confPct >= 80 ? "High" : confPct >= 60 ? "Medium" : "Low"}</p>
+                      <p className="text-[10px] font-medium" style={{ color: "var(--text-secondary)" }}>Güven</p>
+                      <p className="text-[9px]" style={{ color: "var(--text-faint)" }}>{confPct >= 80 ? "Yüksek" : confPct >= 60 ? "Orta" : "Düşük"}</p>
                     </div>
                   </div>
                 )}
@@ -159,7 +159,7 @@ export function AIInsightsPage() {
               <div className="p-4 rounded-xl" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-lavender-border)" }}>
                 <div className="flex items-center gap-1.5 mb-2">
                   <Activity className="w-3 h-3" style={{ color: "var(--color-lavender)" }} />
-                  <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Summary</span>
+                  <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Özet</span>
                 </div>
                 <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{analysisResult.summary}</p>
               </div>
@@ -170,7 +170,7 @@ export function AIInsightsPage() {
                   <div className="p-4 rounded-xl" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
                     <div className="flex items-center gap-1.5 mb-2">
                       <Target className="w-3 h-3" style={{ color: "var(--color-pink)" }} />
-                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Root Cause</span>
+                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Kök Neden</span>
                     </div>
                     <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{analysisResult.root_cause}</p>
                   </div>
@@ -181,7 +181,7 @@ export function AIInsightsPage() {
                   <div className="p-4 rounded-xl" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
                     <div className="flex items-center gap-1.5 mb-3">
                       <Lightbulb className="w-3 h-3" style={{ color: "var(--color-teal)" }} />
-                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Recommendations</span>
+                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Öneriler</span>
                     </div>
                     <ul className="space-y-2">
                       {analysisResult.recommendations.map((rec, i) => (

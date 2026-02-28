@@ -175,3 +175,5 @@ logs-data/
 .windsurf/
 .bak*
 .env.bak*
+.env.bak.*
+*.bak.*

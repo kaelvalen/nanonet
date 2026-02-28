@@ -70,7 +70,7 @@ export function LoginPage() {
             className="text-sm mt-1"
             style={{ color: "var(--text-muted)" }}
           >
-            Microservice Monitoring Platform
+            Mikroservis İzleme Platformu
           </motion.p>
         </div>
 
@@ -81,8 +81,8 @@ export function LoginPage() {
         >
           <Card className="backdrop-blur-xl rounded-2xl p-8" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)", boxShadow: "0 20px 40px var(--shadow-card)" }}>
             <div className="mb-6">
-              <h2 className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>Welcome back</h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Sign in to your account</p>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--text-secondary)" }}>Hoş Geldiniz</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Hesabınıza giriş yapın</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -92,7 +92,7 @@ export function LoginPage() {
                 transition={{ delay: 0.3 }}
                 className="grid gap-2"
               >
-                <Label htmlFor="email" className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Email</Label>
+                <Label htmlFor="email" className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>E-posta</Label>
                 <Input
                   id="email"
                   type="email"
@@ -112,7 +112,7 @@ export function LoginPage() {
                 className="grid gap-2"
               >
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-foreground text-xs font-medium">Password</Label>
+                  <Label htmlFor="password" className="text-foreground text-xs font-medium">Şifre</Label>
                   <Link to="/forgot-password" className="text-[10px] transition-colors" style={{ color: "var(--text-muted)" }}>
                     Şifremi Unuttum
                   </Link>
@@ -153,12 +153,12 @@ export function LoginPage() {
                   {isLoggingIn ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Signing in...
+                      Giriş yapılıyor...
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      Sign In
+                      Giriş Yap
                     </div>
                   )}
                 </Button>
@@ -172,9 +172,9 @@ export function LoginPage() {
               className="mt-6 text-center"
             >
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Don't have an account?{" "}
+                Hesabınız yok mu?{" "}
                 <Link to="/register" className="font-medium transition-colors" style={{ color: "var(--text-link)" }}>
-                  Register
+                  Kayıt Ol
                 </Link>
               </p>
             </motion.div>
