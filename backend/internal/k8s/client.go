@@ -2,24 +2,22 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"os"
-	"path/filepath"
+	"os/exec"
+	"strings"
 	"time"
-
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Client — Kubernetes ile iletişim kuran istemci.
+// ErrNotFound — kaynak K8s'de bulunamadı.
+var ErrNotFound = errors.New("not found")
+
+// Client — Kubernetes ile iletişim kuran istemci (kubectl CLI tabanlı).
 type Client struct {
-	clientset *kubernetes.Clientset
-	namespace string
+	namespace  string
+	kubeconfig string
 }
 
 // PodInfo — pod bilgisi.
@@ -65,134 +63,202 @@ type ScaleResult struct {
 }
 
 // NewClient — yeni K8s Client oluşturur.
-// Cluster içindeyse in-cluster config kullanır, değilse kubeconfig.
 func NewClient(namespace string) (*Client, error) {
-	var config *rest.Config
-	var err error
-
-	// Cluster içinde mi diye kontrol et
-	config, err = rest.InClusterConfig()
-	if err != nil {
-		// Cluster dışında — kubeconfig dene
-		kubeconfig := os.Getenv("KUBECONFIG")
-		if kubeconfig == "" {
-			home, _ := os.UserHomeDir()
-			kubeconfig = filepath.Join(home, ".kube", "config")
-		}
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-		if err != nil {
-			return nil, fmt.Errorf("kubernetes client oluşturulamadı: %w", err)
-		}
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		home, _ := os.UserHomeDir()
+		kubeconfig = fmt.Sprintf("%s/.kube/config", home)
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("kubernetes clientset oluşturulamadı: %w", err)
+	client := &Client{
+		namespace:  namespace,
+		kubeconfig: kubeconfig,
 	}
 
-	if namespace == "" {
-		namespace = "default"
+	// Test connection
+	if !client.IsAvailable(context.Background()) {
+		return nil, fmt.Errorf("kubernetes cluster'a erişilemiyor")
 	}
 
-	log.Printf("[K8s] Client oluşturuldu (namespace: %s)", namespace)
-	return &Client{clientset: clientset, namespace: namespace}, nil
+	return client, nil
 }
 
-// GetPods — belirtilen label selector ile pod'ları listeler.
-// selector örn: "app=my-service"
-func (c *Client) GetPods(ctx context.Context, selector string) ([]PodInfo, error) {
+// runKubectl — kubectl komutu çalıştırır.
+func (c *Client) runKubectl(ctx context.Context, args ...string) ([]byte, error) {
+	cmdArgs := []string{}
+	if c.kubeconfig != "" {
+		cmdArgs = append(cmdArgs, "--kubeconfig", c.kubeconfig)
+	}
+	if c.namespace != "" && c.namespace != "default" {
+		cmdArgs = append(cmdArgs, "-n", c.namespace)
+	}
+	cmdArgs = append(cmdArgs, args...)
+
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	pods, err := c.clientset.CoreV1().Pods(c.namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: selector,
-	})
+	cmd := exec.CommandContext(ctx, "kubectl", cmdArgs...)
+	out, err := cmd.CombinedOutput()
+	if err != nil && strings.Contains(string(out), "not found") {
+		return out, ErrNotFound
+	}
+	return out, err
+}
+
+// IsAvailable — K8s cluster'a erişilebilir mi kontrol eder.
+func (c *Client) IsAvailable(ctx context.Context) bool {
+	_, err := c.runKubectl(ctx, "cluster-info")
+	return err == nil
+}
+
+// GetNamespaces — erişilebilir namespace'leri listeler.
+func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
+	output, err := c.runKubectl(ctx, "get", "namespaces", "-o", "json")
 	if err != nil {
-		return nil, fmt.Errorf("pod listesi alınamadı: %w", err)
+		return nil, fmt.Errorf("namespace'ler alınamadı: %w", err)
 	}
 
-	var result []PodInfo
-	for _, pod := range pods.Items {
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name string `json:"name"`
+			} `json:"metadata"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var namespaces []string
+	for _, item := range result.Items {
+		namespaces = append(namespaces, item.Metadata.Name)
+	}
+
+	return namespaces, nil
+}
+
+// GetPods — belirtilen label selector ile pod'ları listeler.
+func (c *Client) GetPods(ctx context.Context, selector string) ([]PodInfo, error) {
+	args := []string{"get", "pods", "-l", selector, "-o", "json"}
+	output, err := c.runKubectl(ctx, args...)
+	if err != nil {
+		return nil, fmt.Errorf("pod'lar alınamadı: %w", err)
+	}
+
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name   string            `json:"name"`
+				Labels map[string]string `json:"labels"`
+			} `json:"metadata"`
+			Status struct {
+				Phase             string     `json:"phase"`
+				PodIP             string     `json:"podIP"`
+				StartTime         *time.Time `json:"startTime"`
+				ContainerStatuses []struct {
+					Ready        bool  `json:"ready"`
+					RestartCount int32 `json:"restartCount"`
+				} `json:"containerStatuses"`
+			} `json:"status"`
+			Spec struct {
+				NodeName string `json:"nodeName"`
+			} `json:"spec"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var pods []PodInfo
+	for _, item := range result.Items {
 		info := PodInfo{
-			Name:   pod.Name,
-			Status: string(pod.Status.Phase),
-			Node:   pod.Spec.NodeName,
-			IP:     pod.Status.PodIP,
-			Labels: pod.Labels,
+			Name:   item.Metadata.Name,
+			Status: item.Status.Phase,
+			Node:   item.Spec.NodeName,
+			IP:     item.Status.PodIP,
+			Labels: item.Metadata.Labels,
 		}
 
-		if pod.Status.StartTime != nil {
-			t := pod.Status.StartTime.Time
-			info.StartTime = &t
+		if item.Status.StartTime != nil {
+			info.StartTime = item.Status.StartTime
 		}
 
-		// Container durumunu kontrol et
-		for _, cs := range pod.Status.ContainerStatuses {
+		for _, cs := range item.Status.ContainerStatuses {
 			info.Ready = cs.Ready
 			info.Restarts = cs.RestartCount
-			// İlk container yeterli — çoğu servis tek container
 			break
 		}
 
-		result = append(result, info)
+		pods = append(pods, info)
 	}
 
-	return result, nil
+	return pods, nil
 }
 
 // GetDeployment — deployment bilgisini döndürür.
 func (c *Client) GetDeployment(ctx context.Context, name string) (*DeploymentInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	dep, err := c.clientset.AppsV1().Deployments(c.namespace).Get(ctx, name, metav1.GetOptions{})
+	output, err := c.runKubectl(ctx, "get", "deployment", name, "-o", "json")
 	if err != nil {
 		return nil, fmt.Errorf("deployment alınamadı: %w", err)
 	}
 
+	var result struct {
+		Spec struct {
+			Replicas *int32 `json:"replicas"`
+			Strategy struct {
+				Type string `json:"type"`
+			} `json:"strategy"`
+		} `json:"spec"`
+		Status struct {
+			Replicas          int32 `json:"replicas"`
+			ReadyReplicas     int32 `json:"readyReplicas"`
+			AvailableReplicas int32 `json:"availableReplicas"`
+			UpdatedReplicas   int32 `json:"updatedReplicas"`
+		} `json:"status"`
+		Metadata struct {
+			Name      string `json:"name"`
+			Namespace string `json:"namespace"`
+		} `json:"metadata"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
 	replicas := int32(1)
-	if dep.Spec.Replicas != nil {
-		replicas = *dep.Spec.Replicas
+	if result.Spec.Replicas != nil {
+		replicas = *result.Spec.Replicas
 	}
 
 	return &DeploymentInfo{
-		Name:              dep.Name,
-		Namespace:         dep.Namespace,
+		Name:              result.Metadata.Name,
+		Namespace:         result.Metadata.Namespace,
 		Replicas:          replicas,
-		ReadyReplicas:     dep.Status.ReadyReplicas,
-		AvailableReplicas: dep.Status.AvailableReplicas,
-		UpdatedReplicas:   dep.Status.UpdatedReplicas,
-		Strategy:          string(dep.Spec.Strategy.Type),
+		ReadyReplicas:     result.Status.ReadyReplicas,
+		AvailableReplicas: result.Status.AvailableReplicas,
+		UpdatedReplicas:   result.Status.UpdatedReplicas,
+		Strategy:          result.Spec.Strategy.Type,
 	}, nil
 }
 
 // ScaleDeployment — deployment'ı belirlenen replica sayısına ölçekler.
 func (c *Client) ScaleDeployment(ctx context.Context, name string, replicas int32) (*ScaleResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-
-	if replicas < 0 || replicas > 100 {
-		return nil, fmt.Errorf("geçersiz replica sayısı: %d (0-100 arası olmalı)", replicas)
-	}
-
-	// Mevcut scale'i oku
-	scale, err := c.clientset.AppsV1().Deployments(c.namespace).GetScale(ctx, name, metav1.GetOptions{})
+	// Mevcut replica sayısını al
+	current, err := c.GetDeployment(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("mevcut scale okunamadı: %w", err)
+		return nil, fmt.Errorf("mevcut deployment alınamadı: %w", err)
 	}
 
-	previousReplicas := scale.Spec.Replicas
-	scale.Spec.Replicas = replicas
-
-	_, err = c.clientset.AppsV1().Deployments(c.namespace).UpdateScale(ctx, name, scale, metav1.UpdateOptions{})
+	// Scale işlemi
+	_, err = c.runKubectl(ctx, "scale", "deployment", name, "--replicas", fmt.Sprintf("%d", replicas))
 	if err != nil {
-		return nil, fmt.Errorf("scale güncellenemedi: %w", err)
+		return nil, fmt.Errorf("scale işlemi başarısız: %w", err)
 	}
-
-	log.Printf("[K8s] Deployment %s scale edildi: %d -> %d", name, previousReplicas, replicas)
 
 	return &ScaleResult{
-		PreviousReplicas: previousReplicas,
+		PreviousReplicas: current.Replicas,
 		DesiredReplicas:  replicas,
 		Message:          fmt.Sprintf("Deployment %s başarıyla %d replica'ya ölçeklendi", name, replicas),
 	}, nil
@@ -200,44 +266,60 @@ func (c *Client) ScaleDeployment(ctx context.Context, name string, replicas int3
 
 // GetHPA — HorizontalPodAutoscaler bilgisini döndürür.
 func (c *Client) GetHPA(ctx context.Context, name string) (*HPAInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	hpa, err := c.clientset.AutoscalingV2().HorizontalPodAutoscalers(c.namespace).Get(ctx, name, metav1.GetOptions{})
+	output, err := c.runKubectl(ctx, "get", "hpa", name, "-o", "json")
 	if err != nil {
 		return nil, fmt.Errorf("HPA alınamadı: %w", err)
 	}
 
-	minReplicas := int32(1)
-	if hpa.Spec.MinReplicas != nil {
-		minReplicas = *hpa.Spec.MinReplicas
+	var result struct {
+		Spec struct {
+			MinReplicas int32 `json:"minReplicas"`
+			MaxReplicas int32 `json:"maxReplicas"`
+			Metrics     []struct {
+				Resource struct {
+					Name   string `json:"name"`
+					Target struct {
+						AverageUtilization *int32 `json:"averageUtilization"`
+					} `json:"target"`
+				} `json:"resource"`
+			} `json:"metrics"`
+		} `json:"spec"`
+		Status struct {
+			CurrentReplicas int32 `json:"currentReplicas"`
+			DesiredReplicas int32 `json:"desiredReplicas"`
+			CurrentMetrics  []struct {
+				Resource struct {
+					Name    string `json:"name"`
+					Current struct {
+						AverageUtilization *int32 `json:"averageUtilization"`
+					} `json:"current"`
+				} `json:"resource"`
+			} `json:"currentMetrics"`
+		} `json:"status"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
 	}
 
 	info := &HPAInfo{
-		Name:            hpa.Name,
-		MinReplicas:     minReplicas,
-		MaxReplicas:     hpa.Spec.MaxReplicas,
-		CurrentReplicas: hpa.Status.CurrentReplicas,
-		DesiredReplicas: hpa.Status.DesiredReplicas,
+		MinReplicas:     result.Spec.MinReplicas,
+		MaxReplicas:     result.Spec.MaxReplicas,
+		CurrentReplicas: result.Status.CurrentReplicas,
+		DesiredReplicas: result.Status.DesiredReplicas,
 	}
 
-	// Metrik hedeflerini oku
-	for _, metric := range hpa.Spec.Metrics {
-		if metric.Type == autoscalingv2.ResourceMetricSourceType && metric.Resource != nil {
-			if metric.Resource.Name == corev1.ResourceCPU && metric.Resource.Target.AverageUtilization != nil {
-				v := *metric.Resource.Target.AverageUtilization
-				info.CPUTarget = &v
-			}
+	// CPU target
+	for _, metric := range result.Spec.Metrics {
+		if metric.Resource.Name == "cpu" && metric.Resource.Target.AverageUtilization != nil {
+			info.CPUTarget = metric.Resource.Target.AverageUtilization
 		}
 	}
 
-	// Mevcut metrik değerlerini oku
-	for _, current := range hpa.Status.CurrentMetrics {
-		if current.Type == autoscalingv2.ResourceMetricSourceType && current.Resource != nil {
-			if current.Resource.Name == corev1.ResourceCPU && current.Resource.Current.AverageUtilization != nil {
-				v := *current.Resource.Current.AverageUtilization
-				info.CPUCurrent = &v
-			}
+	// CPU current
+	for _, metric := range result.Status.CurrentMetrics {
+		if metric.Resource.Name == "cpu" && metric.Resource.Current.AverageUtilization != nil {
+			info.CPUCurrent = metric.Resource.Current.AverageUtilization
 		}
 	}
 
@@ -245,146 +327,288 @@ func (c *Client) GetHPA(ctx context.Context, name string) (*HPAInfo, error) {
 }
 
 // CreateOrUpdateHPA — HPA oluşturur veya günceller.
-func (c *Client) CreateOrUpdateHPA(ctx context.Context, deploymentName string, minReplicas, maxReplicas int32, cpuTargetPercent int32) (*HPAInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-
-	if minReplicas < 1 {
-		minReplicas = 1
-	}
-	if maxReplicas < minReplicas {
-		maxReplicas = minReplicas
-	}
-	if cpuTargetPercent <= 0 || cpuTargetPercent > 100 {
-		cpuTargetPercent = 70
-	}
-
+func (c *Client) CreateOrUpdateHPA(ctx context.Context, deploymentName string, minReplicas, maxReplicas, cpuTargetPercent int32) (*HPAInfo, error) {
 	hpaName := deploymentName + "-hpa"
 
-	hpa := &autoscalingv2.HorizontalPodAutoscaler{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      hpaName,
-			Namespace: c.namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/managed-by": "nanonet",
-				"nanonet/deployment":           deploymentName,
-			},
-		},
-		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
-				APIVersion: "apps/v1",
-				Kind:       "Deployment",
-				Name:       deploymentName,
-			},
-			MinReplicas: &minReplicas,
-			MaxReplicas: maxReplicas,
-			Metrics: []autoscalingv2.MetricSpec{
-				{
-					Type: autoscalingv2.ResourceMetricSourceType,
-					Resource: &autoscalingv2.ResourceMetricSource{
-						Name: corev1.ResourceCPU,
-						Target: autoscalingv2.MetricTarget{
-							Type:               autoscalingv2.UtilizationMetricType,
-							AverageUtilization: &cpuTargetPercent,
-						},
-					},
-				},
-			},
-		},
+	// YAML manifest oluştur
+	yaml := fmt.Sprintf(`apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: %s
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: %s
+  minReplicas: %d
+  maxReplicas: %d
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: %d
+`, hpaName, deploymentName, minReplicas, maxReplicas, cpuTargetPercent)
+
+	// Apply
+	cmd := exec.CommandContext(ctx, "kubectl", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(yaml)
+	if c.kubeconfig != "" {
+		cmd.Args = append(cmd.Args, "--kubeconfig", c.kubeconfig)
+	}
+	if c.namespace != "" && c.namespace != "default" {
+		cmd.Args = append(cmd.Args, "-n", c.namespace)
 	}
 
-	existing, err := c.clientset.AutoscalingV2().HorizontalPodAutoscalers(c.namespace).Get(ctx, hpaName, metav1.GetOptions{})
-	if err != nil {
-		// Yok — oluştur
-		created, err := c.clientset.AutoscalingV2().HorizontalPodAutoscalers(c.namespace).Create(ctx, hpa, metav1.CreateOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("HPA oluşturulamadı: %w", err)
-		}
-		log.Printf("[K8s] HPA oluşturuldu: %s (min=%d, max=%d, cpu=%d%%)", hpaName, minReplicas, maxReplicas, cpuTargetPercent)
-		return &HPAInfo{
-			Name:        created.Name,
-			MinReplicas: minReplicas,
-			MaxReplicas: maxReplicas,
-			CPUTarget:   &cpuTargetPercent,
-		}, nil
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("HPA oluşturulamadı: %w", err)
 	}
 
-	// Var — güncelle
-	existing.Spec = hpa.Spec
-	updated, err := c.clientset.AutoscalingV2().HorizontalPodAutoscalers(c.namespace).Update(ctx, existing, metav1.UpdateOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("HPA güncellenemedi: %w", err)
-	}
-
-	log.Printf("[K8s] HPA güncellendi: %s (min=%d, max=%d, cpu=%d%%)", hpaName, minReplicas, maxReplicas, cpuTargetPercent)
-	return &HPAInfo{
-		Name:            updated.Name,
-		MinReplicas:     minReplicas,
-		MaxReplicas:     maxReplicas,
-		CurrentReplicas: updated.Status.CurrentReplicas,
-		DesiredReplicas: updated.Status.DesiredReplicas,
-		CPUTarget:       &cpuTargetPercent,
-	}, nil
+	return c.GetHPA(ctx, hpaName)
 }
 
 // DeleteHPA — HPA'yı siler.
-func (c *Client) DeleteHPA(ctx context.Context, deploymentName string) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	hpaName := deploymentName + "-hpa"
-	err := c.clientset.AutoscalingV2().HorizontalPodAutoscalers(c.namespace).Delete(ctx, hpaName, metav1.DeleteOptions{})
+func (c *Client) DeleteHPA(ctx context.Context, name string) error {
+	hpaName := name + "-hpa"
+	_, err := c.runKubectl(ctx, "delete", "hpa", hpaName)
 	if err != nil {
 		return fmt.Errorf("HPA silinemedi: %w", err)
 	}
-
-	log.Printf("[K8s] HPA silindi: %s", hpaName)
 	return nil
 }
 
-// GetNamespaces — erişilebilir namespace'leri listeler.
-func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	ns, err := c.clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("namespace listesi alınamadı: %w", err)
-	}
-
-	var names []string
-	for _, n := range ns.Items {
-		names = append(names, n.Name)
-	}
-	return names, nil
-}
-
 // GetServiceEndpoints — K8s service'in endpoint'lerini döndürür.
-func (c *Client) GetServiceEndpoints(ctx context.Context, serviceName string) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	endpoints, err := c.clientset.CoreV1().Endpoints(c.namespace).Get(ctx, serviceName, metav1.GetOptions{})
+func (c *Client) GetServiceEndpoints(ctx context.Context, name string) ([]string, error) {
+	output, err := c.runKubectl(ctx, "get", "endpoints", name, "-o", "json")
 	if err != nil {
 		return nil, fmt.Errorf("endpoint bilgisi alınamadı: %w", err)
 	}
 
-	var addrs []string
-	for _, subset := range endpoints.Subsets {
+	var result struct {
+		Subsets []struct {
+			Addresses []struct {
+				IP string `json:"ip"`
+			} `json:"addresses"`
+			Ports []struct {
+				Port int32 `json:"port"`
+			} `json:"ports"`
+		} `json:"subsets"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var endpoints []string
+	for _, subset := range result.Subsets {
 		for _, addr := range subset.Addresses {
 			for _, port := range subset.Ports {
-				addrs = append(addrs, fmt.Sprintf("%s:%d", addr.IP, port.Port))
+				endpoints = append(endpoints, fmt.Sprintf("%s:%d", addr.IP, port.Port))
 			}
 		}
 	}
-	return addrs, nil
+
+	return endpoints, nil
 }
 
-// IsAvailable — K8s cluster'a erişilebilir mi kontrol eder.
-func (c *Client) IsAvailable(ctx context.Context) bool {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+// NodeInfo — node bilgisi.
+type NodeInfo struct {
+	Name      string            `json:"name"`
+	Status    string            `json:"status"`
+	Ready     bool              `json:"ready"`
+	Roles     []string          `json:"roles"`
+	Version   string            `json:"version"`
+	OS        string            `json:"os"`
+	Arch      string            `json:"arch"`
+	CPU       string            `json:"cpu"`
+	Memory    string            `json:"memory"`
+	Labels    map[string]string `json:"labels,omitempty"`
+	CreatedAt *time.Time        `json:"created_at,omitempty"`
+}
 
-	_, err := c.clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{Limit: 1})
-	return err == nil
+// GetNodes — cluster node'larını listeler.
+func (c *Client) GetNodes(ctx context.Context) ([]NodeInfo, error) {
+	output, err := c.runKubectl(ctx, "get", "nodes", "-o", "json")
+	if err != nil {
+		return nil, fmt.Errorf("node'lar alınamadı: %w", err)
+	}
+
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name              string            `json:"name"`
+				Labels            map[string]string `json:"labels"`
+				CreationTimestamp *time.Time        `json:"creationTimestamp"`
+			} `json:"metadata"`
+			Status struct {
+				Conditions []struct {
+					Type   string `json:"type"`
+					Status string `json:"status"`
+				} `json:"conditions"`
+				NodeInfo struct {
+					KubeletVersion  string `json:"kubeletVersion"`
+					OperatingSystem string `json:"operatingSystem"`
+					Architecture    string `json:"architecture"`
+				} `json:"nodeInfo"`
+				Capacity struct {
+					CPU    string `json:"cpu"`
+					Memory string `json:"memory"`
+				} `json:"capacity"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var nodes []NodeInfo
+	for _, item := range result.Items {
+		ready := false
+		for _, cond := range item.Status.Conditions {
+			if cond.Type == "Ready" && cond.Status == "True" {
+				ready = true
+			}
+		}
+
+		var roles []string
+		for k := range item.Metadata.Labels {
+			if strings.HasPrefix(k, "node-role.kubernetes.io/") {
+				role := strings.TrimPrefix(k, "node-role.kubernetes.io/")
+				roles = append(roles, role)
+			}
+		}
+		if len(roles) == 0 {
+			roles = []string{"worker"}
+		}
+
+		status := "NotReady"
+		if ready {
+			status = "Ready"
+		}
+
+		nodes = append(nodes, NodeInfo{
+			Name:      item.Metadata.Name,
+			Status:    status,
+			Ready:     ready,
+			Roles:     roles,
+			Version:   item.Status.NodeInfo.KubeletVersion,
+			OS:        item.Status.NodeInfo.OperatingSystem,
+			Arch:      item.Status.NodeInfo.Architecture,
+			CPU:       item.Status.Capacity.CPU,
+			Memory:    item.Status.Capacity.Memory,
+			Labels:    item.Metadata.Labels,
+			CreatedAt: item.Metadata.CreationTimestamp,
+		})
+	}
+
+	return nodes, nil
+}
+
+// ListDeployments — namespace'deki tüm deployment'ları listeler.
+func (c *Client) ListDeployments(ctx context.Context) ([]DeploymentInfo, error) {
+	output, err := c.runKubectl(ctx, "get", "deployments", "-o", "json")
+	if err != nil {
+		return nil, fmt.Errorf("deployment'lar alınamadı: %w", err)
+	}
+
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name      string `json:"name"`
+				Namespace string `json:"namespace"`
+			} `json:"metadata"`
+			Spec struct {
+				Replicas *int32 `json:"replicas"`
+				Strategy struct {
+					Type string `json:"type"`
+				} `json:"strategy"`
+			} `json:"spec"`
+			Status struct {
+				Replicas          int32 `json:"replicas"`
+				ReadyReplicas     int32 `json:"readyReplicas"`
+				AvailableReplicas int32 `json:"availableReplicas"`
+				UpdatedReplicas   int32 `json:"updatedReplicas"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var deployments []DeploymentInfo
+	for _, item := range result.Items {
+		replicas := int32(1)
+		if item.Spec.Replicas != nil {
+			replicas = *item.Spec.Replicas
+		}
+		deployments = append(deployments, DeploymentInfo{
+			Name:              item.Metadata.Name,
+			Namespace:         item.Metadata.Namespace,
+			Replicas:          replicas,
+			ReadyReplicas:     item.Status.ReadyReplicas,
+			AvailableReplicas: item.Status.AvailableReplicas,
+			UpdatedReplicas:   item.Status.UpdatedReplicas,
+			Strategy:          item.Spec.Strategy.Type,
+		})
+	}
+
+	return deployments, nil
+}
+
+// GetAllPods — namespace'deki tüm pod'ları listeler.
+func (c *Client) GetAllPods(ctx context.Context) ([]PodInfo, error) {
+	output, err := c.runKubectl(ctx, "get", "pods", "-o", "json")
+	if err != nil {
+		return nil, fmt.Errorf("pod'lar alınamadı: %w", err)
+	}
+
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name   string            `json:"name"`
+				Labels map[string]string `json:"labels"`
+			} `json:"metadata"`
+			Status struct {
+				Phase             string     `json:"phase"`
+				PodIP             string     `json:"podIP"`
+				StartTime         *time.Time `json:"startTime"`
+				ContainerStatuses []struct {
+					Ready        bool  `json:"ready"`
+					RestartCount int32 `json:"restartCount"`
+				} `json:"containerStatuses"`
+			} `json:"status"`
+			Spec struct {
+				NodeName string `json:"nodeName"`
+			} `json:"spec"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var pods []PodInfo
+	for _, item := range result.Items {
+		info := PodInfo{
+			Name:   item.Metadata.Name,
+			Status: item.Status.Phase,
+			Node:   item.Spec.NodeName,
+			IP:     item.Status.PodIP,
+			Labels: item.Metadata.Labels,
+		}
+		if item.Status.StartTime != nil {
+			info.StartTime = item.Status.StartTime
+		}
+		for _, cs := range item.Status.ContainerStatuses {
+			info.Ready = cs.Ready
+			info.Restarts = cs.RestartCount
+			break
+		}
+		pods = append(pods, info)
+	}
+
+	return pods, nil
 }

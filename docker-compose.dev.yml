@@ -31,7 +31,7 @@ services:
       WS_MAX_CONNECTIONS: "1000"
       MIGRATIONS_PATH: /migrations
       K8S_NAMESPACE: ${K8S_NAMESPACE:-}
-      KUBECONFIG: /root/.kube/config
+      KUBECONFIG: /tmp/kubeconfig
     ports:
       - "8080:8080"
     volumes:
@@ -42,6 +42,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - default
+      - kind
 
   frontend:
     build:
@@ -119,3 +122,10 @@ services:
 volumes:
   postgres_data:
   go_mod_cache:
+
+networks:
+  default:
+    name: nanonet_default
+    driver: bridge
+  kind:
+    external: true

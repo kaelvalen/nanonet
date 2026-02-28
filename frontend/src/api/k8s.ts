@@ -37,6 +37,19 @@ export interface ScaleResult {
     message: string;
 }
 
+export interface NodeInfo {
+    name: string;
+    status: string;
+    ready: boolean;
+    roles: string[];
+    version: string;
+    os: string;
+    arch: string;
+    cpu: string;
+    memory: string;
+    created_at?: string;
+}
+
 export const k8sApi = {
     getStatus: async () => {
         const { data } = await apiClient.get("/k8s/status");
@@ -86,5 +99,20 @@ export const k8sApi = {
     getEndpoints: async (name: string) => {
         const { data } = await apiClient.get(`/k8s/endpoints/${name}`);
         return data.data as { service: string; endpoints: string[]; count: number };
+    },
+
+    getNodes: async () => {
+        const { data } = await apiClient.get("/k8s/nodes");
+        return data.data as { nodes: NodeInfo[]; count: number };
+    },
+
+    getAllPods: async () => {
+        const { data } = await apiClient.get("/k8s/pods/all");
+        return data.data as { pods: PodInfo[]; count: number };
+    },
+
+    listDeployments: async () => {
+        const { data } = await apiClient.get("/k8s/deployments");
+        return data.data as { deployments: DeploymentInfo[]; count: number };
     },
 };
