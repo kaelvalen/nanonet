@@ -6,9 +6,11 @@ interface AuthStore {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  isInitializing: boolean;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
   updateUser: (user: User) => void;
+  setInitializing: (value: boolean) => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -19,6 +21,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   // Refresh token localStorage'da kalır; kalıcı oturum için gereklidir.
   refreshToken: localStorage.getItem('refresh_token'),
   isAuthenticated: !!localStorage.getItem('refresh_token'),
+  isInitializing: !!localStorage.getItem('refresh_token'),
 
   setAuth: (user, accessToken, refreshToken) => {
     localStorage.setItem('refresh_token', refreshToken);
@@ -31,4 +34,5 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   updateUser: (user) => set({ user }),
+  setInitializing: (value) => set({ isInitializing: value }),
 }));

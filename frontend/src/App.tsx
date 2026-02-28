@@ -56,7 +56,7 @@ const queryClient = new QueryClient({
 });
 
 function AppInit() {
-  const { refreshToken, accessToken, setAuth, clearAuth, user } = useAuthStore();
+  const { refreshToken, accessToken, setAuth, clearAuth, setInitializing, user } = useAuthStore();
 
   useEffect(() => {
     // Sayfa yenilendiğinde access token memory'de olmaz; refresh token ile yenile
@@ -68,7 +68,12 @@ function AppInit() {
         })
         .catch(() => {
           clearAuth();
+        })
+        .finally(() => {
+          setInitializing(false);
         });
+    } else {
+      setInitializing(false);
     }
   }, []);
 

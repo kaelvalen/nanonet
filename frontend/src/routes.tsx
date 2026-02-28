@@ -17,6 +17,8 @@ import { KubernetesPage } from "@/pages/KubernetesPage";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isInitializing = useAuthStore((s) => s.isInitializing);
+  if (isInitializing) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

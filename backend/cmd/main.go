@@ -163,7 +163,10 @@ func main() {
 		{
 			k8sGroup.GET("/status", k8sHandler.GetStatus)
 			k8sGroup.GET("/namespaces", k8sHandler.ListNamespaces)
+			k8sGroup.GET("/nodes", k8sHandler.GetNodes)
 			k8sGroup.GET("/pods", k8sHandler.GetPods)
+			k8sGroup.GET("/pods/all", k8sHandler.GetAllPods)
+			k8sGroup.GET("/deployments", k8sHandler.ListDeployments)
 			k8sGroup.GET("/deployments/:name", k8sHandler.GetDeployment)
 			k8sGroup.POST("/deployments/:name/scale", strictLimiter, k8sHandler.ScaleDeployment)
 			k8sGroup.GET("/hpa/:name", k8sHandler.GetHPA)

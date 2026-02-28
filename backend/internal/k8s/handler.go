@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -77,6 +78,10 @@ func (h *Handler) GetPods(c *gin.Context) {
 		return
 	}
 
+	if pods == nil {
+		pods = []PodInfo{}
+	}
+
 	response.Success(c, gin.H{
 		"pods":  pods,
 		"count": len(pods),
@@ -98,6 +103,10 @@ func (h *Handler) GetDeployment(c *gin.Context) {
 
 	dep, err := h.client.GetDeployment(c.Request.Context(), name)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			response.Error(c, http.StatusNotFound, "deployment bulunamadı: "+name)
+			return
+		}
 		response.InternalError(c, err.Error())
 		return
 	}
@@ -150,6 +159,10 @@ func (h *Handler) GetHPA(c *gin.Context) {
 
 	hpa, err := h.client.GetHPA(c.Request.Context(), name)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			response.Error(c, http.StatusNotFound, "HPA bulunamadı: "+name)
+			return
+		}
 		response.InternalError(c, err.Error())
 		return
 	}
@@ -209,7 +222,76 @@ func (h *Handler) DeleteHPA(c *gin.Context) {
 	response.Success(c, gin.H{"message": "HPA başarıyla silindi"})
 }
 
-// GetServiceEndpoints — K8s service endpoint'lerini listeler.
+// GetNodes — cluster node'larını listeler.
+// GET /k8s/nodes
+func (h *Handler) GetNodes(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	nodes, err := h.client.GetNodes(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	if nodes == nil {
+		nodes = []NodeInfo{}
+	}
+
+	response.Success(c, gin.H{
+		"nodes": nodes,
+		"count": len(nodes),
+	})
+}
+
+// ListDeployments — namespace'deki tüm deployment'ları listeler.
+// GET /k8s/deployments
+func (h *Handler) ListDeployments(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	deployments, err := h.client.ListDeployments(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	if deployments == nil {
+		deployments = []DeploymentInfo{}
+	}
+
+	response.Success(c, gin.H{
+		"deployments": deployments,
+		"count":       len(deployments),
+	})
+}
+
+// GetAllPods — namespace'deki tüm pod'ları listeler.
+// GET /k8s/pods/all
+func (h *Handler) GetAllPods(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	pods, err := h.client.GetAllPods(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	if pods == nil {
+		pods = []PodInfo{}
+	}
+
+	response.Success(c, gin.H{
+		"pods":  pods,
+		"count": len(pods),
+	})
+}
+
+// GetServiceEndpoints — K8s service'in endpoint'lerini döndürür.
 // GET /k8s/endpoints/:name
 func (h *Handler) GetServiceEndpoints(c *gin.Context) {
 	if !h.k8sCheck(c) {
@@ -224,6 +306,10 @@ func (h *Handler) GetServiceEndpoints(c *gin.Context) {
 
 	endpoints, err := h.client.GetServiceEndpoints(c.Request.Context(), name)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			response.Error(c, http.StatusNotFound, "servis endpoint'i bulunamadı: "+name)
+			return
+		}
 		response.InternalError(c, err.Error())
 		return
 	}
