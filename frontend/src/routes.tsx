@@ -12,6 +12,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -81,7 +82,6 @@ export const router = createBrowserRouter([
   },
   {
     path: "*",
-    element: <Navigate to="/" replace />,
-    errorElement: <ErrorPage />,
+    element: <NotFoundPage />,
   },
 ]);

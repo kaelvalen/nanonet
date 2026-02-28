@@ -169,10 +169,30 @@ export function useWebSocket() {
           reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
           incrementReconnect();
 
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (mountedRef.current && useAuthStore.getState().accessToken) {
-              connect();
+          reconnectTimeoutRef.current = setTimeout(async () => {
+            if (!mountedRef.current) return;
+
+            const authState = useAuthStore.getState();
+            // Token yoksa bağlanma
+            if (!authState.accessToken) return;
+
+            // Token'ı yenilemeyi dene — böylece expire olmuş token ile reconnect yapılmaz
+            if (authState.refreshToken) {
+              try {
+                const { authApi } = await import('../api/auth');
+                const tokens = await authApi.refresh(authState.refreshToken);
+                authState.setAuth(
+                  authState.user!,
+                  tokens.access_token,
+                  tokens.refresh_token
+                );
+              } catch {
+                // Refresh başarısız olursa mevcut token ile devam et
+                // (belki hala geçerlidir)
+              }
             }
+
+            connect();
           }, delay);
         };
       } catch (err) {

@@ -6,19 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
   Server,
   Search,
-  Plus,
   Clock,
   ArrowUpRight,
   Filter,
@@ -29,10 +18,9 @@ import {
   XCircle,
   HelpCircle,
   Globe,
-  Zap,
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
-import type { CreateServiceRequest } from "@/types/service";
+import { AddServiceDialog } from "@/components/AddServiceDialog";
 
 function StatusIcon({ status }: { status: string }) {
   if (status === "up") return <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />;
@@ -42,18 +30,10 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 export function ServicesPage() {
-  const { services, isLoading, createService, restartService, stopService } = useServices();
+  const { services, isLoading } = useServices();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [newService, setNewService] = useState<CreateServiceRequest>({
-    name: "",
-    host: "",
-    port: 8080,
-    health_endpoint: "/health",
-    poll_interval_sec: 10,
-  });
 
   const filtered = useMemo(() => {
     return services.filter((s) => {
@@ -73,18 +53,12 @@ export function ServicesPage() {
     return counts;
   }, [services]);
 
-  const handleCreate = () => {
-    createService(newService);
-    setIsAddOpen(false);
-    setNewService({ name: "", host: "", port: 8080, health_endpoint: "/health", poll_interval_sec: 10 });
-  };
-
   const statusVars = (status: string) => {
     switch (status) {
-      case "up":       return { dot: "var(--status-up)",   badgeBg: "var(--status-up-subtle)",   badgeText: "var(--status-up-text)",   badgeBorder: "var(--status-up-border)",   border: "var(--color-teal-border)" };
+      case "up": return { dot: "var(--status-up)", badgeBg: "var(--status-up-subtle)", badgeText: "var(--status-up-text)", badgeBorder: "var(--status-up-border)", border: "var(--color-teal-border)" };
       case "degraded": return { dot: "var(--status-warn)", badgeBg: "var(--status-warn-subtle)", badgeText: "var(--status-warn-text)", badgeBorder: "var(--status-warn-border)", border: "var(--status-warn-border)" };
-      case "down":     return { dot: "var(--status-down)", badgeBg: "var(--status-down-subtle)", badgeText: "var(--status-down-text)", badgeBorder: "var(--status-down-border)", border: "var(--status-down-border)" };
-      default:         return { dot: "var(--text-faint)",  badgeBg: "var(--surface-sunken)",    badgeText: "var(--text-muted)",       badgeBorder: "var(--border-subtle)",      border: "var(--border-subtle)" };
+      case "down": return { dot: "var(--status-down)", badgeBg: "var(--status-down-subtle)", badgeText: "var(--status-down-text)", badgeBorder: "var(--status-down-border)", border: "var(--status-down-border)" };
+      default: return { dot: "var(--text-faint)", badgeBg: "var(--surface-sunken)", badgeText: "var(--text-muted)", badgeBorder: "var(--border-subtle)", border: "var(--border-subtle)" };
     }
   };
 
@@ -95,51 +69,11 @@ export function ServicesPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-heading)" }}>
-              Services
+              Servisler
             </h1>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Manage and monitor all microservices</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Tüm mikroservisleri izle ve yönet</p>
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="text-white rounded-xl shadow-sm hover:shadow-md transition-all text-xs px-4 py-2" style={{ background: "var(--gradient-btn-primary)" }}>
-                <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Service
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-125 rounded-2xl" style={{ background: "var(--surface-overlay)", border: "1px solid var(--color-teal-border)" }}>
-              <DialogHeader>
-                <DialogTitle style={{ color: "var(--text-link)" }}>New Service</DialogTitle>
-                <DialogDescription style={{ color: "var(--text-muted)" }}>Add a new microservice to monitor</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Service Name *</Label>
-                  <Input placeholder="payment-service" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Host / IP *</Label>
-                  <Input placeholder="192.168.1.42" value={newService.host} onChange={(e) => setNewService({ ...newService, host: e.target.value })} className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Port *</Label>
-                    <Input type="number" placeholder="8080" value={newService.port} onChange={(e) => setNewService({ ...newService, port: parseInt(e.target.value) || 0 })} className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Health Endpoint *</Label>
-                    <Input placeholder="/health" value={newService.health_endpoint} onChange={(e) => setNewService({ ...newService, health_endpoint: e.target.value })} className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Poll Interval (seconds)</Label>
-                  <Input type="number" placeholder="10" value={newService.poll_interval_sec} onChange={(e) => setNewService({ ...newService, poll_interval_sec: parseInt(e.target.value) || 10 })} className="rounded-xl" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddOpen(false)} className="rounded-xl" style={{ borderColor: "var(--color-teal-border)", color: "var(--text-secondary)" }}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={!newService.name || !newService.host} className="text-white rounded-xl" style={{ background: "var(--gradient-btn-primary)" }}>Deploy</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <AddServiceDialog />
         </div>
       </motion.div>
 
@@ -151,11 +85,12 @@ export function ServicesPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
               <Input
-                placeholder="Search services..."
+                placeholder="Servis ara..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 rounded-lg text-xs h-9"
                 style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
+                aria-label="Servis ara"
               />
             </div>
 
@@ -172,11 +107,12 @@ export function ServicesPage() {
                     color: s === "up" ? "var(--status-up-text)" : s === "degraded" ? "var(--status-warn-text)" : s === "down" ? "var(--status-down-text)" : "var(--color-teal)",
                     borderColor: s === "up" ? "var(--status-up-border)" : s === "degraded" ? "var(--status-warn-border)" : s === "down" ? "var(--status-down-border)" : "var(--color-teal-border)",
                   } : { color: "var(--text-muted)", borderColor: "transparent" }}
+                  aria-label={`Filtre: ${s === "all" ? "Tümü" : s === "up" ? "Aktif" : s === "degraded" ? "Bozuk" : "Çevrimdışı"}`}
                 >
-                  {s === "all" ? `All (${statusCounts.all})` :
-                   s === "up" ? `Up (${statusCounts.up})` :
-                   s === "degraded" ? `Deg (${statusCounts.degraded})` :
-                   `Down (${statusCounts.down})`}
+                  {s === "all" ? `Tümü (${statusCounts.all})` :
+                    s === "up" ? `Aktif (${statusCounts.up})` :
+                      s === "degraded" ? `Bozuk (${statusCounts.degraded})` :
+                        `Çevrimdışı (${statusCounts.down})`}
                 </button>
               ))}
             </div>
@@ -187,6 +123,7 @@ export function ServicesPage() {
                 onClick={() => setViewMode("grid")}
                 className="p-1.5 rounded-md transition-all"
                 style={viewMode === "grid" ? { background: "var(--color-teal-subtle)", color: "var(--color-teal)" } : { color: "var(--text-faint)" }}
+                aria-label="Grid görünümü"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
               </button>
@@ -194,6 +131,7 @@ export function ServicesPage() {
                 onClick={() => setViewMode("list")}
                 className="p-1.5 rounded-md transition-all"
                 style={viewMode === "list" ? { background: "var(--color-teal-subtle)", color: "var(--color-teal)" } : { color: "var(--text-faint)" }}
+                aria-label="Liste görünümü"
               >
                 <List className="w-3.5 h-3.5" />
               </button>
@@ -218,10 +156,10 @@ export function ServicesPage() {
             <Server className="w-8 h-8 opacity-40" style={{ color: "var(--color-teal)" }} />
           </div>
           <p className="text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
-            {services.length === 0 ? "No services added yet" : "No services match your filter"}
+            {services.length === 0 ? "Henüz servis eklenmedi" : "Filtreye uygun servis bulunamadı"}
           </p>
           <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-            {services.length === 0 ? 'Click "Add Service" to get started' : "Try adjusting your search or filter criteria"}
+            {services.length === 0 ? 'Başlamak için "Servis Ekle" butonuna tıklayın' : "Arama veya filtre kriterlerini değiştirmeyi deneyin"}
           </p>
         </Card>
       ) : viewMode === "grid" ? (

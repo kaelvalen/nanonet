@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { Outlet } from "react-router";
 import { MatrixBackground } from "./MatrixBackground";
-import { AIAssistant } from "./AIAssistant";
 import { RadialMenu } from "./RadialMenu";
+import { AIAssistant } from "./AIAssistant";
 import { CommandPalette } from "./CommandPalette";
 import { FloatingStatusBar } from "./FloatingStatusBar";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -51,7 +51,7 @@ export function DashboardLayout() {
       <FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
       {/* Main Content */}
-      <main className="relative z-10 pt-20 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="relative z-10 pt-20 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <Outlet />
       </main>
 

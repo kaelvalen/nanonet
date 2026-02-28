@@ -32,18 +32,18 @@ import { servicesApi } from "@/api/services";
 import { toast } from "sonner";
 
 const navigationItems = [
-  { label: "Dashboard Hub", icon: Home, path: "/", shortcut: "⌘1" },
-  { label: "Services", icon: Server, path: "/services", shortcut: "⌘2" },
-  { label: "Alerts", icon: AlertCircle, path: "/alerts", shortcut: "⌘3" },
-  { label: "AI Insights", icon: Sparkles, path: "/ai-insights", shortcut: "⌘4" },
-  { label: "Settings", icon: Settings, path: "/settings", shortcut: "⌘5" },
+  { label: "Ana Sayfa", icon: Home, path: "/", shortcut: "⌘1" },
+  { label: "Servisler", icon: Server, path: "/services", shortcut: "⌘2" },
+  { label: "Uyarılar", icon: AlertCircle, path: "/alerts", shortcut: "⌘3" },
+  { label: "AI Analiz", icon: Sparkles, path: "/ai-insights", shortcut: "⌘4" },
+  { label: "Ayarlar", icon: Settings, path: "/settings", shortcut: "⌘5" },
 ];
 
 const actionItems = [
-  { label: "Add New Service", icon: Plus, action: "add-service" },
-  { label: "Run Full Analysis", icon: Sparkles, action: "analyze" },
-  { label: "Restart All Services", icon: RotateCw, action: "restart-all" },
-  { label: "System Health Check", icon: Activity, action: "health-check" },
+  { label: "Yeni Servis Ekle", icon: Plus, action: "add-service" },
+  { label: "Tam Analiz Çalıştır", icon: Sparkles, action: "analyze" },
+  { label: "Tüm Servisleri Yeniden Başlat", icon: RotateCw, action: "restart-all" },
+  { label: "Sistem Sağlık Kontrolü", icon: Activity, action: "health-check" },
 ];
 
 export function CommandPalette() {
@@ -171,13 +171,13 @@ export function CommandPalette() {
                   <CommandEmpty className="text-xs" style={{ color: "var(--text-muted)" }}>
                     <div className="flex flex-col items-center gap-2 py-8">
                       <Search className="w-8 h-8" style={{ color: "var(--color-lavender)" }} />
-                      <span>No results found</span>
+                      <span>Sonuç bulunamadı</span>
                     </div>
                   </CommandEmpty>
 
                   {/* Navigation */}
                   <CommandGroup
-                    heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-teal)" }}>Navigation</span>}
+                    heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-teal)" }}>Navigasyon</span>}
                   >
                     {navigationItems.map((item) => (
                       <CommandItem
@@ -201,7 +201,7 @@ export function CommandPalette() {
                   {services.length > 0 && (
                     <>
                       <CommandGroup
-                        heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-blue)" }}>Services</span>}
+                        heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-blue)" }}>Servisler</span>}
                       >
                         {services.map((service) => (
                           <CommandItem
@@ -236,7 +236,7 @@ export function CommandPalette() {
 
                       {/* Per-service quick actions */}
                       <CommandGroup
-                        heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--status-up)" }}>Service Controls</span>}
+                        heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--status-up)" }}>Servis Kontrolleri</span>}
                       >
                         {services.slice(0, 5).flatMap((service) => [
                           {
@@ -279,7 +279,7 @@ export function CommandPalette() {
 
                   {/* Actions */}
                   <CommandGroup
-                    heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-lavender)" }}>Actions</span>}
+                    heading={<span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--color-lavender)" }}>Aksiyonlar</span>}
                   >
                     {actionItems.map((action) => (
                       <CommandItem
