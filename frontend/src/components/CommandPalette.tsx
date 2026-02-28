@@ -26,6 +26,7 @@ import {
   Play,
   Power,
   RefreshCw,
+  Cloud,
 } from "lucide-react";
 import { useServiceStore } from "@/store/serviceStore";
 import { servicesApi } from "@/api/services";
@@ -37,6 +38,7 @@ const navigationItems = [
   { label: "Uyarılar", icon: AlertCircle, path: "/alerts", shortcut: "⌘3" },
   { label: "AI Analiz", icon: Sparkles, path: "/ai-insights", shortcut: "⌘4" },
   { label: "Ayarlar", icon: Settings, path: "/settings", shortcut: "⌘5" },
+  { label: "Kubernetes", icon: Cloud, path: "/kubernetes", shortcut: "⌘6" },
 ];
 
 const actionItems = [

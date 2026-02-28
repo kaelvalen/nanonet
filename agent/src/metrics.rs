@@ -14,6 +14,16 @@ pub struct MetricSnapshot {
     pub app_memory_used_mb: Option<f32>,
 }
 
+/// Process-level metrikler (hedef süreç izleme)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessMetrics {
+    pub pid: u32,
+    pub name: String,
+    pub cpu_percent: f32,
+    pub memory_mb: f32,
+    pub status: String,
+}
+
 /// Servis /metrics endpoint'inin beklenen yanıt şeması
 #[derive(Debug, Deserialize)]
 struct AppMetricsResponse {
@@ -50,6 +60,41 @@ pub fn collect_system(sys: &mut System, disks: &mut Disks) -> MetricSnapshot {
         disk_used_gb,
         app_cpu_percent: None,
         app_memory_used_mb: None,
+    }
+}
+
+/// Hedef süreci PID veya isim ile bulup metriklerini toplar.
+pub fn collect_process(sys: &System, target: &str) -> Option<ProcessMetrics> {
+    // Önce PID olarak dene
+    if let Ok(pid_num) = target.parse::<u32>() {
+        let pid = sysinfo::Pid::from(pid_num as usize);
+        return sys.process(pid).map(|p| process_to_metrics(p));
+    }
+
+    // İsim ile arama — en çok CPU kullanan eşleşen süreci seç
+    let target_lower = target.to_lowercase();
+    sys.processes()
+        .values()
+        .filter(|p| {
+            let name = p.name().to_string().to_lowercase();
+            let cmd = p.cmd().iter()
+                .map(|c| c.to_string().to_lowercase())
+                .collect::<Vec<_>>()
+                .join(" ");
+            name.contains(&target_lower) || cmd.contains(&target_lower)
+        })
+        .max_by(|a, b| a.cpu_usage().partial_cmp(&b.cpu_usage()).unwrap_or(std::cmp::Ordering::Equal))
+        .map(|p| process_to_metrics(p))
+}
+
+fn process_to_metrics(p: &sysinfo::Process) -> ProcessMetrics {
+    let status_str = format!("{:?}", p.status());
+    ProcessMetrics {
+        pid: p.pid().as_u32(),
+        name: p.name().to_string(),
+        cpu_percent: p.cpu_usage(),
+        memory_mb: p.memory() as f32 / 1024.0 / 1024.0,
+        status: status_str,
     }
 }
 
@@ -94,4 +139,3 @@ pub async fn fetch_app_metrics(
         }
     }
 }
-

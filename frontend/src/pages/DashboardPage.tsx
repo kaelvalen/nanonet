@@ -20,6 +20,7 @@ import {
   Zap,
   Clock,
   Plus,
+  Cloud,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
@@ -60,6 +61,15 @@ const navCards = [
     icon: Settings,
     colorVar: "var(--color-blue)",
     borderVar: "var(--color-blue-border)",
+    pulse: false,
+  },
+  {
+    to: "/kubernetes",
+    label: "Kubernetes",
+    description: "Cluster yönetimi, pod izleme ve auto-scaling",
+    icon: Cloud,
+    colorVar: "var(--status-up)",
+    borderVar: "var(--status-up-border)",
     pulse: false,
   },
 ];

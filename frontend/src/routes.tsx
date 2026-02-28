@@ -13,6 +13,7 @@ import { ErrorPage } from "@/pages/ErrorPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { KubernetesPage } from "@/pages/KubernetesPage";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
       { path: "alerts", element: <AlertsPage /> },
       { path: "ai-insights", element: <AIInsightsPage /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "kubernetes", element: <KubernetesPage /> },
     ],
   },
   {
