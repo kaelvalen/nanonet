@@ -1,0 +1,1324 @@
+openapi: 3.1.0
+info:
+  title: NanoNet API
+  description: |
+    NanoNet — Mikroservis İzleme ve Yönetim Platformu REST API dokümantasyonu.
+
+    **Kimlik Doğrulama:** Korumalı endpoint'ler JWT Bearer token gerektirir.
+    Access token `Authorization: Bearer <access_token>` header'ı ile iletilir.
+    Token süresi 15 dakikadır; `/api/v1/auth/refresh` ile yenilenebilir.
+
+    **Base URL:** `http://localhost:8080`
+
+    **Versiyon:** v1
+  version: "1.0.0"
+  contact:
+    name: Kael Valen
+servers:
+  - url: http://localhost:8080
+    description: Yerel geliştirme ortamı
+  - url: https://api.nanonet.example.com
+    description: Production ortamı
+
+tags:
+  - name: Auth
+    description: Kimlik doğrulama ve kullanıcı yönetimi
+  - name: Services
+    description: İzlenen servis yönetimi (CRUD)
+  - name: Metrics
+    description: Zaman serisi metrik sorgulama
+  - name: Alerts
+    description: Uyarı yönetimi
+  - name: AI
+    description: Claude API destekli anomali analizi
+  - name: Commands
+    description: Servis komut geçmişi
+  - name: Settings
+    description: Kullanıcı ayarları
+  - name: Audit
+    description: Güvenlik ve işlem günlüğü
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ---- AUTH ----
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: MySecurePass123
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        tokens:
+          $ref: '#/components/schemas/TokenPair'
+
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: 15 dakika geçerli JWT
+        refresh_token:
+          type: string
+          description: 7 gün geçerli refresh token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+
+    # ---- SERVICE ----
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: payment-service
+        host:
+          type: string
+          example: 192.168.1.100
+        port:
+          type: integer
+          example: 8080
+        health_endpoint:
+          type: string
+          example: /health
+        poll_interval_sec:
+          type: integer
+          example: 10
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded, unknown]
+        agent_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateServiceRequest:
+      type: object
+      required: [name, host, port, health_endpoint, poll_interval_sec]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: auth-service
+        host:
+          type: string
+          example: 10.0.0.5
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          example: 3000
+        health_endpoint:
+          type: string
+          example: /health
+        poll_interval_sec:
+          type: integer
+          minimum: 5
+          maximum: 300
+          example: 10
+
+    UpdateServiceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+        health_endpoint:
+          type: string
+        poll_interval_sec:
+          type: integer
+
+    # ---- METRICS ----
+    MetricSnapshot:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+        cpu_percent:
+          type: number
+          format: float
+          example: 42.5
+        memory_used_mb:
+          type: number
+          format: float
+          example: 512.3
+        latency_ms:
+          type: number
+          format: float
+          example: 87.2
+        error_rate:
+          type: number
+          format: float
+          example: 0.5
+        disk_used_gb:
+          type: number
+          format: float
+          example: 15.7
+        status:
+          type: string
+
+    AggregatedMetrics:
+      type: object
+      properties:
+        avg_cpu:
+          type: number
+        max_cpu:
+          type: number
+        avg_memory:
+          type: number
+        avg_latency:
+          type: number
+        p95_latency:
+          type: number
+        error_rate:
+          type: number
+        sample_count:
+          type: integer
+
+    UptimeResponse:
+      type: object
+      properties:
+        uptime_percent:
+          type: number
+          example: 99.5
+        total_checks:
+          type: integer
+        healthy_checks:
+          type: integer
+        window_hours:
+          type: integer
+
+    # ---- ALERT ----
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        service_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          example: cpu_threshold
+        severity:
+          type: string
+          enum: [info, warn, crit]
+        message:
+          type: string
+        triggered_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ---- AI ----
+    AnalyzeRequest:
+      type: object
+      properties:
+        window_minutes:
+          type: integer
+          default: 30
+          minimum: 5
+          maximum: 1440
+          description: Analiz edilecek geçmiş zaman penceresi (dakika)
+        deep_analysis:
+          type: boolean
+          default: false
+          description: true ise claude-sonnet-3, false ise claude-haiku-3 kullanılır
+
+    AnalysisResult:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: Servis durumunun kısa özeti
+        root_cause:
+          type: string
+          description: Tespit edilen sorunun kök nedeni
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+              priority:
+                type: string
+                enum: [low, medium, high]
+        anomalies:
+          type: array
+          items:
+            type: string
+
+    AIInsight:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        alert_id:
+          type: string
+          format: uuid
+        model:
+          type: string
+        summary:
+          type: string
+        root_cause:
+          type: string
+          nullable: true
+        recommendations:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    # ---- SETTINGS ----
+    UserSettings:
+      type: object
+      properties:
+        cpu_threshold:
+          type: number
+          default: 80.0
+        memory_threshold:
+          type: number
+          default: 85.0
+        latency_threshold:
+          type: number
+          default: 1000.0
+        error_rate_threshold:
+          type: number
+          default: 5.0
+        email_notifications:
+          type: boolean
+          default: false
+
+    # ---- GENERIC ----
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: geçersiz istek
+
+    PaginatedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        data:
+          type: object
+        total:
+          type: integer
+        page:
+          type: integer
+
+security: []
+
+paths:
+
+  # ============================================================
+  # AUTH
+  # ============================================================
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Yeni kullanıcı kaydı
+      description: |
+        E-posta ve parola ile yeni hesap oluşturur.
+        Başarılıysa kullanıcı bilgisi ve JWT token çifti döner.
+        Aynı e-posta ile ikinci kayıt HTTP 409 döndürür.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: "kael@example.com"
+              password: "Secure1234"
+      responses:
+        '201':
+          description: Kayıt başarılı
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validasyon hatası
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: E-posta zaten kayıtlı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Kullanıcı girişi
+      description: |
+        E-posta ve parola ile giriş yapar.
+        Başarılıysa access_token (15dk) ve refresh_token (7gün) döner.
+        Rate limit: 10 istek/dakika.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Giriş başarılı
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Geçersiz kimlik bilgileri
+        '429':
+          description: Rate limit aşıldı
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Çıkış yap
+      description: |
+        Mevcut access token'ı blacklist'e ekler.
+        Sonraki isteklerde bu token geçersiz sayılır.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Çıkış başarılı
+        '401':
+          description: Kimlik doğrulama gerekli
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Access token yenile
+      description: Refresh token ile yeni access token üretir.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token yenilendi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Geçersiz veya süresi dolmuş refresh token
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Mevcut kullanıcı bilgisi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Kullanıcı bilgisi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: Token gerekli
+
+  /api/v1/auth/password:
+    put:
+      tags: [Auth]
+      summary: Parola değiştir
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password:
+                  type: string
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Parola güncellendi
+        '400':
+          description: Mevcut parola hatalı
+
+  /api/v1/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Şifre sıfırlama e-postası gönder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: E-posta gönderildi (e-posta kayıtlı olmasa bile 200 döner; güvenlik)
+
+  /api/v1/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Parola sıfırla
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, new_password]
+              properties:
+                token:
+                  type: string
+                  description: E-posta ile gönderilen sıfırlama token'ı
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Parola sıfırlandı
+        '400':
+          description: Token geçersiz veya süresi dolmuş
+
+  /api/v1/auth/agent-token:
+    post:
+      tags: [Auth]
+      summary: Agent kimlik token'ı oluştur
+      description: İzlenen sunucuya deploy edilecek Rust agent'ın kullanacağı token üretir.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Agent token oluşturuldu
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          agent_token:
+                            type: string
+
+  # ============================================================
+  # SERVICES
+  # ============================================================
+  /api/v1/services:
+    get:
+      tags: [Services]
+      summary: Servisleri listele
+      description: Giriş yapmış kullanıcının tüm kayıtlı servislerini döner.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Servis listesi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          services:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Service'
+
+    post:
+      tags: [Services]
+      summary: Yeni servis ekle
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequest'
+            example:
+              name: "auth-service"
+              host: "192.168.1.50"
+              port: 8001
+              health_endpoint: "/health"
+              poll_interval_sec: 10
+      responses:
+        '201':
+          description: Servis oluşturuldu
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
+        '400':
+          description: Validasyon hatası
+
+  /api/v1/services/{id}:
+    get:
+      tags: [Services]
+      summary: Servis detayı
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Servis detayı
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
+        '404':
+          description: Servis bulunamadı
+
+    put:
+      tags: [Services]
+      summary: Servis güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequest'
+      responses:
+        '200':
+          description: Güncellendi
+        '404':
+          description: Servis bulunamadı
+
+    delete:
+      tags: [Services]
+      summary: Servis sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Silindi
+        '404':
+          description: Servis bulunamadı
+
+  /api/v1/services/{id}/ping:
+    post:
+      tags: [Services]
+      summary: Servisi manuel ping'le
+      description: Health endpoint'e anlık istek gönderir, latency ve durumu döner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ping sonucu
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          latency_ms:
+                            type: number
+                          status:
+                            type: string
+
+  /api/v1/services/{id}/restart:
+    post:
+      tags: [Services]
+      summary: Servisi yeniden başlat
+      description: |
+        Servisin bağlı agent'ına restart komutu gönderir.
+        Rate limit: 10 istek/dakika (sıkı limit).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Komut gönderildi
+        '429':
+          description: Rate limit aşıldı
+
+  /api/v1/services/{id}/stop:
+    post:
+      tags: [Services]
+      summary: Servisi durdur
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Komut gönderildi
+
+  /api/v1/services/{id}/start:
+    post:
+      tags: [Services]
+      summary: Servisi başlat
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Komut gönderildi
+
+  /api/v1/services/{id}/exec:
+    post:
+      tags: [Services]
+      summary: Agent üzerinde komut çalıştır
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command]
+              properties:
+                command:
+                  type: string
+                  example: "ps aux | grep node"
+      responses:
+        '200':
+          description: Komut çalıştırıldı
+
+  /api/v1/services/{id}/scale:
+    post:
+      tags: [Services]
+      summary: Servisi ölçeklendir
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [replicas]
+              properties:
+                replicas:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Ölçeklendirme komutu gönderildi
+
+  # ============================================================
+  # METRICS
+  # ============================================================
+  /api/v1/services/{id}/metrics:
+    get:
+      tags: [Metrics]
+      summary: Metrik geçmişi
+      description: Belirli zaman aralığı için ham metrik veri noktalarını döner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: window
+          in: query
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d]
+            default: 1h
+          description: Zaman penceresi
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+      responses:
+        '200':
+          description: Metrik listesi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          metrics:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/MetricSnapshot'
+
+  /api/v1/services/{id}/metrics/aggregated:
+    get:
+      tags: [Metrics]
+      summary: Agregat metrikler
+      description: Ortalama, max, P95 gibi istatistiksel özeti döner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: window
+          in: query
+          schema:
+            type: string
+            enum: [1h, 6h, 24h, 7d]
+      responses:
+        '200':
+          description: Agregat özet
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/AggregatedMetrics'
+
+  /api/v1/services/{id}/metrics/uptime:
+    get:
+      tags: [Metrics]
+      summary: Uptime hesabı
+      description: Belirtilen pencerede servisin sağlıklı olduğu süre yüzdesi.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: hours
+          in: query
+          schema:
+            type: integer
+            default: 24
+      responses:
+        '200':
+          description: Uptime verisi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/UptimeResponse'
+
+  # ============================================================
+  # ALERTS
+  # ============================================================
+  /api/v1/alerts:
+    get:
+      tags: [Alerts]
+      summary: Aktif alertleri listele
+      description: Tüm servislerdeki çözümlenmemiş alertleri döner.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Alert listesi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          alerts:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Alert'
+
+  /api/v1/services/{id}/alerts:
+    get:
+      tags: [Alerts]
+      summary: Servise ait alertleri listele
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: resolved
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: true ise çözümlenenler dahil edilir
+      responses:
+        '200':
+          description: Servis alert listesi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          alerts:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Alert'
+
+  /api/v1/alerts/{alertId}/resolve:
+    post:
+      tags: [Alerts]
+      summary: Alert'i çözümle
+      description: Belirtilen alert'in resolved_at alanını şimdiki zamana ayarlar.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Alert çözümlendi
+        '404':
+          description: Alert bulunamadı
+
+  # ============================================================
+  # AI
+  # ============================================================
+  /api/v1/services/{id}/analyze:
+    post:
+      tags: [AI]
+      summary: AI anomali analizi başlat
+      description: |
+        Belirtilen zaman penceresindeki metrikleri Claude API'ye gönderir ve
+        kök neden analizi + öneriler içeren yapılandırılmış yanıt alır.
+
+        **Rate limit:** Kullanıcı başına dakikada 10 istek.
+
+        **Model seçimi:** deep_analysis=false → claude-haiku-3; true → claude-sonnet-3.
+
+        AI çağrısı tamamen server-side'dır; API key frontend'e iletilmez.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+            example:
+              window_minutes: 30
+              deep_analysis: false
+      responses:
+        '200':
+          description: AI analiz sonucu
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          insight:
+                            $ref: '#/components/schemas/AnalysisResult'
+        '429':
+          description: AI analiz limiti aşıldı (1 dakika bekleyin)
+        '500':
+          description: Claude API hatası
+
+  /api/v1/services/{id}/insights:
+    get:
+      tags: [AI]
+      summary: AI analiz geçmişini listele
+      description: Belirtilen servise ait geçmiş AI analizlerini sayfalı olarak döner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Insight listesi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          insights:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AIInsight'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+
+  # ============================================================
+  # COMMANDS
+  # ============================================================
+  /api/v1/services/{id}/commands:
+    get:
+      tags: [Commands]
+      summary: Komut geçmişi
+      description: Servise gönderilmiş komutların (restart, stop, exec vb.) tarihçesi.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Komut listesi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          commands:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                type:
+                                  type: string
+                                  example: restart
+                                status:
+                                  type: string
+                                  enum: [pending, success, failed]
+                                requested_at:
+                                  type: string
+                                  format: date-time
+
+  # ============================================================
+  # SETTINGS
+  # ============================================================
+  /api/v1/settings:
+    get:
+      tags: [Settings]
+      summary: Kullanıcı ayarlarını getir
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Mevcut ayarlar
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/UserSettings'
+
+    put:
+      tags: [Settings]
+      summary: Kullanıcı ayarlarını güncelle
+      description: Alert eşik değerleri ve bildirim tercihlerini günceller.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettings'
+      responses:
+        '200':
+          description: Ayarlar güncellendi
+
+  # ============================================================
+  # AUDIT
+  # ============================================================
+  /api/v1/audit:
+    get:
+      tags: [Audit]
+      summary: Audit log'larını listele
+      description: Login, servis değişikliği ve kritik komut işlemlerinin güvenlik günlüğü.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: action
+          in: query
+          schema:
+            type: string
+          description: Filtre için eylem tipi (ör. login, service_create)
+      responses:
+        '200':
+          description: Audit kayıtları
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          logs:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                user_id:
+                                  type: string
+                                  format: uuid
+                                action:
+                                  type: string
+                                resource:
+                                  type: string
+                                ip_address:
+                                  type: string
+                                created_at:
+                                  type: string
+                                  format: date-time
