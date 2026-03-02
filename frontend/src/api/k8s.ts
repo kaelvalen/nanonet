@@ -8,6 +8,9 @@ export interface PodInfo {
     node: string;
     ip: string;
     start_time?: string;
+    age?: string;
+    container_count: number;
+    ready_count: number;
     labels?: Record<string, string>;
 }
 
@@ -23,6 +26,7 @@ export interface DeploymentInfo {
 
 export interface HPAInfo {
     name: string;
+    deployment_name?: string;
     min_replicas: number;
     max_replicas: number;
     current_replicas: number;
@@ -50,6 +54,17 @@ export interface NodeInfo {
     created_at?: string;
 }
 
+export interface ServiceInfo {
+    name: string;
+    namespace: string;
+    type: string;
+    cluster_ip: string;
+    external_ip: string;
+    ports: string[];
+    selector?: Record<string, string>;
+    age?: string;
+}
+
 export const k8sApi = {
     getStatus: async () => {
         const { data } = await apiClient.get("/k8s/status");
@@ -66,9 +81,29 @@ export const k8sApi = {
         return data.data as { pods: PodInfo[]; count: number };
     },
 
+    getAllPods: async () => {
+        const { data } = await apiClient.get("/k8s/pods/all");
+        return data.data as { pods: PodInfo[]; count: number };
+    },
+
+    getPodLogs: async (name: string, lines = 100) => {
+        const { data } = await apiClient.get(`/k8s/pods/${encodeURIComponent(name)}/logs?lines=${lines}`);
+        return data.data as { pod: string; lines: number; logs: string };
+    },
+
+    deletePod: async (name: string) => {
+        const { data } = await apiClient.delete(`/k8s/pods/${encodeURIComponent(name)}`);
+        return data.data as { message: string };
+    },
+
     getDeployment: async (name: string) => {
         const { data } = await apiClient.get(`/k8s/deployments/${name}`);
         return data.data as DeploymentInfo;
+    },
+
+    listDeployments: async () => {
+        const { data } = await apiClient.get("/k8s/deployments");
+        return data.data as { deployments: DeploymentInfo[]; count: number };
     },
 
     scaleDeployment: async (name: string, replicas: number) => {
@@ -76,9 +111,19 @@ export const k8sApi = {
         return data.data as ScaleResult;
     },
 
+    rolloutRestart: async (name: string) => {
+        const { data } = await apiClient.post(`/k8s/deployments/${name}/restart`, {});
+        return data.data as { message: string };
+    },
+
     getHPA: async (name: string) => {
         const { data } = await apiClient.get(`/k8s/hpa/${name}`);
         return data.data as HPAInfo;
+    },
+
+    listHPAs: async () => {
+        const { data } = await apiClient.get("/k8s/hpa");
+        return data.data as { hpas: HPAInfo[]; count: number };
     },
 
     createOrUpdateHPA: async (deploymentName: string, minReplicas: number, maxReplicas: number, cpuTargetPercent: number) => {
@@ -96,6 +141,11 @@ export const k8sApi = {
         return data.data;
     },
 
+    listServices: async () => {
+        const { data } = await apiClient.get("/k8s/services");
+        return data.data as { services: ServiceInfo[]; count: number };
+    },
+
     getEndpoints: async (name: string) => {
         const { data } = await apiClient.get(`/k8s/endpoints/${name}`);
         return data.data as { service: string; endpoints: string[]; count: number };
@@ -104,15 +154,5 @@ export const k8sApi = {
     getNodes: async () => {
         const { data } = await apiClient.get("/k8s/nodes");
         return data.data as { nodes: NodeInfo[]; count: number };
-    },
-
-    getAllPods: async () => {
-        const { data } = await apiClient.get("/k8s/pods/all");
-        return data.data as { pods: PodInfo[]; count: number };
-    },
-
-    listDeployments: async () => {
-        const { data } = await apiClient.get("/k8s/deployments");
-        return data.data as { deployments: DeploymentInfo[]; count: number };
     },
 };
