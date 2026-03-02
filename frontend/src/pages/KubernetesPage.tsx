@@ -5,6 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
     Box,
@@ -29,10 +37,16 @@ import {
     Zap,
     GitBranch,
     HardDrive,
+    Terminal,
+    RotateCcw,
+    Globe,
+    Share2,
+    AlertTriangle,
+    X,
 } from "lucide-react";
-import { k8sApi, type PodInfo, type DeploymentInfo, type HPAInfo, type NodeInfo } from "@/api/k8s";
+import { k8sApi, type PodInfo, type DeploymentInfo, type HPAInfo, type NodeInfo, type ServiceInfo } from "@/api/k8s";
 
-type TabType = "overview" | "pods" | "deployments" | "hpa" | "endpoints";
+type TabType = "overview" | "pods" | "deployments" | "hpa" | "services" | "endpoints";
 
 function StatusDot({ ready, size = "sm" }: { ready: boolean; size?: "sm" | "md" }) {
     const sz = size === "md" ? "w-2.5 h-2.5" : "w-2 h-2";
@@ -67,6 +81,7 @@ function PodStatusBadge({ status }: { status: string }) {
         Pending:   { bg: "var(--status-warn-subtle)",  text: "var(--status-warn-text)",  border: "var(--status-warn-border)" },
         Failed:    { bg: "var(--status-down-subtle)", text: "var(--status-down-text)", border: "var(--status-down-border)" },
         Succeeded: { bg: "var(--color-teal-subtle)",  text: "var(--color-teal)",       border: "var(--color-teal-border)" },
+        Unknown:   { bg: "var(--surface-sunken)",     text: "var(--text-faint)",       border: "var(--border-subtle)" },
     };
     const s = cfg[status] ?? cfg["Failed"];
     return (
@@ -84,6 +99,76 @@ function MemoryToGB(raw: string): string {
     return (ki / 1024 / 1024).toFixed(1) + " GB";
 }
 
+// ─── Servis tipi rozeti ─────────────────────────────────────────────────────────────────
+function ServiceTypeBadge({ type }: { type: string }) {
+    const cfg: Record<string, { bg: string; text: string; border: string }> = {
+        ClusterIP:    { bg: "var(--color-blue-subtle)",     text: "var(--color-blue)",     border: "var(--color-blue-border)" },
+        NodePort:     { bg: "var(--status-warn-subtle)",    text: "var(--status-warn-text)", border: "var(--status-warn-border)" },
+        LoadBalancer: { bg: "var(--status-up-subtle)",      text: "var(--status-up-text)",  border: "var(--status-up-border)" },
+        ExternalName: { bg: "var(--color-lavender-subtle)", text: "var(--color-lavender)",  border: "var(--color-lavender-border)" },
+    };
+    const s = cfg[type] ?? cfg["ClusterIP"];
+    return (
+        <Badge className="text-[9px] px-2 py-0.5 rounded-full border shrink-0"
+            style={{ background: s.bg, color: s.text, borderColor: s.border }}>
+            {type}
+        </Badge>
+    );
+}
+
+// ─── Pod Log Modal ─────────────────────────────────────────────────────────────────────
+function PodLogModal({ podName, onClose }: { podName: string; onClose: () => void }) {
+    const [lines, setLines] = useState<number>(100);
+    const { data, isFetching, refetch } = useQuery({
+        queryKey: ["k8s-pod-logs", podName, lines],
+        queryFn: () => k8sApi.getPodLogs(podName, lines),
+        retry: 1,
+    });
+    return (
+        <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+            <DialogContent className="max-w-3xl w-full" style={{ background: "var(--surface-base)", border: "1px solid var(--border-subtle)" }}>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
+                        <Terminal className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
+                        <span style={{ fontFamily: "var(--font-mono)" }}>{podName}</span>
+                        <span className="text-[10px] font-normal ml-1" style={{ color: "var(--text-faint)" }}>logları</span>
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="flex items-center gap-2 pb-2 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Son</p>
+                    {([100, 200, 500] as const).map((n) => (
+                        <button key={n} onClick={() => setLines(n)}
+                            className="px-2.5 py-0.5 rounded-lg text-[10px] border transition-all"
+                            style={lines === n
+                                ? { background: "var(--color-teal-subtle)", color: "var(--color-teal)", borderColor: "var(--color-teal-border)" }
+                                : { color: "var(--text-muted)", borderColor: "var(--border-subtle)", background: "transparent" }}>
+                            {n} satır
+                        </button>
+                    ))}
+                    <button onClick={() => refetch()} disabled={isFetching}
+                        className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] border ml-auto transition-all"
+                        style={{ borderColor: "var(--color-teal-border)", color: "var(--color-teal)" }}>
+                        {isFetching ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        Yenile
+                    </button>
+                </div>
+                <div className="relative">
+                    {isFetching && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-lg z-10"
+                            style={{ background: "color-mix(in srgb, var(--surface-base) 80%, transparent)" }}>
+                            <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--color-teal)" }} />
+                        </div>
+                    )}
+                    <pre className="text-[10px] leading-relaxed p-4 rounded-xl overflow-auto max-h-96 whitespace-pre-wrap break-all"
+                        style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+                        {data?.logs || (isFetching ? "Yükleniyor..." : "Log bulunamadı.")}
+                    </pre>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export function KubernetesPage() {
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -91,6 +176,7 @@ export function KubernetesPage() {
     const [hpaDeployment, setHpaDeployment] = useState("");
     const [endpointName, setEndpointName] = useState("");
     const [expandedNode, setExpandedNode] = useState<string | null>(null);
+    const [logPod, setLogPod] = useState<string | null>(null);
 
     // Scale state
     const [scaleReplicas, setScaleReplicas] = useState<Record<string, number>>({});
@@ -100,7 +186,7 @@ export function KubernetesPage() {
     const [hpaMax, setHpaMax] = useState(5);
     const [hpaCpu, setHpaCpu] = useState(70);
 
-    // K8s availability — 30s polling
+    // K8s availability— 30s polling
     const { data: k8sStatus, isLoading: statusLoading } = useQuery({
         queryKey: ["k8s-status"],
         queryFn: k8sApi.getStatus,
@@ -110,7 +196,7 @@ export function KubernetesPage() {
 
     const isAvailable = k8sStatus?.available ?? false;
 
-    // Overview: nodes + all pods + deployments list — 15s polling
+    // Nodes
     const { data: nodesData, isLoading: nodesLoading, refetch: refetchNodes } = useQuery({
         queryKey: ["k8s-nodes"],
         queryFn: k8sApi.getNodes,
@@ -119,6 +205,7 @@ export function KubernetesPage() {
         refetchInterval: 15000,
     });
 
+    // Pods
     const { data: allPodsData, isLoading: allPodsLoading, refetch: refetchAllPods } = useQuery({
         queryKey: ["k8s-all-pods"],
         queryFn: k8sApi.getAllPods,
@@ -127,20 +214,31 @@ export function KubernetesPage() {
         refetchInterval: 15000,
     });
 
+    // Deployments
     const { data: deploymentsData, isLoading: deploymentsLoading, refetch: refetchDeployments } = useQuery({
         queryKey: ["k8s-deployments-list"],
         queryFn: k8sApi.listDeployments,
-        enabled: isAvailable && (activeTab === "overview" || activeTab === "deployments"),
+        enabled: isAvailable && (activeTab === "overview" || activeTab === "deployments" || activeTab === "hpa" || activeTab === "endpoints"),
         retry: 1,
         refetchInterval: 15000,
     });
 
-    // HPA
-    const { data: hpaInfo, isLoading: hpaLoading, refetch: refetchHPA } = useQuery({
-        queryKey: ["k8s-hpa", hpaDeployment],
-        queryFn: () => k8sApi.getHPA(hpaDeployment + "-hpa"),
-        enabled: activeTab === "hpa" && !!hpaDeployment,
+    // HPA listesi
+    const { data: hpasData, isLoading: hpasLoading, refetch: refetchHPAs } = useQuery({
+        queryKey: ["k8s-hpas-list"],
+        queryFn: k8sApi.listHPAs,
+        enabled: isAvailable && activeTab === "hpa",
         retry: 1,
+        refetchInterval: 20000,
+    });
+
+    // Servisler
+    const { data: servicesData, isLoading: servicesLoading, refetch: refetchServices } = useQuery({
+        queryKey: ["k8s-services"],
+        queryFn: k8sApi.listServices,
+        enabled: isAvailable && (activeTab === "services" || activeTab === "endpoints"),
+        retry: 1,
+        refetchInterval: 20000,
     });
 
     // Endpoints
@@ -161,11 +259,30 @@ export function KubernetesPage() {
         onError: () => toast.error("Scale işlemi başarısız"),
     });
 
+    const rolloutRestartMutation = useMutation({
+        mutationFn: (name: string) => k8sApi.rolloutRestart(name),
+        onSuccess: (res) => {
+            toast.success(res.message);
+            queryClient.invalidateQueries({ queryKey: ["k8s-deployments-list"] });
+            queryClient.invalidateQueries({ queryKey: ["k8s-all-pods"] });
+        },
+        onError: () => toast.error("Rollout restart başarısız"),
+    });
+
+    const deletePodMutation = useMutation({
+        mutationFn: (name: string) => k8sApi.deletePod(name),
+        onSuccess: (res) => {
+            toast.success(res.message);
+            queryClient.invalidateQueries({ queryKey: ["k8s-all-pods"] });
+        },
+        onError: () => toast.error("Pod silinemedi"),
+    });
+
     const hpaMutation = useMutation({
         mutationFn: () => k8sApi.createOrUpdateHPA(hpaDeployment, hpaMin, hpaMax, hpaCpu),
         onSuccess: () => {
             toast.success("HPA başarıyla oluşturuldu/güncellendi");
-            refetchHPA();
+            refetchHPAs();
         },
         onError: () => toast.error("HPA işlemi başarısız"),
     });
@@ -174,34 +291,41 @@ export function KubernetesPage() {
         mutationFn: (name: string) => k8sApi.deleteHPA(name),
         onSuccess: () => {
             toast.success("HPA silindi");
-            refetchHPA();
+            refetchHPAs();
         },
         onError: () => toast.error("HPA silinemedi"),
     });
 
     // Helpers
-    const pods = allPodsData?.pods ?? [];
+    const pods       = allPodsData?.pods ?? [];
     const deployments = deploymentsData?.deployments ?? [];
-    const nodes = nodesData?.nodes ?? [];
+    const nodes      = nodesData?.nodes ?? [];
+    const hpas       = hpasData?.hpas ?? [];
+    const services   = servicesData?.services ?? [];
+
     const filteredPods = pods.filter(p =>
         !podFilter || p.name.toLowerCase().includes(podFilter.toLowerCase()) ||
         Object.values(p.labels ?? {}).some(v => v.toLowerCase().includes(podFilter.toLowerCase()))
     );
-    const runningPods = pods.filter(p => p.status === "Running").length;
+    const runningPods     = pods.filter(p => p.status === "Running").length;
     const readyDeployments = deployments.filter(d => d.ready_replicas === d.replicas && d.replicas > 0).length;
-    const readyNodes = nodes.filter(n => n.ready).length;
+    const readyNodes      = nodes.filter(n => n.ready).length;
 
-    const tabs = [
-        { key: "overview" as const,     label: "Genel Bakış",    icon: Activity,  colorVar: "var(--color-teal)" },
-        { key: "pods" as const,         label: "Pod'lar",        icon: Box,       colorVar: "var(--color-blue)" },
-        { key: "deployments" as const,  label: "Deployment'lar", icon: Layers,    colorVar: "var(--color-lavender)" },
-        { key: "hpa" as const,          label: "Auto-Scale",     icon: Gauge,     colorVar: "var(--color-pink)" },
-        { key: "endpoints" as const,    label: "Endpoints",      icon: Network,   colorVar: "var(--status-warn)" },
+    const tabs: { key: TabType; label: string; icon: React.ElementType; colorVar: string }[] = [
+        { key: "overview",    label: "Genel Bakış",    icon: Activity, colorVar: "var(--color-teal)" },
+        { key: "pods",        label: "Pod'lar",        icon: Box,      colorVar: "var(--color-blue)" },
+        { key: "deployments", label: "Deployment'lar", icon: Layers,   colorVar: "var(--color-lavender)" },
+        { key: "hpa",         label: "Auto-Scale",     icon: Gauge,    colorVar: "var(--color-pink)" },
+        { key: "services",    label: "Servisler",      icon: Share2,   colorVar: "var(--color-teal)" },
+        { key: "endpoints",   label: "Endpoints",      icon: Network,  colorVar: "var(--status-warn)" },
     ];
 
     return (
         <div className="space-y-5">
-            {/* Header */}
+            {/* Log Modal */}
+            {logPod && <PodLogModal podName={logPod} onClose={() => setLogPod(null)} />}
+
+            {/* Başlık */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
@@ -241,7 +365,7 @@ export function KubernetesPage() {
                 </div>
             </motion.div>
 
-            {/* Not available */}
+            {/* Bağlanamadı */}
             {!statusLoading && !isAvailable && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--status-warn-border)" }}>
@@ -436,12 +560,35 @@ export function KubernetesPage() {
                                                             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                                                                 {pod.node && <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{pod.node}</span>}
                                                                 {pod.ip && <span className="text-[10px]" style={{ color: "var(--text-faint)", fontFamily: "var(--font-mono)" }}>{pod.ip}</span>}
+                                                                {pod.age && <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>⏱ {pod.age}</span>}
+                                                                <span className="text-[10px]" style={{ color: pod.ready_count === pod.container_count && pod.container_count > 0 ? "var(--status-up)" : "var(--status-warn-text)" }}>
+                                                                    ▣ {pod.ready_count ?? 0}/{pod.container_count ?? 1}
+                                                                </span>
                                                                 {pod.restarts > 0 && (
-                                                                    <span className="text-[10px] font-medium" style={{ color: "var(--status-warn-text)" }}>↺ {pod.restarts}</span>
+                                                                    <span className="flex items-center gap-0.5 text-[10px] font-medium" style={{ color: "var(--status-warn-text)" }}>
+                                                                        <AlertTriangle className="w-3 h-3" />↺ {pod.restarts}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>
                                                         <PodStatusBadge status={pod.status} />
+                                                        <button
+                                                            onClick={() => setLogPod(pod.name)}
+                                                            title="Log'ları Görüntüle"
+                                                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
+                                                            style={{ background: "var(--color-blue-subtle)", border: "1px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
+                                                            <Terminal className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { if (confirm(`"${pod.name}" pod'ı silinsin mi? Kubernetes otomatik olarak yeniden başlatacak.`)) deletePodMutation.mutate(pod.name); }}
+                                                            title="Pod'u Sil (Yeniden Başlat)"
+                                                            disabled={deletePodMutation.isPending && deletePodMutation.variables === pod.name}
+                                                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
+                                                            style={{ background: "color-mix(in srgb, var(--status-down) 10%, transparent)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }}>
+                                                            {deletePodMutation.isPending && deletePodMutation.variables === pod.name
+                                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                : <Trash2 className="w-3.5 h-3.5" />}
+                                                        </button>
                                                     </div>
                                                 </Card>
                                             </motion.div>
@@ -501,6 +648,16 @@ export function KubernetesPage() {
                                                                 <p className="text-sm font-semibold truncate" style={{ color: "var(--text-secondary)" }}>{dep.name}</p>
                                                                 <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{dep.namespace} · {dep.strategy || "RollingUpdate"}</p>
                                                             </div>
+                                                            <button
+                                                                onClick={() => { if (confirm(`"${dep.name}" deployment'ı yeniden başlatılsın mı? (rolling restart)`)) rolloutRestartMutation.mutate(dep.name); }}
+                                                                title="Rollout Restart"
+                                                                disabled={rolloutRestartMutation.isPending && rolloutRestartMutation.variables === dep.name}
+                                                                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
+                                                                style={{ background: "color-mix(in srgb, var(--color-lavender) 12%, transparent)", border: "1px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}>
+                                                                {rolloutRestartMutation.isPending && rolloutRestartMutation.variables === dep.name
+                                                                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                    : <RotateCcw className="w-3.5 h-3.5" />}
+                                                            </button>
                                                             <div className="text-right shrink-0">
                                                                 <p className="text-lg font-bold" style={{ color: healthy ? "var(--status-up)" : "var(--status-warn)" }}>
                                                                     {dep.ready_replicas}/{dep.replicas}
@@ -542,7 +699,7 @@ export function KubernetesPage() {
                                                                     <Plus className="w-3 h-3" />
                                                                 </button>
                                                                 <div className="flex gap-1 ml-1">
-                                                                    {[1, 2, 3, 5].map((n) => (
+                                                                    {[0, 1, 2, 3, 5, 10].map((n) => (
                                                                         <button key={n}
                                                                             onClick={() => setScaleReplicas(prev => ({ ...prev, [dep.name]: n }))}
                                                                             className="px-2 py-0.5 rounded-lg text-[9px] font-medium border"
@@ -575,71 +732,110 @@ export function KubernetesPage() {
                         {/* ── HPA TAB ── */}
                         {activeTab === "hpa" && (
                             <motion.div key="hpa" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-pink-border)" }}>
-                                    <p className="text-[10px] uppercase tracking-wider mb-2.5" style={{ color: "var(--text-muted)" }}>Deployment Seç</p>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            placeholder="Deployment adı (örn: my-app)"
-                                            value={hpaDeployment}
-                                            onChange={(e) => setHpaDeployment(e.target.value)}
-                                            className="rounded-lg text-xs h-9 flex-1"
-                                            style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
-                                            onKeyDown={(e) => { if (e.key === "Enter") refetchHPA(); }}
-                                            list="dep-list"
-                                        />
-                                        <datalist id="dep-list">
-                                            {deployments.map(d => <option key={d.name} value={d.name} />)}
-                                        </datalist>
-                                        <Button onClick={() => refetchHPA()} disabled={!hpaDeployment || hpaLoading}
-                                            size="sm" className="text-white rounded-lg h-9 px-3" style={{ background: "var(--gradient-btn-primary)" }}>
-                                            {hpaLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                                        </Button>
-                                    </div>
-                                </Card>
+                                {/* Existing HPAs list */}
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                                        {hpas.length} HPA {hpasLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
+                                    </p>
+                                    <button onClick={() => refetchHPAs()} disabled={hpasLoading}
+                                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
+                                        style={{ borderColor: "var(--color-pink-border)", color: "var(--color-pink)" }}>
+                                        <RefreshCw className="w-3.5 h-3.5" />Yenile
+                                    </button>
+                                </div>
 
-                                {hpaInfo && (
-                                    <Card className="p-5 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-pink-border)" }}>
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <Gauge className="w-4 h-4" style={{ color: "var(--color-pink)" }} />
-                                                <div>
-                                                    <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{hpaInfo.name}</p>
-                                                    {hpaInfo.cpu_target_percent && (
-                                                        <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
-                                                            CPU hedef: %{hpaInfo.cpu_target_percent}
-                                                            {hpaInfo.cpu_current_percent !== undefined && ` · mevcut: %${hpaInfo.cpu_current_percent}`}
-                                                        </p>
-                                                    )}
+                                {hpas.length > 0 && (
+                                    <div className="space-y-2">
+                                        {hpas.map((hpa) => (
+                                            <Card key={hpa.name} className="p-4 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-pink-border)" }}>
+                                                <div className="flex items-start justify-between gap-3 mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Gauge className="w-4 h-4 shrink-0" style={{ color: "var(--color-pink)" }} />
+                                                        <div>
+                                                            <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>{hpa.name}</p>
+                                                            {hpa.deployment_name && (
+                                                                <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>→ {hpa.deployment_name}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        <button
+                                                            onClick={() => { setHpaDeployment(hpa.deployment_name ?? hpa.name); setHpaMin(hpa.min_replicas); setHpaMax(hpa.max_replicas); setHpaCpu(hpa.cpu_target_percent ?? 70); }}
+                                                            title="Düzenle"
+                                                            className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                                            style={{ background: "var(--color-pink-subtle)", border: "1px solid var(--color-pink-border)", color: "var(--color-pink)" }}>
+                                                            <Settings2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { if (confirm(`"${hpa.name}" HPA silinsin mi?`)) deleteHPAMutation.mutate(hpa.deployment_name ?? hpa.name); }}
+                                                            disabled={deleteHPAMutation.isPending}
+                                                            title="Sil"
+                                                            className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                                            style={{ background: "color-mix(in srgb, var(--status-down) 10%, transparent)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }}>
+                                                            {deleteHPAMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <Button variant="outline" size="sm"
-                                                onClick={() => deleteHPAMutation.mutate(hpaDeployment)}
-                                                disabled={deleteHPAMutation.isPending}
-                                                className="text-[10px] rounded-lg h-7"
-                                                style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
-                                                {deleteHPAMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Trash2 className="w-3 h-3 mr-1" />Sil</>}
-                                            </Button>
-                                        </div>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {[
-                                                { label: "Min", value: hpaInfo.min_replicas },
-                                                { label: "Max", value: hpaInfo.max_replicas },
-                                                { label: "Mevcut", value: hpaInfo.current_replicas },
-                                                { label: "İstenen", value: hpaInfo.desired_replicas },
-                                            ].map((s) => (
-                                                <div key={s.label} className="p-3 rounded-xl text-center" style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>
-                                                    <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--text-faint)" }}>{s.label}</p>
-                                                    <p className="text-xl font-bold" style={{ color: "var(--color-pink)" }}>{s.value}</p>
+                                                <div className="grid grid-cols-4 gap-2 mb-2">
+                                                    {[
+                                                        { label: "Min", value: hpa.min_replicas },
+                                                        { label: "Max", value: hpa.max_replicas },
+                                                        { label: "Mevcut", value: hpa.current_replicas },
+                                                        { label: "İstenen", value: hpa.desired_replicas },
+                                                    ].map((s) => (
+                                                        <div key={s.label} className="p-2 rounded-lg text-center" style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>
+                                                            <p className="text-[9px] uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{s.label}</p>
+                                                            <p className="text-lg font-bold" style={{ color: "var(--color-pink)" }}>{s.value}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </Card>
+                                                {hpa.cpu_target_percent && (
+                                                    <div className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                                                        CPU hedef: <span style={{ color: "var(--color-pink)" }}>%{hpa.cpu_target_percent}</span>
+                                                        {hpa.cpu_current_percent !== undefined && <> · mevcut: <span style={{ color: hpa.cpu_current_percent > hpa.cpu_target_percent ? "var(--status-down-text)" : "var(--status-up)" }}>%{hpa.cpu_current_percent}</span></>}
+                                                    </div>
+                                                )}
+                                                {(hpa.max_replicas > 0) && (
+                                                    <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-sunken)" }}>
+                                                        <div className="h-full rounded-full transition-all"
+                                                            style={{
+                                                                width: `${Math.min(100, (hpa.current_replicas / hpa.max_replicas) * 100)}%`,
+                                                                background: "var(--color-pink)",
+                                                            }} />
+                                                    </div>
+                                                )}
+                                            </Card>
+                                        ))}
+                                    </div>
                                 )}
 
+                                {/* Create / Update HPA form */}
                                 <Card className="p-5 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-pink-border)" }}>
                                     <div className="flex items-center gap-2 mb-4">
                                         <Settings2 className="w-4 h-4" style={{ color: "var(--color-pink)" }} />
                                         <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>HPA Oluştur / Güncelle</h3>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Deployment Seç</p>
+                                        {deployments.length > 0 ? (
+                                            <Select value={hpaDeployment} onValueChange={setHpaDeployment}>
+                                                <SelectTrigger className="rounded-lg text-xs h-9" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}>
+                                                    <SelectValue placeholder="Deployment seçin..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {deployments.map(d => <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Input
+                                                placeholder="Deployment adı (örn: my-app)"
+                                                value={hpaDeployment}
+                                                onChange={(e) => setHpaDeployment(e.target.value)}
+                                                className="rounded-lg text-xs h-9"
+                                                style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
+                                            />
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-4 mb-4">
@@ -682,23 +878,104 @@ export function KubernetesPage() {
                             </motion.div>
                         )}
 
+                        {/* ── SERVICES TAB ── */}
+                        {activeTab === "services" && (
+                            <motion.div key="services" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                                        {services.length} service {servicesLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
+                                    </p>
+                                    <button onClick={() => refetchServices()} disabled={servicesLoading}
+                                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
+                                        style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
+                                        <RefreshCw className="w-3.5 h-3.5" />Yenile
+                                    </button>
+                                </div>
+                                {servicesLoading && services.length === 0 ? (
+                                    <div className="flex items-center gap-2 py-6" style={{ color: "var(--text-faint)" }}>
+                                        <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Service'lar yükleniyor...</span>
+                                    </div>
+                                ) : services.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {services.map((svc) => (
+                                            <Card key={svc.name} className="p-4 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
+                                                <div className="flex items-start justify-between gap-3 mb-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <Globe className="w-4 h-4 shrink-0" style={{ color: "var(--status-up)" }} />
+                                                        <p className="text-xs font-semibold truncate" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>{svc.name}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <ServiceTypeBadge type={svc.type} />
+                                                        {svc.age && <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>⏱ {svc.age}</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px]" style={{ color: "var(--text-faint)" }}>
+                                                    {svc.cluster_ip && (
+                                                        <span>ClusterIP: <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{svc.cluster_ip}</span></span>
+                                                    )}
+                                                    {svc.external_ip && svc.external_ip !== "<none>" && svc.external_ip !== "" && (
+                                                        <span>ExternalIP: <span style={{ color: "var(--status-up)", fontFamily: "var(--font-mono)" }}>{svc.external_ip}</span></span>
+                                                    )}
+                                                    {svc.namespace && (
+                                                        <span>NS: <span style={{ color: "var(--text-muted)" }}>{svc.namespace}</span></span>
+                                                    )}
+                                                </div>
+                                                {svc.ports && svc.ports.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                                        {svc.ports.map((port, pi) => (
+                                                            <span key={pi} className="px-2 py-0.5 rounded-md text-[10px] font-mono"
+                                                                style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}>
+                                                                {port}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {svc.selector && Object.keys(svc.selector).length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                                        {Object.entries(svc.selector).map(([k, v]) => (
+                                                            <span key={k} className="px-2 py-0.5 rounded-md text-[10px]"
+                                                                style={{ background: "color-mix(in srgb, var(--status-up) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--status-up) 20%, transparent)", color: "var(--status-up)" }}>
+                                                                {k}={v}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
+                                        <Globe className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: "var(--text-faint)" }} />
+                                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>Namespace'de service bulunamadı</p>
+                                    </Card>
+                                )}
+                            </motion.div>
+                        )}
+
                         {/* ── ENDPOINTS TAB ── */}
                         {activeTab === "endpoints" && (
                             <motion.div key="endpoints" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
                                 <Card className="p-4 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
                                     <div className="flex items-center gap-2">
-                                        <Input
-                                            placeholder="K8s Service adı (örn: my-service)"
-                                            value={endpointName}
-                                            onChange={(e) => setEndpointName(e.target.value)}
-                                            className="rounded-lg text-xs h-9 flex-1"
-                                            style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
-                                            onKeyDown={(e) => { if (e.key === "Enter") refetchEndpoints(); }}
-                                            list="svc-list"
-                                        />
-                                        <datalist id="svc-list">
-                                            {deployments.map(d => <option key={d.name} value={d.name} />)}
-                                        </datalist>
+                                        {services.length > 0 ? (
+                                            <Select value={endpointName} onValueChange={setEndpointName}>
+                                                <SelectTrigger className="rounded-lg text-xs h-9 flex-1" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}>
+                                                    <SelectValue placeholder="Service seçin..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {services.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Input
+                                                placeholder="K8s Service adı (örn: my-service)"
+                                                value={endpointName}
+                                                onChange={(e) => setEndpointName(e.target.value)}
+                                                className="rounded-lg text-xs h-9 flex-1"
+                                                style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
+                                                onKeyDown={(e) => { if (e.key === "Enter") refetchEndpoints(); }}
+                                            />
+                                        )}
                                         <Button onClick={() => refetchEndpoints()} disabled={!endpointName || endpointsLoading}
                                             size="sm" className="text-white rounded-lg h-9 px-3" style={{ background: "var(--gradient-btn-primary)" }}>
                                             {endpointsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}

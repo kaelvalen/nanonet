@@ -166,12 +166,17 @@ func main() {
 			k8sGroup.GET("/nodes", k8sHandler.GetNodes)
 			k8sGroup.GET("/pods", k8sHandler.GetPods)
 			k8sGroup.GET("/pods/all", k8sHandler.GetAllPods)
+			k8sGroup.GET("/pods/:name/logs", k8sHandler.GetPodLogs)
+			k8sGroup.DELETE("/pods/:name", strictLimiter, k8sHandler.DeletePod)
 			k8sGroup.GET("/deployments", k8sHandler.ListDeployments)
 			k8sGroup.GET("/deployments/:name", k8sHandler.GetDeployment)
 			k8sGroup.POST("/deployments/:name/scale", strictLimiter, k8sHandler.ScaleDeployment)
+			k8sGroup.POST("/deployments/:name/restart", strictLimiter, k8sHandler.RolloutRestart)
+			k8sGroup.GET("/hpa", k8sHandler.ListHPAs)
 			k8sGroup.GET("/hpa/:name", k8sHandler.GetHPA)
 			k8sGroup.POST("/hpa", strictLimiter, k8sHandler.CreateOrUpdateHPA)
 			k8sGroup.DELETE("/hpa/:name", strictLimiter, k8sHandler.DeleteHPA)
+			k8sGroup.GET("/services", k8sHandler.ListServices)
 			k8sGroup.GET("/endpoints/:name", k8sHandler.GetServiceEndpoints)
 		}
 	}

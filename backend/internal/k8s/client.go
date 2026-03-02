@@ -22,14 +22,17 @@ type Client struct {
 
 // PodInfo — pod bilgisi.
 type PodInfo struct {
-	Name      string            `json:"name"`
-	Status    string            `json:"status"`
-	Ready     bool              `json:"ready"`
-	Restarts  int32             `json:"restarts"`
-	Node      string            `json:"node"`
-	IP        string            `json:"ip"`
-	StartTime *time.Time        `json:"start_time,omitempty"`
-	Labels    map[string]string `json:"labels,omitempty"`
+	Name           string            `json:"name"`
+	Status         string            `json:"status"`
+	Ready          bool              `json:"ready"`
+	Restarts       int32             `json:"restarts"`
+	Node           string            `json:"node"`
+	IP             string            `json:"ip"`
+	StartTime      *time.Time        `json:"start_time,omitempty"`
+	Age            string            `json:"age,omitempty"`
+	ContainerCount int32             `json:"container_count"`
+	ReadyCount     int32             `json:"ready_count"`
+	Labels         map[string]string `json:"labels,omitempty"`
 }
 
 // DeploymentInfo — deployment bilgisi.
@@ -46,6 +49,7 @@ type DeploymentInfo struct {
 // HPAInfo — HorizontalPodAutoscaler bilgisi.
 type HPAInfo struct {
 	Name            string `json:"name"`
+	DeploymentName  string `json:"deployment_name,omitempty"`
 	MinReplicas     int32  `json:"min_replicas"`
 	MaxReplicas     int32  `json:"max_replicas"`
 	CurrentReplicas int32  `json:"current_replicas"`
@@ -60,6 +64,36 @@ type ScaleResult struct {
 	PreviousReplicas int32  `json:"previous_replicas"`
 	DesiredReplicas  int32  `json:"desired_replicas"`
 	Message          string `json:"message"`
+}
+
+// ServiceInfo — Kubernetes service bilgisi.
+type ServiceInfo struct {
+	Name       string            `json:"name"`
+	Namespace  string            `json:"namespace"`
+	Type       string            `json:"type"`
+	ClusterIP  string            `json:"cluster_ip"`
+	ExternalIP string            `json:"external_ip"`
+	Ports      []string          `json:"ports"`
+	Selector   map[string]string `json:"selector,omitempty"`
+	Age        string            `json:"age,omitempty"`
+}
+
+// formatAge — zaman farkını okunabilir formata dönüştürür.
+func formatAge(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	d := time.Since(*t)
+	switch {
+	case d < time.Minute:
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	default:
+		return fmt.Sprintf("%dd", int(d.Hours()/24))
+	}
 }
 
 // NewClient — yeni K8s Client oluşturur.
@@ -185,11 +219,17 @@ func (c *Client) GetPods(ctx context.Context, selector string) ([]PodInfo, error
 			info.StartTime = item.Status.StartTime
 		}
 
+		info.ContainerCount = int32(len(item.Status.ContainerStatuses))
 		for _, cs := range item.Status.ContainerStatuses {
-			info.Ready = cs.Ready
-			info.Restarts = cs.RestartCount
-			break
+			info.Restarts += cs.RestartCount
+			if cs.Ready {
+				info.ReadyCount++
+			}
 		}
+		if info.ContainerCount > 0 {
+			info.Ready = info.ReadyCount == info.ContainerCount
+		}
+		info.Age = formatAge(info.StartTime)
 
 		pods = append(pods, info)
 	}
@@ -602,13 +642,197 @@ func (c *Client) GetAllPods(ctx context.Context) ([]PodInfo, error) {
 		if item.Status.StartTime != nil {
 			info.StartTime = item.Status.StartTime
 		}
+		info.ContainerCount = int32(len(item.Status.ContainerStatuses))
 		for _, cs := range item.Status.ContainerStatuses {
-			info.Ready = cs.Ready
-			info.Restarts = cs.RestartCount
-			break
+			info.Restarts += cs.RestartCount
+			if cs.Ready {
+				info.ReadyCount++
+			}
 		}
+		if info.ContainerCount > 0 {
+			info.Ready = info.ReadyCount == info.ContainerCount
+		}
+		info.Age = formatAge(info.StartTime)
 		pods = append(pods, info)
 	}
 
 	return pods, nil
+}
+
+// GetPodLogs — pod loglarını döndürür.
+func (c *Client) GetPodLogs(ctx context.Context, podName string, lines int) (string, error) {
+	args := []string{"logs", podName, fmt.Sprintf("--tail=%d", lines), "--timestamps=false"}
+	output, err := c.runKubectl(ctx, args...)
+	if err != nil {
+		return "", fmt.Errorf("pod logları alınamadı: %w", err)
+	}
+	return string(output), nil
+}
+
+// DeletePod — pod'u siler (K8s otomatik yeniden başlatır).
+func (c *Client) DeletePod(ctx context.Context, podName string) error {
+	_, err := c.runKubectl(ctx, "delete", "pod", podName, "--grace-period=0")
+	if err != nil {
+		return fmt.Errorf("pod silinemedi: %w", err)
+	}
+	return nil
+}
+
+// RolloutRestart — deployment'ı sıfırdan başlatır (rolling restart).
+func (c *Client) RolloutRestart(ctx context.Context, deploymentName string) error {
+	_, err := c.runKubectl(ctx, "rollout", "restart", "deployment", deploymentName)
+	if err != nil {
+		return fmt.Errorf("rollout restart başarısız: %w", err)
+	}
+	return nil
+}
+
+// ListServices — namespace'deki K8s service'lerini listeler.
+func (c *Client) ListServices(ctx context.Context) ([]ServiceInfo, error) {
+	output, err := c.runKubectl(ctx, "get", "services", "-o", "json")
+	if err != nil {
+		return nil, fmt.Errorf("service'ler alınamadı: %w", err)
+	}
+
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name              string     `json:"name"`
+				Namespace         string     `json:"namespace"`
+				CreationTimestamp *time.Time `json:"creationTimestamp"`
+			} `json:"metadata"`
+			Spec struct {
+				Type      string `json:"type"`
+				ClusterIP string `json:"clusterIP"`
+				Ports     []struct {
+					Port       int32       `json:"port"`
+					TargetPort interface{} `json:"targetPort"`
+					Protocol   string      `json:"protocol"`
+					NodePort   int32       `json:"nodePort,omitempty"`
+				} `json:"ports"`
+				Selector map[string]string `json:"selector"`
+			} `json:"spec"`
+			Status struct {
+				LoadBalancer struct {
+					Ingress []struct {
+						IP       string `json:"ip"`
+						Hostname string `json:"hostname"`
+					} `json:"ingress"`
+				} `json:"loadBalancer"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var services []ServiceInfo
+	for _, item := range result.Items {
+		externalIP := ""
+		for _, ing := range item.Status.LoadBalancer.Ingress {
+			if ing.IP != "" {
+				externalIP = ing.IP
+				break
+			}
+			if ing.Hostname != "" {
+				externalIP = ing.Hostname
+				break
+			}
+		}
+
+		var ports []string
+		for _, p := range item.Spec.Ports {
+			entry := fmt.Sprintf("%d/%s", p.Port, p.Protocol)
+			if p.NodePort > 0 {
+				entry += fmt.Sprintf(":%d", p.NodePort)
+			}
+			ports = append(ports, entry)
+		}
+
+		services = append(services, ServiceInfo{
+			Name:       item.Metadata.Name,
+			Namespace:  item.Metadata.Namespace,
+			Type:       item.Spec.Type,
+			ClusterIP:  item.Spec.ClusterIP,
+			ExternalIP: externalIP,
+			Ports:      ports,
+			Selector:   item.Spec.Selector,
+			Age:        formatAge(item.Metadata.CreationTimestamp),
+		})
+	}
+
+	return services, nil
+}
+
+// ListHPAs — namespace'deki tüm HPA'ları listeler.
+func (c *Client) ListHPAs(ctx context.Context) ([]HPAInfo, error) {
+	output, err := c.runKubectl(ctx, "get", "hpa", "-o", "json")
+	if err != nil {
+		return nil, fmt.Errorf("HPA'lar alınamadı: %w", err)
+	}
+
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name string `json:"name"`
+			} `json:"metadata"`
+			Spec struct {
+				MinReplicas    int32 `json:"minReplicas"`
+				MaxReplicas    int32 `json:"maxReplicas"`
+				ScaleTargetRef struct {
+					Name string `json:"name"`
+				} `json:"scaleTargetRef"`
+				Metrics []struct {
+					Resource struct {
+						Name   string `json:"name"`
+						Target struct {
+							AverageUtilization *int32 `json:"averageUtilization"`
+						} `json:"target"`
+					} `json:"resource"`
+				} `json:"metrics"`
+			} `json:"spec"`
+			Status struct {
+				CurrentReplicas int32 `json:"currentReplicas"`
+				DesiredReplicas int32 `json:"desiredReplicas"`
+				CurrentMetrics  []struct {
+					Resource struct {
+						Name    string `json:"name"`
+						Current struct {
+							AverageUtilization *int32 `json:"averageUtilization"`
+						} `json:"current"`
+					} `json:"resource"`
+				} `json:"currentMetrics"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	var hpas []HPAInfo
+	for _, item := range result.Items {
+		info := HPAInfo{
+			Name:            item.Metadata.Name,
+			DeploymentName:  item.Spec.ScaleTargetRef.Name,
+			MinReplicas:     item.Spec.MinReplicas,
+			MaxReplicas:     item.Spec.MaxReplicas,
+			CurrentReplicas: item.Status.CurrentReplicas,
+			DesiredReplicas: item.Status.DesiredReplicas,
+		}
+		for _, m := range item.Spec.Metrics {
+			if m.Resource.Name == "cpu" && m.Resource.Target.AverageUtilization != nil {
+				info.CPUTarget = m.Resource.Target.AverageUtilization
+			}
+		}
+		for _, m := range item.Status.CurrentMetrics {
+			if m.Resource.Name == "cpu" && m.Resource.Current.AverageUtilization != nil {
+				info.CPUCurrent = m.Resource.Current.AverageUtilization
+			}
+		}
+		hpas = append(hpas, info)
+	}
+
+	return hpas, nil
 }

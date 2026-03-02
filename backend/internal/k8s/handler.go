@@ -321,6 +321,126 @@ func (h *Handler) GetServiceEndpoints(c *gin.Context) {
 	})
 }
 
+// GetPodLogs — pod loglarını döndürür.
+// GET /k8s/pods/:name/logs?lines=100
+func (h *Handler) GetPodLogs(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	name := c.Param("name")
+	if name == "" {
+		response.BadRequest(c, "pod adı gerekli")
+		return
+	}
+
+	lines := parseIntParam(c, "lines", 100)
+	if lines < 1 {
+		lines = 100
+	}
+	if lines > 2000 {
+		lines = 2000
+	}
+
+	logs, err := h.client.GetPodLogs(c.Request.Context(), name, lines)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			response.Error(c, http.StatusNotFound, "pod bulunamadı: "+name)
+			return
+		}
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"pod": name, "lines": lines, "logs": logs})
+}
+
+// DeletePod — pod'u siler (K8s yeniden başlatır).
+// DELETE /k8s/pods/:name
+func (h *Handler) DeletePod(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	name := c.Param("name")
+	if name == "" {
+		response.BadRequest(c, "pod adı gerekli")
+		return
+	}
+
+	if err := h.client.DeletePod(c.Request.Context(), name); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			response.Error(c, http.StatusNotFound, "pod bulunamadı: "+name)
+			return
+		}
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"message": "Pod silindi, K8s yeniden başlatıyor: " + name})
+}
+
+// RolloutRestart — deployment'ı rolling restart ile yeniden başlatır.
+// POST /k8s/deployments/:name/restart
+func (h *Handler) RolloutRestart(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	name := c.Param("name")
+	if name == "" {
+		response.BadRequest(c, "deployment adı gerekli")
+		return
+	}
+
+	if err := h.client.RolloutRestart(c.Request.Context(), name); err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"message": "Rollout restart başlatıldı: " + name})
+}
+
+// ListServices — namespace'deki K8s service'lerini listeler.
+// GET /k8s/services
+func (h *Handler) ListServices(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	services, err := h.client.ListServices(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	if services == nil {
+		services = []ServiceInfo{}
+	}
+
+	response.Success(c, gin.H{"services": services, "count": len(services)})
+}
+
+// ListHPAs — namespace'deki tüm HPA'ları listeler.
+// GET /k8s/hpa
+func (h *Handler) ListHPAs(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+
+	hpas, err := h.client.ListHPAs(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	if hpas == nil {
+		hpas = []HPAInfo{}
+	}
+
+	response.Success(c, gin.H{"hpas": hpas, "count": len(hpas)})
+}
+
 // parseIntParam — query param'ı int'e çevirir.
 func parseIntParam(c *gin.Context, key string, defaultVal int) int {
 	val := c.Query(key)
