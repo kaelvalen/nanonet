@@ -144,6 +144,12 @@ func (h *Handler) GetAggregated(c *gin.Context) {
 }
 
 func (h *Handler) InsertMetric(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
 	var metric Metric
 	if err := c.ShouldBindJSON(&metric); err != nil {
 		response.BadRequest(c, err.Error())
@@ -155,12 +161,8 @@ func (h *Handler) InsertMetric(c *gin.Context) {
 		return
 	}
 
-	// Servisin var olduğunu doğrula
-	var count int64
-	if err := h.db.WithContext(c.Request.Context()).
-		Table("services").
-		Where("id = ?", metric.ServiceID).
-		Count(&count).Error; err != nil || count == 0 {
+	// Servisin var olduğunu VE mevcut kullanıcıya ait olduğunu doğrula
+	if !h.checkServiceOwnership(c.Request.Context(), metric.ServiceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}

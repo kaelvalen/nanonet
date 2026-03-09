@@ -31,11 +31,7 @@ func (s *Service) GetAggregated(ctx context.Context, serviceID uuid.UUID, durati
 }
 
 func (s *Service) GetLatestMetric(ctx context.Context, serviceID uuid.UUID) (*Metric, error) {
-	metric, err := s.repo.GetLatest(ctx, serviceID)
-	if err != nil {
-		return nil, nil
-	}
-	return metric, nil
+	return s.repo.GetLatest(ctx, serviceID)
 }
 
 func (s *Service) GetUptime(ctx context.Context, serviceID uuid.UUID, duration time.Duration) (float64, error) {

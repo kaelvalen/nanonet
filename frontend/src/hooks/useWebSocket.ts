@@ -159,7 +159,7 @@ export function useWebSocket() {
           if (e.code === 1000 || e.code === 4401) {
             if (e.code === 4401) {
               setLastError('Oturum süresi doldu');
-              localStorage.removeItem('access_token');
+              useAuthStore.getState().clearAuth();
               window.location.href = '/login';
             }
             return;

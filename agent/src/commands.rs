@@ -158,6 +158,22 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
         "scale" => {
             let instances = cmd.instances.unwrap_or(1);
             let strategy = cmd.strategy.as_deref().unwrap_or("round_robin");
+
+            // Validate strategy against allowlist to prevent shell injection
+            const ALLOWED_STRATEGIES: &[&str] =
+                &["round_robin", "least_conn", "ip_hash", "random", "weighted"];
+            if !ALLOWED_STRATEGIES.contains(&strategy) {
+                tracing::warn!(
+                    "[{}] Geçersiz strateji reddedildi: {}",
+                    cmd.command_id,
+                    strategy
+                );
+                return Err(format!(
+                    "geçersiz strateji: {} — izin verilenler: {:?}",
+                    strategy, ALLOWED_STRATEGIES
+                ));
+            }
+
             tracing::info!(
                 "[{}] scale: {} instance, strateji: {}",
                 cmd.command_id, instances, strategy

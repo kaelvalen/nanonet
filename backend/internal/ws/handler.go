@@ -11,21 +11,43 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 type Handler struct {
-	hub       *Hub
-	jwtSecret string
+	hub            *Hub
+	jwtSecret      string
+	allowedOrigins map[string]bool
+	upgrader       websocket.Upgrader
 }
 
-func NewHandler(hub *Hub, jwtSecret string) *Handler {
-	return &Handler{hub: hub, jwtSecret: jwtSecret}
+func NewHandler(hub *Hub, jwtSecret string, frontendURL string) *Handler {
+	allowed := map[string]bool{
+		"http://localhost:3000": true,
+		"http://localhost:5173": true,
+		"http://localhost:4173": true,
+	}
+	if frontendURL != "" {
+		allowed[frontendURL] = true
+	}
+
+	h := &Handler{
+		hub:            hub,
+		jwtSecret:      jwtSecret,
+		allowedOrigins: allowed,
+	}
+
+	h.upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			// Agent bağlantıları Origin göndermeyebilir (native clients)
+			if origin == "" {
+				return true
+			}
+			return h.allowedOrigins[origin]
+		},
+	}
+
+	return h
 }
 
 func (h *Handler) extractTokenType(tokenString string) string {
@@ -53,7 +75,7 @@ func (h *Handler) Dashboard(c *gin.Context) {
 		return
 	}
 
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade hatası: %v", err)
 		return
@@ -99,7 +121,7 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 		agentID = uuid.New().String()
 	}
 
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade hatası: %v", err)
 		return
@@ -126,7 +148,7 @@ func (h *Handler) ServiceStream(c *gin.Context) {
 		return
 	}
 
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade hatası: %v", err)
 		return

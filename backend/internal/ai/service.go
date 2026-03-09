@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -17,6 +18,9 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// ErrRateLimitExceeded — AI analiz limiti aşıldı.
+var ErrRateLimitExceeded = errors.New("AI analiz limiti aşıldı, lütfen 1 dakika bekleyin")
 
 type Service struct {
 	db          *gorm.DB
@@ -79,7 +83,7 @@ func NewService(db *gorm.DB, apiKey string) *Service {
 
 func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, windowMinutes int, deepAnalysis bool) (*AnalysisResult, error) {
 	if !s.rateLimiter.Allow(userID.String()) {
-		return nil, fmt.Errorf("AI analiz limiti aşıldı, lütfen 1 dakika bekleyin")
+		return nil, ErrRateLimitExceeded
 	}
 
 	if windowMinutes <= 0 {

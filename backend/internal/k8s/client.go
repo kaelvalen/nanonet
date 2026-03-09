@@ -391,17 +391,8 @@ spec:
         averageUtilization: %d
 `, hpaName, deploymentName, minReplicas, maxReplicas, cpuTargetPercent)
 
-	// Apply
-	cmd := exec.CommandContext(ctx, "kubectl", "apply", "-f", "-")
-	cmd.Stdin = strings.NewReader(yaml)
-	if c.kubeconfig != "" {
-		cmd.Args = append(cmd.Args, "--kubeconfig", c.kubeconfig)
-	}
-	if c.namespace != "" && c.namespace != "default" {
-		cmd.Args = append(cmd.Args, "-n", c.namespace)
-	}
-
-	if _, err := cmd.CombinedOutput(); err != nil {
+	// Apply (timeout ve namespace yönetimi runKubectlWithStdin içinde)
+	if _, err := c.runKubectlWithStdin(ctx, yaml, "apply", "-f", "-"); err != nil {
 		return nil, fmt.Errorf("HPA oluşturulamadı: %w", err)
 	}
 

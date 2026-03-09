@@ -198,15 +198,16 @@ func (h *Handler) Restart(c *gin.Context) {
 	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
+	status := "sent"
 	if !sent {
-		response.Error(c, 503, "agent bağlı değil, komut gönderilemedi")
-		return
+		status = "queued"
 	}
 
 	response.Success(c, gin.H{
-		"command_id": commandID,
-		"status":     "queued",
-		"queued_at":  time.Now(),
+		"command_id":      commandID,
+		"status":          status,
+		"queued_at":       time.Now(),
+		"agent_connected": sent,
 	})
 }
 
@@ -254,15 +255,16 @@ func (h *Handler) Stop(c *gin.Context) {
 	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
+	status := "sent"
 	if !sent {
-		response.Error(c, 503, "agent bağlı değil, komut gönderilemedi")
-		return
+		status = "queued"
 	}
 
 	response.Success(c, gin.H{
-		"command_id": commandID,
-		"status":     "queued",
-		"queued_at":  time.Now(),
+		"command_id":      commandID,
+		"status":          status,
+		"queued_at":       time.Now(),
+		"agent_connected": sent,
 	})
 }
 
@@ -334,15 +336,16 @@ func (h *Handler) Exec(c *gin.Context) {
 	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
+	status := "sent"
 	if !sent {
-		response.Error(c, 503, "agent bağlı değil, komut gönderilemedi")
-		return
+		status = "queued"
 	}
 
 	response.Success(c, gin.H{
-		"command_id": commandID,
-		"status":     "queued",
-		"queued_at":  time.Now(),
+		"command_id":      commandID,
+		"status":          status,
+		"queued_at":       time.Now(),
+		"agent_connected": sent,
 	})
 }
 
@@ -377,15 +380,16 @@ func (h *Handler) Start(c *gin.Context) {
 	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
+	status := "sent"
 	if !sent {
-		response.Error(c, 503, "agent bağlı değil, komut gönderilemedi")
-		return
+		status = "queued"
 	}
 
 	response.Success(c, gin.H{
-		"command_id": commandID,
-		"status":     "queued",
-		"queued_at":  time.Now(),
+		"command_id":      commandID,
+		"status":          status,
+		"queued_at":       time.Now(),
+		"agent_connected": sent,
 	})
 }
 
@@ -419,6 +423,17 @@ func (h *Handler) Scale(c *gin.Context) {
 	if req.Strategy == "" {
 		req.Strategy = "round_robin"
 	}
+	allowedStrategies := map[string]bool{
+		"round_robin": true,
+		"least_conn":  true,
+		"ip_hash":     true,
+		"random":      true,
+		"weighted":    true,
+	}
+	if !allowedStrategies[req.Strategy] {
+		response.BadRequest(c, "geçersiz strateji — izin verilenler: round_robin, least_conn, ip_hash, random, weighted")
+		return
+	}
 
 	commandID := uuid.New().String()
 	command := map[string]interface{}{
@@ -436,17 +451,18 @@ func (h *Handler) Scale(c *gin.Context) {
 	}
 
 	sent := h.hub.SendCommandToAgent(id.String(), command)
+	status := "sent"
 	if !sent {
-		response.Error(c, 503, "agent bağlı değil, komut gönderilemedi")
-		return
+		status = "queued"
 	}
 
 	response.Success(c, gin.H{
-		"command_id": commandID,
-		"status":     "queued",
-		"instances":  req.Instances,
-		"strategy":   req.Strategy,
-		"queued_at":  time.Now(),
+		"command_id":      commandID,
+		"status":          status,
+		"instances":       req.Instances,
+		"strategy":        req.Strategy,
+		"queued_at":       time.Now(),
+		"agent_connected": sent,
 	})
 }
 

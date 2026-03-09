@@ -161,14 +161,25 @@ func (mb *MetricsBroadcaster) broadcastLatestMetrics(ctx context.Context) {
 	}
 
 	for _, latest := range latestMetrics {
-		mb.hub.BroadcastToDashboards(latest.ServiceID.String(), map[string]interface{}{
-			"time":           latest.Time,
-			"cpu_percent":    latest.CPUPercent,
-			"memory_used_mb": latest.MemoryUsedMB,
-			"latency_ms":     latest.LatencyMS,
-			"error_rate":     latest.ErrorRate,
-			"status":         latest.Status,
-			"disk_used_gb":   latest.DiskUsedGB,
-		})
+		broadcast := map[string]interface{}{
+			"time":   latest.Time,
+			"status": latest.Status,
+		}
+		if latest.CPUPercent != nil {
+			broadcast["cpu_percent"] = *latest.CPUPercent
+		}
+		if latest.MemoryUsedMB != nil {
+			broadcast["memory_used_mb"] = *latest.MemoryUsedMB
+		}
+		if latest.LatencyMS != nil {
+			broadcast["latency_ms"] = *latest.LatencyMS
+		}
+		if latest.ErrorRate != nil {
+			broadcast["error_rate"] = *latest.ErrorRate
+		}
+		if latest.DiskUsedGB != nil {
+			broadcast["disk_used_gb"] = *latest.DiskUsedGB
+		}
+		mb.hub.BroadcastToDashboards(latest.ServiceID.String(), broadcast)
 	}
 }

@@ -546,6 +546,7 @@ function CommandHistoryTab({ serviceId }: { serviceId: string }) {
 export function ServiceDetailPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { deleteService, restartService, stopService } = useServices();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
@@ -684,6 +685,7 @@ export function ServiceDetailPage() {
     try {
       await metricsApi.resolveAlert(alertId);
       toast.success("Alert çözüldü");
+      queryClient.invalidateQueries({ queryKey: ["serviceAlerts", serviceId] });
     } catch {
       toast.error("Alert çözülemedi");
     }

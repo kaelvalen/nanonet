@@ -75,7 +75,7 @@ func main() {
 	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)
 	alertHandler := alerts.NewHandler(db)
-	wsHandler := ws.NewHandler(hub, cfg.JWTSecret)
+	wsHandler := ws.NewHandler(hub, cfg.JWTSecret, cfg.FrontendURL)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
 	cmdHandler := commands.NewHandler(db)
 	cmdService := commands.NewService(db)
