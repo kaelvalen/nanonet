@@ -441,6 +441,54 @@ func (h *Handler) ListHPAs(c *gin.Context) {
 	response.Success(c, gin.H{"hpas": hpas, "count": len(hpas)})
 }
 
+// DeployService — NanoNet servisini K8s'e Deployment+Service olarak yayınlar.
+// POST /k8s/deploy
+func (h *Handler) DeployService(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+	var req struct {
+		Name     string `json:"name" binding:"required"`
+		Image    string `json:"image" binding:"required"`
+		Port     int32  `json:"port" binding:"required"`
+		Replicas int32  `json:"replicas"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	if req.Replicas <= 0 {
+		req.Replicas = 1
+	}
+	slug, err := h.client.DeployService(c.Request.Context(), req.Name, req.Image, req.Port, req.Replicas)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{
+		"message":  req.Name + " başarıyla K8s'e dağıtıldı",
+		"k8s_name": slug,
+	})
+}
+
+// UndeployService — NanoNet servisini K8s'ten kaldırır.
+// DELETE /k8s/deploy/:name
+func (h *Handler) UndeployService(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+	name := c.Param("name")
+	if name == "" {
+		response.BadRequest(c, "servis adı gerekli")
+		return
+	}
+	if err := h.client.UndeployService(c.Request.Context(), name); err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"message": name + " K8s'ten kaldırıldı"})
+}
+
 // parseIntParam — query param'ı int'e çevirir.
 func parseIntParam(c *gin.Context, key string, defaultVal int) int {
 	val := c.Query(key)

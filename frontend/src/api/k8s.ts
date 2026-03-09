@@ -155,4 +155,14 @@ export const k8sApi = {
         const { data } = await apiClient.get("/k8s/nodes");
         return data.data as { nodes: NodeInfo[]; count: number };
     },
+
+    deployService: async (name: string, image: string, port: number, replicas: number) => {
+        const { data } = await apiClient.post("/k8s/deploy", { name, image, port, replicas }, { timeout: 60000 });
+        return data.data as { message: string; k8s_name: string };
+    },
+
+    undeployService: async (name: string) => {
+        const { data } = await apiClient.delete(`/k8s/deploy/${encodeURIComponent(name)}`, { timeout: 30000 });
+        return data.data as { message: string };
+    },
 };
