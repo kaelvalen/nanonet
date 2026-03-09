@@ -765,6 +765,119 @@ func (c *Client) ListServices(ctx context.Context) ([]ServiceInfo, error) {
 	return services, nil
 }
 
+// runKubectlWithStdin — kubectl komutunu stdin input ile çalıştırır.
+func (c *Client) runKubectlWithStdin(ctx context.Context, input string, args ...string) ([]byte, error) {
+	cmdArgs := []string{}
+	if c.kubeconfig != "" {
+		cmdArgs = append(cmdArgs, "--kubeconfig", c.kubeconfig)
+	}
+	if c.namespace != "" && c.namespace != "default" {
+		cmdArgs = append(cmdArgs, "-n", c.namespace)
+	}
+	cmdArgs = append(cmdArgs, args...)
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "kubectl", cmdArgs...)
+	cmd.Stdin = strings.NewReader(input)
+	out, err := cmd.CombinedOutput()
+	if err != nil && strings.Contains(string(out), "not found") {
+		return out, ErrNotFound
+	}
+	return out, err
+}
+
+// slugify — Servis adından K8s uyumlu kaynak adı üretir.
+func slugify(name string) string {
+	lower := strings.ToLower(name)
+	var r []rune
+	for _, ch := range lower {
+		if (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') {
+			r = append(r, ch)
+		} else {
+			r = append(r, '-')
+		}
+	}
+	s := strings.Trim(string(r), "-")
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+	return s
+}
+
+// DeployService — NanoNet servisini K8s'e Deployment + Service olarak yayınlar.
+func (c *Client) DeployService(ctx context.Context, name, image string, port, replicas int32) (string, error) {
+	slug := slugify(name)
+	if slug == "" {
+		return "", fmt.Errorf("geçersiz servis adı: %q", name)
+	}
+	if replicas <= 0 {
+		replicas = 1
+	}
+
+	yaml := fmt.Sprintf(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: %s
+  labels:
+    app: %s
+    managed-by: nanonet
+    nanonet-service: "true"
+spec:
+  replicas: %d
+  selector:
+    matchLabels:
+      app: %s
+  template:
+    metadata:
+      labels:
+        app: %s
+        managed-by: nanonet
+    spec:
+      containers:
+      - name: %s
+        image: %s
+        ports:
+        - containerPort: %d
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: %s
+  labels:
+    managed-by: nanonet
+    nanonet-service: "true"
+spec:
+  selector:
+    app: %s
+  ports:
+  - port: %d
+    targetPort: %d
+    protocol: TCP
+  type: ClusterIP
+`, slug, slug, replicas, slug, slug, slug, image, port, slug, slug, port, port)
+
+	out, err := c.runKubectlWithStdin(ctx, yaml, "apply", "-f", "-")
+	if err != nil {
+		return slug, fmt.Errorf("deploy hatası: %w — %s", err, strings.TrimSpace(string(out)))
+	}
+	return slug, nil
+}
+
+// UndeployService — NanoNet servisini K8s'ten kaldırır.
+func (c *Client) UndeployService(ctx context.Context, name string) error {
+	slug := slugify(name)
+	if slug == "" {
+		return fmt.Errorf("geçersiz servis adı")
+	}
+	out, err := c.runKubectl(ctx, "delete", "deployment,service,hpa", slug, "--ignore-not-found", "--grace-period=5")
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return fmt.Errorf("undeploy hatası: %w — %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
 // ListHPAs — namespace'deki tüm HPA'ları listeler.
 func (c *Client) ListHPAs(ctx context.Context) ([]HPAInfo, error) {
 	output, err := c.runKubectl(ctx, "get", "hpa", "-o", "json")

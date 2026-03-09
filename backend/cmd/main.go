@@ -178,6 +178,8 @@ func main() {
 			k8sGroup.DELETE("/hpa/:name", strictLimiter, k8sHandler.DeleteHPA)
 			k8sGroup.GET("/services", k8sHandler.ListServices)
 			k8sGroup.GET("/endpoints/:name", k8sHandler.GetServiceEndpoints)
+			k8sGroup.POST("/deploy", strictLimiter, k8sHandler.DeployService)
+			k8sGroup.DELETE("/deploy/:name", strictLimiter, k8sHandler.UndeployService)
 		}
 	}
 
