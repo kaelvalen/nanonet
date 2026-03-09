@@ -81,7 +81,7 @@ export const metricsApi = {
   },
 
   resolveAlert: async (alertId: string): Promise<void> => {
-    await apiClient.post(`/services/alerts/${alertId}/resolve`);
+    await apiClient.post(`/alerts/${alertId}/resolve`);
   },
 
   getActiveAlerts: async (): Promise<Alert[]> => {

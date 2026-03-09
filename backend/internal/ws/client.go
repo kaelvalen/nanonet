@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -118,6 +119,6 @@ func (c *Client) SendJSON(v interface{}) error {
 	case c.send <- data:
 		return nil
 	default:
-		return nil
+		return fmt.Errorf("client send buffer dolu, mesaj atlandı: %s", c.id)
 	}
 }

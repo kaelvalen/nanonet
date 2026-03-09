@@ -56,7 +56,7 @@ const queryClient = new QueryClient({
 });
 
 function AppInit() {
-  const { refreshToken, accessToken, setAuth, clearAuth, setInitializing, user } = useAuthStore();
+  const { refreshToken, accessToken, setAuth, clearAuth, setInitializing, updateUser, user } = useAuthStore();
 
   useEffect(() => {
     // Sayfa yenilendiğinde access token memory'de olmaz; refresh token ile yenile
@@ -64,7 +64,16 @@ function AppInit() {
       authApi
         .refresh(refreshToken)
         .then((res) => {
-          setAuth(user ?? { id: "", email: "", created_at: "", updated_at: "" }, res.access_token, refreshToken);
+          // Token'ı önce ayarla (ardından gelen /auth/me isteği bunu kullanır)
+          setAuth(
+            user ?? { id: "", email: "", created_at: "", updated_at: "" },
+            res.access_token,
+            refreshToken,
+          );
+          // Kullanıcı bilgilerini sunucudan al
+          return authApi.me().then((fetchedUser) => {
+            updateUser(fetchedUser);
+          });
         })
         .catch(() => {
           clearAuth();

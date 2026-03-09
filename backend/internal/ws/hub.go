@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"sync"
+	"time"
 )
 
 type AgentMessage struct {
@@ -320,6 +321,7 @@ func (h *Hub) queueCommand(serviceID string, data []byte, commandID string) {
 	h.pendingCommands[serviceID] = append(queue, pendingCommand{
 		Data:      data,
 		CommandID: commandID,
+		QueuedAt:  time.Now().UTC().Format(time.RFC3339),
 	})
 }
 

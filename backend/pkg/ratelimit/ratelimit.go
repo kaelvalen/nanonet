@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -111,7 +112,7 @@ func Middleware(limit int, window time.Duration) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Header("X-RateLimit-Remaining", string(rune('0'+limiter.Remaining(key))))
+		c.Header("X-RateLimit-Remaining", strconv.Itoa(limiter.Remaining(key)))
 		c.Next()
 	}
 }

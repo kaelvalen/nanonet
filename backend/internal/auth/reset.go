@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"nanonet-backend/pkg/mailer"
@@ -70,12 +71,12 @@ func (s *Service) ForgotPassword(email string, m *mailer.Mailer, frontendURL str
 	if m != nil && m.Enabled() {
 		if sendErr := m.SendPasswordReset(user.Email, resetURL); sendErr != nil {
 			// Log but don't surface — token is already created, user can retry
-			fmt.Printf("[MAILER ERROR] email=%s err=%v\n", user.Email, sendErr)
+			log.Printf("[MAILER ERROR] email=%s err=%v", user.Email, sendErr)
 		} else {
-			fmt.Printf("[MAILER OK] reset email sent to %s\n", user.Email)
+			log.Printf("[MAILER OK] reset email sent to %s", user.Email)
 		}
 	} else {
-		fmt.Printf("[MAILER SKIP] not configured — reset URL: %s\n", resetURL)
+		log.Printf("[MAILER SKIP] not configured — reset URL: %s", resetURL)
 	}
 
 	return nil
