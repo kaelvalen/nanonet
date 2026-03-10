@@ -1,6 +1,15 @@
 import apiClient from './client';
 import type { ServiceMetrics } from '../types/metrics';
 
+export interface AlertRules {
+  service_id?: string;
+  cpu_threshold: number;
+  memory_threshold_mb: number;
+  latency_threshold_ms: number;
+  error_rate_threshold: number;
+  is_default?: boolean;
+}
+
 export interface AggregatedMetric {
   bucket: string;
   avg_cpu: number | null;
@@ -109,5 +118,15 @@ export const metricsApi = {
       params: { page, limit: 20 },
     });
     return response.data.data || { commands: [], total: 0 };
+  },
+
+  getAlertRules: async (serviceId: string): Promise<AlertRules> => {
+    const response = await apiClient.get(`/services/${serviceId}/alert-rules`);
+    return response.data.data;
+  },
+
+  updateAlertRules: async (serviceId: string, rules: Omit<AlertRules, 'service_id' | 'is_default'>): Promise<AlertRules> => {
+    const response = await apiClient.put(`/services/${serviceId}/alert-rules`, rules);
+    return response.data.data;
   },
 };

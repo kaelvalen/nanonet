@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"nanonet-backend/pkg/audit"
 	"nanonet-backend/pkg/mailer"
 	"nanonet-backend/pkg/response"
 	"nanonet-backend/pkg/tokenblacklist"
@@ -17,17 +18,19 @@ import (
 
 type Handler struct {
 	service     *Service
-	blacklist   *tokenblacklist.Blacklist
+	blacklist   tokenblacklist.Blacklist
 	mailer      *mailer.Mailer
 	frontendURL string
+	db          *gorm.DB
 }
 
-func NewHandler(db *gorm.DB, jwtSecret string, m *mailer.Mailer, frontendURL string) *Handler {
+func NewHandler(db *gorm.DB, jwtSecret string, m *mailer.Mailer, frontendURL string, bl tokenblacklist.Blacklist) *Handler {
 	return &Handler{
 		service:     NewService(db, jwtSecret),
-		blacklist:   tokenblacklist.Default,
+		blacklist:   bl,
 		mailer:      m,
 		frontendURL: frontendURL,
+		db:          db,
 	}
 }
 
@@ -96,7 +99,13 @@ func (h *Handler) Refresh(c *gin.Context) {
 		return
 	}
 
-	userID, err := h.service.ValidateRefreshToken(req.RefreshToken)
+	// Reject already-blacklisted tokens before any DB work.
+	if h.blacklist.IsBlacklisted(c.Request.Context(), req.RefreshToken) {
+		response.Unauthorized(c, "geçersiz refresh token")
+		return
+	}
+
+	userID, expiry, err := h.service.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
 		response.Unauthorized(c, "geçersiz refresh token")
 		return
@@ -106,6 +115,11 @@ func (h *Handler) Refresh(c *gin.Context) {
 	if err != nil {
 		response.InternalError(c, "token oluşturulamadı")
 		return
+	}
+
+	// Blacklist the consumed refresh token so it cannot be reused.
+	if ttl := time.Until(expiry); ttl > 0 {
+		_ = h.blacklist.Add(c.Request.Context(), req.RefreshToken, ttl)
 	}
 
 	response.Success(c, tokens)
@@ -140,7 +154,8 @@ func (h *Handler) AgentToken(c *gin.Context) {
 func (h *Handler) Logout(c *gin.Context) {
 	tokenString := c.GetString("token")
 	if tokenString != "" {
-		h.blacklist.Add(tokenString, time.Now().Add(24*time.Hour))
+		// Access tokens live for 24h; blacklist for the full window.
+		_ = h.blacklist.Add(c.Request.Context(), tokenString, 24*time.Hour)
 	}
 	response.Success(c, gin.H{"message": "çıkış başarılı"})
 }
@@ -246,9 +261,18 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 		return
 	}
 
+	// Şifre değişikliğini audit log'a yaz
+	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+		UserID:       &userID,
+		Action:       audit.ActionPasswordChanged,
+		ResourceType: "user",
+		ResourceID:   &userID,
+		Status:       audit.StatusSuccess,
+	})
+
 	tokenString := c.GetString("token")
 	if tokenString != "" {
-		h.blacklist.Add(tokenString, time.Now().Add(24*time.Hour))
+		_ = h.blacklist.Add(c.Request.Context(), tokenString, 24*time.Hour)
 	}
 
 	response.Success(c, gin.H{"message": "şifre güncellendi, lütfen tekrar giriş yapın"})

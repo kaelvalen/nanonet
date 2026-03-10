@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -42,6 +43,14 @@ func (s *Service) GetHistory(ctx context.Context, serviceID uuid.UUID, limit, of
 		limit = 20
 	}
 	return s.repo.GetByServiceID(ctx, serviceID, limit, offset)
+}
+
+func (s *Service) HasInFlightCommand(ctx context.Context, serviceID uuid.UUID, action string) (bool, error) {
+	return s.repo.HasInFlightCommand(ctx, serviceID, action)
+}
+
+func (s *Service) MarkStalledCommandsTimeout(ctx context.Context, threshold time.Time) error {
+	return s.repo.MarkStalledCommandsTimeout(ctx, threshold)
 }
 
 func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {

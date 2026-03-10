@@ -31,12 +31,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
               {this.state.error?.message ?? "Bilinmeyen hata"}
             </p>
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-              onClick={() => window.location.reload()}
-            >
-              Sayfayı Yenile
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                onClick={() => window.location.reload()}
+              >
+                Sayfayı Yenile
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                onClick={() => { window.location.href = '/'; }}
+              >
+                Ana Sayfaya Dön
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -56,7 +64,7 @@ const queryClient = new QueryClient({
 });
 
 function AppInit() {
-  const { refreshToken, accessToken, setAuth, clearAuth, setInitializing, updateUser, user } = useAuthStore();
+  const { refreshToken, accessToken, setAuth, clearAuth, setInitializing, updateUser, user, isInitializing } = useAuthStore();
 
   useEffect(() => {
     // Sayfa yenilendiğinde access token memory'de olmaz; refresh token ile yenile
@@ -64,13 +72,11 @@ function AppInit() {
       authApi
         .refresh(refreshToken)
         .then((res) => {
-          // Token'ı önce ayarla (ardından gelen /auth/me isteği bunu kullanır)
           setAuth(
             user ?? { id: "", email: "", created_at: "", updated_at: "" },
             res.access_token,
             refreshToken,
           );
-          // Kullanıcı bilgilerini sunucudan al
           return authApi.me().then((fetchedUser) => {
             updateUser(fetchedUser);
           });
@@ -85,6 +91,14 @@ function AppInit() {
       setInitializing(false);
     }
   }, []);
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
 
   return null;
 }

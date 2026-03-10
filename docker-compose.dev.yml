@@ -16,6 +16,17 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: nanonet-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -23,6 +34,7 @@ services:
     container_name: nanonet-backend
     environment:
       DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres}@db:5432/nanonet?sslmode=disable
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-secret-key-min-32-chars-here!}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
       PORT: "8080"
@@ -41,6 +53,8 @@ services:
       - ${HOME}/.kube:/root/.kube:ro
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - default

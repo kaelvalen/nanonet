@@ -12,13 +12,13 @@ import (
 
 type Middleware struct {
 	service   *Service
-	blacklist *tokenblacklist.Blacklist
+	blacklist tokenblacklist.Blacklist
 }
 
-func NewMiddleware(jwtSecret string) *Middleware {
+func NewMiddleware(jwtSecret string, bl tokenblacklist.Blacklist) *Middleware {
 	return &Middleware{
 		service:   &Service{jwtSecret: jwtSecret},
-		blacklist: tokenblacklist.Default,
+		blacklist: bl,
 	}
 }
 
@@ -68,7 +68,7 @@ func (m *Middleware) Required() gin.HandlerFunc {
 			return
 		}
 
-		if m.blacklist.IsBlacklisted(tokenString) {
+		if m.blacklist.IsBlacklisted(c.Request.Context(), tokenString) {
 			response.Unauthorized(c, "token geçersiz kılınmış, lütfen tekrar giriş yapın")
 			c.Abort()
 			return

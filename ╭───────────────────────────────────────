@@ -1,0 +1,296 @@
+╭─────────────────────────────────────────────────────────────────────────────────────────╮
+│ Plan to implement                                                                       │
+│                                                                                         │
+│ NanoNet Feature Implementation Plan                                                     │
+│                                                                                         │
+│ Context                                                                                 │
+│                                                                                         │
+│ User selected 8 feature areas to implement (from a list of 12 recommendations):         │
+│ 1, 2, 3, 4, 6, 7, 11 (Item 5 already implemented via TimescaleDB 90-day retention in    │
+│ migration 0003).                                                                        │
+│                                                                                         │
+│ Infrastructure decision: Redis for blacklist persistence and horizontal scalability.    │
+│                                                                                         │
+│ ---                                                                                     │
+│ Feature 1 + 2: Refresh Token Rotation + Redis Blacklist Persistence                     │
+│                                                                                         │
+│ Problem                                                                                 │
+│                                                                                         │
+│ - /auth/refresh issues a new access token but never blacklists the old refresh token →  │
+│ token reuse possible.                                                                   │
+│ - pkg/tokenblacklist is in-memory → all blacklisted tokens lost on restart.             │
+│                                                                                         │
+│ Changes                                                                                 │
+│                                                                                         │
+│ backend/pkg/config/config.go — add RedisURL string field (env: REDIS_URL, default "" →  │
+│ in-memory fallback).                                                                    │
+│                                                                                         │
+│ backend/pkg/redisstore/client.go (new file) — create redis.Client from REDIS_URL using  │
+│ github.com/redis/go-redis/v9.                                                           │
+│                                                                                         │
+│ backend/pkg/tokenblacklist/blacklist.go — refactor to interface:                        │
+│ type Blacklist interface {                                                              │
+│     Add(ctx context.Context, token string, expiry time.Duration) error                  │
+│     IsBlacklisted(ctx context.Context, token string) bool                               │
+│ }                                                                                       │
+│ Keep InMemoryBlacklist (default). Add RedisBlacklist using SET token 1 EX ttl / EXISTS. │
+│                                                                                         │
+│ backend/internal/auth/handler.go — in Refresh(): after issuing new access token, call   │
+│ h.blacklist.Add(ctx, oldRefreshToken, remainingTTL) to blacklist the consumed refresh   │
+│ token.                                                                                  │
+│                                                                                         │
+│ backend/cmd/main.go — wire: if REDIS_URL set → RedisBlacklist; else →                   │
+│ InMemoryBlacklist.                                                                      │
+│                                                                                         │
+│ backend/go.mod — add github.com/redis/go-redis/v9.                                      │
+│                                                                                         │
+│ ---                                                                                     │
+│ Feature 3: WebSocket Rate Limiting                                                      │
+│                                                                                         │
+│ Problem                                                                                 │
+│                                                                                         │
+│ No rate limiting on WS upgrade endpoints. Any IP can open unlimited connections.        │
+│                                                                                         │
+│ Changes                                                                                 │
+│                                                                                         │
+│ backend/internal/ws/handler.go — add two *ratelimit.Limiter fields to Handler:          │
+│ - dashboardLimiter: 10 connections/min per IP                                           │
+│ - agentLimiter: 5 connects/min per IP                                                   │
+│                                                                                         │
+│ In Dashboard() and AgentConnect(), extract c.ClientIP(), check limiter before           │
+│ upgrader.Upgrade(). Return HTTP 429 if exceeded.                                        │
+│                                                                                         │
+│ Use existing backend/internal/ratelimit/ratelimit.go (already in project).              │
+│                                                                                         │
+│ ---                                                                                     │
+│ Feature 4: Per-Service Alert Thresholds                                                 │
+│                                                                                         │
+│ Problem                                                                                 │
+│                                                                                         │
+│ AlertRule is a hardcoded Go struct with a bug: MemoryThreshold: 85.0 means 85 MB (fires │
+│  constantly for any real service). Should be per-service and configurable.              │
+│                                                                                         │
+│ Changes                                                                                 │
+│                                                                                         │
+│ backend/migrations/0011_create_service_alert_rules.up.sql (new):                        │
+│ CREATE TABLE service_alert_rules (                                                      │
+│     service_id       UUID PRIMARY KEY REFERENCES services(id) ON DELETE CASCADE,        │
+│     cpu_threshold    FLOAT4 NOT NULL DEFAULT 80,                                        │
+│     memory_threshold_mb FLOAT4 NOT NULL DEFAULT 2048,                                   │
+│     latency_threshold_ms FLOAT4 NOT NULL DEFAULT 1000,                                  │
+│     error_rate_threshold FLOAT4 NOT NULL DEFAULT 5,                                     │
+│     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()                                 │
+│ );                                                                                      │
+│                                                                                         │
+│ backend/migrations/0011_create_service_alert_rules.down.sql (new): DROP TABLE IF EXISTS │
+│  service_alert_rules;                                                                   │
+│                                                                                         │
+│ backend/internal/alerts/models.go — add ServiceAlertRule struct (mirrors table). Fix    │
+│ default MemoryThreshold to 2048.0.                                                      │
+│                                                                                         │
+│ backend/internal/alerts/repository.go — add GetAlertRule(ctx, serviceID) and            │
+│ UpsertAlertRule(ctx, rule).                                                             │
+│                                                                                         │
+│ backend/internal/alerts/service.go — CheckMetricAndCreateAlert reads per-service rule   │
+│ from DB (fallback to defaults if no row). Fix MemoryThreshold default.                  │
+│                                                                                         │
+│ backend/internal/alerts/handler.go — add two endpoints:                                 │
+│ - GET /services/:id/alert-rules → returns current rule (or defaults)                    │
+│ - PUT /services/:id/alert-rules → upserts rule                                          │
+│                                                                                         │
+│ backend/cmd/main.go — register new routes.                                              │
+│                                                                                         │
+│ frontend/src/api/alerts.ts (or new alertRules.ts) — add getAlertRules(serviceId) and    │
+│ updateAlertRules(serviceId, rules).                                                     │
+│                                                                                         │
+│ frontend/src/pages/ServiceDetailPage.tsx — add alert thresholds editor form (cpu%,      │
+│ memory MB, latency ms, error rate %).                                                   │
+│                                                                                         │
+│ ---                                                                                     │
+│ Feature 6: Real-time Chart Updates via WebSocket                                        │
+│                                                                                         │
+│ Problem                                                                                 │
+│                                                                                         │
+│ useWebSocket.ts receives metric_update events but only invalidates ['services'] cache.  │
+│ MetricsChart uses ['serviceMetrics', serviceId, duration] — those are never updated in  │
+│ real-time; charts only refresh on poll interval.                                        │
+│                                                                                         │
+│ Changes                                                                                 │
+│                                                                                         │
+│ frontend/src/hooks/useWebSocket.ts — in metric_update handler, after updating           │
+│ ['services']:                                                                           │
+│ queryClient.setQueryData(                                                               │
+│     ['serviceMetrics', message.service_id, /* current duration */],                     │
+│     (old: MetricPoint[] | undefined) => {                                               │
+│         const next = [...(old ?? []), { time: message.time, cpu_percent:                │
+│ message.cpu_percent, ... }];                                                            │
+│         return next.slice(-500); // keep last 500 points                                │
+│     }                                                                                   │
+│ );                                                                                      │
+│ Need to access current metricsDuration from store/context, or update all durations.     │
+│                                                                                         │
+│ frontend/src/pages/ServiceDetailPage.tsx — pass serviceId to useWebSocket if not        │
+│ already; ensure queryClient is available.                                               │
+│                                                                                         │
+│ ---                                                                                     │
+│ Feature 7: Maintenance Windows                                                          │
+│                                                                                         │
+│ Problem                                                                                 │
+│                                                                                         │
+│ No way to suppress alerts during planned downtime.                                      │
+│                                                                                         │
+│ Changes                                                                                 │
+│                                                                                         │
+│ backend/migrations/0012_create_maintenance_windows.up.sql (new):                        │
+│ CREATE TABLE maintenance_windows (                                                      │
+│     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),                             │
+│     service_id  UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,                │
+│     starts_at   TIMESTAMPTZ NOT NULL,                                                   │
+│     ends_at     TIMESTAMPTZ NOT NULL,                                                   │
+│     reason      TEXT,                                                                   │
+│     created_by  UUID REFERENCES users(id),                                              │
+│     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),                                     │
+│     CONSTRAINT no_overlap EXCLUDE USING gist (                                          │
+│         service_id WITH =,                                                              │
+│         tstzrange(starts_at, ends_at) WITH &&                                           │
+│     )                                                                                   │
+│ );                                                                                      │
+│ CREATE INDEX ON maintenance_windows(service_id, ends_at);                               │
+│                                                                                         │
+│ backend/migrations/0012_create_maintenance_windows.down.sql (new).                      │
+│                                                                                         │
+│ backend/internal/maintenance/ (new package):                                            │
+│ - models.go — MaintenanceWindow struct                                                  │
+│ - repository.go — IsActiveNow(ctx, serviceID) (bool, error), List, Create, Delete       │
+│ - handler.go — CRUD handlers                                                            │
+│                                                                                         │
+│ backend/internal/alerts/models.go — add interface:                                      │
+│ type maintenanceChecker interface {                                                     │
+│     IsActiveNow(ctx context.Context, serviceID uuid.UUID) (bool, error)                 │
+│ }                                                                                       │
+│                                                                                         │
+│ backend/internal/alerts/service.go — CheckMetricAndCreateAlert calls                    │
+│ s.maint.IsActiveNow(); if true, skip alert creation.                                    │
+│                                                                                         │
+│ backend/internal/alerts/service.go — NewService accepts optional maintenanceChecker.    │
+│                                                                                         │
+│ backend/cmd/main.go — wire maintenance repo into alerts service; register maintenance   │
+│ routes under /services/:id/maintenance.                                                 │
+│                                                                                         │
+│ frontend/src/api/maintenance.ts (new) — CRUD API calls.                                 │
+│                                                                                         │
+│ frontend/src/pages/ServiceDetailPage.tsx — maintenance window list + create/delete UI.  │
+│                                                                                         │
+│ ---                                                                                     │
+│ Feature 11: Horizontal Scalability (Redis Pub/Sub)                                      │
+│                                                                                         │
+│ Problem                                                                                 │
+│                                                                                         │
+│ ws.Hub is in-memory. Multi-instance deployments lose broadcasts and pending commands    │
+│ between nodes.                                                                          │
+│                                                                                         │
+│ Changes                                                                                 │
+│                                                                                         │
+│ backend/internal/ws/hub.go — add optional redisClient *redis.Client. When set:          │
+│ - Broadcasts: BroadcastToDashboards publishes to nanonet:broadcast:{serviceID} channel; │
+│  StartRedis(ctx) goroutine subscribes and calls broadcastLocalDashboards.               │
+│ - Pending commands: queueCommand pushes to Redis List nanonet:pc:{serviceID};           │
+│ deliverPendingCommands pops from same list.                                             │
+│ - Cross-node agent commands: SendCommandToAgent publishes to nanonet:cmd:{serviceID} if │
+│  agent not local; subscriber tries local delivery.                                      │
+│                                                                                         │
+│ backend/internal/ws/hub.go — NewHubWithRedis(redisClient *redis.Client) *Hub            │
+│ constructor.                                                                            │
+│                                                                                         │
+│ backend/cmd/main.go — if Redis configured, use NewHubWithRedis.                         │
+│                                                                                         │
+│ ---                                                                                     │
+│ New Files                                                                               │
+│                                                                                         │
+│ File: backend/pkg/redisstore/client.go                                                  │
+│ Purpose: Redis client factory                                                           │
+│ ────────────────────────────────────────                                                │
+│ File: backend/migrations/0011_create_service_alert_rules.up.sql                         │
+│ Purpose: Alert rules table                                                              │
+│ ────────────────────────────────────────                                                │
+│ File: backend/migrations/0011_create_service_alert_rules.down.sql                       │
+│ Purpose: Rollback                                                                       │
+│ ────────────────────────────────────────                                                │
+│ File: backend/migrations/0012_create_maintenance_windows.up.sql                         │
+│ Purpose: Maintenance table                                                              │
+│ ────────────────────────────────────────                                                │
+│ File: backend/migrations/0012_create_maintenance_windows.down.sql                       │
+│ Purpose: Rollback                                                                       │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/maintenance/models.go                                            │
+│ Purpose: MaintenanceWindow struct                                                       │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/maintenance/repository.go                                        │
+│ Purpose: IsActiveNow, CRUD                                                              │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/maintenance/handler.go                                           │
+│ Purpose: HTTP handlers                                                                  │
+│ ────────────────────────────────────────                                                │
+│ File: frontend/src/api/maintenance.ts                                                   │
+│ Purpose: Frontend API calls                                                             │
+│                                                                                         │
+│ Modified Files                                                                          │
+│                                                                                         │
+│ File: backend/go.mod + go.sum                                                           │
+│ Change: Add go-redis/v9                                                                 │
+│ ────────────────────────────────────────                                                │
+│ File: backend/pkg/config/config.go                                                      │
+│ Change: Add RedisURL                                                                    │
+│ ────────────────────────────────────────                                                │
+│ File: backend/pkg/tokenblacklist/blacklist.go                                           │
+│ Change: Interface + Redis impl                                                          │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/auth/handler.go                                                  │
+│ Change: Blacklist consumed refresh token                                                │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/ws/handler.go                                                    │
+│ Change: WS rate limiting                                                                │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/ws/hub.go                                                        │
+│ Change: Redis pub/sub + pending cmds                                                    │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/alerts/models.go                                                 │
+│ Change: ServiceAlertRule, maintenanceChecker interface, fix MemoryThreshold             │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/alerts/repository.go                                             │
+│ Change: GetAlertRule, UpsertAlertRule                                                   │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/alerts/service.go                                                │
+│ Change: Per-service rules, maintenance check                                            │
+│ ────────────────────────────────────────                                                │
+│ File: backend/internal/alerts/handler.go                                                │
+│ Change: Alert rule CRUD endpoints                                                       │
+│ ────────────────────────────────────────                                                │
+│ File: backend/cmd/main.go                                                               │
+│ Change: Full wiring                                                                     │
+│ ────────────────────────────────────────                                                │
+│ File: frontend/src/hooks/useWebSocket.ts                                                │
+│ Change: Real-time chart cache updates                                                   │
+│ ────────────────────────────────────────                                                │
+│ File: frontend/src/pages/ServiceDetailPage.tsx                                          │
+│ Change: Alert rules editor + maintenance UI                                             │
+│                                                                                         │
+│ Verification                                                                            │
+│                                                                                         │
+│ 1. Unit: go test ./... — particularly tokenblacklist, alerts, maintenance packages.     │
+│ 2. Integration (Redis):                                                                 │
+│   - Start Redis locally: docker run -p 6379:6379 redis                                  │
+│   - Set REDIS_URL=redis://localhost:6379 and restart backend                            │
+│   - Confirm refresh token rotation: hit /auth/refresh twice with same token → second    │
+│ must return 401                                                                         │
+│   - Confirm blacklist survives restart (check Redis key with redis-cli get <token>)     │
+│ 3. WS rate limit: wscat -c ws://localhost:8080/ws/dashboard in a loop — expect 429      │
+│ after 10 rapid connects.                                                                │
+│ 4. Alert rules: PUT /services/:id/alert-rules with custom thresholds, send mock metric  │
+│ exceeding new threshold → alert created.                                                │
+│ 5. Maintenance suppression: Create active maintenance window, send metric that would    │
+│ trigger alert → no alert created.                                                       │
+│ 6. Real-time charts: Open ServiceDetailPage, watch metrics update in real time without  │
+│ page refresh.                                                                           │
+│ 7. Build: cd backend && go build ./... — cd frontend && npx tsc --noEmit                │
+╰─────────────────────────────────────────────────────────────────────────────────────────╯

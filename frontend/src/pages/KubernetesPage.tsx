@@ -1177,7 +1177,7 @@ export function KubernetesPage() {
                                                         {!isDeployed && form.open && (
                                                             <div className="mt-3 pt-3 space-y-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
                                                                 <div>
-                                                                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Container İmajı</p>
+                                                                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Container İmajı <span style={{ color: "var(--color-red, #e57373)" }}>*</span></p>
                                                                     <Input
                                                                         placeholder={`nginx:latest, my-registry/${slug}:latest`}
                                                                         value={form.image}
@@ -1188,6 +1188,11 @@ export function KubernetesPage() {
                                                                         className="rounded-lg text-xs h-9"
                                                                         style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}
                                                                     />
+                                                                    {!form.image.trim() && (
+                                                                        <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>
+                                                                            Dağıtım için bir container imajı girin (örn: nginx:latest)
+                                                                        </p>
+                                                                    )}
                                                                 </div>
                                                                 <div className="flex items-end gap-3">
                                                                     <div>
@@ -1213,7 +1218,7 @@ export function KubernetesPage() {
                                                                         disabled={!form.image.trim() || isDeploying || !isAvailable}
                                                                         title={!isAvailable ? "K8s bağlantısı yok" : !form.image.trim() ? "Container imajı gerekli" : ""}
                                                                         className="flex-1 text-white rounded-xl h-9 text-xs"
-                                                                        style={{ background: "var(--color-teal)" }}>
+                                                                        style={{ background: (!form.image.trim() || isDeploying || !isAvailable) ? "var(--text-faint)" : "var(--color-teal)" }}>
                                                                         {isDeploying
                                                                             ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Dağıtılıyor...</>
                                                                             : <><Package2 className="w-3.5 h-3.5 mr-1.5" />K8s'e Dağıt</>}

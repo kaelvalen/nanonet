@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -162,4 +163,42 @@ func (r *Repository) ResolveByUser(ctx context.Context, alertID, userID uuid.UUI
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+// ──────────────────────── ServiceAlertRule ────────────────────────
+
+// GetAlertRule returns the per-service alert rule, or nil if none is stored.
+func (r *Repository) GetAlertRule(ctx context.Context, serviceID uuid.UUID) (*ServiceAlertRule, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var rule ServiceAlertRule
+	err := r.db.WithContext(ctx).
+		Table("service_alert_rules").
+		Where("service_id = ?", serviceID).
+		First(&rule).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &rule, nil
+}
+
+// UpsertAlertRule inserts or updates the per-service alert rule.
+func (r *Repository) UpsertAlertRule(ctx context.Context, rule *ServiceAlertRule) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	return r.db.WithContext(ctx).Exec(`
+		INSERT INTO service_alert_rules (service_id, cpu_threshold, memory_threshold_mb, latency_threshold_ms, error_rate_threshold, updated_at)
+		VALUES (?, ?, ?, ?, ?, now())
+		ON CONFLICT (service_id) DO UPDATE SET
+			cpu_threshold        = EXCLUDED.cpu_threshold,
+			memory_threshold_mb  = EXCLUDED.memory_threshold_mb,
+			latency_threshold_ms = EXCLUDED.latency_threshold_ms,
+			error_rate_threshold = EXCLUDED.error_rate_threshold,
+			updated_at           = now()
+	`, rule.ServiceID, rule.CPUThreshold, rule.MemoryThresholdMB, rule.LatencyThresholdMS, rule.ErrorRateThreshold).Error
 }

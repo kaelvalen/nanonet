@@ -19,7 +19,10 @@ apiClient.interceptors.request.use(
 );
 
 let isRefreshing = false;
-let pendingRequests: Array<(token: string) => void> = [];
+let pendingRequests: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -36,10 +39,13 @@ apiClient.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          pendingRequests.push((token: string) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            resolve(apiClient(originalRequest));
+        return new Promise((resolve, reject) => {
+          pendingRequests.push({
+            resolve: (token: string) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(apiClient(originalRequest));
+            },
+            reject,
           });
         });
       }
@@ -52,19 +58,24 @@ apiClient.interceptors.response.use(
           `${import.meta.env.VITE_API_URL}/auth/refresh`,
           { refresh_token: refreshToken }
         );
-        const { access_token } = response.data.data;
+        const access_token = response.data?.data?.access_token;
+        if (!access_token) {
+          throw new Error('Geçersiz token yenileme yanıtı');
+        }
         const store = useAuthStore.getState();
         store.setAuth(store.user!, access_token, refreshToken);
 
-        pendingRequests.forEach((cb) => cb(access_token));
+        pendingRequests.forEach(({ resolve }) => resolve(access_token));
         pendingRequests = [];
 
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return apiClient(originalRequest);
-      } catch {
+      } catch (refreshError) {
+        pendingRequests.forEach(({ reject }) => reject(refreshError));
+        pendingRequests = [];
         clearAuth();
         window.location.href = '/login';
-        return Promise.reject(error);
+        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }

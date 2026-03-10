@@ -167,6 +167,24 @@ func (h *Handler) InsertMetric(c *gin.Context) {
 		return
 	}
 
+	// Metrik değerlerini doğrula
+	if metric.CPUPercent != nil && (*metric.CPUPercent < 0 || *metric.CPUPercent > 100) {
+		response.BadRequest(c, "cpu_percent 0-100 arasında olmalı")
+		return
+	}
+	if metric.MemoryUsedMB != nil && *metric.MemoryUsedMB < 0 {
+		response.BadRequest(c, "memory_used_mb negatif olamaz")
+		return
+	}
+	if metric.LatencyMS != nil && *metric.LatencyMS < 0 {
+		response.BadRequest(c, "latency_ms negatif olamaz")
+		return
+	}
+	if metric.ErrorRate != nil && (*metric.ErrorRate < 0 || *metric.ErrorRate > 100) {
+		response.BadRequest(c, "error_rate 0-100 arasında olmalı")
+		return
+	}
+
 	metric.Time = time.Now()
 
 	if err := h.service.InsertMetric(c.Request.Context(), &metric); err != nil {

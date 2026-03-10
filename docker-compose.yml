@@ -16,11 +16,23 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: nanonet-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: ./backend
     container_name: nanonet-backend
     environment:
       DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres}@db:5432/nanonet?sslmode=disable
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-secret-key-min-32-chars-here!}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
       PORT: "8080"
@@ -32,11 +44,20 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
+      K8S_NAMESPACE: ${K8S_NAMESPACE:-}
+      KUBECONFIG: /tmp/kubeconfig
     ports:
       - "8080:8080"
+    volumes:
+      - ${HOME}/.kube:/root/.kube:ro
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - default
+      - kind
 
   frontend:
     build:
@@ -76,3 +97,11 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  default:
+    name: nanonet_prod_default
+    driver: bridge
+  kind:
+    external: true
+    name: kind

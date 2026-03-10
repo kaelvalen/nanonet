@@ -57,6 +57,8 @@ func (rl *RateLimiter) cleanup() {
 	}
 }
 
+const maxRateLimitEntries = 100000
+
 func (rl *RateLimiter) Allow(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
@@ -66,6 +68,10 @@ func (rl *RateLimiter) Allow(key string) bool {
 
 	entry, exists := rl.entries[key]
 	if !exists {
+		// Haritanın sınırsız büyümesini önle
+		if len(rl.entries) >= maxRateLimitEntries {
+			return false
+		}
 		rl.entries[key] = &rateLimitEntry{
 			timestamps: []time.Time{now},
 		}

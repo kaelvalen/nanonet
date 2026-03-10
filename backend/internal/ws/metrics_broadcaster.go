@@ -20,12 +20,12 @@ type MetricsBroadcaster struct {
 	pollInterval time.Duration
 }
 
-func NewMetricsBroadcaster(hub *Hub, db *gorm.DB, pollInterval time.Duration) *MetricsBroadcaster {
+func NewMetricsBroadcaster(hub *Hub, db *gorm.DB, alertSvc *alerts.Service, pollInterval time.Duration) *MetricsBroadcaster {
 	mb := &MetricsBroadcaster{
 		hub:          hub,
 		db:           db,
 		metricsRepo:  metrics.NewRepository(db),
-		alertService: alerts.NewService(db),
+		alertService: alertSvc,
 		pollInterval: pollInterval,
 	}
 
