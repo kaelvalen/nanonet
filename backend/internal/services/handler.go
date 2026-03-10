@@ -174,6 +174,12 @@ func (h *Handler) Restart(c *gin.Context) {
 		return
 	}
 
+	// Aynı anda birden fazla restart komutu gönderilmesini engelle
+	if inFlight, err := h.cmdService.HasInFlightCommand(c.Request.Context(), id, "restart"); err == nil && inFlight {
+		response.Error(c, 409, "bu servis için zaten bir restart komutu beklemede")
+		return
+	}
+
 	var req struct {
 		TimeoutSec int `json:"timeout_sec"`
 	}
@@ -226,6 +232,12 @@ func (h *Handler) Stop(c *gin.Context) {
 
 	if _, err := h.service.Get(c.Request.Context(), id, userID); err != nil {
 		response.NotFound(c, "servis bulunamadı")
+		return
+	}
+
+	// Aynı anda birden fazla stop komutu gönderilmesini engelle
+	if inFlight, err := h.cmdService.HasInFlightCommand(c.Request.Context(), id, "stop"); err == nil && inFlight {
+		response.Error(c, 409, "bu servis için zaten bir stop komutu beklemede")
 		return
 	}
 

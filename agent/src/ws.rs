@@ -119,9 +119,13 @@ async fn connect_and_run(
     buffer: &MetricBuffer,
     shutdown_rx: &mut watch::Receiver<bool>,
 ) -> Result<ShutdownReason, AgentError> {
-    let (ws_stream, _) = connect_async(ws_url)
-        .await
-        .map_err(|e| AgentError::WebSocketConnection(e.to_string()))?;
+    let (ws_stream, _) = tokio::time::timeout(
+        Duration::from_secs(30),
+        connect_async(ws_url),
+    )
+    .await
+    .map_err(|_| AgentError::WebSocketConnection("Bağlantı zaman aşımı (30s)".to_string()))?
+    .map_err(|e| AgentError::WebSocketConnection(e.to_string()))?;
 
     tracing::info!("WebSocket bağlantısı kuruldu ✓");
     WS_CONNECTED.store(true, Ordering::Relaxed);

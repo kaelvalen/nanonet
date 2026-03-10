@@ -38,11 +38,38 @@ type RateLimiter struct {
 	window   time.Duration
 }
 
+const maxAIRateLimitUsers = 50000
+
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
-	return &RateLimiter{
+	rl := &RateLimiter{
 		counters: make(map[string][]time.Time),
 		limit:    limit,
 		window:   window,
+	}
+	go rl.cleanup()
+	return rl
+}
+
+func (rl *RateLimiter) cleanup() {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+	for range ticker.C {
+		rl.mu.Lock()
+		cutoff := time.Now().Add(-rl.window)
+		for userID, timestamps := range rl.counters {
+			var valid []time.Time
+			for _, t := range timestamps {
+				if t.After(cutoff) {
+					valid = append(valid, t)
+				}
+			}
+			if len(valid) == 0 {
+				delete(rl.counters, userID)
+			} else {
+				rl.counters[userID] = valid
+			}
+		}
+		rl.mu.Unlock()
 	}
 }
 
@@ -64,6 +91,11 @@ func (rl *RateLimiter) Allow(userID string) bool {
 	if len(valid) >= rl.limit {
 		rl.counters[userID] = valid
 		return false
+	}
+
+	// Haritanın sınırsız büyümesini önle
+	if _, exists := rl.counters[userID]; !exists && len(rl.counters) >= maxAIRateLimitUsers {
+		return true // izin ver ama kaydetme
 	}
 
 	rl.counters[userID] = append(valid, now)
@@ -207,7 +239,8 @@ func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Claude API hatası (HTTP %d): %s", resp.StatusCode, string(body))
+		log.Printf("[Claude API] HTTP %d hatası (body: %.200s)", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("Claude API hatası (HTTP %d)", resp.StatusCode)
 	}
 
 	var claudeResp ClaudeResponse
@@ -276,11 +309,21 @@ func (s *Service) saveInsight(serviceID uuid.UUID, model string, result *Analysi
 
 	recsJSON, _ := json.Marshal(result.Recommendations)
 
+	// Özet uzunluğunu sınırla
+	summary := result.Summary
+	if len(summary) > 5000 {
+		summary = summary[:5000]
+	}
+	rootCause := result.RootCause
+	if len(rootCause) > 2000 {
+		rootCause = rootCause[:2000]
+	}
+
 	insight := &AIInsight{
 		AlertID:         alertID,
 		Model:           model,
-		Summary:         result.Summary,
-		RootCause:       &result.RootCause,
+		Summary:         summary,
+		RootCause:       &rootCause,
 		Recommendations: recsJSON,
 	}
 
@@ -294,4 +337,14 @@ func (s *Service) GetInsights(ctx context.Context, serviceID uuid.UUID, limit, o
 		limit = 20
 	}
 	return s.repo.GetByServiceID(ctx, serviceID, limit, offset)
+}
+
+// IsServiceOwner servisin belirtilen kullanıcıya ait olup olmadığını kontrol eder.
+func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
+	var count int64
+	s.db.WithContext(ctx).
+		Table("services").
+		Where("id = ? AND user_id = ?", serviceID, userID).
+		Count(&count)
+	return count > 0
 }

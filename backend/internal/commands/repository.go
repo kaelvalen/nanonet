@@ -46,6 +46,29 @@ func (r *Repository) UpdateStatus(ctx context.Context, commandID, status string,
 		Updates(updates).Error
 }
 
+func (r *Repository) HasInFlightCommand(ctx context.Context, serviceID uuid.UUID, action string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&CommandLog{}).
+		Where("service_id = ? AND action = ? AND status IN ('queued', 'sent') AND queued_at > ?",
+			serviceID, action, time.Now().Add(-5*time.Minute)).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *Repository) MarkStalledCommandsTimeout(ctx context.Context, threshold time.Time) error {
+	return r.db.WithContext(ctx).
+		Model(&CommandLog{}).
+		Where("status IN ('queued', 'sent') AND queued_at < ?", threshold).
+		Updates(map[string]interface{}{
+			"status":       "timeout",
+			"completed_at": time.Now(),
+		}).Error
+}
+
 func (r *Repository) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

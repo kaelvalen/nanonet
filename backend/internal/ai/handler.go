@@ -50,7 +50,7 @@ func (h *Handler) Analyze(c *gin.Context) {
 			return
 		}
 		log.Printf("[AI Analyze ERROR] service=%s user=%s: %v", serviceID, userID, err)
-		response.InternalError(c, "analiz geçici olarak kullanılamıyor: "+err.Error())
+		response.InternalError(c, "analiz geçici olarak kullanılamıyor")
 		return
 	}
 
@@ -58,9 +58,20 @@ func (h *Handler) Analyze(c *gin.Context) {
 }
 
 func (h *Handler) GetInsights(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
 	serviceID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.BadRequest(c, "geçersiz servis ID")
+		return
+	}
+
+	if !h.service.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+		response.NotFound(c, "servis bulunamadı")
 		return
 	}
 

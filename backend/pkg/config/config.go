@@ -14,6 +14,7 @@ type Config struct {
 	ClaudeAPIKey     string
 	Port             string
 	FrontendURL      string
+	RedisURL         string
 	PollDefaultSec   int
 	WSMaxConnections int
 
@@ -35,6 +36,7 @@ func Load() *Config {
 		ClaudeAPIKey:     getEnv("CLAUDE_API_KEY", ""),
 		Port:             getEnv("PORT", "8080"),
 		FrontendURL:      getEnv("FRONTEND_URL", "http://localhost:3000"),
+		RedisURL:         getEnv("REDIS_URL", ""),
 		PollDefaultSec:   getEnvInt("POLL_DEFAULT_SEC", 10),
 		WSMaxConnections: getEnvInt("WS_MAX_CONNECTIONS", 1000),
 

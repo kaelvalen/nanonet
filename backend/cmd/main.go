@@ -15,6 +15,7 @@ import (
 	"nanonet-backend/internal/auth"
 	"nanonet-backend/internal/commands"
 	"nanonet-backend/internal/k8s"
+	"nanonet-backend/internal/maintenance"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/services"
 	"nanonet-backend/internal/settings"
@@ -24,9 +25,12 @@ import (
 	"nanonet-backend/pkg/database"
 	"nanonet-backend/pkg/mailer"
 	"nanonet-backend/pkg/ratelimit"
+	"nanonet-backend/pkg/redisstore"
 	"nanonet-backend/pkg/response"
+	"nanonet-backend/pkg/tokenblacklist"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -42,23 +46,55 @@ func main() {
 		log.Fatalf("Migration başarısız: %v", err)
 	}
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.Use(corsMiddleware(cfg.FrontendURL))
-	router.Use(securityHeadersMiddleware())
+	// Uygulama kapandığında DB bağlantı havuzunu temizle
+	defer func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
+		}
+	}()
 
-	generalLimiter := auth.NewRateLimiter(100, time.Minute)
-	authLimiter := auth.NewRateLimiter(10, time.Minute)
-	router.Use(auth.RateLimitMiddleware(generalLimiter))
+	// ── Redis (optional) ───────────────────────────────────────────
+	var bl tokenblacklist.Blacklist
+	var hub *ws.Hub
 
-	hub := ws.NewHub(cfg.WSMaxConnections)
-	go hub.Run()
-
-	broadcaster := ws.NewMetricsBroadcaster(hub, db, time.Duration(cfg.PollDefaultSec)*time.Second)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go broadcaster.Start(ctx)
 
+	if cfg.RedisURL != "" {
+		rdb, err := redisstore.New(cfg.RedisURL)
+		if err != nil {
+			log.Printf("[WARN] Redis bağlantısı başarısız (%v) — bellek içi mod kullanılıyor", err)
+			bl = tokenblacklist.NewInMemory()
+			hub = ws.NewHub(cfg.WSMaxConnections)
+		} else {
+			log.Printf("Redis bağlandı: %s", cfg.RedisURL)
+			bl = tokenblacklist.NewRedis(rdb)
+			hub = ws.NewHubWithRedis(cfg.WSMaxConnections, rdb)
+			go hub.StartRedis(ctx)
+		}
+	} else {
+		bl = tokenblacklist.NewInMemory()
+		hub = ws.NewHub(cfg.WSMaxConnections)
+	}
+
+	go hub.Run()
+
+	// ── Alert + Maintenance wiring ─────────────────────────────────
+	alertSvc := alerts.NewService(db)
+	maintRepo := maintenance.NewRepository(db)
+	alertSvc.SetMaintenanceChecker(maintRepo)
+
+	broadcaster := ws.NewMetricsBroadcaster(hub, db, alertSvc, time.Duration(cfg.PollDefaultSec)*time.Second)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[PANIC] Broadcaster panikledi: %v", r)
+			}
+		}()
+		broadcaster.Start(ctx)
+	}()
+
+	// ── Mailer ────────────────────────────────────────────────────
 	m := mailer.New(mailer.Config{
 		Host:     cfg.SMTPHost,
 		Port:     cfg.SMTPPort,
@@ -70,18 +106,20 @@ func main() {
 		log.Println("Warning: SMTP yapılandırılmamış, şifre sıfırlama emaili gönderilmeyecek")
 	}
 
-	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL)
-	authMiddleware := auth.NewMiddleware(cfg.JWTSecret)
+	// ── Handlers ──────────────────────────────────────────────────
+	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL, bl)
+	authMiddleware := auth.NewMiddleware(cfg.JWTSecret, bl)
 	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)
-	alertHandler := alerts.NewHandler(db)
+	alertHandler := alerts.NewHandler(alertSvc)
+	maintHandler := maintenance.NewHandler(maintRepo)
 	wsHandler := ws.NewHandler(hub, cfg.JWTSecret, cfg.FrontendURL)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
 	cmdHandler := commands.NewHandler(db)
 	cmdService := commands.NewService(db)
 	settingsHandler := settings.NewHandler(db)
 
-	// Kubernetes entegrasyonu (önemsiz — yoksa devre dışı kalır)
+	// ── Kubernetes (optional) ─────────────────────────────────────
 	var k8sClient *k8s.Client
 	if ns := os.Getenv("K8S_NAMESPACE"); ns != "" {
 		var err error
@@ -96,12 +134,39 @@ func main() {
 	}
 	k8sHandler := k8s.NewHandler(k8sClient)
 
-	// Kritik endpoint'ler için sıkı rate limiter (dakikada 10 istek)
+	// ── Router ────────────────────────────────────────────────────
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(requestIDMiddleware())
+	router.Use(corsMiddleware(cfg.FrontendURL))
+	router.Use(securityHeadersMiddleware())
+
+	generalLimiter := auth.NewRateLimiter(100, time.Minute)
+	authLimiter := auth.NewRateLimiter(10, time.Minute)
+	router.Use(auth.RateLimitMiddleware(generalLimiter))
+
 	strictLimiter := ratelimit.StrictMiddleware(10, time.Minute)
 
 	hub.SetOnCommandResult(func(commandID, status string, msg ws.AgentMessage) {
 		cmdService.UpdateStatus(context.Background(), commandID, status, nil)
 	})
+
+	// Askıda kalan komutları periyodik olarak timeout'a al
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				threshold := time.Now().Add(-5 * time.Minute)
+				if err := cmdService.MarkStalledCommandsTimeout(context.Background(), threshold); err != nil {
+					log.Printf("[WARN] Komut timeout temizleme hatası: %v", err)
+				}
+			}
+		}
+	}()
 
 	v1 := router.Group("/api/v1")
 	{
@@ -130,6 +195,11 @@ func main() {
 			svcGroup.GET("/:id/metrics/aggregated", metricsHandler.GetAggregated)
 			svcGroup.GET("/:id/metrics/uptime", metricsHandler.GetUptime)
 			svcGroup.GET("/:id/alerts", alertHandler.List)
+			svcGroup.GET("/:id/alert-rules", alertHandler.GetAlertRules)
+			svcGroup.PUT("/:id/alert-rules", alertHandler.UpsertAlertRules)
+			svcGroup.GET("/:id/maintenance", maintHandler.List)
+			svcGroup.POST("/:id/maintenance", maintHandler.Create)
+			svcGroup.DELETE("/:id/maintenance/:windowId", maintHandler.Delete)
 			svcGroup.GET("/:id/insights", aiHandler.GetInsights)
 			svcGroup.POST("/:id/restart", strictLimiter, serviceHandler.Restart)
 			svcGroup.POST("/:id/stop", strictLimiter, serviceHandler.Stop)
@@ -158,7 +228,6 @@ func main() {
 			auditGroup.GET("", handleAuditLogs(db))
 		}
 
-		// Kubernetes API route'ları
 		k8sGroup := v1.Group("/k8s", authMiddleware.Required())
 		{
 			k8sGroup.GET("/status", k8sHandler.GetStatus)
@@ -187,9 +256,9 @@ func main() {
 
 	wsGroup := router.Group("/ws")
 	{
-		wsGroup.GET("/dashboard", authMiddleware.Required(), wsHandler.Dashboard)
-		wsGroup.GET("/services/:id", authMiddleware.Required(), wsHandler.ServiceStream)
-		wsGroup.GET("/agent", authMiddleware.Required(), wsHandler.AgentConnect)
+		wsGroup.GET("/dashboard", wsHandler.Dashboard)
+		wsGroup.GET("/services/:id", wsHandler.ServiceStream)
+		wsGroup.GET("/agent", wsHandler.AgentConnect)
 	}
 
 	router.GET("/health", func(c *gin.Context) {
@@ -283,15 +352,32 @@ func securityHeadersMiddleware() gin.HandlerFunc {
 	}
 }
 
+func requestIDMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		requestID := c.GetHeader("X-Request-Id")
+		if requestID == "" {
+			requestID = uuid.New().String()
+		}
+		c.Header("X-Request-Id", requestID)
+		c.Set("request_id", requestID)
+		c.Next()
+	}
+}
+
 func corsMiddleware(frontendURL string) gin.HandlerFunc {
+	allowedOrigins := map[string]bool{}
+	if frontendURL != "" {
+		allowedOrigins[frontendURL] = true
+	}
+	// Geliştirme ortamında localhost'lara izin ver
+	if gin.Mode() != gin.ReleaseMode {
+		allowedOrigins["http://localhost:3000"] = true
+		allowedOrigins["http://localhost:5173"] = true
+		allowedOrigins["http://localhost:4173"] = true
+	}
+
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		allowedOrigins := map[string]bool{
-			frontendURL:             true,
-			"http://localhost:3000": true,
-			"http://localhost:5173": true,
-			"http://localhost:4173": true,
-		}
 
 		if allowedOrigins[origin] {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
@@ -300,13 +386,17 @@ func corsMiddleware(frontendURL string) gin.HandlerFunc {
 		}
 
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Request-Id")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, X-Request-Id")
 
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+			if allowedOrigins[origin] {
+				c.AbortWithStatus(204)
+			} else {
+				c.AbortWithStatus(403)
+			}
 			return
 		}
 

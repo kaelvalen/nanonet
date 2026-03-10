@@ -3,6 +3,7 @@ package alerts
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"nanonet-backend/internal/metrics"
 
@@ -13,6 +14,7 @@ import (
 type Service struct {
 	repo  *Repository
 	rules AlertRule
+	maint maintenanceChecker
 }
 
 func NewService(db *gorm.DB) *Service {
@@ -22,13 +24,43 @@ func NewService(db *gorm.DB) *Service {
 	}
 }
 
+// SetMaintenanceChecker wires in a maintenance window checker after construction.
+func (s *Service) SetMaintenanceChecker(m maintenanceChecker) {
+	s.maint = m
+}
+
 func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.UUID, metric *metrics.Metric) error {
+	// Skip all alert creation during active maintenance windows.
+	if s.maint != nil {
+		active, err := s.maint.IsActiveNow(ctx, serviceID)
+		if err != nil {
+			log.Printf("[WARN] Maintenance check failed for service %s: %v", serviceID, err)
+		} else if active {
+			return nil
+		}
+	}
+
+	// Load per-service thresholds; fall back to defaults on error or absence.
+	cpuThreshold := s.rules.CPUThreshold
+	memThreshold := s.rules.MemoryThreshold
+	latencyThreshold := s.rules.LatencyThreshold
+	errorRateThreshold := s.rules.ErrorRateThreshold
+
+	if rule, err := s.repo.GetAlertRule(ctx, serviceID); err != nil {
+		log.Printf("[WARN] Alert rule lookup failed for service %s: %v", serviceID, err)
+	} else if rule != nil {
+		cpuThreshold = rule.CPUThreshold
+		memThreshold = rule.MemoryThresholdMB
+		latencyThreshold = rule.LatencyThresholdMS
+		errorRateThreshold = rule.ErrorRateThreshold
+	}
+
 	var newAlerts []Alert
 	var resolveTypes []string
 
 	// CPU
 	if metric.CPUPercent != nil {
-		if *metric.CPUPercent > s.rules.CPUThreshold {
+		if *metric.CPUPercent > cpuThreshold {
 			newAlerts = append(newAlerts, Alert{
 				ServiceID: serviceID,
 				Type:      "high_cpu",
@@ -42,7 +74,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 
 	// Memory
 	if metric.MemoryUsedMB != nil {
-		if *metric.MemoryUsedMB > s.rules.MemoryThreshold {
+		if *metric.MemoryUsedMB > memThreshold {
 			newAlerts = append(newAlerts, Alert{
 				ServiceID: serviceID,
 				Type:      "high_memory",
@@ -56,7 +88,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 
 	// Latency
 	if metric.LatencyMS != nil {
-		if *metric.LatencyMS > s.rules.LatencyThreshold {
+		if *metric.LatencyMS > latencyThreshold {
 			newAlerts = append(newAlerts, Alert{
 				ServiceID: serviceID,
 				Type:      "high_latency",
@@ -70,7 +102,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 
 	// Error rate
 	if metric.ErrorRate != nil {
-		if *metric.ErrorRate > s.rules.ErrorRateThreshold {
+		if *metric.ErrorRate > errorRateThreshold {
 			newAlerts = append(newAlerts, Alert{
 				ServiceID: serviceID,
 				Type:      "high_error_rate",
@@ -135,4 +167,12 @@ func (s *Service) GetActiveAlerts(ctx context.Context, userID uuid.UUID) ([]Aler
 
 func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
 	return s.repo.IsServiceOwner(ctx, serviceID, userID)
+}
+
+func (s *Service) GetAlertRule(ctx context.Context, serviceID uuid.UUID) (*ServiceAlertRule, error) {
+	return s.repo.GetAlertRule(ctx, serviceID)
+}
+
+func (s *Service) UpsertAlertRule(ctx context.Context, rule *ServiceAlertRule) error {
+	return s.repo.UpsertAlertRule(ctx, rule)
 }

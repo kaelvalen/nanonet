@@ -39,6 +39,8 @@ func New(limit int, window time.Duration) *Limiter {
 	return l
 }
 
+const maxLimiterEntries = 100000
+
 // Allow — verilen key için isteğe izin verilip verilmediğini kontrol eder.
 func (l *Limiter) Allow(key string) bool {
 	l.mu.Lock()
@@ -48,6 +50,10 @@ func (l *Limiter) Allow(key string) bool {
 	e, exists := l.entries[key]
 
 	if !exists || now.After(e.resetAt) {
+		// Haritanın sınırsız büyümesini önle
+		if !exists && len(l.entries) >= maxLimiterEntries {
+			return false
+		}
 		l.entries[key] = &entry{
 			count:   1,
 			resetAt: now.Add(l.window),

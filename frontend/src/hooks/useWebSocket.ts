@@ -4,10 +4,13 @@ import { useWSStore } from '../store/wsStore';
 import { useServiceStore } from '../store/serviceStore';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
+import type { ServiceMetrics } from '../types/metrics';
 
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
 const HEARTBEAT_INTERVAL = 30000;
+const MAX_CACHED_POINTS = 500;
+const METRICS_TTL_MS = 24 * 60 * 60 * 1000; // 24 saat
 
 export function useWebSocket() {
   const queryClient = useQueryClient();
@@ -40,6 +43,32 @@ export function useWebSocket() {
                   : s
               );
             });
+
+            // Push the new data point into all cached serviceMetrics queries for
+            // this service so charts update in real-time without waiting for a poll.
+            const newPoint: ServiceMetrics = {
+              time: message.data.time ?? new Date().toISOString(),
+              service_id: message.service_id,
+              status: message.data.status,
+              cpu_percent: message.data.cpu_percent,
+              memory_used_mb: message.data.memory_used_mb,
+              latency_ms: message.data.latency_ms,
+              error_rate: message.data.error_rate,
+              disk_used_gb: message.data.disk_used_gb,
+            };
+
+            // setQueriesData matches all cached keys with prefix ['serviceMetrics', serviceId]
+            // which covers every duration variant ('15m', '1h', '6h', '24h').
+            queryClient.setQueriesData(
+              { queryKey: ['serviceMetrics', message.service_id] },
+              (old: ServiceMetrics[] | undefined) => {
+                const now = Date.now();
+                const arr = [...(old ?? []), newPoint].filter(
+                  (p) => now - new Date(p.time).getTime() < METRICS_TTL_MS
+                );
+                return arr.slice(-MAX_CACHED_POINTS);
+              }
+            );
           }
           break;
 
@@ -127,11 +156,18 @@ export function useWebSocket() {
       }
 
       try {
-        const ws = new WebSocket(`${wsUrl}/dashboard?token=${encodeURIComponent(token)}`);
+        const ws = new WebSocket(`${wsUrl}/dashboard`);
         wsRef.current = ws;
 
         ws.onopen = () => {
           if (!mountedRef.current) return;
+          // Token'ı URL yerine ilk mesaj olarak gönder (server log / browser history'de görünmez)
+          try {
+            ws.send(JSON.stringify({ type: 'auth', token }));
+          } catch {
+            ws.close(1000, 'auth send failed');
+            return;
+          }
           setConnected(true);
           setWS(ws);
           setLastError(null);
@@ -173,10 +209,8 @@ export function useWebSocket() {
             if (!mountedRef.current) return;
 
             const authState = useAuthStore.getState();
-            // Token yoksa bağlanma
             if (!authState.accessToken) return;
 
-            // Token'ı yenilemeyi dene — böylece expire olmuş token ile reconnect yapılmaz
             if (authState.refreshToken) {
               try {
                 const { authApi } = await import('../api/auth');
@@ -188,7 +222,6 @@ export function useWebSocket() {
                 );
               } catch {
                 // Refresh başarısız olursa mevcut token ile devam et
-                // (belki hala geçerlidir)
               }
             }
 

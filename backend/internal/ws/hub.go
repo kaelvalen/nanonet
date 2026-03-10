@@ -1,10 +1,14 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"log"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type AgentMessage struct {
@@ -38,10 +42,12 @@ type Hub struct {
 	onMetric        OnMetricFunc
 	onCommandResult OnCommandResultFunc
 
-	// pendingCommands — agent çevrimdışıyken biriken komutlar.
-	// Agent tekrar bağlandığında otomatik olarak iletilir.
+	// pendingCommands — agent çevrimdışıyken biriken komutlar (in-memory fallback).
 	pendingCommands map[string][]pendingCommand // serviceID -> []command
 	pendingMu       sync.Mutex
+
+	// redisClient is nil when Redis is not configured (in-memory mode).
+	redisClient *redis.Client
 }
 
 type pendingCommand struct {
@@ -63,6 +69,13 @@ func NewHub(maxConnections int) *Hub {
 		maxConnections:   maxConnections,
 		pendingCommands:  make(map[string][]pendingCommand),
 	}
+}
+
+// NewHubWithRedis creates a Hub backed by Redis for multi-instance deployments.
+func NewHubWithRedis(maxConnections int, rdb *redis.Client) *Hub {
+	h := NewHub(maxConnections)
+	h.redisClient = rdb
+	return h
 }
 
 func (h *Hub) SetOnMetric(fn OnMetricFunc) {
@@ -133,6 +146,61 @@ func (h *Hub) Run() {
 	}
 }
 
+// StartRedis subscribes to Redis pub/sub channels and fans out messages to local
+// clients. Call this in a goroutine when Redis is configured.
+func (h *Hub) StartRedis(ctx context.Context) {
+	if h.redisClient == nil {
+		return
+	}
+
+	pubsub := h.redisClient.PSubscribe(ctx,
+		"nanonet:broadcast:*", // metric/alert broadcasts
+		"nanonet:cmd:*",       // cross-node agent commands
+	)
+	defer pubsub.Close()
+
+	log.Println("Redis pub/sub dinleyici başlatıldı")
+
+	ch := pubsub.Channel()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg, ok := <-ch:
+			if !ok {
+				return
+			}
+			switch {
+			case strings.HasPrefix(msg.Channel, "nanonet:broadcast:"):
+				// Forward to local dashboard clients via the broadcast channel.
+				h.broadcast <- []byte(msg.Payload)
+			case strings.HasPrefix(msg.Channel, "nanonet:cmd:"):
+				serviceID := strings.TrimPrefix(msg.Channel, "nanonet:cmd:")
+				h.tryDeliverToLocalAgent(serviceID, []byte(msg.Payload))
+			}
+		}
+	}
+}
+
+// tryDeliverToLocalAgent attempts to send a command to a locally connected agent.
+func (h *Hub) tryDeliverToLocalAgent(serviceID string, data []byte) {
+	h.mu.RLock()
+	var targets []*Client
+	for client := range h.agentClients {
+		if client.serviceID == serviceID {
+			targets = append(targets, client)
+		}
+	}
+	h.mu.RUnlock()
+
+	for _, client := range targets {
+		select {
+		case client.send <- data:
+		default:
+		}
+	}
+}
+
 func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 	var msg AgentMessage
 	if err := json.Unmarshal(rawMessage, &msg); err != nil {
@@ -156,7 +224,6 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 		h.mu.RUnlock()
 
 		if fn != nil {
-			// fn (handleAgentMetric) normalizes the data and broadcasts to dashboards
 			fn(serviceID, msg)
 		}
 
@@ -215,6 +282,15 @@ func (h *Hub) BroadcastToDashboards(serviceID string, data interface{}) {
 		return
 	}
 
+	if h.redisClient != nil {
+		// Publish to Redis; StartRedis subscriber fans out to local clients.
+		ctx := context.Background()
+		if err := h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(jsonData)).Err(); err != nil {
+			log.Printf("Redis broadcast publish hatası: %v", err)
+		}
+		return
+	}
+
 	h.broadcast <- jsonData
 }
 
@@ -232,6 +308,12 @@ func (h *Hub) BroadcastAlert(serviceID, alertType, severity, message string) {
 	jsonData, err := json.Marshal(alertMsg)
 	if err != nil {
 		log.Printf("Alert serialize hatası: %v", err)
+		return
+	}
+
+	if h.redisClient != nil {
+		ctx := context.Background()
+		h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(jsonData))
 		return
 	}
 
@@ -261,6 +343,12 @@ func (h *Hub) BroadcastCommandResult(serviceID, commandID, status string, output
 		return
 	}
 
+	if h.redisClient != nil {
+		ctx := context.Background()
+		h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(jsonData))
+		return
+	}
+
 	h.broadcast <- jsonData
 }
 
@@ -282,15 +370,19 @@ func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{
 	}
 	h.mu.RUnlock()
 
-	// Agent bağlı değilse kuyruğa ekle
 	if len(targets) == 0 {
 		cmdID, _ := command["command_id"].(string)
+		if h.redisClient != nil {
+			// Publish for immediate cross-node delivery to other instances.
+			ctx := context.Background()
+			h.redisClient.Publish(ctx, "nanonet:cmd:"+serviceID, string(jsonData))
+		}
+		// Also queue for durability (agent might not be connected anywhere yet).
 		h.queueCommand(serviceID, jsonData, cmdID)
 		log.Printf("Agent çevrimdışı, komut kuyruğa eklendi: service=%s, command_id=%s", serviceID, cmdID)
 		return false
 	}
 
-	// Tüm eşleşen agent'lara gönder
 	sentCount := 0
 	for _, client := range targets {
 		select {
@@ -308,13 +400,20 @@ func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{
 
 // queueCommand — agent offline iken komutu kuyruğa ekler.
 func (h *Hub) queueCommand(serviceID string, data []byte, commandID string) {
+	if h.redisClient != nil {
+		ctx := context.Background()
+		key := "nanonet:pc:" + serviceID
+		h.redisClient.RPush(ctx, key, string(data))
+		h.redisClient.Expire(ctx, key, 24*time.Hour)
+		return
+	}
+
+	// In-memory fallback.
 	h.pendingMu.Lock()
 	defer h.pendingMu.Unlock()
 
-	// Kuyruk boyutunu sınırla (servis başına max 50 komut)
 	queue := h.pendingCommands[serviceID]
 	if len(queue) >= 50 {
-		// En eski komutu çıkar
 		queue = queue[1:]
 	}
 
@@ -327,13 +426,32 @@ func (h *Hub) queueCommand(serviceID string, data []byte, commandID string) {
 
 // deliverPendingCommands — yeni bağlanan agent'a bekleyen komutları iletir.
 func (h *Hub) deliverPendingCommands(client *Client) {
+	if h.redisClient != nil {
+		ctx := context.Background()
+		key := "nanonet:pc:" + client.serviceID
+		cmds, err := h.redisClient.LRange(ctx, key, 0, -1).Result()
+		if err != nil || len(cmds) == 0 {
+			return
+		}
+		h.redisClient.Del(ctx, key)
+		log.Printf("Redis'ten agent %s için %d bekleyen komut iletiliyor", client.id, len(cmds))
+		for _, cmd := range cmds {
+			select {
+			case client.send <- []byte(cmd):
+			default:
+				log.Printf("Agent buffer dolu, Redis kuyruk komutu atlanıyor")
+			}
+		}
+		return
+	}
+
+	// In-memory fallback.
 	h.pendingMu.Lock()
 	queue, exists := h.pendingCommands[client.serviceID]
 	if !exists || len(queue) == 0 {
 		h.pendingMu.Unlock()
 		return
 	}
-	// Kuyruğu temizle
 	delete(h.pendingCommands, client.serviceID)
 	h.pendingMu.Unlock()
 
@@ -363,6 +481,11 @@ func (h *Hub) GetConnectedAgentsForService(serviceID string) int {
 
 // GetPendingCommandCount — bekleyen komut sayısını döndürür.
 func (h *Hub) GetPendingCommandCount(serviceID string) int {
+	if h.redisClient != nil {
+		ctx := context.Background()
+		n, _ := h.redisClient.LLen(ctx, "nanonet:pc:"+serviceID).Result()
+		return int(n)
+	}
 	h.pendingMu.Lock()
 	defer h.pendingMu.Unlock()
 	return len(h.pendingCommands[serviceID])

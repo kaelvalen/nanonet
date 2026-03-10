@@ -12,14 +12,15 @@ import (
 type Action string
 
 const (
-	ActionLogin         Action = "auth.login"
-	ActionLoginFailed   Action = "auth.login_failed"
-	ActionRegister      Action = "auth.register"
-	ActionLogout        Action = "auth.logout"
-	ActionServiceCreate Action = "service.create"
-	ActionServiceDelete Action = "service.delete"
-	ActionCommandExec   Action = "command.exec"
-	ActionAIAnalyze     Action = "ai.analyze"
+	ActionLogin           Action = "auth.login"
+	ActionLoginFailed     Action = "auth.login_failed"
+	ActionRegister        Action = "auth.register"
+	ActionLogout          Action = "auth.logout"
+	ActionPasswordChanged Action = "auth.password_changed"
+	ActionServiceCreate   Action = "service.create"
+	ActionServiceDelete   Action = "service.delete"
+	ActionCommandExec     Action = "command.exec"
+	ActionAIAnalyze       Action = "ai.analyze"
 )
 
 type Status string

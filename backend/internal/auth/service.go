@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"nanonet-backend/pkg/audit"
@@ -111,30 +112,36 @@ func (s *Service) GenerateAgentToken(userID uuid.UUID) (string, error) {
 	return s.generateToken(userID, 3650*24*time.Hour, "agent")
 }
 
-func (s *Service) ValidateRefreshToken(tokenString string) (uuid.UUID, error) {
+// ValidateRefreshToken validates a refresh token and returns the user ID and token expiry time.
+func (s *Service) ValidateRefreshToken(tokenString string) (uuid.UUID, time.Time, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("geçersiz imza metodu")
+		if token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("beklenmeyen imza algoritması: %v", token.Header["alg"])
 		}
 		return []byte(s.jwtSecret), nil
 	})
 
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, time.Time{}, err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if typ, _ := claims["typ"].(string); typ != "refresh" {
-			return uuid.Nil, errors.New("geçersiz token tipi: refresh token gerekli")
+			return uuid.Nil, time.Time{}, errors.New("geçersiz token tipi: refresh token gerekli")
 		}
 		userIDStr, ok := claims["sub"].(string)
 		if !ok {
-			return uuid.Nil, errors.New("geçersiz token payload")
+			return uuid.Nil, time.Time{}, errors.New("geçersiz token payload")
 		}
-		return uuid.Parse(userIDStr)
+		var expiry time.Time
+		if exp, ok := claims["exp"].(float64); ok {
+			expiry = time.Unix(int64(exp), 0)
+		}
+		userID, err := uuid.Parse(userIDStr)
+		return userID, expiry, err
 	}
 
-	return uuid.Nil, errors.New("geçersiz token")
+	return uuid.Nil, time.Time{}, errors.New("geçersiz token")
 }
 
 func (s *Service) GetUserByID(userID uuid.UUID) (*User, error) {
@@ -151,8 +158,8 @@ func (s *Service) UpdatePasswordHash(userID uuid.UUID, hash string) error {
 
 func (s *Service) ValidateToken(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("geçersiz imza metodu")
+		if token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("beklenmeyen imza algoritması: %v", token.Header["alg"])
 		}
 		return []byte(s.jwtSecret), nil
 	})

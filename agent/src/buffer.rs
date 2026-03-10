@@ -1,13 +1,18 @@
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
+/// Offline süresinde biriken metriklerin geçerlilik süresi (2 saat).
+/// Bu süreden eski metrikler yeniden bağlanınca gönderilmez.
+const BUFFER_TTL: Duration = Duration::from_secs(2 * 60 * 60);
+
 /// Bağlantı koptuğunda metrikleri biriktiren thread-safe buffer.
-/// WS bağlantısı geldiğinde drain ile tümünü gönderir.
+/// WS bağlantısı geldiğinde drain ile tümünü gönderir (TTL geçmemişleri).
 #[derive(Clone)]
 pub struct MetricBuffer {
-    inner: Arc<Mutex<VecDeque<String>>>,
+    inner: Arc<Mutex<VecDeque<(Instant, String)>>>,
     max_size: usize,
     dropped: Arc<AtomicU64>,
     total_buffered: Arc<AtomicU64>,
@@ -31,14 +36,19 @@ impl MetricBuffer {
             buf.pop_front();
             self.dropped.fetch_add(1, Ordering::Relaxed);
         }
-        buf.push_back(msg);
+        buf.push_back((Instant::now(), msg));
         self.total_buffered.fetch_add(1, Ordering::Relaxed);
     }
 
-    /// Buffer'daki tüm metrikleri alır (FIFO sırasıyla).
+    /// Buffer'daki tüm geçerli metrikleri alır (FIFO sırasıyla).
+    /// TTL süresi dolmuş (2 saatten eski) metrikler atılır.
     pub async fn drain(&self) -> Vec<String> {
         let mut buf = self.inner.lock().await;
-        buf.drain(..).collect()
+        let now = Instant::now();
+        buf.drain(..)
+            .filter(|(ts, _)| now.duration_since(*ts) < BUFFER_TTL)
+            .map(|(_, msg)| msg)
+            .collect()
     }
 
     /// Buffer'daki mevcut metrik sayısı.
