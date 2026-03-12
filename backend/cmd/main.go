@@ -104,6 +104,9 @@ func main() {
 	})
 	if !m.Enabled() {
 		log.Println("Warning: SMTP yapılandırılmamış, şifre sıfırlama emaili gönderilmeyecek")
+	} else {
+		alertSvc.SetNotifier(m)
+		log.Println("Alert email bildirimleri aktif")
 	}
 
 	// ── Handlers ──────────────────────────────────────────────────

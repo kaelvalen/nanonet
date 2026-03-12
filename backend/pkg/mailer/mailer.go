@@ -35,6 +35,90 @@ func (m *Mailer) SendPasswordReset(toEmail, resetURL string) error {
 	return m.send(toEmail, subject, body)
 }
 
+// SendAlert sends an alert notification email. severity: "warn" | "crit"
+func (m *Mailer) SendAlert(toEmail, serviceName, alertType, message, severity string) error {
+	subject := fmt.Sprintf("NanoNet — %s: %s", severityLabel(severity), serviceName)
+	body := buildAlertEmail(toEmail, serviceName, alertType, message, severity)
+	return m.send(toEmail, subject, body)
+}
+
+func severityLabel(s string) string {
+	switch s {
+	case "crit":
+		return "Kritik Alert"
+	case "warn":
+		return "Uyarı"
+	default:
+		return "Bilgi"
+	}
+}
+
+func buildAlertEmail(toEmail, serviceName, alertType, message, severity string) string {
+	color := "#f59e0b"
+	icon := "⚠️"
+	label := "Uyarı"
+	if severity == "crit" {
+		color = "#ef4444"
+		icon = "🚨"
+		label = "Kritik"
+	} else if severity == "info" {
+		color = "#00b4d8"
+		icon = "ℹ️"
+		label = "Bilgi"
+	}
+	return fmt.Sprintf(`<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0fbff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f0fbff;padding:40px 0;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:28px 32px;">
+            <div style="display:inline-block;background:rgba(255,255,255,0.08);border-radius:10px;padding:8px 14px;margin-bottom:12px;">
+              <span style="color:%s;font-size:20px;">%s</span>
+              <span style="color:%s;font-size:13px;font-weight:700;margin-left:8px;">%s</span>
+            </div>
+            <h1 style="margin:0;color:#f1f5f9;font-size:20px;font-weight:700;">NanoNet Alert</h1>
+            <p style="margin:4px 0 0;color:#94a3b8;font-size:12px;">Microservice Monitoring Platform</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <div style="background:#f8fafc;border-left:4px solid %s;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:24px;">
+              <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Servis</p>
+              <p style="margin:0;font-size:16px;font-weight:700;color:#1e293b;">%s</p>
+            </div>
+            <table width="100%%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+              <tr>
+                <td style="padding:10px 14px;background:#f8fafc;border-radius:8px 0 0 8px;border:1px solid #e2e8f0;border-right:none;">
+                  <p style="margin:0;font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Alert Tipi</p>
+                  <p style="margin:4px 0 0;font-size:13px;font-weight:600;color:#1e293b;font-family:monospace;">%s</p>
+                </td>
+                <td style="padding:10px 14px;background:#f8fafc;border-radius:0 8px 8px 0;border:1px solid #e2e8f0;">
+                  <p style="margin:0;font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Önem Derecesi</p>
+                  <p style="margin:4px 0 0;font-size:13px;font-weight:700;color:%s;">%s</p>
+                </td>
+              </tr>
+            </table>
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+              <p style="margin:0;font-size:13px;color:#374151;line-height:1.6;">%s</p>
+            </div>
+            <p style="margin:0;font-size:12px;color:#94a3b8;">Bu alerti NanoNet Dashboard'dan inceleyip çözebilirsiniz.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;font-size:11px;color:#cbd5e1;">Bu email NanoNet tarafından otomatik olarak gönderilmiştir.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`, color, icon, color, label, color, serviceName, alertType, color, label, message)
+}
+
 func (m *Mailer) send(to, subject, htmlBody string) error {
 	from := m.cfg.From
 	if from == "" {

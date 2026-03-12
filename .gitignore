@@ -168,6 +168,12 @@ local/
 # Kubernetes (if used)
 *.kubeconfig
 
+# TLS sertifikaları — asla commit edilmez
+nginx/certs/*.pem
+nginx/certs/*.key
+nginx/certs/*.crt
+nginx/certs/*.p12
+
 # Monitoring and metrics
 metrics-data/
 logs-data/
