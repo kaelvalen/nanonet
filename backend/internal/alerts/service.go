@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"nanonet-backend/internal/metrics"
 
@@ -11,22 +12,36 @@ import (
 	"gorm.io/gorm"
 )
 
+// alertNotifier is satisfied by pkg/mailer.Mailer without a direct import cycle.
+type alertNotifier interface {
+	Enabled() bool
+	SendAlert(toEmail, serviceName, alertType, message, severity string) error
+}
+
 type Service struct {
-	repo  *Repository
-	rules AlertRule
-	maint maintenanceChecker
+	repo     *Repository
+	rules    AlertRule
+	maint    maintenanceChecker
+	notifier alertNotifier
+	db       *gorm.DB
 }
 
 func NewService(db *gorm.DB) *Service {
 	return &Service{
 		repo:  NewRepository(db),
 		rules: DefaultAlertRules,
+		db:    db,
 	}
 }
 
 // SetMaintenanceChecker wires in a maintenance window checker after construction.
 func (s *Service) SetMaintenanceChecker(m maintenanceChecker) {
 	s.maint = m
+}
+
+// SetNotifier wires in an email notifier after construction.
+func (s *Service) SetNotifier(n alertNotifier) {
+	s.notifier = n
 }
 
 func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.UUID, metric *metrics.Metric) error {
@@ -143,6 +158,10 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 			if err := s.repo.Create(ctx, &alert); err != nil {
 				return err
 			}
+			// Email bildirimi — sadece crit/warn, async
+			if s.notifier != nil && s.notifier.Enabled() && alert.Severity != "info" {
+				go s.sendAlertEmail(serviceID, alert)
+			}
 		}
 	}
 
@@ -175,4 +194,29 @@ func (s *Service) GetAlertRule(ctx context.Context, serviceID uuid.UUID) (*Servi
 
 func (s *Service) UpsertAlertRule(ctx context.Context, rule *ServiceAlertRule) error {
 	return s.repo.UpsertAlertRule(ctx, rule)
+}
+
+// sendAlertEmail fetches the service owner email and sends alert notification.
+func (s *Service) sendAlertEmail(serviceID uuid.UUID, alert Alert) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var row struct {
+		Email       string `gorm:"column:email"`
+		ServiceName string `gorm:"column:name"`
+	}
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT u.email, sv.name
+		FROM services sv
+		JOIN users u ON u.id = sv.user_id
+		WHERE sv.id = ?
+	`, serviceID).Scan(&row).Error
+	if err != nil || row.Email == "" {
+		log.Printf("[alerts] email lookup failed service=%s: %v", serviceID, err)
+		return
+	}
+
+	if err := s.notifier.SendAlert(row.Email, row.ServiceName, alert.Type, alert.Message, alert.Severity); err != nil {
+		log.Printf("[alerts] email gönderilemedi service=%s type=%s: %v", serviceID, alert.Type, err)
+	}
 }
