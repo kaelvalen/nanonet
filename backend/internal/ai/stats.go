@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"fmt"
 	"math"
 	"sort"
 
@@ -179,6 +180,38 @@ func basicStats(vals []float64) (mean, stddev, min, max float64) {
 	}
 	stddev = math.Sqrt(varianceSum / float64(len(vals)))
 	return
+}
+
+// buildTrendText recent metrik verisinden okunabilir trend özeti oluşturur.
+func buildTrendText(recent []metrics.Metric) string {
+	n := len(recent)
+	if n < 4 {
+		return "Trend hesaplamak için yeterli veri yok."
+	}
+
+	cpuVals := make([]float64, 0, n)
+	latVals := make([]float64, 0, n)
+	memVals := make([]float64, 0, n)
+	for _, m := range recent {
+		if m.CPUPercent != nil {
+			cpuVals = append(cpuVals, float64(*m.CPUPercent))
+		}
+		if m.LatencyMS != nil {
+			latVals = append(latVals, float64(*m.LatencyMS))
+		}
+		if m.MemoryUsedMB != nil {
+			memVals = append(memVals, float64(*m.MemoryUsedMB))
+		}
+	}
+
+	cpuDir, cpuDelta := latencyTrend(cpuVals)
+	latDir, latDelta := latencyTrend(latVals)
+	memDir, memDelta := latencyTrend(memVals)
+
+	return fmt.Sprintf(
+		"CPU: %s (Δ%.1f%%), Latency: %s (Δ%.1fms), Memory: %s (Δ%.1fMB)",
+		cpuDir, cpuDelta, latDir, latDelta, memDir, memDelta,
+	)
 }
 
 func latencyTrend(latVals []float64) (direction string, delta float64) {

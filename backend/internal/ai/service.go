@@ -166,6 +166,36 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		return nil, fmt.Errorf("metrik özet serileştirme hatası: %w", err)
 	}
 
+	// Uptime yüzdesi (son 24 saat)
+	uptimePct, _ := s.metricsRepo.GetUptime(ctx, serviceID, 24*time.Hour)
+
+	// Trend metni oluştur
+	trendText := buildTrendText(recentData)
+
+	// Son alertler (son 5 adet)
+	var recentAlerts []struct {
+		Type        string    `gorm:"column:type"`
+		Severity    string    `gorm:"column:severity"`
+		Message     string    `gorm:"column:message"`
+		TriggeredAt time.Time `gorm:"column:triggered_at"`
+	}
+	s.db.WithContext(ctx).Table("alerts").
+		Select("type, severity, message, triggered_at").
+		Where("service_id = ?", serviceID).
+		Order("triggered_at DESC").
+		Limit(5).
+		Find(&recentAlerts)
+
+	var alertsText strings.Builder
+	if len(recentAlerts) == 0 {
+		alertsText.WriteString("Son alert bulunmuyor.")
+	} else {
+		for _, a := range recentAlerts {
+			alertsText.WriteString(fmt.Sprintf("- [%s] %s: %s (%s)\n",
+				a.Severity, a.Type, SanitizeForPrompt(a.Message), a.TriggeredAt.Format("15:04 02 Jan")))
+		}
+	}
+
 	// Diğer servislerin durumu (cross-servis korelasyon)
 	var otherServices []svcInfo
 	s.db.WithContext(ctx).Table("services").
@@ -186,10 +216,15 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		SanitizeForPrompt(svc.Host),
 		svc.Port,
 		SanitizeForPrompt(svc.HealthEndpoint),
+		svc.Status,
+		uptimePct,
 		windowMinutes,
 		summary.SampleCount,
 		string(summaryJSON),
+		trendText,
+		alertsText.String(),
 		otherSvcInfo.String(),
+		windowMinutes,
 	)
 
 	model := ModelHaiku
@@ -250,6 +285,10 @@ func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
 
 	if len(claudeResp.Content) == 0 {
 		return nil, fmt.Errorf("Claude boş yanıt döndü")
+	}
+
+	if claudeResp.StopReason == "max_tokens" {
+		return nil, fmt.Errorf("AI yanıtı token limitinde kesildi; MaxTokens değerini artırın")
 	}
 
 	rawText := claudeResp.Content[0].Text

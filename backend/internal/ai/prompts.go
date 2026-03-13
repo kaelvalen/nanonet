@@ -13,25 +13,35 @@ const AnalysisPromptTemplate = `Sen deneyimli bir DevOps ve SRE uzmanısın. Gö
 - Servis Adı: %s
 - Host: %s:%d
 - Health Endpoint: %s
+- Mevcut Durum: %s
+- Uptime (son 24s): %.1f%%
 
 ## Son %d Dakikanın İstatistiksel Özeti (%d örnek nokta)
+%s
+
+## Trend Analizi
+%s
+
+## Son Alertler (varsa)
 %s
 
 ## Diğer Servislerin Durumu (cross-servis korelasyon için)
 %s
 
 ## Görev
-1. Metriklerdeki anomalileri tespit et (yüksek stddev, spike'lar, down/degraded sayıları, trend yönü)
-2. Olası kök nedeni belirle
-3. Somut ve uygulanabilir aksiyonlar öner
+1. **Anomali tespiti**: Yüksek stddev, spike'lar, down/degraded sayıları, belirgin trend yönü (yükselen/düşen CPU/latency vb.)
+2. **Kök neden analizi**: En olası kök nedeni tek bir cümleyle açıkla (string, dizi DEĞİL)
+3. **Öncelikli aksiyonlar**: Her aksiyon için "action", "priority" (high/medium/low), "estimated_impact" alanları
+4. **Trend özeti**: Kısa vadeli (son %d dakika) ve uzun vadeli değerlendirme tek cümlede
 
 Yanıtın SADECE saf JSON olmalı. Markdown, kod bloğu veya ekstra metin KULLANMA.
-İlk karakter { olmalı, son karakter } olmalı. Örnek format:
-{"summary":"...","root_cause":"...","recommendations":[{"action":"...","priority":"high"}],"confidence":0.85}`
+İlk karakter { olmalı, son karakter } olmalı. Tüm değerler string veya number olmalı, dizi/obje sadece recommendations içinde.
+Format (bu yapıya KESINLIKLE uy):
+{"summary":"tek paragraf özet","root_cause":"tek cümle kök neden","trend":"tek cümle trend","recommendations":[{"action":"yapılacak iş","priority":"high","estimated_impact":"beklenen etki"}],"confidence":0.85}`
 
 const ModelHaiku = "claude-haiku-4-5-20251001"
 const ModelSonnet = "claude-sonnet-4-5"
-const MaxTokensDefault = 1024
+const MaxTokensDefault = 2048
 
 // injectionPatterns prompt injection saldırılarında yaygın kullanılan ifadeler.
 var injectionPatterns = regexp.MustCompile(

@@ -83,11 +83,9 @@ export function AIAssistant() {
           >
             <button
               onClick={() => setIsOpen(true)}
-              className="relative w-16 h-16 rounded-full shadow-lg transition-all duration-300 group"
-              style={{ background: "var(--gradient-logo)" }}
+              className="relative w-16 h-16 rounded transition-all duration-200 group"
+              style={{ background: "var(--gradient-logo)", border: "2px solid var(--border-default)", boxShadow: "var(--btn-shadow)" }}
             >
-              <div className="absolute inset-0 rounded-full opacity-15 animate-pulse-ring" style={{ backgroundColor: "var(--color-lavender)" }}></div>
-              <div className="absolute inset-0 rounded-full opacity-10 animate-pulse-ring" style={{ backgroundColor: "var(--color-lavender)", animationDelay: "0.5s" }}></div>
               <Sparkles className="w-8 h-8 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-glow" />
             </button>
           </motion.div>
@@ -103,10 +101,10 @@ export function AIAssistant() {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className="fixed bottom-6 right-6 z-50"
           >
-            <Card className={`${isMinimized ? "w-80" : "w-96"} ${isMinimized ? "h-16" : "h-150"} backdrop-blur-xl transition-all duration-300 flex flex-col`}
-              style={{ background: "var(--surface-glass-heavy)", border: "1px solid var(--color-lavender-border)" }}>
+            <Card className={`${isMinimized ? "w-80" : "w-96"} ${isMinimized ? "h-16" : "h-150"} transition-all duration-200 flex flex-col`}
+              style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--panel-shadow)" }}>
               {/* Header */}
-              <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid var(--color-lavender-border)" }}>
+              <div className="flex items-center justify-between p-4" style={{ borderBottom: "2px solid var(--border-default)" }}>
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Sparkles className="w-5 h-5 animate-glow" style={{ color: "var(--color-ai)" }} />
@@ -134,15 +132,15 @@ export function AIAssistant() {
                     {chatMessages.map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                         {msg.role === "ai" && (
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--gradient-logo)" }}>
+                          <div className="w-8 h-8 rounded flex items-center justify-center shrink-0" style={{ background: "var(--gradient-logo)", border: "2px solid var(--border-default)" }}>
                             <Sparkles className="w-4 h-4 text-white" />
                           </div>
                         )}
                         <div className={`flex-1 ${msg.role === "user" ? "max-w-[80%] ml-auto" : ""}`}>
-                          <div className={`rounded-2xl p-3 ${msg.role === "ai" ? "rounded-tl-sm" : "rounded-tr-sm"}`}
+                          <div className={`rounded p-3`}
                             style={msg.role === "ai"
-                              ? { background: "var(--color-lavender-subtle)", border: "1px solid var(--color-lavender-border)" }
-                              : { background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                              ? { background: "var(--color-lavender-subtle)", border: "2px solid var(--color-lavender-border)" }
+                              : { background: "var(--color-teal-subtle)", border: "2px solid var(--color-teal-border)" }}>
                             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{msg.text}</p>
                           </div>
                           <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>{msg.time}</p>
@@ -157,8 +155,8 @@ export function AIAssistant() {
                         {suggestions.map((suggestion, i) => (
                           <button
                             key={i}
-                            className="w-full text-left px-3 py-2 rounded-xl text-sm transition-all"
-                            style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-secondary)" }}
+                            className="w-full text-left px-3 py-2 rounded text-sm transition-all"
+                            style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", color: "var(--text-secondary)", boxShadow: "2px 2px 0px var(--border-default)" }}
                             onClick={() => setMessage(suggestion)}
                           >
                             {suggestion}
@@ -169,14 +167,14 @@ export function AIAssistant() {
                   </div>
 
                   {/* Input */}
-                  <div className="p-4" style={{ borderTop: "1px solid var(--color-lavender-border)" }}>
+                  <div className="p-4" style={{ borderTop: "2px solid var(--border-default)" }}>
                     <div className="flex gap-2">
                       <Input
                         placeholder="AI'ya bir şey sorun..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        className="rounded-xl"
-                        style={{ background: "var(--input-bg)", borderColor: "var(--color-lavender-border)", color: "var(--text-secondary)" }}
+                        className="rounded"
+                        style={{ background: "var(--input-bg)", borderColor: "var(--border-default)", color: "var(--text-secondary)" }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleSend();
                         }}
@@ -184,8 +182,8 @@ export function AIAssistant() {
                       />
                       <Button
                         size="icon"
-                        className="rounded-xl"
-                        style={{ background: "var(--gradient-btn-primary)" }}
+                        className="rounded"
+                        style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
                         onClick={handleSend}
                         disabled={isAnalyzing}
                       >

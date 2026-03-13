@@ -657,7 +657,11 @@ do_auth() {
   [[ "$has_upper" -eq 0 || "$has_lower" -eq 0 || "$has_digit" -eq 0 ]] && \
     warn "Şifre büyük harf, küçük harf ve rakam içerirse daha güvenli olur."
 
-  local auth_resp http_code
+  if [[ "$auth_mode" != "1" && "$auth_mode" != "2" ]]; then
+    error "Geçersiz seçim: '$auth_mode'. 1 veya 2 giriniz."
+  fi
+
+  local auth_resp="" http_code=""
   if [[ "$auth_mode" == "1" ]]; then
     spinner_start "Kayıt yapılıyor..."
     auth_resp=$(http_post "$BACKEND_URL/api/v1/auth/register" "" \
@@ -666,6 +670,7 @@ do_auth() {
     if ! echo "$auth_resp" | jq -e '.success' >/dev/null 2>&1; then
       warn "Kayıt başarısız, giriş deneniyor..."
       auth_mode="2"
+      auth_resp=""
     fi
   fi
 

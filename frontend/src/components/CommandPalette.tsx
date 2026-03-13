@@ -130,8 +130,8 @@ export function CommandPalette() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-60 backdrop-blur-sm"
-            style={{ backgroundColor: "var(--surface-glass)" }}
+            className="fixed inset-0 z-60"
+            style={{ backgroundColor: "rgba(14, 22, 37, 0.55)" }}
             onClick={() => setOpen(false)}
           />
         )}
@@ -146,12 +146,8 @@ export function CommandPalette() {
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className="fixed top-[15%] left-1/2 -translate-x-1/2 z-61 w-full max-w-160 px-4"
           >
-            <div className="absolute -inset-4 rounded-3xl blur-2xl" style={{ background: "linear-gradient(to bottom, var(--color-teal-subtle), var(--color-lavender-subtle), transparent)" }} />
-
             <div className="relative">
-              <div className="absolute inset-x-0 top-0 h-px z-10 rounded-full" style={{ background: "linear-gradient(to right, transparent, var(--color-teal-border), transparent)" }} />
-
-              <Command className="backdrop-blur-xl rounded-2xl overflow-hidden" style={{ background: "var(--surface-glass-heavy)", border: "1px solid var(--color-teal-border)" }}>
+              <Command className="rounded overflow-hidden" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--panel-shadow)" }}>
                 <div className="flex items-center gap-3 px-4 pt-3 pb-0">
                   <div className="flex items-center gap-2">
                     <span style={{ color: "var(--color-teal)" }}>✦</span>
@@ -159,7 +155,7 @@ export function CommandPalette() {
                   </div>
                   <div className="flex-1" />
                   <div className="flex items-center gap-1">
-                    <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>ESC</kbd>
+                    <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", color: "var(--text-muted)", boxShadow: "1px 1px 0px var(--border-default)" }}>ESC</kbd>
                     <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>to close</span>
                   </div>
                 </div>
@@ -185,12 +181,12 @@ export function CommandPalette() {
                       <CommandItem
                         key={item.path}
                         onSelect={() => handleNavigate(item.path)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded cursor-pointer"
                         style={{ color: "var(--text-secondary)" }}
                       >
                         <item.icon className="w-4 h-4" />
                         <span className="flex-1">{item.label}</span>
-                        <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>
+                        <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", color: "var(--text-muted)", boxShadow: "1px 1px 0px var(--border-default)" }}>
                           {item.shortcut}
                         </kbd>
                       </CommandItem>
@@ -209,7 +205,7 @@ export function CommandPalette() {
                           <CommandItem
                             key={service.id}
                             onSelect={() => handleNavigate(`/services/${service.id}`)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded cursor-pointer"
                             style={{ color: "var(--text-secondary)" }}
                           >
                             <div className="relative">
@@ -221,7 +217,7 @@ export function CommandPalette() {
                             </div>
                             <span className="flex-1 font-(--font-mono) text-xs">{service.name}</span>
                             <span
-                              className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded-full border"
+                              className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded border-2"
                               style={{
                                 background: service.status === "up" ? "var(--status-up-subtle)" : service.status === "degraded" ? "var(--status-warn-subtle)" : "var(--status-down-subtle)",
                                 color: service.status === "up" ? "var(--status-up-text)" : service.status === "degraded" ? "var(--status-warn-text)" : "var(--status-down-text)",
@@ -266,7 +262,7 @@ export function CommandPalette() {
                           <CommandItem
                             key={item.key}
                             onSelect={item.action}
-                            className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer"
+                            className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer"
                             style={{ color: "var(--text-secondary)" }}
                           >
                             <item.icon className="w-3.5 h-3.5" style={{ color: item.colorVar }} />
@@ -287,7 +283,7 @@ export function CommandPalette() {
                       <CommandItem
                         key={action.action}
                         onSelect={() => handleAction(action.action)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded cursor-pointer"
                         style={{ color: "var(--text-secondary)" }}
                       >
                         <action.icon className="w-4 h-4" />
@@ -299,17 +295,17 @@ export function CommandPalette() {
                 </CommandList>
 
                 {/* Footer */}
-                <div className="flex items-center gap-4 px-4 py-2 text-[10px] font-(--font-mono)" style={{ borderTop: "1px solid var(--color-teal-border)", color: "var(--text-faint)" }}>
+                <div className="flex items-center gap-4 px-4 py-2 text-[10px] font-(--font-mono)" style={{ borderTop: "2px solid var(--border-default)", color: "var(--text-faint)" }}>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)" }}>↑↓</kbd>
+                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", boxShadow: "1px 1px 0px var(--border-default)" }}>↑↓</kbd>
                     navigate
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)" }}>↵</kbd>
+                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", boxShadow: "1px 1px 0px var(--border-default)" }}>↵</kbd>
                     select
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)" }}>⌘K</kbd>
+                    <kbd className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", boxShadow: "1px 1px 0px var(--border-default)" }}>⌘K</kbd>
                     toggle
                   </span>
                 </div>

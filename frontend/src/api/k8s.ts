@@ -65,6 +65,28 @@ export interface ServiceInfo {
     age?: string;
 }
 
+export interface EventInfo {
+    name: string;
+    reason: string;
+    message: string;
+    kind: string;
+    object: string;
+    type: string; // Normal | Warning
+    count: number;
+    first_time?: string;
+    last_time?: string;
+    age?: string;
+}
+
+export interface ResourceUsage {
+    pod_name: string;
+    namespace?: string;
+    cpu: string;
+    memory: string;
+    cpu_percent?: string;
+    memory_percent?: string;
+}
+
 export const k8sApi = {
     getStatus: async () => {
         const { data } = await apiClient.get("/k8s/status");
@@ -164,5 +186,21 @@ export const k8sApi = {
     undeployService: async (name: string) => {
         const { data } = await apiClient.delete(`/k8s/deploy/${encodeURIComponent(name)}`, { timeout: 30000 });
         return data.data as { message: string };
+    },
+
+    getEvents: async (kind?: string) => {
+        const params = kind ? `?kind=${encodeURIComponent(kind)}` : '';
+        const { data } = await apiClient.get(`/k8s/events${params}`);
+        return data.data as { events: EventInfo[]; count: number };
+    },
+
+    getTopPods: async () => {
+        const { data } = await apiClient.get('/k8s/top/pods');
+        return data.data as { pods: ResourceUsage[]; count: number };
+    },
+
+    getTopNodes: async () => {
+        const { data } = await apiClient.get('/k8s/top/nodes');
+        return data.data as { nodes: ResourceUsage[]; count: number };
     },
 };

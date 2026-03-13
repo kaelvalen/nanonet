@@ -128,12 +128,20 @@ function LoadBalancingTab({
     refetchInterval: 15000,
   });
 
-  // K8s HPA
+  // K8s HPA — 404 beklenen durum (HPA henüz oluşturulmamış); hata olarak gösterilmez
   const { data: hpaInfo, refetch: refetchHPA } = useQuery({
     queryKey: ["k8s-hpa-lb", k8sDeployName],
-    queryFn: () => k8sApi.getHPA(k8sDeployName + "-hpa"),
+    queryFn: async () => {
+      try {
+        return await k8sApi.getHPA(k8sDeployName + "-hpa");
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 404) return null;
+        throw err;
+      }
+    },
     enabled: k8sMode === 'k8s' && !!k8sStatus?.available && !!k8sDeployName,
-    retry: 1,
+    retry: 0,
   });
 
   const k8sScaleMutation = useMutation({
@@ -163,7 +171,7 @@ function LoadBalancingTab({
       <div className="flex items-center gap-2">
         <button
           onClick={() => setK8sMode('k8s')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
           style={k8sMode === 'k8s'
             ? { background: "var(--color-blue-subtle)", borderColor: "var(--color-blue-border)", color: "var(--color-blue)" }
             : { color: "var(--text-muted)", borderColor: "transparent" }}
@@ -177,7 +185,7 @@ function LoadBalancingTab({
         </button>
         <button
           onClick={() => setK8sMode('agent')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
           style={k8sMode === 'agent'
             ? { background: "var(--status-up-subtle)", borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }
             : { color: "var(--text-muted)", borderColor: "transparent" }}
@@ -191,7 +199,7 @@ function LoadBalancingTab({
       {k8sMode === 'k8s' && (
         <div className="space-y-4">
           {!isK8sAvailable ? (
-            <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+            <Card className="p-8 rounded text-center" style={{ background: "var(--surface-card)", border: "2px solid var(--color-blue-border)", boxShadow: "var(--card-shadow)" }}>
               <Layers className="w-10 h-10 mx-auto mb-3 opacity-40" style={{ color: "var(--color-blue)" }} />
               <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Kubernetes Bağlantısız</h3>
               <p className="text-[10px] max-w-sm mx-auto" style={{ color: "var(--text-muted)" }}>
@@ -205,20 +213,20 @@ function LoadBalancingTab({
           ) : (
             <>
               {/* Deployment name input */}
-              <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+              <Card className="p-4 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-blue-border)", boxShadow: "var(--card-shadow)" }}>
                 <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--text-muted)" }}>K8s Deployment Adı</label>
                 <div className="flex items-center gap-2">
                   <Input
                     value={k8sDeployName}
                     onChange={(e) => setK8sDeployName(e.target.value)}
                     placeholder="deployment-name"
-                    className="rounded-lg text-xs h-8 flex-1 font-mono"
+                    className="rounded text-xs h-8 flex-1 font-mono"
                     style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
                     onKeyDown={(e) => { if (e.key === "Enter") refetchDep(); }}
                   />
                   <Button size="sm" onClick={() => refetchDep()}
-                    className="rounded-lg h-8 text-xs" variant="outline"
-                    style={{ borderColor: "var(--color-blue-border)", color: "var(--color-blue)" }}>
+                    className="rounded h-8 text-xs" variant="outline"
+                    style={{ borderColor: "var(--color-blue-border)", color: "var(--color-blue)", boxShadow: "var(--btn-shadow)" }}>
                     <RefreshCw className="w-3 h-3" />
                   </Button>
                 </div>
@@ -226,11 +234,11 @@ function LoadBalancingTab({
 
               {/* Deployment Info */}
               {deployment && (
-                <Card className="p-5 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+                <Card className="p-5 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-blue-border)", boxShadow: "var(--card-shadow)" }}>
                   <div className="flex items-center gap-2 mb-4">
                     <Layers className="w-4 h-4" style={{ color: "var(--color-blue)" }} />
                     <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{deployment.name}</h3>
-                    <Badge className="text-[9px] px-1.5 py-0.5 rounded-full border ml-auto"
+                    <Badge className="text-[9px] px-1.5 py-0.5 rounded border-2 ml-auto"
                       style={{ background: "var(--color-blue-subtle)", color: "var(--color-blue)", borderColor: "var(--color-blue-border)" }}>
                       {deployment.strategy}
                     </Badge>
@@ -243,7 +251,7 @@ function LoadBalancingTab({
                       { label: "Kullanılabilir", value: deployment.available_replicas, color: "var(--color-teal)" },
                       { label: "Güncellenen", value: deployment.updated_replicas, color: "var(--color-lavender)" },
                     ].map((s) => (
-                      <div key={s.label} className="p-2.5 rounded-xl text-center" style={{ background: "var(--surface-sunken)" }}>
+                      <div key={s.label} className="p-2.5 rounded text-center" style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
                         <p className="text-[9px] uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{s.label}</p>
                         <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
                       </div>
@@ -251,24 +259,24 @@ function LoadBalancingTab({
                   </div>
 
                   {/* K8s Scale */}
-                  <div className="p-3 rounded-xl mb-3" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-blue-border)" }}>
+                  <div className="p-3 rounded mb-3" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
                     <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--text-muted)" }}>Kubernetes Scale</label>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setK8sReplicas(Math.max(0, k8sReplicas - 1))}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center"
-                        style={{ border: "1px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
+                        className="w-7 h-7 rounded flex items-center justify-center"
+                        style={{ border: "2px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="text-xl font-bold w-8 text-center" style={{ color: "var(--text-secondary)" }}>{k8sReplicas}</span>
                       <button onClick={() => setK8sReplicas(Math.min(32, k8sReplicas + 1))}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center"
-                        style={{ border: "1px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
+                        className="w-7 h-7 rounded flex items-center justify-center"
+                        style={{ border: "2px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
                         <Plus className="w-3 h-3" />
                       </button>
                       <div className="flex gap-1 ml-1">
                         {[1, 2, 4, 8].map((n) => (
                           <button key={n} onClick={() => setK8sReplicas(n)}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-medium border transition-all"
+                            className="px-2 py-1 rounded text-[10px] font-medium border-2 transition-all"
                             style={k8sReplicas === n
                               ? { background: "var(--color-blue-subtle)", color: "var(--color-blue)", borderColor: "var(--color-blue-border)" }
                               : { color: "var(--text-muted)", borderColor: "var(--border-subtle)" }}>{n}x</button>
@@ -276,7 +284,7 @@ function LoadBalancingTab({
                       </div>
                       <Button size="sm" onClick={() => k8sScaleMutation.mutate()}
                         disabled={k8sScaleMutation.isPending}
-                        className="ml-auto text-white rounded-lg text-xs h-8 px-3"
+                        className="ml-auto text-white rounded text-xs h-8 px-3"
                         style={{ background: "var(--color-blue)" }}>
                         {k8sScaleMutation.isPending
                           ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -289,19 +297,19 @@ function LoadBalancingTab({
 
               {/* Pod List */}
               {pods.length > 0 && (
-                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+                <Card className="p-4 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-teal-border)", boxShadow: "var(--card-shadow)" }}>
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-[10px] uppercase tracking-wider flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
                       <Activity className="w-3 h-3" style={{ color: "var(--color-teal)" }} /> Pod'lar
                     </h4>
-                    <Badge className="text-[9px] px-1.5 py-0.5 rounded-full border"
+                    <Badge className="text-[9px] px-1.5 py-0.5 rounded border-2"
                       style={{ background: "var(--color-teal-subtle)", color: "var(--color-teal)", borderColor: "var(--color-teal-border)" }}>
                       {pods.filter(p => p.ready).length}/{pods.length} hazır
                     </Badge>
                   </div>
                   <div className="space-y-1.5">
                     {pods.map((pod) => (
-                      <div key={pod.name} className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "var(--surface-sunken)" }}>
+                      <div key={pod.name} className="flex items-center gap-2 px-3 py-2 rounded" style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: pod.ready ? "var(--status-up)" : "var(--status-down)" }} />
                         <span className="text-[11px] font-mono truncate flex-1" style={{ color: "var(--text-secondary)" }}>{pod.name}</span>
                         <span className="text-[9px]" style={{ color: "var(--text-faint)" }}>{pod.ip}</span>
@@ -324,7 +332,7 @@ function LoadBalancingTab({
 
               {/* HPA */}
               {deployment && (
-                <Card className="p-5 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
+                <Card className="p-5 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-lavender-border)", boxShadow: "var(--card-shadow)" }}>
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-xs font-semibold flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}>
                       <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--color-lavender)" }} />
@@ -333,7 +341,7 @@ function LoadBalancingTab({
                     {hpaInfo && (
                       <Button variant="outline" size="sm" onClick={() => deleteHPAMutation.mutate()}
                         disabled={deleteHPAMutation.isPending}
-                        className="text-[9px] rounded-lg h-6 px-2"
+                        className="text-[9px] rounded h-6 px-2"
                         style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
                         Kaldır
                       </Button>
@@ -348,7 +356,7 @@ function LoadBalancingTab({
                         { label: "Mevcut", value: hpaInfo.current_replicas, color: "var(--color-blue)" },
                         { label: "CPU Hedef", value: hpaInfo.cpu_target_percent ? `%${hpaInfo.cpu_target_percent}` : "-", color: "var(--status-up)" },
                       ].map((s) => (
-                        <div key={s.label} className="p-2 rounded-xl text-center" style={{ background: "var(--surface-sunken)" }}>
+                        <div key={s.label} className="p-2 rounded text-center" style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
                           <p className="text-[9px] uppercase tracking-wider mb-0.5" style={{ color: "var(--text-faint)" }}>{s.label}</p>
                           <p className="text-base font-bold" style={{ color: s.color }}>{s.value}</p>
                         </div>
@@ -361,37 +369,37 @@ function LoadBalancingTab({
                       <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-faint)" }}>Min</label>
                       <div className="flex items-center gap-1">
                         <button onClick={() => setHpaMin(Math.max(1, hpaMin - 1))} className="w-6 h-6 rounded flex items-center justify-center"
-                          style={{ border: "1px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Minus className="w-2.5 h-2.5" /></button>
+                          style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Minus className="w-2.5 h-2.5" /></button>
                         <span className="text-sm font-bold w-5 text-center" style={{ color: "var(--text-secondary)" }}>{hpaMin}</span>
                         <button onClick={() => setHpaMin(hpaMin + 1)} className="w-6 h-6 rounded flex items-center justify-center"
-                          style={{ border: "1px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Plus className="w-2.5 h-2.5" /></button>
+                          style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Plus className="w-2.5 h-2.5" /></button>
                       </div>
                     </div>
                     <div>
                       <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-faint)" }}>Max</label>
                       <div className="flex items-center gap-1">
                         <button onClick={() => setHpaMax(Math.max(hpaMin, hpaMax - 1))} className="w-6 h-6 rounded flex items-center justify-center"
-                          style={{ border: "1px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Minus className="w-2.5 h-2.5" /></button>
+                          style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Minus className="w-2.5 h-2.5" /></button>
                         <span className="text-sm font-bold w-5 text-center" style={{ color: "var(--text-secondary)" }}>{hpaMax}</span>
                         <button onClick={() => setHpaMax(hpaMax + 1)} className="w-6 h-6 rounded flex items-center justify-center"
-                          style={{ border: "1px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Plus className="w-2.5 h-2.5" /></button>
+                          style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Plus className="w-2.5 h-2.5" /></button>
                       </div>
                     </div>
                     <div>
                       <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-faint)" }}>CPU %</label>
                       <Input type="number" value={hpaCpu} onChange={(e) => setHpaCpu(Number(e.target.value))}
-                        min={10} max={95} className="rounded-lg text-xs h-7"
+                        min={10} max={95} className="rounded text-xs h-7"
                         style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                     </div>
                   </div>
 
-                  <div className="p-2 rounded-lg text-[10px] leading-relaxed mb-3"
-                    style={{ background: "var(--color-lavender-subtle)", border: "1px solid var(--color-lavender-border)", color: "var(--text-muted)" }}>
+                  <div className="p-2 rounded text-[10px] leading-relaxed mb-3"
+                    style={{ background: "var(--color-lavender-subtle)", border: "2px solid var(--color-lavender-border)", color: "var(--text-muted)" }}>
                     CPU &gt; %{hpaCpu} olduğunda replica sayısı otomatik olarak {hpaMin}–{hpaMax} arasında ayarlanır.
                   </div>
 
                   <Button onClick={() => hpaMutation.mutate()} disabled={hpaMutation.isPending}
-                    className="w-full text-white rounded-xl h-8 text-xs"
+                    className="w-full text-white rounded h-8 text-xs"
                     style={{ background: "var(--color-lavender)" }}>
                     {hpaMutation.isPending
                       ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Uygulanıyor...</>
@@ -406,7 +414,7 @@ function LoadBalancingTab({
 
       {/* ──── Agent Mode ──── */}
       {k8sMode === 'agent' && (
-        <Card className="p-6 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--status-up-border)" }}>
+        <Card className="p-6 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--status-up-border)", boxShadow: "var(--card-shadow)" }}>
           <div className="flex items-center gap-2 mb-5">
             <Terminal className="w-4 h-4" style={{ color: "var(--status-up)" }} />
             <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Agent Aracılığıyla Scale</h3>
@@ -418,20 +426,20 @@ function LoadBalancingTab({
               <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--text-muted)" }}>Instance Sayısı</label>
               <div className="flex items-center gap-3">
                 <button onClick={() => setScaleInstances(Math.max(0, scaleInstances - 1))}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{ border: "1px solid var(--status-up-border)", color: "var(--status-up)" }}>
+                  className="w-8 h-8 rounded flex items-center justify-center transition-all"
+                  style={{ border: "2px solid var(--status-up-border)", color: "var(--status-up)" }}>
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span className="text-2xl font-bold w-10 text-center" style={{ color: "var(--text-secondary)" }}>{scaleInstances}</span>
                 <button onClick={() => setScaleInstances(Math.min(32, scaleInstances + 1))}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{ border: "1px solid var(--status-up-border)", color: "var(--status-up)" }}>
+                  className="w-8 h-8 rounded flex items-center justify-center transition-all"
+                  style={{ border: "2px solid var(--status-up-border)", color: "var(--status-up)" }}>
                   <Plus className="w-3.5 h-3.5" />
                 </button>
                 <div className="flex gap-1 ml-2">
                   {[1, 2, 4, 8].map((n) => (
                     <button key={n} onClick={() => setScaleInstances(n)}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all"
+                      className="px-2.5 py-1 rounded text-[10px] font-medium border-2 transition-all"
                       style={scaleInstances === n
                         ? { background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }
                         : { color: "var(--text-muted)", borderColor: "var(--border-default)" }}>{n}x</button>
@@ -450,7 +458,7 @@ function LoadBalancingTab({
                   { value: 'ip_hash' as const, label: 'IP Hash', desc: 'IP bazlı sticky' },
                 ]).map((s) => (
                   <button key={s.value} onClick={() => setScaleStrategy(s.value)}
-                    className="p-3 rounded-xl border text-left transition-all"
+                    className="p-3 rounded border-2 text-left transition-all"
                     style={scaleStrategy === s.value
                       ? { borderColor: "var(--status-up-border)", background: "var(--status-up-subtle)" }
                       : { borderColor: "var(--border-default)" }}>
@@ -462,14 +470,14 @@ function LoadBalancingTab({
             </div>
 
             {/* Info */}
-            <div className="p-3 rounded-xl text-[10px] leading-relaxed" style={{ background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)", color: "var(--text-muted)" }}>
+            <div className="p-3 rounded text-[10px] leading-relaxed" style={{ background: "var(--status-up-subtle)", border: "2px solid var(--status-up-border)", color: "var(--text-muted)" }}>
               Komut WebSocket üzerinden agent'a iletilir.
               <code className="font-mono px-1 rounded mx-1" style={{ background: "var(--surface-sunken)" }}>NANONET_SCALE_CMD</code>
               tanımlıysa çalıştırılır; yoksa sadece acknowledge edilir.
             </div>
 
             <Button onClick={handleScale} disabled={scaleLoading}
-              className="w-full text-white rounded-xl h-9 text-sm font-medium" style={{ background: "var(--status-up)" }}>
+              className="w-full text-white rounded h-9 text-sm font-medium" style={{ background: "var(--status-up)" }}>
               {scaleLoading
                 ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gönderiliyor...</>
                 : <><Layers className="w-4 h-4 mr-2" /> {scaleInstances} Instance — {scaleStrategy}</>}
@@ -507,13 +515,13 @@ function CommandHistoryTab({ serviceId }: { serviceId: string }) {
   };
 
   if (isLoading) return (
-    <Card className="p-6 rounded-xl animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
-      <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-10 rounded-lg" style={{ background: "var(--color-blue-subtle)" }} />)}</div>
+    <Card className="p-6 rounded animate-pulse" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)" }}>
+      <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-10 rounded" style={{ background: "var(--color-blue-subtle)" }} />)}</div>
     </Card>
   );
 
   if (logs.length === 0) return (
-    <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+    <Card className="p-12 rounded text-center" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
       <History className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--text-faint)" }} />
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>Henüz komut geçmişi yok</p>
     </Card>
@@ -522,10 +530,10 @@ function CommandHistoryTab({ serviceId }: { serviceId: string }) {
   return (
     <div className="space-y-2">
       {logs.map((log) => (
-        <Card key={log.id} className="p-3 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+        <Card key={log.id} className="p-3 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
           <div className="flex items-center gap-3">
             {statusIcon(log.status)}
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full font-mono"
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded font-mono"
               style={actionColorStyle[log.action] ?? { color: 'var(--text-muted)', background: 'var(--surface-sunken)' }}>{log.action}</span>
             <span className="text-xs font-mono flex-1 truncate" style={{ color: "var(--text-secondary)" }}>
               {log.command_id.slice(0, 12)}...
@@ -538,7 +546,7 @@ function CommandHistoryTab({ serviceId }: { serviceId: string }) {
             </span>
           </div>
           {log.output && (
-            <pre className="mt-2 ml-6 text-[10px] font-mono rounded-lg p-2 whitespace-pre-wrap break-all line-clamp-3" style={{ color: "var(--text-muted)", background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>{log.output}</pre>
+            <pre className="mt-2 ml-6 text-[10px] font-mono rounded p-2 whitespace-pre-wrap break-all line-clamp-3" style={{ color: "var(--text-muted)", background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>{log.output}</pre>
           )}
         </Card>
       ))}
@@ -775,7 +783,7 @@ export function ServiceDetailPage() {
         <div className="h-8 w-48 rounded animate-pulse" style={{ background: "var(--color-teal-subtle)" }} />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="p-4 rounded-xl animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+            <Card key={i} className="p-4 rounded animate-pulse" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)" }}>
               <div className="h-4 w-20 rounded mb-2" style={{ background: "var(--color-teal-subtle)" }} />
               <div className="h-6 w-16 rounded" style={{ background: "var(--color-teal-subtle)" }} />
             </Card>
@@ -809,13 +817,13 @@ export function ServiceDetailPage() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate("/services")} className="p-2 rounded-lg transition-all" style={{ color: "var(--text-muted)" }}>
+          <button onClick={() => navigate("/services")} className="p-2 rounded transition-all" style={{ color: "var(--text-muted)" }}>
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold truncate" style={{ color: "var(--text-secondary)" }}>{service?.name ?? ''}</h1>
-              <Badge className="text-[10px] font-([--font-mono]) px-2 py-0.5 rounded-full border" style={statusBadgeStyle}>
+              <Badge className="text-[10px] font-([--font-mono]) px-2 py-0.5 rounded border-2" style={statusBadgeStyle}>
                 {service?.status?.toUpperCase() ?? 'UNKNOWN'}
               </Badge>
             </div>
@@ -824,22 +832,22 @@ export function ServiceDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleStart} disabled={startLoading} className="rounded-lg text-xs h-8" style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}>
+            <Button variant="outline" size="sm" onClick={handleStart} disabled={startLoading} className="rounded text-xs h-8" style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}>
               {startLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />} Start
             </Button>
-            <Button variant="outline" size="sm" onClick={handleRestart} className="rounded-lg text-xs h-8" style={{ borderColor: "var(--color-teal-border)", color: "var(--color-teal)" }}>
+            <Button variant="outline" size="sm" onClick={handleRestart} className="rounded text-xs h-8" style={{ borderColor: "var(--color-teal-border)", color: "var(--color-teal)" }}>
               <RefreshCw className="w-3 h-3 mr-1" /> Restart
             </Button>
-            <Button variant="outline" size="sm" onClick={handleStop} className="rounded-lg text-xs h-8" style={{ borderColor: "var(--status-warn-border)", color: "var(--status-warn-text)" }}>
+            <Button variant="outline" size="sm" onClick={handleStop} className="rounded text-xs h-8" style={{ borderColor: "var(--status-warn-border)", color: "var(--status-warn-text)" }}>
               <Power className="w-3 h-3 mr-1" /> Stop
             </Button>
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-lg text-xs h-8" style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
+                <Button variant="outline" size="sm" className="rounded text-xs h-8" style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="rounded-2xl" style={{ background: "var(--surface-card)", border: "1px solid var(--status-down-border)" }}>
+              <DialogContent className="rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--status-down-border)", boxShadow: "var(--panel-shadow)" }}>
                 <DialogHeader>
                   <DialogTitle style={{ color: "var(--status-down-text)" }}>Servisi Sil</DialogTitle>
                   <DialogDescription style={{ color: "var(--text-muted)" }}>
@@ -847,8 +855,8 @@ export function ServiceDetailPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="rounded-xl">İptal</Button>
-                  <Button onClick={handleDelete} className="text-white rounded-xl" style={{ background: "var(--status-down-text)" }}>Sil</Button>
+                  <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="rounded">İptal</Button>
+                  <Button onClick={handleDelete} className="text-white rounded" style={{ background: "var(--status-down-text)" }}>Sil</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -860,7 +868,7 @@ export function ServiceDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* CPU */}
-          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+          <Card className="p-4 rounded overflow-hidden" style={{ background: "var(--surface-card)", border: "2px solid var(--color-teal-border)", boxShadow: "var(--card-shadow)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
@@ -886,7 +894,7 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Memory */}
-          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+          <Card className="p-4 rounded overflow-hidden" style={{ background: "var(--surface-card)", border: "2px solid var(--color-blue-border)", boxShadow: "var(--card-shadow)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <HardDrive className="w-3.5 h-3.5" style={{ color: "var(--color-blue)" }} />
@@ -907,7 +915,7 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Latency */}
-          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
+          <Card className="p-4 rounded overflow-hidden" style={{ background: "var(--surface-card)", border: "2px solid var(--color-lavender-border)", boxShadow: "var(--card-shadow)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" style={{ color: "var(--color-lavender)" }} />
@@ -933,7 +941,7 @@ export function ServiceDetailPage() {
             </div>
           </Card>
           {/* Uptime */}
-          <Card className="p-4 rounded-xl overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--status-up-border)" }}>
+          <Card className="p-4 rounded overflow-hidden" style={{ background: "var(--surface-card)", border: "2px solid var(--status-up-border)", boxShadow: "var(--card-shadow)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />
@@ -960,26 +968,26 @@ export function ServiceDetailPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
         <Tabs defaultValue="metrics" className="space-y-4">
           <div className="flex items-center justify-between">
-            <TabsList className="rounded-xl p-1" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
-              <TabsTrigger value="metrics" className="rounded-lg text-xs">
+            <TabsList className="rounded p-1" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)" }}>
+              <TabsTrigger value="metrics" className="rounded text-xs">
                 <TrendingUp className="w-3 h-3 mr-1" /> Metrics
               </TabsTrigger>
-              <TabsTrigger value="alerts" className="rounded-lg text-xs">
+              <TabsTrigger value="alerts" className="rounded text-xs">
                 <AlertCircle className="w-3 h-3 mr-1" /> Alerts ({alerts.length})
               </TabsTrigger>
-              <TabsTrigger value="ai" className="rounded-lg text-xs">
+              <TabsTrigger value="ai" className="rounded text-xs">
                 <Sparkles className="w-3 h-3 mr-1" /> AI Analysis
               </TabsTrigger>
-              <TabsTrigger value="terminal" className="rounded-lg text-xs">
+              <TabsTrigger value="terminal" className="rounded text-xs">
                 <Terminal className="w-3 h-3 mr-1" /> Terminal
               </TabsTrigger>
-              <TabsTrigger value="scale" className="rounded-lg text-xs">
+              <TabsTrigger value="scale" className="rounded text-xs">
                 <Layers className="w-3 h-3 mr-1" /> Orchestration
               </TabsTrigger>
-              <TabsTrigger value="history" className="rounded-lg text-xs">
+              <TabsTrigger value="history" className="rounded text-xs">
                 <History className="w-3 h-3 mr-1" /> History
               </TabsTrigger>
-              <TabsTrigger value="settings" className="rounded-lg text-xs">
+              <TabsTrigger value="settings" className="rounded text-xs">
                 <Settings className="w-3 h-3 mr-1" /> Settings
               </TabsTrigger>
             </TabsList>
@@ -990,7 +998,7 @@ export function ServiceDetailPage() {
                 <button
                   key={d}
                   onClick={() => setMetricsDuration(d)}
-                  className="px-2 py-1 rounded-lg text-[10px] font-medium transition-all border"
+                  className="px-2 py-1 rounded text-[10px] font-medium transition-all border-2"
                   style={metricsDuration === d
                     ? { background: "var(--color-teal-subtle)", color: "var(--color-teal)", borderColor: "var(--color-teal-border)" }
                     : { color: "var(--text-muted)", borderColor: "transparent" }}
@@ -1004,18 +1012,18 @@ export function ServiceDetailPage() {
           {/* Metrics Tab */}
           <TabsContent value="metrics" className="space-y-4">
             {metricsLoading ? (
-              <Card className="p-8 rounded-xl animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
-                <div className="h-64 rounded-lg" style={{ background: "var(--color-teal-subtle)" }} />
+              <Card className="p-8 rounded animate-pulse" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)" }}>
+                <div className="h-64 rounded" style={{ background: "var(--color-teal-subtle)" }} />
               </Card>
             ) : chartData.length === 0 ? (
-              <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+              <Card className="p-12 rounded text-center" style={{ background: "var(--surface-card)", border: "2px solid var(--color-teal-border)" }}>
                 <Activity className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--text-faint)" }} />
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>Bu zaman aralığında metrik verisi yok</p>
               </Card>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* CPU Chart */}
-                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+                <Card className="p-4 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-teal-border)", boxShadow: "var(--card-shadow)" }}>
                   <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
                     <Cpu className="w-3 h-3" style={{ color: "var(--color-teal)" }} /> CPU Usage (%)
                   </h3>
@@ -1030,14 +1038,14 @@ export function ServiceDetailPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
                       <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" domain={[0, 100]} />
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #39c5bb22", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ borderRadius: 0, border: "2px solid #39c5bb", fontSize: 11 }} />
                       <Area type="monotone" dataKey="cpu" stroke="#39c5bb" fill="url(#cpuGrad)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </Card>
 
                 {/* Memory Chart */}
-                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
+                <Card className="p-4 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-blue-border)", boxShadow: "var(--card-shadow)" }}>
                   <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
                     <HardDrive className="w-3 h-3" style={{ color: "var(--color-blue)" }} /> Memory (MB)
                   </h3>
@@ -1052,14 +1060,14 @@ export function ServiceDetailPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
                       <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" />
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #93c5fd22", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ borderRadius: 0, border: "2px solid #93c5fd", fontSize: 11 }} />
                       <Area type="monotone" dataKey="memory" stroke="#93c5fd" fill="url(#memGrad)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </Card>
 
                 {/* Latency Chart */}
-                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
+                <Card className="p-4 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-lavender-border)", boxShadow: "var(--card-shadow)" }}>
                   <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
                     <Clock className="w-3 h-3" style={{ color: "var(--color-lavender)" }} /> Latency (ms)
                   </h3>
@@ -1074,14 +1082,14 @@ export function ServiceDetailPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
                       <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" />
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #c4b5fd22", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ borderRadius: 0, border: "2px solid #c4b5fd", fontSize: 11 }} />
                       <Area type="monotone" dataKey="latency" stroke="#c4b5fd" fill="url(#latGrad)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </Card>
 
                 {/* Error Rate Chart */}
-                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--status-down-border)" }}>
+                <Card className="p-4 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--status-down-border)", boxShadow: "var(--card-shadow)" }}>
                   <h3 className="text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
                     <Zap className="w-3 h-3" style={{ color: "var(--status-down)" }} /> Error Rate (%)
                   </h3>
@@ -1096,7 +1104,7 @@ export function ServiceDetailPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#b0bdd5" />
                       <YAxis tick={{ fontSize: 10 }} stroke="#b0bdd5" domain={[0, "auto"]} />
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #fda4af22", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ borderRadius: 0, border: "2px solid #fda4af", fontSize: 11 }} />
                       <Area type="monotone" dataKey="error_rate" stroke="#fda4af" fill="url(#errGrad)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -1108,20 +1116,20 @@ export function ServiceDetailPage() {
           {/* Alerts Tab */}
           <TabsContent value="alerts" className="space-y-3">
             {alerts.length === 0 ? (
-              <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+              <Card className="p-12 rounded text-center" style={{ background: "var(--surface-card)", border: "2px solid var(--color-teal-border)" }}>
                 <Shield className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--status-up)" }} />
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>Aktif alert yok — tüm sistemler çalışıyor</p>
               </Card>
             ) : (
               alerts.map((alert, index) => (
                 <motion.div key={alert.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}>
-                  <Card className="p-4 rounded-xl border" style={{ background: "var(--surface-card)", borderColor: alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)" }}>
+                  <Card className="p-4 rounded" style={{ background: "var(--surface-card)", border: "2px solid", borderColor: alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)" }}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: alert.severity === "crit" ? "var(--status-down)" : alert.severity === "warn" ? "var(--status-warn)" : "var(--color-blue)" }} />
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge className="text-[9px] px-1.5 py-0 rounded-full border uppercase font-([--font-mono])" style={{ background: alert.severity === "crit" ? "var(--status-down-subtle)" : alert.severity === "warn" ? "var(--status-warn-subtle)" : "var(--color-blue-subtle)", color: alert.severity === "crit" ? "var(--status-down-text)" : alert.severity === "warn" ? "var(--status-warn-text)" : "var(--color-blue)", borderColor: alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)" }}>
+                            <Badge className="text-[9px] px-1.5 py-0 rounded border-2 uppercase font-([--font-mono])" style={{ background: alert.severity === "crit" ? "var(--status-down-subtle)" : alert.severity === "warn" ? "var(--status-warn-subtle)" : "var(--color-blue-subtle)", color: alert.severity === "crit" ? "var(--status-down-text)" : alert.severity === "warn" ? "var(--status-warn-text)" : "var(--color-blue)", borderColor: alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)" }}>
                               {alert.severity}
                             </Badge>
                             <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{alert.type}</span>
@@ -1136,7 +1144,7 @@ export function ServiceDetailPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleResolveAlert(alert.id)}
-                        className="text-[10px] rounded-lg h-7"
+                        className="text-[10px] rounded h-7"
                         style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}
                       >
                         Çöz
@@ -1150,9 +1158,9 @@ export function ServiceDetailPage() {
 
           {/* Terminal Tab */}
           <TabsContent value="terminal" className="space-y-3">
-            <Card className="rounded-xl overflow-hidden shadow-xl" style={{ background: "var(--terminal-bg, #0a0f1a)", border: "1px solid var(--terminal-border, #1e293b)" }}>
+            <Card className="rounded overflow-hidden" style={{ background: "var(--terminal-bg, #0a0f1a)", border: "2px solid var(--terminal-border, #1e293b)" }}>
               {/* Title bar */}
-              <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "1px solid var(--terminal-border, #1e293b)", background: "var(--terminal-header, #0d1525)" }}>
+              <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "2px solid var(--terminal-border, #1e293b)", background: "var(--terminal-header, #0d1525)" }}>
                 <div className="flex gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#febc2e" }} />
@@ -1212,11 +1220,11 @@ export function ServiceDetailPage() {
                         </div>
                         {/* Output */}
                         {entry.output && (
-                          <pre className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded-lg p-2" style={{ color: "#94a3b8", background: "#0f172a", border: "1px solid #1e293b" }}>{entry.output}</pre>
+                          <pre className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded p-2" style={{ color: "#94a3b8", background: "#0f172a", border: "2px solid #1e293b" }}>{entry.output}</pre>
                         )}
                         {/* Error */}
                         {entry.error && (
-                          <pre className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded-lg p-2" style={{ color: "#fb7185", background: "#1f0a0e", border: "1px solid rgba(251,113,133,0.2)" }}>{entry.error}</pre>
+                          <pre className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded p-2" style={{ color: "#fb7185", background: "#1f0a0e", border: "2px solid rgba(251,113,133,0.6)" }}>{entry.error}</pre>
                         )}
                       </div>
                     ))}
@@ -1225,7 +1233,7 @@ export function ServiceDetailPage() {
                 )}
               </div>
               {/* Input area */}
-              <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: "1px solid #1e293b", background: "#0d1525" }}>
+              <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: "2px solid #1e293b", background: "#0d1525" }}>
                 <span className="font-mono text-xs shrink-0" style={{ color: "#22d3ee" }}>❯</span>
                 <Input
                   value={execCommand}
@@ -1238,8 +1246,8 @@ export function ServiceDetailPage() {
                 />
                 <Button size="sm" onClick={handleExec}
                   disabled={execLoading || !execCommand.trim()}
-                  className="h-7 px-3 rounded-lg shrink-0"
-                  style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.2)" }}
+                  className="h-7 px-3 rounded shrink-0"
+                  style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8", border: "2px solid rgba(56,189,248,0.4)" }}
                   variant="outline">
                   {execLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                 </Button>
@@ -1269,12 +1277,12 @@ export function ServiceDetailPage() {
           {/* Settings Tab: Alert Thresholds + Maintenance Windows */}
           <TabsContent value="settings" className="space-y-4">
             {/* ── Alert Thresholds ── */}
-            <Card className="p-5 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+            <Card className="p-5 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
               <div className="flex items-center gap-2 mb-4">
                 <Bell className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Alert Eşikleri</h3>
                 {alertRules?.is_default && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--surface-sunken)", color: "var(--text-faint)" }}>varsayılan</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: "var(--surface-sunken)", color: "var(--text-faint)" }}>varsayılan</span>
                 )}
               </div>
 
@@ -1312,7 +1320,7 @@ export function ServiceDetailPage() {
                                 setAlertRulesForm({ ...current, [key]: v });
                               }
                             }}
-                            className="rounded-lg text-xs h-8"
+                            className="rounded text-xs h-8"
                             style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
                           />
                         </div>
@@ -1321,12 +1329,12 @@ export function ServiceDetailPage() {
                     <div className="flex justify-end gap-2">
                       {alertRulesForm && (
                         <Button size="sm" variant="outline" onClick={() => setAlertRulesForm(null)}
-                          className="rounded-lg text-xs h-8" style={{ color: "var(--text-muted)" }}>
+                          className="rounded text-xs h-8" style={{ color: "var(--text-muted)" }}>
                           İptal
                         </Button>
                       )}
                       <Button size="sm" onClick={handleSaveAlertRules} disabled={alertRulesSaving || !alertRulesForm}
-                        className="rounded-lg text-xs h-8 text-white" style={{ background: alertRulesForm ? "var(--gradient-btn-primary)" : undefined }}>
+                        className="rounded text-xs h-8 text-white" style={{ background: alertRulesForm ? "var(--gradient-btn-primary)" : undefined }}>
                         {alertRulesSaving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
                         Kaydet
                       </Button>
@@ -1344,28 +1352,28 @@ export function ServiceDetailPage() {
               </div>
 
               {/* Create form */}
-              <div className="space-y-2 mb-4 p-3 rounded-xl" style={{ background: "var(--surface-sunken)" }}>
+              <div className="space-y-2 mb-4 p-3 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
                 <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Yeni Bakım Penceresi</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] block mb-1" style={{ color: "var(--text-faint)" }}>Başlangıç</label>
                     <Input type="datetime-local" value={maintStarts} onChange={(e) => setMaintStarts(e.target.value)}
-                      className="rounded-lg text-xs h-8"
+                      className="rounded text-xs h-8"
                       style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                   </div>
                   <div>
                     <label className="text-[10px] block mb-1" style={{ color: "var(--text-faint)" }}>Bitiş</label>
                     <Input type="datetime-local" value={maintEnds} onChange={(e) => setMaintEnds(e.target.value)}
-                      className="rounded-lg text-xs h-8"
+                      className="rounded text-xs h-8"
                       style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                   </div>
                 </div>
                 <Input placeholder="Sebep (isteğe bağlı)" value={maintReason} onChange={(e) => setMaintReason(e.target.value)}
-                  className="rounded-lg text-xs h-8"
+                  className="rounded text-xs h-8"
                   style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                 <div className="flex justify-end">
                   <Button size="sm" onClick={handleCreateMaint} disabled={maintCreating || !maintStarts || !maintEnds}
-                    className="rounded-lg text-xs h-8 text-white" style={{ background: "var(--gradient-btn-primary)" }}>
+                    className="rounded text-xs h-8 text-white" style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}>
                     {maintCreating ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Plus className="w-3 h-3 mr-1" />}
                     Oluştur
                   </Button>
@@ -1384,14 +1392,15 @@ export function ServiceDetailPage() {
                     const isActive = now >= start && now < end;
                     const isPast = now >= end;
                     return (
-                      <div key={w.id} className="flex items-start justify-between gap-3 p-3 rounded-xl"
-                        style={{ background: "var(--surface-sunken)", border: `1px solid ${isActive ? "var(--status-warn-border)" : "var(--border-subtle)"}` }}>
+                      <div key={w.id} className="flex items-start justify-between gap-3 p-3 rounded"
+                        style={{ background: "var(--surface-sunken)", border: `2px solid ${isActive ? "var(--status-warn-border)" : "var(--border-subtle)"}` }}>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                               style={{
                                 background: isActive ? "var(--status-warn-subtle)" : isPast ? "var(--surface-card)" : "var(--color-blue-subtle)",
                                 color: isActive ? "var(--status-warn-text)" : isPast ? "var(--text-faint)" : "var(--color-blue)",
+                                border: isActive ? "1.5px solid var(--status-warn-border)" : isPast ? "1.5px solid var(--border-default)" : "1.5px solid var(--color-blue-border)",
                               }}>
                               {isActive ? "AKTİF" : isPast ? "GEÇMİŞ" : "BEKLEYEN"}
                             </span>
@@ -1403,7 +1412,7 @@ export function ServiceDetailPage() {
                         </div>
                         {!isPast && (
                           <Button size="sm" variant="outline" onClick={() => handleDeleteMaint(w.id)}
-                            className="shrink-0 rounded-lg h-7 text-[10px]"
+                            className="shrink-0 rounded h-7 text-[10px]"
                             style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -1418,14 +1427,14 @@ export function ServiceDetailPage() {
 
           {/* AI Tab */}
           <TabsContent value="ai" className="space-y-4">
-            <Card className="p-6 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
+            <Card className="p-6 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--color-lavender-border)", boxShadow: "var(--card-shadow)" }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4" style={{ color: "var(--color-lavender)" }} />
                   <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>AI Analiz</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: "var(--color-lavender-border)" }}>
+                  <div className="flex rounded overflow-hidden border-2" style={{ borderColor: "var(--color-lavender-border)" }}>
                     <button
                       onClick={() => setDeepAnalysis(false)}
                       className="px-3 py-1.5 text-[10px] font-medium transition-all"
@@ -1448,7 +1457,7 @@ export function ServiceDetailPage() {
                   <Button
                     onClick={handleAnalyze}
                     disabled={analyzeLoading}
-                    className="text-white rounded-xl text-xs h-8" style={{ background: "var(--gradient-btn-primary)" }}
+                    className="text-white rounded text-xs h-8" style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
                   >
                     {analyzeLoading ? (
                       <>
@@ -1465,23 +1474,23 @@ export function ServiceDetailPage() {
 
               {analysisResult ? (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-xl" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-lavender-border)" }}>
+                  <div className="p-4 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
                     <h4 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Özet</h4>
                     <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{analysisResult.summary}</p>
                   </div>
                   {analysisResult.root_cause && (
-                    <div className="p-4 rounded-xl" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+                    <div className="p-4 rounded" style={{ background: "var(--status-down-subtle)", border: "2px solid var(--status-down-border)" }}>
                       <h4 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Kök Neden</h4>
                       <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{analysisResult.root_cause}</p>
                     </div>
                   )}
                   {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-                    <div className="p-4 rounded-xl" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                    <div className="p-4 rounded" style={{ background: "var(--color-teal-subtle)", border: "2px solid var(--color-teal-border)" }}>
                       <h4 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Öneriler</h4>
                       <ul className="space-y-2">
                         {analysisResult.recommendations.map((rec, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <Badge className="text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5" style={{ background: rec.priority === "high" ? "var(--status-down-subtle)" : rec.priority === "medium" ? "var(--status-warn-subtle)" : "var(--color-teal-subtle)", color: rec.priority === "high" ? "var(--status-down-text)" : rec.priority === "medium" ? "var(--status-warn-text)" : "var(--color-teal)" }}>
+                            <Badge className="text-[9px] px-1.5 py-0 rounded shrink-0 mt-0.5" style={{ background: rec.priority === "high" ? "var(--status-down-subtle)" : rec.priority === "medium" ? "var(--status-warn-subtle)" : "var(--color-teal-subtle)", color: rec.priority === "high" ? "var(--status-down-text)" : rec.priority === "medium" ? "var(--status-warn-text)" : "var(--color-teal)" }}>
                               {rec.priority}
                             </Badge>
                             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{rec.action}</span>

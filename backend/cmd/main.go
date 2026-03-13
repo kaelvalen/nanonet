@@ -197,6 +197,7 @@ func main() {
 			svcGroup.GET("/:id/metrics", metricsHandler.GetHistory)
 			svcGroup.GET("/:id/metrics/aggregated", metricsHandler.GetAggregated)
 			svcGroup.GET("/:id/metrics/uptime", metricsHandler.GetUptime)
+			svcGroup.GET("/:id/metrics/rollup", metricsHandler.GetRollup)
 			svcGroup.GET("/:id/alerts", alertHandler.List)
 			svcGroup.GET("/:id/alert-rules", alertHandler.GetAlertRules)
 			svcGroup.PUT("/:id/alert-rules", alertHandler.UpsertAlertRules)
@@ -250,6 +251,9 @@ func main() {
 			k8sGroup.DELETE("/hpa/:name", strictLimiter, k8sHandler.DeleteHPA)
 			k8sGroup.GET("/services", k8sHandler.ListServices)
 			k8sGroup.GET("/endpoints/:name", k8sHandler.GetServiceEndpoints)
+			k8sGroup.GET("/events", k8sHandler.GetEvents)
+			k8sGroup.GET("/top/pods", k8sHandler.GetTopPods)
+			k8sGroup.GET("/top/nodes", k8sHandler.GetTopNodes)
 			k8sGroup.POST("/deploy", strictLimiter, k8sHandler.DeployService)
 			k8sGroup.DELETE("/deploy/:name", strictLimiter, k8sHandler.UndeployService)
 		}
