@@ -1,13 +1,23 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use sysinfo::{Disks, System};
+use sysinfo::{Disks, Networks, System};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricSnapshot {
     pub cpu_percent: f32,
     pub memory_used_mb: f32,
+    pub memory_total_mb: f32,
     pub disk_used_gb: f32,
+    pub disk_total_gb: f32,
+    /// Kümülatif ağ: toplam gelen bayt (fark hesabı üst katmanda yapılır)
+    pub net_rx_bytes: u64,
+    /// Kümülatif ağ: toplam giden bayt
+    pub net_tx_bytes: u64,
+    /// Disk okuma (bayt/s)
+    pub disk_read_bytes_sec: f64,
+    /// Disk yazma (bayt/s)
+    pub disk_write_bytes_sec: f64,
     /// Servis /metrics endpoint'inden alınan uygulama seviyesi CPU (varsa)
     pub app_cpu_percent: Option<f32>,
     /// Servis /metrics endpoint'inden alınan uygulama seviyesi bellek (varsa)
@@ -31,11 +41,25 @@ struct AppMetricsResponse {
     memory_used_mb: Option<f32>,
 }
 
+/// Disk I/O snapshot — iki ölçüm noktası arasındaki fark için.
+#[derive(Debug, Clone, Default)]
+pub struct DiskIOSnapshot {
+    pub read_bytes: u64,
+    pub write_bytes: u64,
+}
+
 /// Sistem metriklerini toplar (sysinfo)
-pub fn collect_system(sys: &mut System, disks: &mut Disks) -> MetricSnapshot {
+pub fn collect_system(
+    sys: &mut System,
+    disks: &mut Disks,
+    networks: &mut Networks,
+    prev_disk: &DiskIOSnapshot,
+    elapsed_secs: f64,
+) -> (MetricSnapshot, DiskIOSnapshot) {
     sys.refresh_cpu_usage();
     sys.refresh_memory();
     disks.refresh();
+    networks.refresh();
 
     let cpus = sys.cpus();
     let cpu_percent = if cpus.is_empty() {
@@ -45,22 +69,47 @@ pub fn collect_system(sys: &mut System, disks: &mut Disks) -> MetricSnapshot {
     };
 
     let memory_used_mb = sys.used_memory() as f32 / 1024.0 / 1024.0;
+    let memory_total_mb = sys.total_memory() as f32 / 1024.0 / 1024.0;
 
-    let disk_used_gb: f32 = disks
-        .iter()
-        .map(|d| (d.total_space().saturating_sub(d.available_space())) as f32)
-        .sum::<f32>()
-        / 1024.0
-        / 1024.0
-        / 1024.0;
+    let (disk_used, disk_total) = disks.iter().fold((0u64, 0u64), |(used, total), d| {
+        (
+            used + d.total_space().saturating_sub(d.available_space()),
+            total + d.total_space(),
+        )
+    });
+    let disk_used_gb = disk_used as f32 / 1024.0 / 1024.0 / 1024.0;
+    let disk_total_gb = disk_total as f32 / 1024.0 / 1024.0 / 1024.0;
 
-    MetricSnapshot {
+    // Disk I/O (bytes since last refresh)
+    let (cur_read, cur_write) = disks.iter().fold((0u64, 0u64), |(r, w), _d| {
+        // sysinfo Disks does not expose I/O counters; use 0 as placeholder
+        // Real I/O can be read from /proc/diskstats if needed
+        (r, w)
+    });
+    let elapsed = elapsed_secs.max(0.001);
+    let disk_read_bytes_sec = (cur_read.saturating_sub(prev_disk.read_bytes)) as f64 / elapsed;
+    let disk_write_bytes_sec = (cur_write.saturating_sub(prev_disk.write_bytes)) as f64 / elapsed;
+    let new_disk_snap = DiskIOSnapshot { read_bytes: cur_read, write_bytes: cur_write };
+
+    // Network bytes (cumulative, tüm arayüzler)
+    let (net_rx, net_tx) = networks.iter().fold((0u64, 0u64), |(rx, tx), (_, data)| {
+        (rx + data.total_received(), tx + data.total_transmitted())
+    });
+
+    let snapshot = MetricSnapshot {
         cpu_percent,
         memory_used_mb,
+        memory_total_mb,
         disk_used_gb,
+        disk_total_gb,
+        net_rx_bytes: net_rx,
+        net_tx_bytes: net_tx,
+        disk_read_bytes_sec,
+        disk_write_bytes_sec,
         app_cpu_percent: None,
         app_memory_used_mb: None,
-    }
+    };
+    (snapshot, new_disk_snap)
 }
 
 /// Hedef süreci PID veya isim ile bulup metriklerini toplar.

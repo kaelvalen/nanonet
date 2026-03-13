@@ -197,8 +197,8 @@ export function DashboardPage() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex items-center gap-4 backdrop-blur-sm rounded-2xl px-5 py-3"
-            style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}
+            className="flex items-center gap-4 rounded px-5 py-3"
+            style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}
           >
             <div className="relative flex items-center justify-center">
               <UptimeRing percent={healthPercent} size={64} />
@@ -221,11 +221,11 @@ export function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
         >
-          <Card className="rounded-2xl p-8 text-center relative overflow-hidden"
-            style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}>
+          <Card className="rounded p-8 text-center relative overflow-hidden"
+            style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
             <div className="absolute inset-x-0 top-0 h-1" style={{ background: "var(--gradient-btn-primary)" }} />
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ background: "var(--gradient-logo)" }}>
+            <div className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4"
+              style={{ background: "var(--gradient-logo)", border: "2px solid var(--border-default)", boxShadow: "var(--btn-shadow)" }}>
               <span className="text-2xl text-white">✦</span>
             </div>
             <h2 className="text-lg font-bold mb-2" style={{ color: "var(--text-secondary)" }}>
@@ -241,8 +241,8 @@ export function DashboardPage() {
                 { step: "2", title: "Agent Kur", desc: "Hedef sunucuya NanoNet Agent'ı kurun", icon: Zap, colorVar: "var(--color-blue)" },
                 { step: "3", title: "İzlemeye Başla", desc: "Gerçek zamanlı metrikleri takip edin", icon: Activity, colorVar: "var(--color-lavender)" },
               ].map((item) => (
-                <div key={item.step} className="p-4 rounded-xl text-left relative"
-                  style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>
+                <div key={item.step} className="p-4 rounded text-left relative"
+                  style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
                   <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
                     style={{ background: `color-mix(in srgb, ${item.colorVar} 15%, transparent)`, color: item.colorVar }}>
                     {item.step}
@@ -257,8 +257,8 @@ export function DashboardPage() {
             <AddServiceDialog
               trigger={
                 <Button
-                  className="text-white rounded-xl shadow-md hover:shadow-lg transition-all px-6"
-                  style={{ background: "var(--gradient-btn-primary)" }}
+                  className="text-white rounded transition-all px-6"
+                  style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
                 >
                   <Plus className="w-4 h-4 mr-2" /> İlk Servisini Ekle
                 </Button>
@@ -283,11 +283,11 @@ export function DashboardPage() {
             transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
             className="group relative"
           >
-            <Card className="p-4 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
-              style={{ background: "var(--surface-glass)", border: `1px solid ${stat.borderVar}` }}>
+            <Card className="p-4 rounded overflow-hidden"
+              style={{ background: "var(--surface-card)", border: `2px solid ${stat.borderVar}`, boxShadow: "var(--card-shadow)" }}>
               <div className="absolute inset-x-0 top-0 h-px opacity-20" style={{ background: `linear-gradient(to right, transparent, ${stat.iconVar}, transparent)` }} />
               <div className="flex items-start justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: stat.bgVar }}>
+                <div className="w-8 h-8 rounded flex items-center justify-center" style={{ backgroundColor: stat.bgVar, border: `1.5px solid ${stat.borderVar}` }}>
                   <stat.icon className="w-4 h-4" style={{ color: stat.iconVar }} />
                 </div>
                 <span className="text-2xl font-bold tabular-nums" style={{ color: stat.iconVar }}>
@@ -333,15 +333,15 @@ export function DashboardPage() {
               whileHover={{ y: -2 }}
             >
               <Link to={card.to} className="block group">
-                <Card className="relative backdrop-blur-sm rounded-2xl p-5 transition-all duration-300 overflow-hidden shadow-sm group-hover:shadow-lg"
-                  style={{ background: "var(--surface-glass)", border: `1px solid ${card.borderVar}` }}>
+                <Card className="relative rounded p-5 transition-all duration-200 overflow-hidden"
+                  style={{ background: "var(--surface-card)", border: `2px solid ${card.borderVar}`, boxShadow: "var(--card-shadow)" }}>
                   <div className="absolute inset-x-0 top-0 h-0.5 opacity-0 group-hover:opacity-60 transition-opacity duration-300"
                     style={{ background: `linear-gradient(to right, transparent, ${card.colorVar}, transparent)` }} />
 
                   <div className="relative z-10 flex items-center gap-4">
                     <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 group-hover:scale-110 shrink-0"
-                      style={{ backgroundColor: `color-mix(in srgb, ${card.colorVar} 12%, transparent)`, borderColor: `color-mix(in srgb, ${card.colorVar} 25%, transparent)` }}
+                      className="w-11 h-11 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105 shrink-0"
+                      style={{ backgroundColor: `color-mix(in srgb, ${card.colorVar} 15%, transparent)`, border: `2px solid ${card.colorVar}` }}
                     >
                       <card.icon className="w-5 h-5" style={{ color: card.colorVar }} />
                     </div>
@@ -390,9 +390,9 @@ export function DashboardPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {[1, 2, 3].map((i) => (
-                <Card key={i} className="p-4 rounded-xl animate-pulse" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}>
+                <Card key={i} className="p-4 rounded animate-pulse" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)" }}>
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-9 h-9 rounded-lg" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
+                    <div className="w-9 h-9 rounded" style={{ backgroundColor: "var(--color-teal-subtle)", border: "1.5px solid var(--color-teal-border)" }} />
                     <div className="flex-1">
                       <div className="h-3.5 w-28 rounded mb-1.5" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
                       <div className="h-2.5 w-20 rounded" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
@@ -419,13 +419,13 @@ export function DashboardPage() {
                     whileHover={{ y: -2 }}
                   >
                     <Link to={`/services/${service.id}`} className="block group">
-                      <Card className="relative backdrop-blur-sm rounded-xl p-4 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden"
-                        style={{ background: "var(--surface-glass)", border: `1px solid ${cardBorderVar}` }}>
+                      <Card className="relative rounded p-4 transition-all duration-200 overflow-hidden"
+                        style={{ background: "var(--surface-card)", border: `2px solid ${cardBorderVar}`, boxShadow: "var(--card-shadow)" }}>
                         {service.status === "up" && (
                           <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(to right, transparent, var(--color-teal-border), transparent)` }} />
                         )}
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: iconBgVar }}>
+                          <div className="w-9 h-9 rounded flex items-center justify-center shrink-0" style={{ backgroundColor: iconBgVar, border: `1.5px solid ${iconColorVar}` }}>
                             <Server className="w-4 h-4" style={{ color: iconColorVar }} />
                           </div>
                           <div className="flex-1 min-w-0">

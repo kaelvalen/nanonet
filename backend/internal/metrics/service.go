@@ -37,3 +37,7 @@ func (s *Service) GetLatestMetric(ctx context.Context, serviceID uuid.UUID) (*Me
 func (s *Service) GetUptime(ctx context.Context, serviceID uuid.UUID, duration time.Duration) (float64, error) {
 	return s.repo.GetUptime(ctx, serviceID, duration)
 }
+
+func (s *Service) GetRollup(ctx context.Context, serviceID uuid.UUID, duration time.Duration, bucketSize string) ([]RollupBucket, error) {
+	return s.repo.GetRollup(ctx, serviceID, duration, bucketSize)
+}

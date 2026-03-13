@@ -79,7 +79,7 @@ export function ServicesPage() {
 
       {/* Search & Filter Bar */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-        <Card className="backdrop-blur-sm rounded-xl p-3" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}>
+        <Card className="rounded p-3" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
             <div className="relative flex-1">
@@ -101,7 +101,7 @@ export function ServicesPage() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className="px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all border"
+                  className="px-2.5 py-1 rounded text-[10px] font-medium transition-all border-2"
                   style={statusFilter === s ? {
                     background: s === "up" ? "var(--status-up-subtle)" : s === "degraded" ? "var(--status-warn-subtle)" : s === "down" ? "var(--status-down-subtle)" : "var(--color-teal-subtle)",
                     color: s === "up" ? "var(--status-up-text)" : s === "degraded" ? "var(--status-warn-text)" : s === "down" ? "var(--status-down-text)" : "var(--color-teal)",
@@ -118,7 +118,7 @@ export function ServicesPage() {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ border: "1px solid var(--color-teal-border)" }}>
+            <div className="flex items-center gap-1 rounded p-0.5" style={{ border: "2px solid var(--border-default)" }}>
               <button
                 onClick={() => setViewMode("grid")}
                 className="p-1.5 rounded-md transition-all"
@@ -144,15 +144,15 @@ export function ServicesPage() {
       {isLoading ? (
         <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" : "space-y-3"}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="p-4 rounded-xl animate-pulse" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}>
+            <Card key={i} className="p-4 rounded animate-pulse" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)" }}>
               <div className="h-5 w-40 rounded mb-3" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
               <div className="h-3 w-28 rounded" style={{ backgroundColor: "var(--color-teal-subtle)" }} />
             </Card>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)" }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "var(--color-teal-subtle)" }}>
+        <Card className="p-12 rounded text-center" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
+          <div className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "var(--color-teal-subtle)", border: "2px solid var(--color-teal-border)" }}>
             <Server className="w-8 h-8 opacity-40" style={{ color: "var(--color-teal)" }} />
           </div>
           <p className="text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
@@ -180,8 +180,8 @@ export function ServicesPage() {
                   layout
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className="relative backdrop-blur-sm rounded-xl p-5 transition-all duration-200 shadow-sm group-hover:shadow-md overflow-hidden"
-                      style={{ background: "var(--surface-glass)", border: `1px solid ${sv.border}` }}>
+                    <Card className="relative rounded p-5 transition-all duration-200 overflow-hidden"
+                      style={{ background: "var(--surface-card)", border: `2px solid ${sv.border}`, boxShadow: "var(--card-shadow)" }}>
                       {service.status === "up" && (
                         <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(to right, transparent, var(--color-teal-border), transparent)" }} />
                       )}
@@ -189,10 +189,10 @@ export function ServicesPage() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="relative shrink-0">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: iconBgVar }}>
+                            <div className="w-10 h-10 rounded flex items-center justify-center" style={{ backgroundColor: iconBgVar, border: `1.5px solid ${sv.border}` }}>
                               <Server className="w-4.5 h-4.5" style={{ color: iconColorVar }} />
                             </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white flex items-center justify-center" style={{ backgroundColor: sv.dot }}>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border border-white flex items-center justify-center" style={{ backgroundColor: sv.dot }}>
                               {service.status === "up" && <div className="absolute inset-0 rounded-full animate-pulse-ring" style={{ backgroundColor: "var(--status-up)" }} />}
                             </div>
                           </div>
@@ -205,13 +205,13 @@ export function ServicesPage() {
                             </p>
                           </div>
                         </div>
-                        <Badge className="text-[9px] font-(--font-mono) px-2 py-0.5 rounded-full border shrink-0"
+                        <Badge className="text-[9px] font-(--font-mono) px-2 py-0.5 rounded border-2 shrink-0"
                           style={{ background: sv.badgeBg, color: sv.badgeText, borderColor: sv.badgeBorder }}>
                           {service.status?.toUpperCase() ?? "UNKNOWN"}
                         </Badge>
                       </div>
 
-                      <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid var(--border-divider)" }}>
+                      <div className="flex items-center justify-between pt-3" style={{ borderTop: "2px solid var(--border-default)" }}>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--text-faint)" }}>
                             <Clock className="w-3 h-3" /> {service.poll_interval_sec}s
@@ -244,8 +244,8 @@ export function ServicesPage() {
                   layout
                 >
                   <Link to={`/services/${service.id}`} className="block group">
-                    <Card className="rounded-xl px-4 py-3 transition-all duration-200 group-hover:shadow-sm"
-                      style={{ background: "var(--surface-glass)", border: `1px solid ${sv2.border}` }}>
+                    <Card className="rounded px-4 py-3 transition-all duration-200"
+                      style={{ background: "var(--surface-card)", border: `2px solid ${sv2.border}`, boxShadow: "var(--card-shadow)" }}>
                       <div className="flex items-center gap-4">
                         <div className="relative shrink-0">
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sv2.dot }} />
@@ -256,7 +256,7 @@ export function ServicesPage() {
                         <span className="text-[10px] hidden sm:flex items-center gap-1" style={{ color: "var(--text-faint)" }}>
                           <Clock className="w-3 h-3" />{service.poll_interval_sec}s
                         </span>
-                        <Badge className="text-[9px] font-(--font-mono) px-1.5 py-0.5 rounded-full border shrink-0"
+                        <Badge className="text-[9px] font-(--font-mono) px-1.5 py-0.5 rounded border-2 shrink-0"
                           style={{ background: sv2.badgeBg, color: sv2.badgeText, borderColor: sv2.badgeBorder }}>
                           {service.status?.toUpperCase() ?? "UNKNOWN"}
                         </Badge>

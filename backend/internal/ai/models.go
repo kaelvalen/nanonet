@@ -27,8 +27,8 @@ type AnalyzeRequest struct {
 }
 
 type MetricsSummary struct {
-	SampleCount int     `json:"sample_count"`
-	WindowMin   int     `json:"window_minutes"`
+	SampleCount int `json:"sample_count"`
+	WindowMin   int `json:"window_minutes"`
 
 	CPUMean   float64 `json:"cpu_mean"`
 	CPUStddev float64 `json:"cpu_stddev"`
@@ -58,13 +58,15 @@ type MetricsSummary struct {
 type AnalysisResult struct {
 	Summary         string           `json:"summary"`
 	RootCause       string           `json:"root_cause"`
+	Trend           string           `json:"trend,omitempty"`
 	Recommendations []Recommendation `json:"recommendations"`
 	Confidence      float64          `json:"confidence,omitempty"`
 }
 
 type Recommendation struct {
-	Action   string `json:"action"`
-	Priority string `json:"priority"`
+	Action          string `json:"action"`
+	Priority        string `json:"priority"`
+	EstimatedImpact string `json:"estimated_impact,omitempty"`
 }
 
 type ClaudeRequest struct {
@@ -82,4 +84,5 @@ type ClaudeResponse struct {
 	Content []struct {
 		Text string `json:"text"`
 	} `json:"content"`
+	StopReason string `json:"stop_reason"`
 }

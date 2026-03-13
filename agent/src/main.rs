@@ -16,7 +16,7 @@ use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use sysinfo::{Disks, System};
+use sysinfo::{Disks, Networks, System};
 use tokio::sync::watch;
 
 use buffer::MetricBuffer;
@@ -111,6 +111,9 @@ async fn main() -> error::Result<()> {
     let metrics_task = tokio::spawn(async move {
         let mut sys = System::new_all();
         let mut disks = Disks::new_with_refreshed_list();
+        let mut networks = Networks::new_with_refreshed_list();
+        let mut prev_disk_snap = metrics::DiskIOSnapshot::default();
+        let mut last_tick = std::time::Instant::now();
 
         let http_client = Client::builder()
             .timeout(Duration::from_secs(5))
@@ -145,7 +148,16 @@ async fn main() -> error::Result<()> {
             }
 
             // Sistem metrikleri
-            let mut snapshot = metrics::collect_system(&mut sys, &mut disks);
+            let elapsed = last_tick.elapsed().as_secs_f64();
+            last_tick = std::time::Instant::now();
+            let (mut snapshot, new_disk_snap) = metrics::collect_system(
+                &mut sys,
+                &mut disks,
+                &mut networks,
+                &prev_disk_snap,
+                elapsed,
+            );
+            prev_disk_snap = new_disk_snap;
 
             // Per-process metrikleri
             sys.refresh_processes();
@@ -157,6 +169,10 @@ async fn main() -> error::Result<()> {
             if let Some(ref url) = app_metrics_url {
                 metrics::fetch_app_metrics(&http_client, &mut snapshot, url).await;
             }
+
+            // Delta ağ metrikleri (MB/s)
+            let net_rx_mb = snapshot.net_rx_bytes as f64 / 1024.0 / 1024.0;
+            let net_tx_mb = snapshot.net_tx_bytes as f64 / 1024.0 / 1024.0;
 
             // Health check
             let health_result = health::check_health(&http_client, &health_url).await;
@@ -197,7 +213,13 @@ async fn main() -> error::Result<()> {
                 "system": {
                     "cpu_percent": snapshot.cpu_percent,
                     "memory_used_mb": snapshot.memory_used_mb,
+                    "memory_total_mb": snapshot.memory_total_mb,
                     "disk_used_gb": snapshot.disk_used_gb,
+                    "disk_total_gb": snapshot.disk_total_gb,
+                    "net_rx_mb": net_rx_mb,
+                    "net_tx_mb": net_tx_mb,
+                    "disk_read_bytes_sec": snapshot.disk_read_bytes_sec,
+                    "disk_write_bytes_sec": snapshot.disk_write_bytes_sec,
                 },
                 "app": {
                     "cpu_percent": snapshot.app_cpu_percent,

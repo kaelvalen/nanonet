@@ -42,16 +42,17 @@ import {
     Globe,
     Share2,
     AlertTriangle,
+    Bell,
     X,
     Package2,
     PackageCheck,
     PackageX,
 } from "lucide-react";
-import { k8sApi, type PodInfo, type DeploymentInfo, type HPAInfo, type NodeInfo, type ServiceInfo } from "@/api/k8s";
+import { k8sApi, type PodInfo, type DeploymentInfo, type HPAInfo, type NodeInfo, type ServiceInfo, type EventInfo } from "@/api/k8s";
 import { servicesApi } from "@/api/services";
 import type { Service } from "@/types/service";
 
-type TabType = "overview" | "pods" | "deployments" | "hpa" | "services" | "endpoints" | "nanonet";
+type TabType = "overview" | "pods" | "deployments" | "hpa" | "services" | "endpoints" | "events" | "nanonet";
 
 function StatusDot({ ready, size = "sm" }: { ready: boolean; size?: "sm" | "md" }) {
     const sz = size === "md" ? "w-2.5 h-2.5" : "w-2 h-2";
@@ -182,6 +183,8 @@ export function KubernetesPage() {
     const [endpointName, setEndpointName] = useState("");
     const [expandedNode, setExpandedNode] = useState<string | null>(null);
     const [logPod, setLogPod] = useState<string | null>(null);
+    const [eventKindFilter, setEventKindFilter] = useState<string>("all");
+    const [eventTypeFilter, setEventTypeFilter] = useState<"" | "Warning" | "Normal">("Warning");
 
     // NanoNet → K8s deploy form state
     const [deployForms, setDeployForms] = useState<Record<string, { image: string; replicas: number; open: boolean }>>({});
@@ -245,6 +248,15 @@ export function KubernetesPage() {
         queryKey: ["k8s-services"],
         queryFn: k8sApi.listServices,
         enabled: isAvailable && (activeTab === "services" || activeTab === "endpoints"),
+        retry: 1,
+        refetchInterval: 20000,
+    });
+
+    // K8s Events
+    const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useQuery({
+        queryKey: ["k8s-events", eventKindFilter],
+        queryFn: () => k8sApi.getEvents(eventKindFilter === "all" ? undefined : eventKindFilter),
+        enabled: isAvailable && activeTab === "events",
         retry: 1,
         refetchInterval: 20000,
     });
@@ -358,13 +370,20 @@ export function KubernetesPage() {
     const readyDeployments = deployments.filter(d => d.ready_replicas === d.replicas && d.replicas > 0).length;
     const readyNodes      = nodes.filter(n => n.ready).length;
 
-    const tabs: { key: TabType; label: string; icon: React.ElementType; colorVar: string }[] = [
+    const allEvents = eventsData?.events ?? [];
+    const filteredEvents = eventTypeFilter
+        ? allEvents.filter(e => e.type === eventTypeFilter)
+        : allEvents;
+    const warningCount = allEvents.filter(e => e.type === "Warning").length;
+
+    const tabs: { key: TabType; label: string; icon: React.ElementType; colorVar: string; badge?: number }[] = [
         { key: "overview",    label: "Genel Bakış",    icon: Activity, colorVar: "var(--color-teal)" },
         { key: "pods",        label: "Pod'lar",        icon: Box,      colorVar: "var(--color-blue)" },
         { key: "deployments", label: "Deployment'lar", icon: Layers,   colorVar: "var(--color-lavender)" },
         { key: "hpa",         label: "Auto-Scale",     icon: Gauge,    colorVar: "var(--color-pink)" },
         { key: "services",    label: "Servisler",      icon: Share2,   colorVar: "var(--color-teal)" },
         { key: "endpoints",   label: "Endpoints",      icon: Network,  colorVar: "var(--status-warn)" },
+        { key: "events",      label: "Events",         icon: Bell,     colorVar: "var(--status-warn)", badge: warningCount },
         { key: "nanonet",     label: "K8s Yayınla",     icon: Package2, colorVar: "var(--color-teal)" },
     ];
 
@@ -443,6 +462,12 @@ export function KubernetesPage() {
                                 >
                                     <tab.icon className="w-3.5 h-3.5" />
                                     {tab.label}
+                                    {tab.badge !== undefined && tab.badge > 0 && (
+                                        <span className="ml-0.5 min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+                                            style={{ background: "var(--status-warn-subtle)", color: "var(--status-warn-text)", border: "1px solid var(--status-warn-border)" }}>
+                                            {tab.badge}
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -1054,6 +1079,101 @@ export function KubernetesPage() {
                                             <p className="text-xs text-center py-4" style={{ color: "var(--text-faint)" }}>Aktif endpoint bulunamadı</p>
                                         )}
                                     </Card>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {/* ── EVENTS TAB ── */}
+                        {activeTab === "events" && (
+                            <motion.div key="events" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1">
+                                        {(["" , "Warning", "Normal"] as const).map((t) => (
+                                            <button key={t || "all"} onClick={() => setEventTypeFilter(t)}
+                                                className="px-3 py-1.5 rounded-xl text-xs border transition-all"
+                                                style={eventTypeFilter === t
+                                                    ? t === "Warning"
+                                                        ? { background: "var(--status-warn-subtle)", borderColor: "var(--status-warn-border)", color: "var(--status-warn-text)" }
+                                                        : t === "Normal"
+                                                            ? { background: "var(--status-up-subtle)", borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }
+                                                            : { background: "color-mix(in srgb, var(--color-blue) 12%, transparent)", borderColor: "var(--color-blue-border)", color: "var(--color-blue)" }
+                                                    : { color: "var(--text-muted)", borderColor: "var(--border-subtle)", background: "transparent" }}>
+                                                {t === "" ? "Tümü" : t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <Select value={eventKindFilter} onValueChange={setEventKindFilter}>
+                                        <SelectTrigger className="rounded-xl text-xs h-8 w-36" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}>
+                                            <SelectValue placeholder="Kind: Tümü" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Kind: Tümü</SelectItem>
+                                            <SelectItem value="Pod">Pod</SelectItem>
+                                            <SelectItem value="Deployment">Deployment</SelectItem>
+                                            <SelectItem value="ReplicaSet">ReplicaSet</SelectItem>
+                                            <SelectItem value="Node">Node</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <button onClick={() => refetchEvents()} disabled={eventsLoading}
+                                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border ml-auto"
+                                        style={{ borderColor: "var(--status-warn-border)", color: "var(--status-warn-text)" }}>
+                                        {eventsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                        Yenile
+                                    </button>
+                                </div>
+
+                                <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                                    {filteredEvents.length} event
+                                    {warningCount > 0 && <span className="ml-2" style={{ color: "var(--status-warn-text)" }}>⚠ {warningCount} uyarı</span>}
+                                </p>
+
+                                {eventsLoading && allEvents.length === 0 ? (
+                                    <div className="flex items-center gap-2 py-6" style={{ color: "var(--text-faint)" }}>
+                                        <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Event'ler yükleniyor...</span>
+                                    </div>
+                                ) : filteredEvents.length === 0 ? (
+                                    <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
+                                        <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: "var(--text-faint)" }} />
+                                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>Event bulunamadı</p>
+                                    </Card>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        {filteredEvents.map((ev: EventInfo, i: number) => (
+                                            <motion.div key={ev.name + i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.02, 0.3) }}>
+                                                <Card className="px-4 py-3 rounded-xl" style={{
+                                                    background: "var(--surface-glass)",
+                                                    border: `1px solid ${ev.type === "Warning" ? "var(--status-warn-border)" : "var(--border-subtle)"}`
+                                                }}>
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="mt-0.5 shrink-0">
+                                                            {ev.type === "Warning"
+                                                                ? <AlertTriangle className="w-3.5 h-3.5" style={{ color: "var(--status-warn)" }} />
+                                                                : <Activity className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className="text-xs font-semibold" style={{ color: ev.type === "Warning" ? "var(--status-warn-text)" : "var(--text-secondary)" }}>
+                                                                    {ev.reason}
+                                                                </span>
+                                                                <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: "var(--surface-sunken)", color: "var(--text-faint)" }}>
+                                                                    {ev.kind}/{ev.object}
+                                                                </span>
+                                                                {ev.count > 1 && (
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: "color-mix(in srgb, var(--status-warn) 12%, transparent)", color: "var(--status-warn-text)" }}>
+                                                                        ×{ev.count}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[10px] mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>{ev.message}</p>
+                                                        </div>
+                                                        {ev.age && (
+                                                            <span className="text-[10px] shrink-0" style={{ color: "var(--text-faint)" }}>{ev.age}</span>
+                                                        )}
+                                                    </div>
+                                                </Card>
+                                            </motion.div>
+                                        ))}
+                                    </div>
                                 )}
                             </motion.div>
                         )}

@@ -779,6 +779,131 @@ func (c *Client) runKubectlWithStdin(ctx context.Context, input string, args ...
 	return out, err
 }
 
+// EventInfo — K8s event bilgisi.
+type EventInfo struct {
+	Name      string     `json:"name"`
+	Reason    string     `json:"reason"`
+	Message   string     `json:"message"`
+	Kind      string     `json:"kind"`
+	Object    string     `json:"object"`
+	Type      string     `json:"type"` // Normal | Warning
+	Count     int32      `json:"count"`
+	FirstTime *time.Time `json:"first_time,omitempty"`
+	LastTime  *time.Time `json:"last_time,omitempty"`
+	Age       string     `json:"age,omitempty"`
+}
+
+// GetEvents — namespace'deki K8s event'lerini listeler. kind ile filtreleme opsiyonel ("Pod", "Deployment" vb.).
+func (c *Client) GetEvents(ctx context.Context, kind string) ([]EventInfo, error) {
+	args := []string{"get", "events", "-o", "json", "--sort-by=.lastTimestamp"}
+	if kind != "" {
+		args = append(args, "--field-selector", "involvedObject.kind="+kind)
+	}
+	output, err := c.runKubectl(ctx, args...)
+	if err != nil {
+		return nil, fmt.Errorf("event'ler alınamadı: %w", err)
+	}
+
+	var result struct {
+		Items []struct {
+			Metadata struct {
+				Name string `json:"name"`
+			} `json:"metadata"`
+			Reason         string `json:"reason"`
+			Message        string `json:"message"`
+			Type           string `json:"type"`
+			Count          int32  `json:"count"`
+			InvolvedObject struct {
+				Kind string `json:"kind"`
+				Name string `json:"name"`
+			} `json:"involvedObject"`
+			FirstTimestamp *time.Time `json:"firstTimestamp"`
+			LastTimestamp  *time.Time `json:"lastTimestamp"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("JSON parse hatası: %w", err)
+	}
+
+	events := make([]EventInfo, 0, len(result.Items))
+	for i := len(result.Items) - 1; i >= 0; i-- { // newest first
+		item := result.Items[i]
+		events = append(events, EventInfo{
+			Name:      item.Metadata.Name,
+			Reason:    item.Reason,
+			Message:   item.Message,
+			Type:      item.Type,
+			Count:     item.Count,
+			Kind:      item.InvolvedObject.Kind,
+			Object:    item.InvolvedObject.Name,
+			FirstTime: item.FirstTimestamp,
+			LastTime:  item.LastTimestamp,
+			Age:       formatAge(item.LastTimestamp),
+		})
+	}
+
+	return events, nil
+}
+
+// ResourceUsage — pod kaynak kullanım özeti.
+type ResourceUsage struct {
+	PodName       string `json:"pod_name"`
+	Namespace     string `json:"namespace"`
+	CPU           string `json:"cpu"`
+	Memory        string `json:"memory"`
+	CPUPercent    string `json:"cpu_percent,omitempty"`
+	MemoryPercent string `json:"memory_percent,omitempty"`
+}
+
+// GetTopPods — kubectl top pods ile anlık CPU/memory kullanımını döndürür.
+// metrics-server gerektirir; yoksa hata döner.
+func (c *Client) GetTopPods(ctx context.Context) ([]ResourceUsage, error) {
+	output, err := c.runKubectl(ctx, "top", "pods", "--no-headers")
+	if err != nil {
+		return nil, fmt.Errorf("pod metrikleri alınamadı (metrics-server kurulu mu?): %w", err)
+	}
+
+	var usages []ResourceUsage
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		usages = append(usages, ResourceUsage{
+			PodName:   fields[0],
+			Namespace: c.namespace,
+			CPU:       fields[1],
+			Memory:    fields[2],
+		})
+	}
+	return usages, nil
+}
+
+// GetTopNodes — kubectl top nodes ile node CPU/memory kullanımını döndürür.
+func (c *Client) GetTopNodes(ctx context.Context) ([]ResourceUsage, error) {
+	output, err := c.runKubectl(ctx, "top", "nodes", "--no-headers")
+	if err != nil {
+		return nil, fmt.Errorf("node metrikleri alınamadı (metrics-server kurulu mu?): %w", err)
+	}
+
+	var usages []ResourceUsage
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 5 {
+			continue
+		}
+		usages = append(usages, ResourceUsage{
+			PodName:       fields[0], // node name
+			CPU:           fields[1],
+			CPUPercent:    fields[2],
+			Memory:        fields[3],
+			MemoryPercent: fields[4],
+		})
+	}
+	return usages, nil
+}
+
 // slugify — Servis adından K8s uyumlu kaynak adı üretir.
 func slugify(name string) string {
 	lower := strings.ToLower(name)

@@ -105,8 +105,8 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                 {trigger || (
                     <Button
                         size="sm"
-                        className="h-7 px-3 text-xs text-white rounded-lg shadow-sm hover:shadow-md transition-all"
-                        style={{ background: "var(--gradient-btn-primary)" }}
+                        className="h-7 px-3 text-xs text-white rounded transition-all"
+                        style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
                     >
                         <Plus className="w-3 h-3 mr-1" /> Servis Ekle
                     </Button>
@@ -114,8 +114,8 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
             </DialogTrigger>
 
             <DialogContent
-                className="sm:max-w-125 rounded-2xl"
-                style={{ background: "var(--surface-overlay)", border: "1px solid var(--color-teal-border)" }}
+                className="sm:max-w-125 rounded"
+                style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--panel-shadow)" }}
             >
                 {step === "form" ? (
                     <>
@@ -137,7 +137,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                                     placeholder="payment-service"
                                     value={name}
                                     onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: "" })); }}
-                                    className="rounded-xl"
+                                    className="rounded"
                                     style={{ background: "var(--input-bg)", borderColor: errors.name ? "var(--status-down)" : "var(--input-border)", color: "var(--text-secondary)" }}
                                     aria-invalid={!!errors.name}
                                 />
@@ -154,7 +154,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                                     placeholder="192.168.1.42"
                                     value={host}
                                     onChange={(e) => { setHost(e.target.value); setErrors((p) => ({ ...p, host: "" })); }}
-                                    className="rounded-xl"
+                                    className="rounded"
                                     style={{ background: "var(--input-bg)", borderColor: errors.host ? "var(--status-down)" : "var(--input-border)", color: "var(--text-secondary)" }}
                                     aria-invalid={!!errors.host}
                                 />
@@ -175,7 +175,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                                         max={65535}
                                         value={port}
                                         onChange={(e) => { setPort(parseInt(e.target.value) || 0); setErrors((p) => ({ ...p, port: "" })); }}
-                                        className="rounded-xl"
+                                        className="rounded"
                                         style={{ background: "var(--input-bg)", borderColor: errors.port ? "var(--status-down)" : "var(--input-border)", color: "var(--text-secondary)" }}
                                         aria-invalid={!!errors.port}
                                     />
@@ -190,7 +190,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                                         placeholder="/health"
                                         value={healthEndpoint}
                                         onChange={(e) => { setHealthEndpoint(e.target.value); setErrors((p) => ({ ...p, healthEndpoint: "" })); }}
-                                        className="rounded-xl"
+                                        className="rounded"
                                         style={{ background: "var(--input-bg)", borderColor: errors.healthEndpoint ? "var(--status-down)" : "var(--input-border)", color: "var(--text-secondary)" }}
                                         aria-invalid={!!errors.healthEndpoint}
                                     />
@@ -211,7 +211,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                                         max={300}
                                         value={pollInterval}
                                         onChange={(e) => { setPollInterval(parseInt(e.target.value) || 10); setErrors((p) => ({ ...p, pollInterval: "" })); }}
-                                        className="rounded-xl w-24"
+                                        className="rounded w-24"
                                         style={{ background: "var(--input-bg)", borderColor: errors.pollInterval ? "var(--status-down)" : "var(--input-border)", color: "var(--text-secondary)" }}
                                         aria-invalid={!!errors.pollInterval}
                                     />
@@ -225,15 +225,15 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                             <Button
                                 variant="outline"
                                 onClick={handleClose}
-                                className="rounded-xl"
-                                style={{ borderColor: "var(--color-teal-border)", color: "var(--text-secondary)" }}
+                                className="rounded"
+                                style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)", boxShadow: "var(--btn-shadow)" }}
                             >
                                 İptal
                             </Button>
                             <Button
                                 onClick={handleCreate}
-                                className="text-white rounded-xl"
-                                style={{ background: "var(--gradient-btn-primary)" }}
+                                className="text-white rounded"
+                                style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
                             >
                                 Oluştur
                             </Button>
@@ -254,15 +254,15 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                             {/* Agent Install Command */}
                             <div className="relative">
                                 <pre
-                                    className="rounded-xl p-4 text-xs font-(--font-mono) overflow-x-auto whitespace-pre-wrap break-all"
-                                    style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-secondary)" }}
+                                    className="rounded p-4 text-xs font-(--font-mono) overflow-x-auto whitespace-pre-wrap break-all"
+                                    style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", color: "var(--text-secondary)", boxShadow: "var(--card-shadow)" }}
                                 >
                                     {agentCmd}
                                 </pre>
                                 <button
                                     onClick={handleCopy}
-                                    className="absolute top-2 right-2 p-1.5 rounded-lg transition-all"
-                                    style={{ background: "var(--surface-raised)", border: "1px solid var(--color-teal-border)" }}
+                                    className="absolute top-2 right-2 p-1.5 rounded transition-all"
+                                    style={{ background: "var(--surface-raised)", border: "2px solid var(--border-default)", boxShadow: "1px 1px 0px var(--border-default)" }}
                                     aria-label="Komutu kopyala"
                                 >
                                     {copied ? (
@@ -273,7 +273,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                                 </button>
                             </div>
 
-                            <div className="p-3 rounded-xl" style={{ background: "var(--status-warn-subtle)", border: "1px solid var(--status-warn-border)" }}>
+                            <div className="p-3 rounded" style={{ background: "var(--status-warn-subtle)", border: "2px solid var(--status-warn-border)" }}>
                                 <p className="text-[11px]" style={{ color: "var(--status-warn-text)" }}>
                                     ⚠️ <strong>Önemli:</strong> Agent token'ınızı almak için Ayarlar → Agent Token bölümüne gidin ve &lt;YOUR_AGENT_TOKEN&gt; kısmını gerçek token ile değiştirin.
                                 </p>
@@ -283,8 +283,8 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
                         <DialogFooter>
                             <Button
                                 onClick={handleClose}
-                                className="text-white rounded-xl"
-                                style={{ background: "var(--gradient-btn-primary)" }}
+                                className="text-white rounded"
+                                style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
                             >
                                 Tamam
                             </Button>

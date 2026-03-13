@@ -35,7 +35,7 @@ import { toast } from "sonner";
 function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--brand-primary-subtle)" }}>
+      <div className="w-7 h-7 rounded flex items-center justify-center" style={{ backgroundColor: "var(--brand-primary-subtle)", border: "1.5px solid var(--border-default)" }}>
         <Icon className="w-3.5 h-3.5" style={{ color: "var(--brand-primary)" }} />
       </div>
       <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{label}</h3>
@@ -65,8 +65,8 @@ const THEME_OPTIONS: {
   icon: React.ElementType;
   preview: string;
 }[] = [
-    { name: "cinnamiku", mode: "light", label: "CinnaMiku", sublabel: "Pastel Light", icon: Sun, preview: "linear-gradient(110deg, #D0FAFF 0%, #FED7FF 100%)" },
-    { name: "cinnamiku", mode: "dark", label: "CinnaMiku", sublabel: "Deep Ocean", icon: Moon, preview: "linear-gradient(110deg, #071012 0%, #324758 60%, #00E6FF 100%)" },
+    { name: "cinnamiku", mode: "light", label: "CinnaMiku", sublabel: "Kawaii Light", icon: Sun, preview: "linear-gradient(110deg, #c8d4e8 0%, #dce4f0 50%, #f0e8f4 100%)" },
+    { name: "cinnamiku", mode: "dark", label: "CinnaMiku", sublabel: "Miku Dark", icon: Moon, preview: "linear-gradient(110deg, #0e1625 0%, #162035 60%, #1e2c42 100%)" },
     { name: "pro", mode: "light", label: "Pro", sublabel: "Clean Light", icon: Monitor, preview: "linear-gradient(110deg, #f8fafc 0%, #e0e7ff 100%)" },
     { name: "pro", mode: "dark", label: "Pro", sublabel: "Slate Dark", icon: Layers, preview: "linear-gradient(110deg, #0a0c10 0%, #1e2240 100%)" },
   ];
@@ -193,7 +193,7 @@ export function SettingsPage() {
     setThemeMode(mode);
   };
 
-  const cardStyle = { background: "var(--surface-glass)", borderColor: "var(--border-subtle)" };
+  const cardStyle = { background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" };
   const dividerStyle = { backgroundColor: "var(--border-divider)" };
 
   return (
@@ -208,9 +208,9 @@ export function SettingsPage() {
 
       {/* Profile */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0"
+            <div className="w-11 h-11 rounded flex items-center justify-center text-white text-sm font-bold shrink-0"
               style={{ background: "var(--gradient-logo)" }}>
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
@@ -222,7 +222,7 @@ export function SettingsPage() {
                 Üyelik: {user?.created_at ? new Date(user.created_at).toLocaleDateString("tr-TR") : "—"}
               </p>
             </div>
-            <Badge className="text-[9px] rounded-full shrink-0"
+            <Badge className="text-[9px] rounded border-2 shrink-0"
               style={{ background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }}>
               Aktif
             </Badge>
@@ -232,13 +232,13 @@ export function SettingsPage() {
 
       {/* Password Change */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
             <SectionHeader icon={Lock} label="Şifre Değiştir" />
             <Button size="sm" variant="outline"
               onClick={() => setShowPasswordSection(!showPasswordSection)}
-              className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={{ borderColor: "var(--color-teal-border)", color: "var(--text-muted)" }}>
+              className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-muted)", boxShadow: "var(--btn-shadow)" }}>
               {showPasswordSection ? "Kapat" : "Değiştir"}
             </Button>
           </div>
@@ -251,7 +251,7 @@ export function SettingsPage() {
                   <div className="relative">
                     <Input type={showCurrent ? "text" : "password"} value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="rounded-xl text-xs h-9 pr-9"
+                      className="rounded text-xs h-9 pr-9"
                       style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                     <button onClick={() => setShowCurrent(!showCurrent)} className="absolute right-2 top-1/2 -translate-y-1/2" style={{ color: "var(--text-faint)" }}>
                       {showCurrent ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -263,7 +263,7 @@ export function SettingsPage() {
                   <div className="relative">
                     <Input type={showNew ? "text" : "password"} value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="rounded-xl text-xs h-9 pr-9"
+                      className="rounded text-xs h-9 pr-9"
                       style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                     <button onClick={() => setShowNew(!showNew)} className="absolute right-2 top-1/2 -translate-y-1/2" style={{ color: "var(--text-faint)" }}>
                       {showNew ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -274,14 +274,14 @@ export function SettingsPage() {
                   <Label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Yeni Şifre (Tekrar)</Label>
                   <Input type="password" value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="rounded-xl text-xs h-9"
+                    className="rounded text-xs h-9"
                     style={{ background: "var(--input-bg)", borderColor: newPassword && confirmPassword && newPassword !== confirmPassword ? "var(--status-down)" : "var(--input-border)", color: "var(--text-secondary)" }} />
                   {newPassword && confirmPassword && newPassword !== confirmPassword && (
                     <p className="text-[10px]" style={{ color: "var(--status-down-text)" }}>Şifreler eşleşmiyor</p>
                   )}
                 </div>
                 <Button size="sm" onClick={handleChangePassword} disabled={passwordMutation.isPending}
-                  className="text-white rounded-xl text-xs" style={{ background: "var(--gradient-btn-primary)" }}>
+                  className="text-white rounded text-xs" style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}>
                   {passwordMutation.isPending ? "Kaydediliyor..." : "Şifreyi Değiştir"}
                 </Button>
               </div>
@@ -292,12 +292,12 @@ export function SettingsPage() {
 
       {/* Notifications */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
             <SectionHeader icon={Bell} label="Bildirimler" />
             <Button size="sm" variant="outline" onClick={handleSaveNotifs} disabled={saveMutation.isPending}
-              className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={{ borderColor: "var(--color-pink-border)", color: "var(--text-muted)" }}>
+              className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-muted)", boxShadow: "var(--btn-shadow)" }}>
               {saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
@@ -313,12 +313,12 @@ export function SettingsPage() {
 
       {/* Monitoring */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
             <SectionHeader icon={Zap} label="İzleme" />
             <Button size="sm" variant="outline" onClick={handleSaveMonitoring} disabled={saveMutation.isPending}
-              className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={{ borderColor: "var(--color-teal-border)", color: "var(--text-muted)" }}>
+              className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-muted)", boxShadow: "var(--btn-shadow)" }}>
               {saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
@@ -329,7 +329,7 @@ export function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Input type="number" min={5} max={300} value={monitoring.pollInterval}
                   onChange={(e) => setMonitoring(p => ({ ...p, pollInterval: parseInt(e.target.value) || 10 }))}
-                  className="rounded-xl text-xs h-9 w-24"
+                  className="rounded text-xs h-9 w-24"
                   style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                 <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Min 5s, Maks 300s</span>
               </div>
@@ -344,12 +344,12 @@ export function SettingsPage() {
 
       {/* AI */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
             <SectionHeader icon={Sparkles} label="AI Analiz" />
             <Button size="sm" variant="outline" onClick={handleSaveAI} disabled={saveMutation.isPending}
-              className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={{ borderColor: "var(--color-lavender-border)", color: "var(--text-muted)" }}>
+              className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-muted)", boxShadow: "var(--btn-shadow)" }}>
               {saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
           </div>
@@ -362,7 +362,7 @@ export function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Input type="number" min={5} max={120} value={ai.window}
                   onChange={(e) => setAi(p => ({ ...p, window: parseInt(e.target.value) || 30 }))}
-                  className="rounded-xl text-xs h-9 w-24"
+                  className="rounded text-xs h-9 w-24"
                   style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
                 <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Min 5dk, Maks 120dk</span>
               </div>
@@ -373,7 +373,7 @@ export function SettingsPage() {
 
       {/* Appearance */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <SectionHeader icon={Palette} label="Görünüm" />
           <Separator className="mb-4" style={dividerStyle} />
 
@@ -387,10 +387,10 @@ export function SettingsPage() {
                   <button
                     key={`${opt.name}-${opt.mode}`}
                     onClick={() => handleThemeSelect(opt.name, opt.mode)}
-                    className="relative rounded-xl overflow-hidden border-2 transition-all text-left focus:outline-none"
+                    className="relative rounded overflow-hidden border-2 transition-all text-left focus:outline-none"
                     style={{
-                      borderColor: isActive ? "var(--brand-primary)" : "var(--border-subtle)",
-                      boxShadow: isActive ? "0 0 0 3px var(--brand-primary-muted)" : "none",
+                      borderColor: isActive ? "var(--brand-primary)" : "var(--border-default)",
+                      boxShadow: isActive ? "var(--btn-shadow)" : "none",
                     }}
                     aria-label={`${opt.label} ${opt.sublabel} teması`}
                   >
@@ -403,8 +403,8 @@ export function SettingsPage() {
                       <p className="text-[9px] mt-0.5" style={{ color: "var(--text-faint)" }}>{opt.sublabel}</p>
                     </div>
                     {isActive && (
-                      <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
-                        style={{ background: "var(--brand-primary)" }}>
+                      <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded flex items-center justify-center"
+                        style={{ background: "var(--brand-primary)", border: "2px solid var(--border-default)" }}>
                         <CheckCircle2 className="w-2.5 h-2.5 text-white" />
                       </div>
                     )}
@@ -418,13 +418,13 @@ export function SettingsPage() {
 
       {/* Audit Logs */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.35 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
             <SectionHeader icon={ScrollText} label="İşlem Geçmişi" />
             <Button size="sm" variant="outline"
               onClick={() => setShowAuditLogs(!showAuditLogs)}
-              className="h-7 px-3 text-[10px] rounded-lg border transition-all mb-4"
-              style={{ borderColor: "var(--color-blue-border)", color: "var(--text-muted)" }}>
+              className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-muted)", boxShadow: "var(--btn-shadow)" }}>
               {showAuditLogs ? "Gizle" : "Göster"}
             </Button>
           </div>
@@ -434,7 +434,7 @@ export function SettingsPage() {
               {auditData?.logs && auditData.logs.length > 0 ? (
                 <div className="space-y-2 max-h-72 overflow-y-auto">
                   {auditData.logs.map((log: AuditLog) => (
-                    <div key={log.id} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: "var(--surface-sunken)" }}>
+                    <div key={log.id} className="flex items-start gap-3 p-2.5 rounded" style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
                       <Shield className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--color-blue)" }} />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
@@ -461,7 +461,7 @@ export function SettingsPage() {
 
       {/* About */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.4 }}>
-        <Card className="rounded-xl p-5 border" style={cardStyle}>
+        <Card className="rounded p-5" style={cardStyle}>
           <SectionHeader icon={Info} label="Hakkında" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
@@ -470,14 +470,14 @@ export function SettingsPage() {
               { label: "Stack", value: "React + Go + Rust" },
               { label: "Veritabanı", value: "TimescaleDB" },
             ].map(({ label, value }) => (
-              <div key={label} className="p-3 rounded-xl" style={{ background: "var(--surface-sunken)" }}>
+              <div key={label} className="p-3 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
                 <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>{label}</span>
                 <p className="mt-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>{value}</p>
               </div>
             ))}
           </div>
           <div className="mt-4 pt-3 flex items-center justify-center gap-1.5 text-[10px]"
-            style={{ borderTop: "1px solid var(--border-divider)", color: "var(--text-faint)" }}>
+            style={{ borderTop: "2px solid var(--border-default)", color: "var(--text-faint)" }}>
             <Heart className="w-3 h-3" style={{ color: "var(--color-pink)" }} />
             NanoNet İzleme Platformu
           </div>

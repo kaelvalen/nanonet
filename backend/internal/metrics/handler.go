@@ -195,6 +195,77 @@ func (h *Handler) InsertMetric(c *gin.Context) {
 	response.Created(c, metric)
 }
 
+// GetRollup uzun vadeli (7 gün–90 gün) zaman serisi için rollup endpoint.
+// ?duration=7d&bucket=1 hour  (varsayılan: duration=30d, bucket=1 day)
+func (h *Handler) GetRollup(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	serviceID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "geçersiz servis ID")
+		return
+	}
+
+	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+		response.NotFound(c, "servis bulunamadı")
+		return
+	}
+
+	durationStr := c.DefaultQuery("duration", "30d")
+	// "30d" → "720h" gibi gün birimini parse et
+	duration, parseErr := parseDuration(durationStr)
+	if parseErr != nil {
+		response.BadRequest(c, "geçersiz duration (örnekler: 7d, 30d, 90d, 24h)")
+		return
+	}
+	if duration > 90*24*time.Hour {
+		response.BadRequest(c, "duration 90 günü aşamaz")
+		return
+	}
+	if duration < time.Hour {
+		response.BadRequest(c, "rollup için minimum duration 1 saattir")
+		return
+	}
+
+	validBuckets := map[string]bool{
+		"1 hour": true, "6 hours": true, "12 hours": true, "1 day": true, "7 days": true,
+	}
+	bucketSize := c.DefaultQuery("bucket", "1 day")
+	if !validBuckets[bucketSize] {
+		response.BadRequest(c, "geçersiz bucket; geçerliler: 1 hour, 6 hours, 12 hours, 1 day, 7 days")
+		return
+	}
+
+	buckets, err := h.service.GetRollup(c.Request.Context(), serviceID, duration, bucketSize)
+	if err != nil {
+		response.InternalError(c, "rollup verisi alınamadı")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"buckets":    buckets,
+		"count":      len(buckets),
+		"duration":   durationStr,
+		"bucket":     bucketSize,
+		"service_id": serviceID,
+	})
+}
+
+// parseDuration "30d", "7d" gibi gün birimli string'leri de parse eder.
+func parseDuration(s string) (time.Duration, error) {
+	if len(s) > 1 && s[len(s)-1] == 'd' {
+		var days int
+		if _, err := fmt.Sscan(s[:len(s)-1], &days); err == nil && days > 0 {
+			return time.Duration(days) * 24 * time.Hour, nil
+		}
+	}
+	return time.ParseDuration(s)
+}
+
 func (h *Handler) GetUptime(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {

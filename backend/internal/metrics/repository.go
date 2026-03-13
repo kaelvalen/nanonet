@@ -143,6 +143,51 @@ func (r *Repository) GetStatsSummary(ctx context.Context, serviceID uuid.UUID, d
 	return &result, err
 }
 
+// RollupBucket uzun vadeli rollup verisi için tek bucket.
+type RollupBucket struct {
+	Bucket     time.Time `gorm:"column:bucket" json:"bucket"`
+	AvgCPU     *float64  `gorm:"column:avg_cpu" json:"avg_cpu"`
+	MaxCPU     *float64  `gorm:"column:max_cpu" json:"max_cpu"`
+	AvgMemory  *float64  `gorm:"column:avg_memory" json:"avg_memory"`
+	AvgLatency *float64  `gorm:"column:avg_latency" json:"avg_latency"`
+	MaxLatency *float64  `gorm:"column:max_latency" json:"max_latency"`
+	P95Latency *float64  `gorm:"column:p95_latency" json:"p95_latency"`
+	AvgErrRate *float64  `gorm:"column:avg_err_rate" json:"avg_err_rate"`
+	UpCount    int64     `gorm:"column:up_count" json:"up_count"`
+	DownCount  int64     `gorm:"column:down_count" json:"down_count"`
+	TotalCount int64     `gorm:"column:total_count" json:"total_count"`
+}
+
+// GetRollup returns time-bucketed aggregate metrics for long-range views.
+// bucketSize must be a valid TimescaleDB time_bucket string (e.g. "1 hour", "1 day").
+func (r *Repository) GetRollup(ctx context.Context, serviceID uuid.UUID, duration time.Duration, bucketSize string) ([]RollupBucket, error) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	var results []RollupBucket
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT
+			time_bucket(?, time)                                        AS bucket,
+			AVG(cpu_percent)                                            AS avg_cpu,
+			MAX(cpu_percent)                                            AS max_cpu,
+			AVG(memory_used_mb)                                         AS avg_memory,
+			AVG(latency_ms)                                             AS avg_latency,
+			MAX(latency_ms)                                             AS max_latency,
+			percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms)   AS p95_latency,
+			AVG(error_rate)                                             AS avg_err_rate,
+			COUNT(*) FILTER (WHERE status = 'up')                       AS up_count,
+			COUNT(*) FILTER (WHERE status = 'down')                     AS down_count,
+			COUNT(*)                                                    AS total_count
+		FROM metrics
+		WHERE service_id = ? AND time > ?
+		GROUP BY bucket
+		ORDER BY bucket
+	`, bucketSize, serviceID, time.Now().Add(-duration)).
+		Scan(&results).Error
+
+	return results, err
+}
+
 func (r *Repository) GetUptime(ctx context.Context, serviceID uuid.UUID, duration time.Duration) (float64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

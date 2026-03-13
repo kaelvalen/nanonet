@@ -53,16 +53,14 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-5xl">
       <div className="relative">
-        <div className="absolute -inset-1 rounded-2xl blur-lg" style={{ background: "linear-gradient(to right, var(--color-teal-subtle), var(--color-lavender-subtle), var(--color-pink-subtle))" }} />
-
-        <div className="relative backdrop-blur-xl rounded-2xl px-4 py-2 flex items-center gap-3 shadow-sm" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-teal-border)", boxShadow: "0 1px 4px var(--shadow-card)" }}>
+        <div className="relative rounded px-4 py-2 flex items-center gap-3" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
 
           {/* Logo */}
           <button
             onClick={() => navigate("/")}
             className="flex items-center gap-2 group cursor-pointer shrink-0"
           >
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center transition-all" style={{ background: "var(--gradient-logo)" }}>
+            <div className="w-7 h-7 rounded flex items-center justify-center transition-all" style={{ background: "var(--gradient-logo)", border: "2px solid var(--border-default)" }}>
               <span className="text-white text-xs">✦</span>
             </div>
             <span className="font-(--font-quicksand) text-sm bg-clip-text text-transparent hidden sm:inline" style={{ backgroundImage: "var(--gradient-text)" }}>
@@ -95,12 +93,12 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           {/* Service count badge (home only) */}
           {isHome && services.length > 0 && (
             <div className="hidden sm:flex items-center gap-2">
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded" style={{ background: "var(--color-teal-subtle)", border: "2px solid var(--color-teal-border)" }}>
                 <Server className="w-3 h-3" style={{ color: "var(--color-teal)" }} />
                 <span className="text-[10px] font-(--font-mono)" style={{ color: "var(--color-teal-hover)" }}>{services.length}</span>
               </div>
               {downCount > 0 && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded" style={{ background: "var(--status-down-subtle)", border: "2px solid var(--status-down-border)" }}>
                   <AlertCircle className="w-3 h-3" style={{ color: "var(--status-down-text)" }} />
                   <span className="text-[10px] font-(--font-mono)" style={{ color: "var(--status-down-text)" }}>{downCount}</span>
                 </div>
@@ -137,21 +135,21 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           {/* Search trigger */}
           <button
             onClick={onOpenCommandPalette}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-            style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded transition-all"
+            style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)", color: "var(--text-muted)", boxShadow: "1px 1px 0px var(--border-default)" }}
           >
             <Search className="w-3.5 h-3.5" />
             <span className="text-xs">Search...</span>
-            <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded ml-3" style={{ background: "var(--surface-raised)", border: "1px solid var(--color-teal-border)", color: "var(--text-muted)" }}>
+            <kbd className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded ml-3" style={{ background: "var(--surface-raised)", border: "2px solid var(--border-default)", color: "var(--text-muted)", boxShadow: "1px 1px 0px var(--border-default)" }}>
               ⌘K
             </kbd>
           </button>
 
           {/* WS status */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg"
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded"
             style={isConnected
-              ? { background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)" }
-              : { background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+              ? { background: "var(--status-up-subtle)", border: "2px solid var(--status-up-border)" }
+              : { background: "var(--status-down-subtle)", border: "2px solid var(--status-down-border)" }}>
             <div className="relative">
               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isConnected ? "var(--status-up)" : "var(--status-down)" }} />
               {isConnected && <div className="absolute inset-0 w-1.5 h-1.5 rounded-full animate-pulse-ring" style={{ backgroundColor: "var(--status-up)" }} />}
@@ -162,7 +160,7 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           </div>
 
           {/* AI indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: "var(--color-ai-subtle)", border: "1px solid var(--color-ai-border)" }}>
+          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded" style={{ background: "var(--color-ai-subtle)", border: "2px solid var(--color-ai-border)" }}>
             <Sparkles className="w-3 h-3 animate-glow" style={{ color: "var(--color-ai)" }} />
             <div className="flex gap-0.5">
               <div className="w-0.5 h-2 rounded-sm animate-pulse" style={{ backgroundColor: "var(--color-lavender)", animationDelay: "0s" }} />
@@ -175,7 +173,7 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="relative group shrink-0">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all" style={{ background: "var(--gradient-logo)" }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all" style={{ background: "var(--gradient-logo)", border: "2px solid var(--border-default)", boxShadow: "2px 2px 0px var(--border-default)" }}>
                   <span className="text-white text-xs font-(--font-quicksand)">{initials}</span>
                 </div>
                 {isConnected && (
@@ -183,7 +181,7 @@ export function FloatingStatusBar({ onOpenCommandPalette }: { onOpenCommandPalet
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="backdrop-blur-xl shadow-lg rounded-xl" style={{ background: "var(--surface-overlay)", border: "1px solid var(--color-teal-border)" }}>
+            <DropdownMenuContent align="end" className="rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
               <DropdownMenuLabel className="text-xs" style={{ color: "var(--text-secondary)" }}>{user?.email || "My Account"}</DropdownMenuLabel>
               <DropdownMenuSeparator style={{ backgroundColor: "var(--border-subtle)" }} />
               <DropdownMenuItem className="text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }} onClick={() => navigate("/settings")}>

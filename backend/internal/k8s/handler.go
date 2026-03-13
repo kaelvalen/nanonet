@@ -489,6 +489,62 @@ func (h *Handler) UndeployService(c *gin.Context) {
 	response.Success(c, gin.H{"message": name + " K8s'ten kaldırıldı"})
 }
 
+// GetEvents — namespace'deki K8s event'lerini listeler.
+// GET /k8s/events?kind=Pod
+func (h *Handler) GetEvents(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+	kind := c.Query("kind")
+	events, err := h.client.GetEvents(c.Request.Context(), kind)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+	if events == nil {
+		events = []EventInfo{}
+	}
+	response.Success(c, gin.H{
+		"events": events,
+		"count":  len(events),
+	})
+}
+
+// GetTopPods — kubectl top pods (metrics-server gerektirir).
+// GET /k8s/top/pods
+func (h *Handler) GetTopPods(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+	usages, err := h.client.GetTopPods(c.Request.Context())
+	if err != nil {
+		// metrics-server yoksa 503 ile bildir, 500 değil
+		response.Error(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	if usages == nil {
+		usages = []ResourceUsage{}
+	}
+	response.Success(c, gin.H{"pods": usages, "count": len(usages)})
+}
+
+// GetTopNodes — kubectl top nodes (metrics-server gerektirir).
+// GET /k8s/top/nodes
+func (h *Handler) GetTopNodes(c *gin.Context) {
+	if !h.k8sCheck(c) {
+		return
+	}
+	usages, err := h.client.GetTopNodes(c.Request.Context())
+	if err != nil {
+		response.Error(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	if usages == nil {
+		usages = []ResourceUsage{}
+	}
+	response.Success(c, gin.H{"nodes": usages, "count": len(usages)})
+}
+
 // parseIntParam — query param'ı int'e çevirir.
 func parseIntParam(c *gin.Context, key string, defaultVal int) int {
 	val := c.Query(key)

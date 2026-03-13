@@ -78,10 +78,10 @@ export function AIInsightsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
-              <SelectTrigger className="w-48 rounded-xl text-xs h-9" style={{ background: "var(--surface-glass)", borderColor: "var(--color-lavender-border)", color: "var(--text-secondary)" }}>
+              <SelectTrigger className="w-48 rounded text-xs h-9" style={{ background: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
                 <SelectValue placeholder="Servis seçin..." />
               </SelectTrigger>
-              <SelectContent className="rounded-xl" style={{ background: "var(--surface-overlay)", borderColor: "var(--color-lavender-border)" }}>
+              <SelectContent className="rounded" style={{ background: "var(--surface-card)", borderColor: "var(--border-default)", boxShadow: "var(--panel-shadow)" }}>
                 {services.map((s) => (
                   <SelectItem key={s.id} value={s.id} className="text-xs" style={{ color: "var(--text-secondary)" }}>{s.name}</SelectItem>
                 ))}
@@ -90,8 +90,8 @@ export function AIInsightsPage() {
             <Button
               onClick={handleAnalyze}
               disabled={analyzeLoading || !selectedServiceId}
-              className="text-white rounded-xl text-xs h-9 shadow-sm hover:shadow-md transition-all"
-              style={{ background: "var(--gradient-btn-primary)" }}
+              className="text-white rounded text-xs h-9 transition-all"
+              style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
             >
               {analyzeLoading
                 ? <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Analiz ediliyor...</>
@@ -104,9 +104,9 @@ export function AIInsightsPage() {
       {/* Analyzing skeleton */}
       {analyzeLoading && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <Card className="rounded-xl p-5 space-y-3" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+          <Card className="rounded p-5 space-y-3" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "var(--color-lavender-subtle)" }}>
+              <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: "var(--color-lavender-subtle)", border: "1.5px solid var(--color-lavender-border)" }}>
                 <Brain className="w-4.5 h-4.5 animate-pulse" style={{ color: "var(--color-lavender)" }} />
               </div>
               <div>
@@ -124,12 +124,12 @@ export function AIInsightsPage() {
       {/* Live Analysis Result */}
       {analysisResult && !analyzeLoading && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <Card className="rounded-xl overflow-hidden shadow-sm" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+          <Card className="rounded overflow-hidden" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
             <div className="h-1" style={{ background: "var(--gradient-btn-primary)" }} />
             <div className="p-5 space-y-4">
               {/* Header row */}
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--color-lavender-subtle)" }}>
+                <div className="w-10 h-10 rounded flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--color-lavender-subtle)", border: "1.5px solid var(--color-lavender-border)" }}>
                   <Brain className="w-5 h-5" style={{ color: "var(--color-lavender)" }} />
                 </div>
                 <div className="flex-1">
@@ -156,7 +156,7 @@ export function AIInsightsPage() {
               </div>
 
               {/* Summary */}
-              <div className="p-4 rounded-xl" style={{ background: "var(--surface-sunken)", border: "1px solid var(--color-lavender-border)" }}>
+              <div className="p-4 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
                 <div className="flex items-center gap-1.5 mb-2">
                   <Activity className="w-3 h-3" style={{ color: "var(--color-lavender)" }} />
                   <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Özet</span>
@@ -167,7 +167,7 @@ export function AIInsightsPage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 {/* Root Cause */}
                 {analysisResult.root_cause && (
-                  <div className="p-4 rounded-xl" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+                  <div className="p-4 rounded" style={{ background: "var(--status-down-subtle)", border: "2px solid var(--status-down-border)" }}>
                     <div className="flex items-center gap-1.5 mb-2">
                       <Target className="w-3 h-3" style={{ color: "var(--color-pink)" }} />
                       <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Kök Neden</span>
@@ -178,7 +178,7 @@ export function AIInsightsPage() {
 
                 {/* Recommendations */}
                 {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-                  <div className="p-4 rounded-xl" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                  <div className="p-4 rounded" style={{ background: "var(--color-teal-subtle)", border: "2px solid var(--color-teal-border)" }}>
                     <div className="flex items-center gap-1.5 mb-3">
                       <Lightbulb className="w-3 h-3" style={{ color: "var(--color-teal)" }} />
                       <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Öneriler</span>
@@ -186,7 +186,7 @@ export function AIInsightsPage() {
                     <ul className="space-y-2">
                       {analysisResult.recommendations.map((rec, i) => (
                         <li key={i} className="flex items-start gap-2">
-                          <Badge className="text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5 border"
+                          <Badge className="text-[9px] px-1.5 py-0 rounded shrink-0 mt-0.5 border-2"
                             style={{
                               background: rec.priority === "high" ? "var(--status-down-subtle)" : rec.priority === "medium" ? "var(--status-warn-subtle)" : "var(--color-teal-subtle)",
                               color: rec.priority === "high" ? "var(--status-down-text)" : rec.priority === "medium" ? "var(--status-warn-text)" : "var(--color-teal)",
@@ -215,7 +215,7 @@ export function AIInsightsPage() {
         </div>
 
         {!selectedServiceId ? (
-          <Card className="p-16 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+          <Card className="p-16 rounded text-center" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
             <Sparkles className="w-14 h-14 mx-auto mb-4 opacity-20" style={{ color: "var(--color-lavender)" }} />
             <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Servis Seçin</h3>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>AI iç görülerini görüntülemek için yukarıdan bir servis seçin</p>
@@ -223,14 +223,14 @@ export function AIInsightsPage() {
         ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-4 rounded-xl animate-pulse" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+              <Card key={i} className="p-4 rounded animate-pulse" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)" }}>
                 <div className="h-4 w-60 rounded mb-2" style={{ backgroundColor: "var(--color-lavender-subtle)" }} />
                 <div className="h-3 w-40 rounded" style={{ backgroundColor: "var(--color-lavender-subtle)" }} />
               </Card>
             ))}
           </div>
         ) : insights.length === 0 ? (
-          <Card className="p-12 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+          <Card className="p-12 rounded text-center" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
             <Brain className="w-10 h-10 mx-auto mb-3 opacity-20" style={{ color: "var(--color-lavender)" }} />
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>Bu servis için henüz AI iç görüsü yok</p>
             <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>Yukarıdaki "Analyze" butonuyla analiz başlatın</p>
@@ -244,14 +244,14 @@ export function AIInsightsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
-                <Card className="rounded-xl overflow-hidden transition-all duration-200" style={{ background: "var(--surface-glass)", border: "1px solid var(--color-lavender-border)" }}>
+                <Card className="rounded overflow-hidden transition-all duration-200" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
                   <button
                     className="w-full p-4 text-left"
                     onClick={() => setExpandedInsight(expandedInsight === insight.id ? null : insight.id)}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--color-lavender-subtle)" }}>
+                        <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "var(--color-lavender-subtle)", border: "1.5px solid var(--color-lavender-border)" }}>
                           <Zap className="w-4 h-4" style={{ color: "var(--color-lavender)" }} />
                         </div>
                         <div className="min-w-0">
@@ -261,7 +261,7 @@ export function AIInsightsPage() {
                               <Clock className="w-3 h-3" />
                               {new Date(insight.created_at).toLocaleString("tr-TR")}
                             </span>
-                            <Badge className="text-[8px] rounded-full px-1.5 py-0 border"
+                            <Badge className="text-[8px] rounded-full px-1.5 py-0 border-2"
                               style={{ background: "var(--color-blue-subtle)", color: "var(--color-blue-text)", borderColor: "var(--color-blue-border)" }}>
                               {insight.model}
                             </Badge>
@@ -282,11 +282,11 @@ export function AIInsightsPage() {
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="px-4 pb-4" style={{ borderTop: "1px solid var(--color-lavender-border)" }}
+                      className="px-4 pb-4" style={{ borderTop: "2px solid var(--border-default)" }}
                     >
                       <div className="pt-3 space-y-3">
                         {insight.root_cause && (
-                          <div className="p-3 rounded-lg" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+                          <div className="p-3 rounded" style={{ background: "var(--status-down-subtle)", border: "2px solid var(--status-down-border)" }}>
                             <span className="text-[10px] uppercase tracking-wider flex items-center gap-1 mb-1" style={{ color: "var(--text-muted)" }}>
                               <Target className="w-3 h-3" style={{ color: "var(--color-pink)" }} /> Kök Neden
                             </span>
@@ -294,7 +294,7 @@ export function AIInsightsPage() {
                           </div>
                         )}
                         {insight.recommendations && insight.recommendations.length > 0 && (
-                          <div className="p-3 rounded-lg" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+                          <div className="p-3 rounded" style={{ background: "var(--color-teal-subtle)", border: "2px solid var(--color-teal-border)" }}>
                             <span className="text-[10px] uppercase tracking-wider flex items-center gap-1 mb-2" style={{ color: "var(--text-muted)" }}>
                               <Lightbulb className="w-3 h-3" style={{ color: "var(--color-teal)" }} /> Öneriler
                             </span>
