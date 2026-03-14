@@ -116,10 +116,10 @@ export function AIAssistant() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" style={{ color: "var(--text-muted)" }} onClick={() => setIsMinimized(!isMinimized)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" style={{ color: "var(--text-muted)" }} onClick={() => setIsMinimized(!isMinimized)} aria-label={isMinimized ? "Expand AI assistant" : "Minimize AI assistant"}>
                     {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" style={{ color: "var(--text-muted)" }} onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" style={{ color: "var(--text-muted)" }} onClick={() => setIsOpen(false)} aria-label="Close AI assistant">
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
@@ -186,6 +186,7 @@ export function AIAssistant() {
                         style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
                         onClick={handleSend}
                         disabled={isAnalyzing}
+                        aria-label="Send message"
                       >
                         <Send className="w-4 h-4" />
                       </Button>

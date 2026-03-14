@@ -655,6 +655,7 @@ export function KubernetesPage() {
                                                         <button
                                                             onClick={() => { if (confirm(`"${pod.name}" pod'ı silinsin mi? Kubernetes otomatik olarak yeniden başlatacak.`)) deletePodMutation.mutate(pod.name); }}
                                                             title="Pod'u Sil (Yeniden Başlat)"
+                                                            aria-label="Delete pod"
                                                             disabled={deletePodMutation.isPending && deletePodMutation.variables === pod.name}
                                                             className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
                                                             style={{ background: "color-mix(in srgb, var(--status-down) 10%, transparent)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }}>
@@ -760,6 +761,7 @@ export function KubernetesPage() {
                                                             <div className="flex items-center gap-2">
                                                                 <button
                                                                     onClick={() => setScaleReplicas(prev => ({ ...prev, [dep.name]: Math.max(0, (prev[dep.name] ?? dep.replicas) - 1) }))}
+                                                                    aria-label="Decrease replicas"
                                                                     className="w-7 h-7 rounded-lg flex items-center justify-center"
                                                                     style={{ border: "1px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}>
                                                                     <Minus className="w-3 h-3" />
@@ -767,6 +769,7 @@ export function KubernetesPage() {
                                                                 <span className="text-base font-bold w-6 text-center" style={{ color: "var(--text-secondary)" }}>{depReplicas}</span>
                                                                 <button
                                                                     onClick={() => setScaleReplicas(prev => ({ ...prev, [dep.name]: Math.min(32, (prev[dep.name] ?? dep.replicas) + 1) }))}
+                                                                    aria-label="Increase replicas"
                                                                     className="w-7 h-7 rounded-lg flex items-center justify-center"
                                                                     style={{ border: "1px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}>
                                                                     <Plus className="w-3 h-3" />
@@ -835,6 +838,7 @@ export function KubernetesPage() {
                                                         <button
                                                             onClick={() => { setHpaDeployment(hpa.deployment_name ?? hpa.name); setHpaMin(hpa.min_replicas); setHpaMax(hpa.max_replicas); setHpaCpu(hpa.cpu_target_percent ?? 70); }}
                                                             title="Düzenle"
+                                                            aria-label="Configure HPA settings"
                                                             className="w-7 h-7 rounded-lg flex items-center justify-center"
                                                             style={{ background: "var(--color-pink-subtle)", border: "1px solid var(--color-pink-border)", color: "var(--color-pink)" }}>
                                                             <Settings2 className="w-3.5 h-3.5" />
@@ -843,6 +847,7 @@ export function KubernetesPage() {
                                                             onClick={() => { if (confirm(`"${hpa.name}" HPA silinsin mi?`)) deleteHPAMutation.mutate(hpa.deployment_name ?? hpa.name); }}
                                                             disabled={deleteHPAMutation.isPending}
                                                             title="Sil"
+                                                            aria-label="Delete HPA"
                                                             className="w-7 h-7 rounded-lg flex items-center justify-center"
                                                             style={{ background: "color-mix(in srgb, var(--status-down) 10%, transparent)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }}>
                                                             {deleteHPAMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
@@ -1320,6 +1325,7 @@ export function KubernetesPage() {
                                                                         <div className="flex items-center gap-2">
                                                                             <button onClick={() => setDeployForms(prev => ({ ...prev, [svc.name]: { ...(prev[svc.name] ?? { image: "", replicas: 1, open: true }), replicas: Math.max(1, (prev[svc.name]?.replicas ?? 1) - 1) } }))
 }
+                                                                                aria-label="Decrease replicas"
                                                                                 className="w-7 h-7 rounded-lg flex items-center justify-center"
                                                                                 style={{ border: "1px solid var(--color-teal-border)", color: "var(--color-teal)" }}>
                                                                                 <Minus className="w-3 h-3" />
@@ -1327,6 +1333,7 @@ export function KubernetesPage() {
                                                                             <span className="text-base font-bold w-6 text-center" style={{ color: "var(--text-secondary)" }}>{form.replicas}</span>
                                                                             <button onClick={() => setDeployForms(prev => ({ ...prev, [svc.name]: { ...(prev[svc.name] ?? { image: "", replicas: 1, open: true }), replicas: Math.min(20, (prev[svc.name]?.replicas ?? 1) + 1) } }))
 }
+                                                                                aria-label="Increase replicas"
                                                                                 className="w-7 h-7 rounded-lg flex items-center justify-center"
                                                                                 style={{ border: "1px solid var(--color-teal-border)", color: "var(--color-teal)" }}>
                                                                                 <Plus className="w-3 h-3" />
