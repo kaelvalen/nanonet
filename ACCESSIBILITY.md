@@ -489,3 +489,115 @@ NanoNet now provides a professional, accessible experience that:
 
 Last Updated: March 14, 2026  
 Version: 1.0 - Phase 1-3 Complete
+
+## Settings Operation History
+
+### Overview
+Every change made to accessibility settings is now automatically tracked and displayed in a browsable history. This allows users to:
+- See when and what settings were changed
+- Revert manually by viewing previous values
+- Audit their preferences over time
+
+### Features
+
+**Automatic Tracking**
+- Font size changes (80%, 100%, 125%, 150%)
+- Line height adjustments (1.5, 1.75, 2.0)
+- Letter spacing modifications (normal, wide, wider)
+- High contrast mode toggles
+- Reduced motion toggles
+- Language switches
+
+**History Display**
+- Last 50 changes shown (most recent first)
+- Relative time format ("2 minutes ago", "1 hour ago")
+- Bilingual timestamps (English/Turkish)
+- Before/after values displayed
+- Setting category shown as code badge
+
+**Storage**
+- Persisted to localStorage under `nanonet-settings-history`
+- Maximum 100 entries kept (oldest entries removed)
+- Timestamp stored in ISO 8601 format and milliseconds
+
+### How to Use
+
+#### For Users
+1. Go to **Settings** → **Preferences**
+2. Click on the **History** tab
+3. View all settings changes with timestamps
+4. Click **Clear** button to remove all history (with confirmation)
+
+#### For Developers
+```typescript
+// Import the history store
+import { useSettingsHistoryStore } from '@/store/settingsHistoryStore';
+
+// Add custom entry
+const addHistoryEntry = useSettingsHistoryStore((state) => state.addEntry);
+addHistoryEntry({
+  setting: 'fontSize',
+  old_value: 100,
+  new_value: 125,
+  description: 'Font size changed from 100% to 125%',
+});
+
+// Get recent history (default 20 entries)
+const recentHistory = useSettingsHistoryStore((state) => state.getRecentHistory(20));
+
+// Clear all history
+const clearHistory = useSettingsHistoryStore((state) => state.clearHistory);
+```
+
+### Translation Keys
+
+All history-related strings support i18n:
+
+**English Keys:**
+- `settings.history` - "History"
+- `settings.operationHistory` - "Operation History"
+- `settings.clearHistory` - "Clear"
+- `settings.clearHistoryConfirm` - "Clear all history?"
+- `settings.noHistory` - "No changes recorded yet"
+- `settings.showingLastN` - "Showing last {{count}} changes"
+
+**Turkish Keys:**
+- `settings.history` - "Geçmiş"
+- `settings.operationHistory` - "İşlem Geçmişi"
+- `settings.clearHistory` - "Temizle"
+- `settings.clearHistoryConfirm` - "Tüm geçmiş temizlensin mi?"
+- `settings.noHistory` - "Henüz kayıt edilmiş değişiklik yok"
+- `settings.showingLastN` - "Son {{count}} değişiklik gösteriliyor"
+
+### Implementation Details
+
+**SettingsHistoryStore** (`src/store/settingsHistoryStore.ts`)
+- Zustand store with localStorage persistence
+- Fields: `id`, `timestamp`, `timestamp_ms`, `setting`, `old_value`, `new_value`, `description`
+- Auto-generates unique IDs and ISO timestamps
+- Limits history to 100 entries for performance
+
+**SettingsHistory Component** (`src/components/SettingsHistory.tsx`)
+- Displays timeline in card-based UI
+- Relative time formatting without external dependencies
+- Supports dark mode via Tailwind CSS
+- Responsive scrollable container (max-height 24rem)
+
+**AccessibilitySettings Component** (`src/components/AccessibilitySettings.tsx`)
+- Added tabbed interface (Preferences + History)
+- Wrapper functions track setting changes before updating state
+- Automatically generates descriptions based on setting type
+
+### Browser Support
+- LocalStorage: All modern browsers (IE11+)
+- Relative time: Custom implementation (no external dependencies)
+- No performance impact on main accessibility features
+
+### Future Enhancements
+- [ ] Export history as CSV/JSON
+- [ ] Revert to any previous state with one click
+- [ ] Filter history by setting type
+- [ ] Search history by date/keyword
+- [ ] Show diff visualization for changes
+- [ ] Sync history across devices (requires backend)
+
