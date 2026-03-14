@@ -10,6 +10,9 @@ export interface UserSettings {
     auto_recovery: boolean;
     ai_auto_analyze: boolean;
     ai_window_minutes: number;
+    webhook_url: string | null;
+    webhook_secret: string | null;
+    slack_webhook_url: string | null;
     updated_at: string;
 }
 
@@ -22,6 +25,9 @@ export interface UpdateSettingsRequest {
     auto_recovery?: boolean;
     ai_auto_analyze?: boolean;
     ai_window_minutes?: number;
+    webhook_url?: string | null;
+    webhook_secret?: string | null;
+    slack_webhook_url?: string | null;
 }
 
 export const settingsApi = {

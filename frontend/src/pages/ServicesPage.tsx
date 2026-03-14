@@ -18,9 +18,14 @@ import {
   XCircle,
   HelpCircle,
   Globe,
+  Shield,
+  TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
+import { useQueries } from "@tanstack/react-query";
+import { metricsApi } from "@/api/metrics";
 
 function StatusIcon({ status }: { status: string }) {
   if (status === "up") return <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />;
@@ -34,6 +39,36 @@ export function ServicesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [slaRange, setSlaRange] = useState<"24h" | "7d" | "30d">("24h");
+
+  const uptimeQueries = useQueries({
+    queries: services.map((s) => ({
+      queryKey: ["serviceUptime", s.id, slaRange],
+      queryFn: () => metricsApi.getUptime(s.id, slaRange),
+      staleTime: 60_000,
+      enabled: services.length > 0,
+    })),
+  });
+
+  const uptimeMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    uptimeQueries.forEach((q, i) => {
+      if (q.data && services[i]) {
+        map[services[i].id] = q.data.uptime_percent;
+      }
+    });
+    return map;
+  }, [uptimeQueries, services]);
+
+  const avgUptime = useMemo(() => {
+    const vals = Object.values(uptimeMap);
+    if (vals.length === 0) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }, [uptimeMap]);
+
+  const slaOk = useMemo(() => Object.values(uptimeMap).filter((v) => v >= 99.9).length, [uptimeMap]);
+  const slaWarn = useMemo(() => Object.values(uptimeMap).filter((v) => v >= 95 && v < 99.9).length, [uptimeMap]);
+  const slaCrit = useMemo(() => Object.values(uptimeMap).filter((v) => v < 95).length, [uptimeMap]);
 
   const filtered = useMemo(() => {
     return services.filter((s) => {
@@ -140,6 +175,63 @@ export function ServicesPage() {
         </Card>
       </motion.div>
 
+      {/* SLA Summary Panel */}
+      {!isLoading && services.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
+          <Card className="rounded p-4" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
+                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>SLA / Uptime Özeti</h3>
+              </div>
+              <div className="flex items-center gap-1">
+                {(["24h", "7d", "30d"] as const).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setSlaRange(r)}
+                    className="px-2 py-0.5 rounded text-[10px] font-medium border-2 transition-all"
+                    style={slaRange === r
+                      ? { background: "var(--color-teal-subtle)", color: "var(--color-teal)", borderColor: "var(--color-teal-border)" }
+                      : { color: "var(--text-faint)", borderColor: "transparent" }}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Avg Uptime */}
+              <div className="p-3 rounded text-center" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
+                <TrendingUp className="w-4 h-4 mx-auto mb-1" style={{ color: avgUptime != null && avgUptime >= 99 ? "var(--status-up)" : avgUptime != null && avgUptime >= 95 ? "var(--status-warn)" : "var(--status-down)" }} />
+                <p className="text-lg font-bold tabular-nums" style={{ color: avgUptime != null && avgUptime >= 99 ? "var(--status-up-text)" : avgUptime != null && avgUptime >= 95 ? "var(--status-warn-text)" : avgUptime != null ? "var(--status-down-text)" : "var(--text-faint)" }}>
+                  {avgUptime != null ? `${avgUptime.toFixed(2)}%` : "—"}
+                </p>
+                <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: "var(--text-muted)" }}>Ort. Uptime</p>
+              </div>
+              {/* SLA ≥99.9% */}
+              <div className="p-3 rounded text-center" style={{ background: "var(--status-up-subtle)", border: "2px solid var(--status-up-border)" }}>
+                <Shield className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--status-up)" }} />
+                <p className="text-lg font-bold tabular-nums" style={{ color: "var(--status-up-text)" }}>{slaOk}</p>
+                <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: "var(--text-muted)" }}>≥99.9% SLA</p>
+              </div>
+              {/* 95-99.9% */}
+              <div className="p-3 rounded text-center" style={{ background: "var(--status-warn-subtle)", border: "2px solid var(--status-warn-border)" }}>
+                <AlertTriangle className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--status-warn)" }} />
+                <p className="text-lg font-bold tabular-nums" style={{ color: "var(--status-warn-text)" }}>{slaWarn}</p>
+                <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: "var(--text-muted)" }}>95–99.9%</p>
+              </div>
+              {/* <95% */}
+              <div className="p-3 rounded text-center" style={{ background: "var(--status-down-subtle)", border: "2px solid var(--status-down-border)" }}>
+                <XCircle className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--status-down)" }} />
+                <p className="text-lg font-bold tabular-nums" style={{ color: "var(--status-down-text)" }}>{slaCrit}</p>
+                <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: "var(--text-muted)" }}>&lt;95%</p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Services Grid/List */}
       {isLoading ? (
         <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" : "space-y-3"}>
@@ -220,7 +312,15 @@ export function ServicesPage() {
                             <Globe className="w-3 h-3" /> {service.health_endpoint}
                           </span>
                         </div>
-                        <ArrowUpRight className="w-3.5 h-3.5 transition-colors" style={{ color: "var(--text-faint)" }} />
+                        <div className="flex items-center gap-2">
+                          {uptimeMap[service.id] != null && (
+                            <span className="text-[10px] font-semibold tabular-nums"
+                              style={{ color: uptimeMap[service.id] >= 99 ? "var(--status-up-text)" : uptimeMap[service.id] >= 95 ? "var(--status-warn-text)" : "var(--status-down-text)" }}>
+                              {uptimeMap[service.id].toFixed(1)}%
+                            </span>
+                          )}
+                          <ArrowUpRight className="w-3.5 h-3.5 transition-colors" style={{ color: "var(--text-faint)" }} />
+                        </div>
                       </div>
                     </Card>
                   </Link>

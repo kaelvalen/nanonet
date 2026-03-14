@@ -7,16 +7,19 @@ import (
 )
 
 type UserSettings struct {
-	UserID           uuid.UUID `gorm:"type:uuid;primary_key" json:"user_id"`
-	NotifCrit        bool      `gorm:"not null;default:true" json:"notif_crit"`
-	NotifWarn        bool      `gorm:"not null;default:true" json:"notif_warn"`
-	NotifDown        bool      `gorm:"not null;default:true" json:"notif_down"`
-	NotifAI          bool      `gorm:"not null;default:false" json:"notif_ai"`
-	PollIntervalSec  int       `gorm:"not null;default:10" json:"poll_interval_sec"`
-	AutoRecovery     bool      `gorm:"not null;default:false" json:"auto_recovery"`
-	AIAutoAnalyze    bool      `gorm:"not null;default:true" json:"ai_auto_analyze"`
-	AIWindowMinutes  int       `gorm:"not null;default:30" json:"ai_window_minutes"`
-	UpdatedAt        time.Time `gorm:"not null;default:now()" json:"updated_at"`
+	UserID            uuid.UUID  `gorm:"type:uuid;primary_key" json:"user_id"`
+	NotifCrit         bool       `gorm:"not null;default:true" json:"notif_crit"`
+	NotifWarn         bool       `gorm:"not null;default:true" json:"notif_warn"`
+	NotifDown         bool       `gorm:"not null;default:true" json:"notif_down"`
+	NotifAI           bool       `gorm:"not null;default:false" json:"notif_ai"`
+	PollIntervalSec   int        `gorm:"not null;default:10" json:"poll_interval_sec"`
+	AutoRecovery      bool       `gorm:"not null;default:false" json:"auto_recovery"`
+	AIAutoAnalyze     bool       `gorm:"not null;default:true" json:"ai_auto_analyze"`
+	AIWindowMinutes   int        `gorm:"not null;default:30" json:"ai_window_minutes"`
+	WebhookURL        *string    `gorm:"column:webhook_url" json:"webhook_url"`
+	WebhookSecret     *string    `gorm:"column:webhook_secret" json:"webhook_secret"`
+	SlackWebhookURL   *string    `gorm:"column:slack_webhook_url" json:"slack_webhook_url"`
+	UpdatedAt         time.Time  `gorm:"not null;default:now()" json:"updated_at"`
 }
 
 func (UserSettings) TableName() string {
@@ -24,12 +27,15 @@ func (UserSettings) TableName() string {
 }
 
 type UpdateSettingsRequest struct {
-	NotifCrit       *bool `json:"notif_crit"`
-	NotifWarn       *bool `json:"notif_warn"`
-	NotifDown       *bool `json:"notif_down"`
-	NotifAI         *bool `json:"notif_ai"`
-	PollIntervalSec *int  `json:"poll_interval_sec"`
-	AutoRecovery    *bool `json:"auto_recovery"`
-	AIAutoAnalyze   *bool `json:"ai_auto_analyze"`
-	AIWindowMinutes *int  `json:"ai_window_minutes"`
+	NotifCrit        *bool   `json:"notif_crit"`
+	NotifWarn        *bool   `json:"notif_warn"`
+	NotifDown        *bool   `json:"notif_down"`
+	NotifAI          *bool   `json:"notif_ai"`
+	PollIntervalSec  *int    `json:"poll_interval_sec"`
+	AutoRecovery     *bool   `json:"auto_recovery"`
+	AIAutoAnalyze    *bool   `json:"ai_auto_analyze"`
+	AIWindowMinutes  *int    `json:"ai_window_minutes"`
+	WebhookURL       *string `json:"webhook_url"`
+	WebhookSecret    *string `json:"webhook_secret"`
+	SlackWebhookURL  *string `json:"slack_webhook_url"`
 }
