@@ -6,6 +6,8 @@ import { router } from "./routes";
 import { useAuthStore } from "./store/authStore";
 import { authApi } from "./api/auth";
 import { useThemeStore } from "./store/themeStore";
+import { useA11yStore } from "./store/a11yStore";
+import { useA11y } from "./hooks/useA11y";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -109,11 +111,18 @@ function ThemeInit() {
   return null;
 }
 
+function A11yInit() {
+  const applyPreferences = useA11yStore((state) => state.applyPreferences);
+  useEffect(() => { applyPreferences(); }, [applyPreferences]);
+  return null;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <ThemeInit />
+      <A11yInit />
       <AppInit />
       <RouterProvider router={router} />
       <Toaster
