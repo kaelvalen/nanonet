@@ -1,14 +1,15 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Outlet } from "react-router";
 import { MatrixBackground } from "./MatrixBackground";
 import { AIAssistant } from "./AIAssistant";
 import { CommandPalette } from "./CommandPalette";
 import { FloatingStatusBar } from "./FloatingStatusBar";
+import { Sidebar } from "./Sidebar";
 import { useWebSocket } from "@/hooks/useWebSocket";
 
 export function DashboardLayout() {
-  // Activate WebSocket connection for the dashboard
   useWebSocket();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleOpenCommandPalette = useCallback(() => {
     const event = new KeyboardEvent("keydown", {
@@ -31,14 +32,22 @@ export function DashboardLayout() {
         }}
       />
 
-      {/* Floating Status Bar */}
-      <FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
+      {/* Sidebar */}
+      <Sidebar onCollapsedChange={setSidebarCollapsed} />
 
-      {/* Main Content */}
-      <main className="relative z-10 pt-20 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <Outlet />
-      </main>
+      {/* Page wrapper — shifts right of sidebar */}
+      <div
+        className="relative z-10 flex flex-col min-h-screen transition-all duration-200"
+        style={{ marginLeft: sidebarCollapsed ? "56px" : "200px" }}
+      >
+        {/* Floating Status Bar */}
+        <FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
+        {/* Main Content */}
+        <main className="flex-1 pt-6 pb-8 px-4 sm:px-6 lg:px-8 max-w-6xl w-full mx-auto">
+          <Outlet />
+        </main>
+      </div>
 
       {/* Command Palette */}
       <CommandPalette />
