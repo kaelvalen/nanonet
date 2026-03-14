@@ -7,10 +7,13 @@ import { FloatingStatusBar } from "./FloatingStatusBar";
 import { Sidebar } from "./Sidebar";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useNavStore } from "@/store/navStore";
 
 export function DashboardLayout() {
   useWebSocket();
   const { pathname } = useLocation();
+  const { navMode } = useNavStore();
+  const isSidebar = navMode === "sidebar";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleOpenCommandPalette = useCallback(() => {
@@ -34,19 +37,19 @@ export function DashboardLayout() {
         }}
       />
 
-      {/* Sidebar */}
-      <Sidebar onCollapsedChange={setSidebarCollapsed} />
+      {/* Sidebar — only in sidebar mode */}
+      {isSidebar && <Sidebar onCollapsedChange={setSidebarCollapsed} />}
 
-      {/* Page wrapper — shifts right of sidebar */}
+      {/* Page wrapper — shifts right of sidebar only in sidebar mode */}
       <div
         className="relative z-10 flex flex-col min-h-screen transition-all duration-200"
-        style={{ marginLeft: sidebarCollapsed ? "56px" : "200px" }}
+        style={{ marginLeft: isSidebar ? (sidebarCollapsed ? "56px" : "200px") : "0px" }}
       >
-        {/* Floating Status Bar */}
+        {/* Floating Status Bar — sticky in sidebar mode, fixed in floating mode */}
         <FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
-        {/* Main Content */}
-        <main className="flex-1 pt-6 pb-8 px-4 sm:px-6 lg:px-8 max-w-6xl w-full mx-auto">
+        {/* Main Content — extra top padding in floating mode so content clears the fixed bar */}
+        <main className={`flex-1 pb-8 px-4 sm:px-6 lg:px-8 max-w-6xl w-full mx-auto ${isSidebar ? "pt-6" : "pt-20"}`}>
           <ErrorBoundary key={pathname}>
             <Outlet />
           </ErrorBoundary>
