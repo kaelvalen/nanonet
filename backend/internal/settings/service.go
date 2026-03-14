@@ -88,6 +88,15 @@ func (s *Service) Update(ctx context.Context, userID uuid.UUID, req UpdateSettin
 		}
 		updates["ai_window_minutes"] = *req.AIWindowMinutes
 	}
+	if req.WebhookURL != nil {
+		updates["webhook_url"] = req.WebhookURL
+	}
+	if req.WebhookSecret != nil {
+		updates["webhook_secret"] = req.WebhookSecret
+	}
+	if req.SlackWebhookURL != nil {
+		updates["slack_webhook_url"] = req.SlackWebhookURL
+	}
 
 	if err := s.db.WithContext(ctx).Model(existing).Updates(updates).Error; err != nil {
 		return nil, err

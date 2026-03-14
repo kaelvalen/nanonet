@@ -21,10 +21,16 @@ import {
   Clock,
   Plus,
   Cloud,
+  Brain,
+  Target,
+  Lightbulb,
+  BellRing,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
 import { useServices } from "@/hooks/useServices";
+import { useQuery } from "@tanstack/react-query";
+import { metricsApi } from "@/api/metrics";
 
 const navCards = [
   {
@@ -117,6 +123,24 @@ function UptimeRing({ percent, size = 56 }: { percent: number; size?: number }) 
 export function DashboardPage() {
   const { services, isLoading } = useServices();
   const navigate = useNavigate();
+
+  const { data: activeAlerts } = useQuery({
+    queryKey: ["activeAlerts"],
+    queryFn: () => metricsApi.getActiveAlerts(),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
+  const firstServiceId = services[0]?.id ?? "";
+  const { data: insightsData } = useQuery({
+    queryKey: ["dashInsights", firstServiceId],
+    queryFn: () => metricsApi.getInsights(firstServiceId, 1),
+    enabled: !!firstServiceId,
+    staleTime: 60_000,
+  });
+
+  const recentAlerts = (activeAlerts ?? []).slice(0, 5);
+  const recentInsights = (insightsData?.insights ?? []).slice(0, 3);
 
   const totalServices = services.length;
   const activeServices = services.filter((s) => s.status === "up").length;
@@ -455,6 +479,121 @@ export function DashboardPage() {
               })}
             </div>
           )}
+        </motion.div>
+      )}
+
+      {/* Recent Alerts + AI Insights — 2-column live feed */}
+      {services.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.65 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+        >
+          {/* Son Alertler */}
+          <Card className="rounded p-4" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BellRing className="w-3.5 h-3.5" style={{ color: "var(--color-pink)" }} />
+                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Son Alertler</h3>
+                {recentAlerts.length > 0 && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "var(--status-down-subtle)", color: "var(--status-down-text)", border: "1px solid var(--status-down-border)" }}>
+                    {recentAlerts.length}
+                  </span>
+                )}
+              </div>
+              <Link to="/alerts" className="text-[10px] flex items-center gap-1 transition-colors" style={{ color: "var(--text-faint)" }}>
+                Tümü <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+
+            {recentAlerts.length === 0 ? (
+              <div className="py-8 text-center">
+                <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-20" style={{ color: "var(--status-up)" }} />
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Aktif alert yok</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentAlerts.map((alert) => {
+                  const sevColor = alert.severity === "crit" ? "var(--status-down-text)" : alert.severity === "warn" ? "var(--status-warn-text)" : "var(--color-blue)";
+                  const sevBg = alert.severity === "crit" ? "var(--status-down-subtle)" : alert.severity === "warn" ? "var(--status-warn-subtle)" : "var(--color-blue-subtle)";
+                  const sevBorder = alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)";
+                  return (
+                    <div key={alert.id} className="flex items-start gap-2.5 p-2.5 rounded"
+                      style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
+                      <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: sevColor }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{alert.message}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className="text-[8px] px-1.5 py-0 rounded border" style={{ background: sevBg, color: sevColor, borderColor: sevBorder }}>
+                            {alert.severity.toUpperCase()}
+                          </Badge>
+                          <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                            <Clock className="w-2.5 h-2.5 inline mr-0.5" />
+                            {new Date(alert.triggered_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Son AI Insights */}
+          <Card className="rounded p-4" style={{ background: "var(--surface-card)", border: "2px solid var(--color-lavender-border)", boxShadow: "var(--card-shadow)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Brain className="w-3.5 h-3.5" style={{ color: "var(--color-lavender)" }} />
+                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>AI Insights</h3>
+              </div>
+              <Link to="/ai-insights" className="text-[10px] flex items-center gap-1 transition-colors" style={{ color: "var(--text-faint)" }}>
+                Tümü <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+
+            {recentInsights.length === 0 ? (
+              <div className="py-8 text-center">
+                <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-20" style={{ color: "var(--color-lavender)" }} />
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Henüz AI analizi yok</p>
+                <Button size="sm" onClick={() => navigate("/ai-insights")}
+                  className="mt-3 rounded text-xs h-7 text-white"
+                  style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}>
+                  <Zap className="w-3 h-3 mr-1" /> Analiz Başlat
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentInsights.map((insight) => {
+                  const topPriority = insight.recommendations?.[0]?.priority ?? "low";
+                  const priColor = topPriority === "high" ? "var(--status-down-text)" : topPriority === "medium" ? "var(--status-warn-text)" : "var(--color-teal)";
+                  const priBg = topPriority === "high" ? "var(--status-down-subtle)" : topPriority === "medium" ? "var(--status-warn-subtle)" : "var(--color-teal-subtle)";
+                  const priBorder = topPriority === "high" ? "var(--status-down-border)" : topPriority === "medium" ? "var(--status-warn-border)" : "var(--color-teal-border)";
+                  return (
+                    <div key={insight.id} className="flex items-start gap-2.5 p-2.5 rounded"
+                      style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--color-lavender-border)" }}>
+                      <Lightbulb className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--color-lavender)" }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: "var(--text-secondary)" }}>{insight.summary}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {insight.recommendations && insight.recommendations.length > 0 && (
+                            <Badge className="text-[8px] px-1.5 py-0 rounded border" style={{ background: priBg, color: priColor, borderColor: priBorder }}>
+                              <Target className="w-2 h-2 inline mr-0.5" />{insight.recommendations.length} öneri
+                            </Badge>
+                          )}
+                          <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                            <Clock className="w-2.5 h-2.5 inline mr-0.5" />
+                            {new Date(insight.created_at).toLocaleDateString("tr-TR")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
         </motion.div>
       )}
 

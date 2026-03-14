@@ -26,6 +26,12 @@ import {
   ScrollText,
   Clock,
   Shield,
+  Webhook,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Filter,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore, type ThemeName, type ThemeMode } from "@/store/themeStore";
@@ -95,11 +101,20 @@ export function SettingsPage() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
 
+  // Webhook channels
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+
   // Audit logs
   const [showAuditLogs, setShowAuditLogs] = useState(false);
-  const { data: auditData } = useQuery({
-    queryKey: ["auditLogs"],
-    queryFn: () => settingsApi.getAuditLogs(20, 0),
+  const [auditSearch, setAuditSearch] = useState("");
+  const [auditPage, setAuditPage] = useState(0);
+  const AUDIT_PAGE_SIZE = 20;
+  const { data: auditData, refetch: refetchAudit } = useQuery({
+    queryKey: ["auditLogs", auditPage],
+    queryFn: () => settingsApi.getAuditLogs(AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE),
     enabled: showAuditLogs,
   });
 
@@ -120,6 +135,9 @@ export function SettingsPage() {
         autoAnalyze: settings.ai_auto_analyze,
         window: settings.ai_window_minutes,
       });
+      setWebhookUrl(settings.webhook_url ?? "");
+      setWebhookSecret(settings.webhook_secret ?? "");
+      setSlackWebhookUrl(settings.slack_webhook_url ?? "");
     }
   }, [settings]);
 
@@ -187,6 +205,24 @@ export function SettingsPage() {
     }
     passwordMutation.mutate();
   };
+
+  const handleSaveWebhooks = () => {
+    saveMutation.mutate({
+      webhook_url: webhookUrl || null,
+      webhook_secret: webhookSecret || null,
+      slack_webhook_url: slackWebhookUrl || null,
+    });
+  };
+
+  const filteredAuditLogs = (auditData?.logs ?? []).filter((log) => {
+    if (!auditSearch) return true;
+    const q = auditSearch.toLowerCase();
+    return (
+      log.action.toLowerCase().includes(q) ||
+      log.resource_type.toLowerCase().includes(q) ||
+      (log.ip_address ?? "").toLowerCase().includes(q)
+    );
+  });
 
   const handleThemeSelect = (name: ThemeName, mode: ThemeMode) => {
     setThemeName(name);
@@ -416,43 +452,175 @@ export function SettingsPage() {
         </Card>
       </motion.div>
 
+      {/* Webhook / Bildirim Kanalları */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.32 }}>
+        <Card className="rounded p-5" style={cardStyle}>
+          <div className="flex items-center justify-between mb-1">
+            <SectionHeader icon={Webhook} label="Bildirim Kanalları" />
+            <Button size="sm" variant="outline" onClick={handleSaveWebhooks} disabled={saveMutation.isPending}
+              className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-muted)", boxShadow: "var(--btn-shadow)" }}>
+              {saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
+            </Button>
+          </div>
+          <Separator className="mb-4" style={dividerStyle} />
+
+          <div className="space-y-4">
+            {/* Generic Webhook */}
+            <div className="p-4 rounded space-y-3" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
+              <div className="flex items-center gap-2 mb-1">
+                <Send className="w-3.5 h-3.5" style={{ color: "var(--color-blue)" }} />
+                <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Generic Webhook</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto" style={{ background: webhookUrl ? "var(--status-up-subtle)" : "var(--surface-card)", color: webhookUrl ? "var(--status-up-text)" : "var(--text-faint)", border: "1px solid var(--border-subtle)" }}>
+                  {webhookUrl ? "Aktif" : "Pasif"}
+                </span>
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-muted)" }}>Webhook URL</Label>
+                <Input
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://hooks.example.com/..."
+                  className="rounded text-xs h-8"
+                  style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-muted)" }}>İmza Secret (İsteğe Bağlı)</Label>
+                <div className="relative">
+                  <Input
+                    type={showWebhookSecret ? "text" : "password"}
+                    value={webhookSecret}
+                    onChange={(e) => setWebhookSecret(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="rounded text-xs h-8 pr-9 font-mono"
+                    style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
+                  />
+                  <button onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2" style={{ color: "var(--text-faint)" }}>
+                    {showWebhookSecret ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Payload HMAC-SHA256 ile imzalanır; X-NanoNet-Signature header'ında iletilir.</p>
+              </div>
+            </div>
+
+            {/* Slack */}
+            <div className="p-4 rounded space-y-3" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#4A154B" }}>
+                  <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
+                </svg>
+                <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Slack</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto" style={{ background: slackWebhookUrl ? "var(--status-up-subtle)" : "var(--surface-card)", color: slackWebhookUrl ? "var(--status-up-text)" : "var(--text-faint)", border: "1px solid var(--border-subtle)" }}>
+                  {slackWebhookUrl ? "Aktif" : "Pasif"}
+                </span>
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-muted)" }}>Slack Incoming Webhook URL</Label>
+                <Input
+                  value={slackWebhookUrl}
+                  onChange={(e) => setSlackWebhookUrl(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="rounded text-xs h-8"
+                  style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
+                />
+                <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>Kritik alertler ve AI analizleri Slack kanalınıza iletilir.</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
       {/* Audit Logs */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.35 }}>
         <Card className="rounded p-5" style={cardStyle}>
           <div className="flex items-center justify-between mb-1">
             <SectionHeader icon={ScrollText} label="İşlem Geçmişi" />
             <Button size="sm" variant="outline"
-              onClick={() => setShowAuditLogs(!showAuditLogs)}
+              onClick={() => { setShowAuditLogs(!showAuditLogs); if (!showAuditLogs) refetchAudit(); }}
               className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
               style={{ borderColor: "var(--border-default)", color: "var(--text-muted)", boxShadow: "var(--btn-shadow)" }}>
-              {showAuditLogs ? "Gizle" : "Göster"}
+              {showAuditLogs ? <><ChevronUp className="w-3 h-3 mr-1" />Gizle</> : <><ChevronDown className="w-3 h-3 mr-1" />Göster</>}
             </Button>
           </div>
           {showAuditLogs && (
             <>
               <Separator className="mb-3" style={dividerStyle} />
-              {auditData?.logs && auditData.logs.length > 0 ? (
-                <div className="space-y-2 max-h-72 overflow-y-auto">
-                  {auditData.logs.map((log: AuditLog) => (
-                    <div key={log.id} className="flex items-start gap-3 p-2.5 rounded" style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
-                      <Shield className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--color-blue)" }} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-                          {log.action} — <span className="font-(--font-mono)" style={{ color: "var(--text-muted)" }}>{log.resource_type}</span>
-                        </p>
-                        <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: "var(--text-faint)" }}>
-                          <Clock className="w-2.5 h-2.5" />
-                          {new Date(log.created_at).toLocaleString("tr-TR")}
-                          {log.ip_address && <span>· {log.ip_address}</span>}
+
+              {/* Search + refresh */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="relative flex-1">
+                  <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-faint)" }} />
+                  <Input
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    placeholder="İşlem ara..."
+                    className="rounded text-xs h-8 pl-7"
+                    style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
+                  />
+                </div>
+                <Button size="sm" variant="outline" onClick={() => refetchAudit()}
+                  className="h-8 px-3 rounded text-[10px]" style={{ borderColor: "var(--border-default)", color: "var(--text-muted)" }}>
+                  <Filter className="w-3 h-3" />
+                </Button>
+              </div>
+
+              {filteredAuditLogs.length > 0 ? (
+                <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                  {filteredAuditLogs.map((log: AuditLog) => {
+                    const actionColorMap: Record<string, string> = {
+                      CREATE: "var(--status-up-text)",
+                      UPDATE: "var(--color-blue)",
+                      DELETE: "var(--status-down-text)",
+                      LOGIN:  "var(--color-teal)",
+                      LOGOUT: "var(--text-muted)",
+                    };
+                    const actionColor = actionColorMap[log.action.toUpperCase()] ?? "var(--text-muted)";
+                    return (
+                      <div key={log.id} className="flex items-start gap-3 p-2.5 rounded"
+                        style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
+                        <Shield className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--color-blue)" }} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: actionColor }}>{log.action}</span>
+                            <span className="text-xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>{log.resource_type}</span>
+                          </div>
+                          {log.details && (
+                            <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{log.details}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: "var(--text-faint)" }}>
+                            <Clock className="w-2.5 h-2.5" />
+                            {new Date(log.created_at).toLocaleString("tr-TR")}
+                            {log.ip_address && <span className="font-mono">· {log.ip_address}</span>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
-                  Henüz işlem geçmişi bulunmuyor
+                  {auditSearch ? "Arama sonucu bulunamadı" : "Henüz işlem geçmişi bulunmuyor"}
                 </p>
+              )}
+
+              {/* Pagination */}
+              {(auditData?.total ?? 0) > AUDIT_PAGE_SIZE && (
+                <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <Button size="sm" variant="outline" onClick={() => setAuditPage(p => Math.max(0, p - 1))} disabled={auditPage === 0}
+                    className="h-7 px-3 text-[10px] rounded">
+                    Önceki
+                  </Button>
+                  <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                    {auditPage + 1} / {Math.ceil((auditData?.total ?? 0) / AUDIT_PAGE_SIZE)}
+                  </span>
+                  <Button size="sm" variant="outline" onClick={() => setAuditPage(p => p + 1)}
+                    disabled={(auditPage + 1) * AUDIT_PAGE_SIZE >= (auditData?.total ?? 0)}
+                    className="h-7 px-3 text-[10px] rounded">
+                    Sonraki
+                  </Button>
+                </div>
               )}
             </>
           )}

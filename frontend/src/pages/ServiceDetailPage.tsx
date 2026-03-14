@@ -65,6 +65,9 @@ import { useServices } from "@/hooks/useServices";
 import { toast } from "sonner";
 import { k8sApi, type DeploymentInfo, type HPAInfo, type PodInfo } from "@/api/k8s";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MaintenanceTab } from "@/components/service-detail/MaintenanceTab";
+import { AlertRulesTab } from "@/components/service-detail/AlertRulesTab";
+import { AgentSetupWizard } from "@/components/AgentSetupWizard";
 
 type ExecEntry = {
   command: string;
@@ -573,12 +576,7 @@ export function ServiceDetailPage() {
   const [scaleStrategy, setScaleStrategy] = useState<'round_robin' | 'least_conn' | 'ip_hash'>('round_robin');
   const [scaleLoading, setScaleLoading] = useState(false);
   const terminalEndRef = useRef<HTMLDivElement>(null);
-  const [alertRulesForm, setAlertRulesForm] = useState<Omit<AlertRules, 'service_id' | 'is_default'> | null>(null);
-  const [alertRulesSaving, setAlertRulesSaving] = useState(false);
-  const [maintStarts, setMaintStarts] = useState("");
-  const [maintEnds, setMaintEnds] = useState("");
-  const [maintReason, setMaintReason] = useState("");
-  const [maintCreating, setMaintCreating] = useState(false);
+  const [agentWizardOpen, setAgentWizardOpen] = useState(false);
 
   const { data: service, isLoading: serviceLoading } = useQuery({
     queryKey: ["service", serviceId],
@@ -606,17 +604,7 @@ export function ServiceDetailPage() {
     enabled: !!serviceId,
   });
 
-  const { data: alertRules, refetch: refetchAlertRules } = useQuery({
-    queryKey: ["alertRules", serviceId],
-    queryFn: () => metricsApi.getAlertRules(serviceId!),
-    enabled: !!serviceId,
-  });
 
-  const { data: maintWindows = [], refetch: refetchMaint } = useQuery({
-    queryKey: ["maintenance", serviceId],
-    queryFn: () => maintenanceApi.list(serviceId!),
-    enabled: !!serviceId,
-  });
 
   const handleDelete = () => {
     if (serviceId) {
@@ -645,51 +633,6 @@ export function ServiceDetailPage() {
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [execHistory]);
-
-  const handleSaveAlertRules = async () => {
-    if (!serviceId || !alertRulesForm) return;
-    setAlertRulesSaving(true);
-    try {
-      await metricsApi.updateAlertRules(serviceId, alertRulesForm);
-      toast.success("Alert eşikleri güncellendi");
-      refetchAlertRules();
-      setAlertRulesForm(null);
-    } catch {
-      toast.error("Alert eşikleri güncellenemedi");
-    } finally {
-      setAlertRulesSaving(false);
-    }
-  };
-
-  const handleCreateMaint = async () => {
-    if (!serviceId || !maintStarts || !maintEnds) return;
-    setMaintCreating(true);
-    try {
-      await maintenanceApi.create(serviceId, {
-        starts_at: new Date(maintStarts).toISOString(),
-        ends_at: new Date(maintEnds).toISOString(),
-        reason: maintReason || undefined,
-      });
-      toast.success("Bakım penceresi oluşturuldu");
-      setMaintStarts(""); setMaintEnds(""); setMaintReason("");
-      refetchMaint();
-    } catch {
-      toast.error("Bakım penceresi oluşturulamadı");
-    } finally {
-      setMaintCreating(false);
-    }
-  };
-
-  const handleDeleteMaint = async (windowId: string) => {
-    if (!serviceId) return;
-    try {
-      await maintenanceApi.delete(serviceId, windowId);
-      toast.success("Bakım penceresi silindi");
-      refetchMaint();
-    } catch {
-      toast.error("Bakım penceresi silinemedi");
-    }
-  };
 
   const handleRestart = () => {
     if (serviceId) restartService(serviceId);
@@ -832,6 +775,9 @@ export function ServiceDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setAgentWizardOpen(true)} className="rounded text-xs h-8" style={{ borderColor: "var(--color-blue-border)", color: "var(--color-blue)" }}>
+                <Zap className="w-3 h-3 mr-1" /> Agent Kur
+              </Button>
             <Button variant="outline" size="sm" onClick={handleStart} disabled={startLoading} className="rounded text-xs h-8" style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}>
               {startLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />} Start
             </Button>
@@ -987,8 +933,11 @@ export function ServiceDetailPage() {
               <TabsTrigger value="history" className="rounded text-xs">
                 <History className="w-3 h-3 mr-1" /> History
               </TabsTrigger>
-              <TabsTrigger value="settings" className="rounded text-xs">
-                <Settings className="w-3 h-3 mr-1" /> Settings
+              <TabsTrigger value="alert-rules" className="rounded text-xs">
+                <Bell className="w-3 h-3 mr-1" /> Alert Rules
+              </TabsTrigger>
+              <TabsTrigger value="maintenance" className="rounded text-xs">
+                <CalendarClock className="w-3 h-3 mr-1" /> Maintenance
               </TabsTrigger>
             </TabsList>
 
@@ -1274,155 +1223,14 @@ export function ServiceDetailPage() {
             <CommandHistoryTab serviceId={serviceId!} />
           </TabsContent>
 
-          {/* Settings Tab: Alert Thresholds + Maintenance Windows */}
-          <TabsContent value="settings" className="space-y-4">
-            {/* ── Alert Thresholds ── */}
-            <Card className="p-5 rounded" style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}>
-              <div className="flex items-center gap-2 mb-4">
-                <Bell className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Alert Eşikleri</h3>
-                {alertRules?.is_default && (
-                  <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: "var(--surface-sunken)", color: "var(--text-faint)" }}>varsayılan</span>
-                )}
-              </div>
+          {/* Alert Rules Tab */}
+          <TabsContent value="alert-rules">
+            <AlertRulesTab serviceId={serviceId!} />
+          </TabsContent>
 
-              {(() => {
-                const current = alertRulesForm ?? (alertRules ? {
-                  cpu_threshold: alertRules.cpu_threshold,
-                  memory_threshold_mb: alertRules.memory_threshold_mb,
-                  latency_threshold_ms: alertRules.latency_threshold_ms,
-                  error_rate_threshold: alertRules.error_rate_threshold,
-                } : { cpu_threshold: 80, memory_threshold_mb: 2048, latency_threshold_ms: 1000, error_rate_threshold: 5 });
-
-                const fields = [
-                  { key: 'cpu_threshold' as const, label: 'CPU', unit: '%', min: 1, max: 100 },
-                  { key: 'memory_threshold_mb' as const, label: 'Memory', unit: 'MB', min: 1, max: 999999 },
-                  { key: 'latency_threshold_ms' as const, label: 'Latency', unit: 'ms', min: 1, max: 999999 },
-                  { key: 'error_rate_threshold' as const, label: 'Error Rate', unit: '%', min: 0, max: 100 },
-                ];
-
-                return (
-                  <>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      {fields.map(({ key, label, unit, min, max }) => (
-                        <div key={key}>
-                          <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-muted)" }}>
-                            {label} ({unit})
-                          </label>
-                          <Input
-                            type="number"
-                            min={min}
-                            max={max}
-                            value={current[key]}
-                            onChange={(e) => {
-                              const v = parseFloat(e.target.value);
-                              if (!isNaN(v)) {
-                                setAlertRulesForm({ ...current, [key]: v });
-                              }
-                            }}
-                            className="rounded text-xs h-8"
-                            style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      {alertRulesForm && (
-                        <Button size="sm" variant="outline" onClick={() => setAlertRulesForm(null)}
-                          className="rounded text-xs h-8" style={{ color: "var(--text-muted)" }}>
-                          İptal
-                        </Button>
-                      )}
-                      <Button size="sm" onClick={handleSaveAlertRules} disabled={alertRulesSaving || !alertRulesForm}
-                        className="rounded text-xs h-8 text-white" style={{ background: alertRulesForm ? "var(--gradient-btn-primary)" : undefined }}>
-                        {alertRulesSaving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
-                        Kaydet
-                      </Button>
-                    </div>
-                  </>
-                );
-              })()}
-            </Card>
-
-            {/* ── Maintenance Windows ── */}
-            <Card className="p-5 rounded-xl" style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)" }}>
-              <div className="flex items-center gap-2 mb-4">
-                <CalendarClock className="w-4 h-4" style={{ color: "var(--color-blue)" }} />
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Bakım Pencereleri</h3>
-              </div>
-
-              {/* Create form */}
-              <div className="space-y-2 mb-4 p-3 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
-                <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Yeni Bakım Penceresi</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] block mb-1" style={{ color: "var(--text-faint)" }}>Başlangıç</label>
-                    <Input type="datetime-local" value={maintStarts} onChange={(e) => setMaintStarts(e.target.value)}
-                      className="rounded text-xs h-8"
-                      style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] block mb-1" style={{ color: "var(--text-faint)" }}>Bitiş</label>
-                    <Input type="datetime-local" value={maintEnds} onChange={(e) => setMaintEnds(e.target.value)}
-                      className="rounded text-xs h-8"
-                      style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                  </div>
-                </div>
-                <Input placeholder="Sebep (isteğe bağlı)" value={maintReason} onChange={(e) => setMaintReason(e.target.value)}
-                  className="rounded text-xs h-8"
-                  style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }} />
-                <div className="flex justify-end">
-                  <Button size="sm" onClick={handleCreateMaint} disabled={maintCreating || !maintStarts || !maintEnds}
-                    className="rounded text-xs h-8 text-white" style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}>
-                    {maintCreating ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Plus className="w-3 h-3 mr-1" />}
-                    Oluştur
-                  </Button>
-                </div>
-              </div>
-
-              {/* Window list */}
-              {maintWindows.length === 0 ? (
-                <p className="text-xs text-center py-4" style={{ color: "var(--text-faint)" }}>Tanımlı bakım penceresi yok</p>
-              ) : (
-                <div className="space-y-2">
-                  {maintWindows.map((w: MaintenanceWindow) => {
-                    const now = Date.now();
-                    const start = new Date(w.starts_at).getTime();
-                    const end = new Date(w.ends_at).getTime();
-                    const isActive = now >= start && now < end;
-                    const isPast = now >= end;
-                    return (
-                      <div key={w.id} className="flex items-start justify-between gap-3 p-3 rounded"
-                        style={{ background: "var(--surface-sunken)", border: `2px solid ${isActive ? "var(--status-warn-border)" : "var(--border-subtle)"}` }}>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                              style={{
-                                background: isActive ? "var(--status-warn-subtle)" : isPast ? "var(--surface-card)" : "var(--color-blue-subtle)",
-                                color: isActive ? "var(--status-warn-text)" : isPast ? "var(--text-faint)" : "var(--color-blue)",
-                                border: isActive ? "1.5px solid var(--status-warn-border)" : isPast ? "1.5px solid var(--border-default)" : "1.5px solid var(--color-blue-border)",
-                              }}>
-                              {isActive ? "AKTİF" : isPast ? "GEÇMİŞ" : "BEKLEYEN"}
-                            </span>
-                          </div>
-                          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                            {new Date(w.starts_at).toLocaleString("tr-TR")} → {new Date(w.ends_at).toLocaleString("tr-TR")}
-                          </p>
-                          {w.reason && <p className="text-[10px] mt-0.5 truncate" style={{ color: "var(--text-faint)" }}>{w.reason}</p>}
-                        </div>
-                        {!isPast && (
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteMaint(w.id)}
-                            className="shrink-0 rounded h-7 text-[10px]"
-                            style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
+          {/* Maintenance Tab */}
+          <TabsContent value="maintenance">
+            <MaintenanceTab serviceId={serviceId!} />
           </TabsContent>
 
           {/* AI Tab */}
@@ -1517,6 +1325,14 @@ export function ServiceDetailPage() {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {/* Agent Setup Wizard */}
+      <AgentSetupWizard
+        open={agentWizardOpen}
+        onClose={() => setAgentWizardOpen(false)}
+        serviceId={serviceId}
+        serviceName={service?.name}
+      />
     </div>
   );
 }
