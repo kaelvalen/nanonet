@@ -636,7 +636,7 @@ export function SettingsPage() {
               { label: "Platform", value: "NanoNet v2.0" },
               { label: "Tema", value: themeName === "cinnamiku" ? "CinnaMiku" : "Pro" },
               { label: "Stack", value: "React + Go + Rust" },
-              { label: "Veritabanı", value: "TimescaleDB" },
+              { label: "Veritabanı", value: "TimescaleDB + PostgreSQL + Redis" },
             ].map(({ label, value }) => (
               <div key={label} className="p-3 rounded" style={{ background: "var(--surface-sunken)", border: "2px solid var(--border-default)" }}>
                 <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>{label}</span>
