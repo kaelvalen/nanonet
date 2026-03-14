@@ -13,7 +13,7 @@ ifneq (,$(wildcard .env))
   export
 endif
 
-COMPOSE = DOCKER_BUILDKIT=1 docker compose -f docker-compose.dev.yml
+COMPOSE = docker compose -f docker-compose.dev.yml
 
 # Geliştirme ortamını başlat (hot reload)
 dev:
