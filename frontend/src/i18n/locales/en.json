@@ -162,7 +162,22 @@
     "confirmNewPassword": "Confirm New Password",
     "twoFactorAuth": "Two-Factor Authentication",
     "enable": "Enable",
-    "disable": "Disable"
+    "disable": "Disable",
+    "history": "History",
+    "operationHistory": "Operation History",
+    "clearHistory": "Clear",
+    "clearHistoryConfirm": "Clear all history?",
+    "noHistory": "No changes recorded yet",
+    "showingLastN": "Showing last {{count}} changes",
+    "tabs": "Settings tabs",
+    "languageChanged": "Language changed from {{old}} to {{new}}",
+    "fontSizeChanged": "Font size changed from {{old}}% to {{new}}%",
+    "lineHeightChanged": "Line height changed from {{old}} to {{new}}",
+    "letterSpacingChanged": "Letter spacing changed from {{old}} to {{new}}",
+    "highContrastEnabled": "High contrast mode enabled",
+    "highContrastDisabled": "High contrast mode disabled",
+    "reducedMotionEnabled": "Reduced motion enabled",
+    "reducedMotionDisabled": "Reduced motion disabled"
   },
   "ai": {
     "title": "AI Insights",

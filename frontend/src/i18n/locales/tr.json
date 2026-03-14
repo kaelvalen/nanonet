@@ -162,7 +162,22 @@
     "confirmNewPassword": "Yeni Şifreyi Onayla",
     "twoFactorAuth": "İki Faktörlü Kimlik Doğrulama",
     "enable": "Etkinleştir",
-    "disable": "Devre Dışı Bırak"
+    "disable": "Devre Dışı Bırak",
+    "history": "Geçmiş",
+    "operationHistory": "İşlem Geçmişi",
+    "clearHistory": "Temizle",
+    "clearHistoryConfirm": "Tüm geçmiş temizlensin mi?",
+    "noHistory": "Henüz kayıt edilmiş değişiklik yok",
+    "showingLastN": "Son {{count}} değişiklik gösteriliyor",
+    "tabs": "Ayarlar sekmelerini",
+    "languageChanged": "Dil {{old}} yerine {{new}} olarak değiştirildi",
+    "fontSizeChanged": "Yazı tipi boyutu {{old}}% yerine {{new}}% olarak değiştirildi",
+    "lineHeightChanged": "Satır yüksekliği {{old}} yerine {{new}} olarak değiştirildi",
+    "letterSpacingChanged": "Harf aralığı {{old}} yerine {{new}} olarak değiştirildi",
+    "highContrastEnabled": "Yüksek kontras modu etkinleştirildi",
+    "highContrastDisabled": "Yüksek kontras modu devre dışı bırakıldı",
+    "reducedMotionEnabled": "Azaltılmış hareket etkinleştirildi",
+    "reducedMotionDisabled": "Azaltılmış hareket devre dışı bırakıldı"
   },
   "ai": {
     "title": "AI Analiz",
