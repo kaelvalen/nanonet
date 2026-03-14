@@ -1,0 +1,228 @@
+/* Accessibility Modes and Enhanced Typography */
+
+:root {
+  --line-height: 1.5;
+  --letter-spacing: 0px;
+  --font-size-base: 16px;
+}
+
+/* Enhanced Typography with CSS Variables */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  line-height: var(--line-height);
+  letter-spacing: var(--letter-spacing);
+}
+
+/* Reduced Motion Mode */
+@media (prefers-reduced-motion: reduce) {
+  html.reduce-motion,
+  html.reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html.reduce-motion {
+  scroll-behavior: auto;
+}
+
+/* High Contrast Mode */
+html.high-contrast {
+  --background: #ffffff;
+  --foreground: #000000;
+  --primary: #0000ee;
+  --primary-foreground: #ffffff;
+  --secondary: #cc0000;
+  --secondary-foreground: #ffffff;
+  --accent: #000000;
+  --muted: #666666;
+  --border: #000000;
+  --ring: #0000ee;
+  --surface-bg: #f5f5f5;
+  --surface-raised: #f0f0f0;
+}
+
+html.high-contrast.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #ffff00;
+  --primary-foreground: #000000;
+  --secondary: #ff6666;
+  --secondary-foreground: #000000;
+  --accent: #ffffff;
+  --muted: #cccccc;
+  --border: #ffffff;
+  --ring: #ffff00;
+  --surface-bg: #1a1a1a;
+  --surface-raised: #2a2a2a;
+}
+
+/* Focus Indicator Enhancement for High Contrast */
+html.high-contrast :focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+html.high-contrast button:focus-visible,
+html.high-contrast a:focus-visible,
+html.high-contrast input:focus-visible,
+html.high-contrast select:focus-visible,
+html.high-contrast textarea:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--background);
+}
+
+/* Text Selection Enhancement */
+html.high-contrast ::selection {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Link Enhancement */
+html.high-contrast a {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+html.high-contrast a:visited {
+  color: var(--secondary);
+}
+
+/* Form Elements Enhancement */
+html.high-contrast input,
+html.high-contrast textarea,
+html.high-contrast select {
+  border-width: 2px;
+  border-color: var(--border);
+}
+
+html.high-contrast input:focus-visible,
+html.high-contrast textarea:focus-visible,
+html.high-contrast select:focus-visible {
+  border-width: 3px;
+  border-color: var(--ring);
+}
+
+html.high-contrast button {
+  border-width: 2px;
+  border-color: var(--border);
+}
+
+html.high-contrast button:focus-visible {
+  border-width: 3px;
+  border-color: var(--ring);
+}
+
+/* Better button contrast */
+html.high-contrast button[aria-pressed="true"],
+html.high-contrast button[aria-selected="true"] {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+/* Alert and Status Colors Enhancement for High Contrast */
+html.high-contrast [role="alert"],
+html.high-contrast .alert,
+html.high-contrast .warning,
+html.high-contrast .error {
+  border-width: 2px;
+  font-weight: 600;
+}
+
+/* Skip Link Styling */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+  border-radius: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Main content region for screen readers */
+#main-content {
+  outline: none;
+}
+
+#main-content:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Visually Hidden but Available to Screen Readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only:focus,
+.sr-only:active {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  padding: 8px;
+  margin: 0;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  z-index: 1000;
+}
+
+/* Placeholder Enhancement */
+html.high-contrast input::placeholder,
+html.high-contrast textarea::placeholder {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Code and Monospace Enhancement */
+html.high-contrast code,
+html.high-contrast pre {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+html.high-contrast pre {
+  padding: 12px;
+}
+
+/* Ensures proper line height application */
+html {
+  --line-height-multiplier: 1;
+}
+
+/* Responsive line height adjustments */
+@media (max-width: 640px) {
+  html {
+    --line-height-multiplier: 1.1;
+  }
+}
