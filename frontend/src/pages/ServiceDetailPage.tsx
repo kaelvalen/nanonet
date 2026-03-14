@@ -266,12 +266,14 @@ function LoadBalancingTab({
                     <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--text-muted)" }}>Kubernetes Scale</label>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setK8sReplicas(Math.max(0, k8sReplicas - 1))}
+                        aria-label="Decrease Kubernetes replicas"
                         className="w-7 h-7 rounded flex items-center justify-center"
                         style={{ border: "2px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="text-xl font-bold w-8 text-center" style={{ color: "var(--text-secondary)" }}>{k8sReplicas}</span>
                       <button onClick={() => setK8sReplicas(Math.min(32, k8sReplicas + 1))}
+                        aria-label="Increase Kubernetes replicas"
                         className="w-7 h-7 rounded flex items-center justify-center"
                         style={{ border: "2px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
                         <Plus className="w-3 h-3" />
@@ -371,20 +373,20 @@ function LoadBalancingTab({
                     <div>
                       <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-faint)" }}>Min</label>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setHpaMin(Math.max(1, hpaMin - 1))} className="w-6 h-6 rounded flex items-center justify-center"
+                        <button onClick={() => setHpaMin(Math.max(1, hpaMin - 1))} aria-label="Decrease minimum replicas" className="w-6 h-6 rounded flex items-center justify-center"
                           style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Minus className="w-2.5 h-2.5" /></button>
                         <span className="text-sm font-bold w-5 text-center" style={{ color: "var(--text-secondary)" }}>{hpaMin}</span>
-                        <button onClick={() => setHpaMin(hpaMin + 1)} className="w-6 h-6 rounded flex items-center justify-center"
+                        <button onClick={() => setHpaMin(hpaMin + 1)} aria-label="Increase minimum replicas" className="w-6 h-6 rounded flex items-center justify-center"
                           style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Plus className="w-2.5 h-2.5" /></button>
                       </div>
                     </div>
                     <div>
                       <label className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "var(--text-faint)" }}>Max</label>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setHpaMax(Math.max(hpaMin, hpaMax - 1))} className="w-6 h-6 rounded flex items-center justify-center"
+                        <button onClick={() => setHpaMax(Math.max(hpaMin, hpaMax - 1))} aria-label="Decrease maximum replicas" className="w-6 h-6 rounded flex items-center justify-center"
                           style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Minus className="w-2.5 h-2.5" /></button>
                         <span className="text-sm font-bold w-5 text-center" style={{ color: "var(--text-secondary)" }}>{hpaMax}</span>
-                        <button onClick={() => setHpaMax(hpaMax + 1)} className="w-6 h-6 rounded flex items-center justify-center"
+                        <button onClick={() => setHpaMax(hpaMax + 1)} aria-label="Increase maximum replicas" className="w-6 h-6 rounded flex items-center justify-center"
                           style={{ border: "2px solid var(--color-lavender-border)", color: "var(--color-lavender)" }}><Plus className="w-2.5 h-2.5" /></button>
                       </div>
                     </div>
@@ -429,12 +431,14 @@ function LoadBalancingTab({
               <label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--text-muted)" }}>Instance Sayısı</label>
               <div className="flex items-center gap-3">
                 <button onClick={() => setScaleInstances(Math.max(0, scaleInstances - 1))}
+                  aria-label="Decrease instance count"
                   className="w-8 h-8 rounded flex items-center justify-center transition-all"
                   style={{ border: "2px solid var(--status-up-border)", color: "var(--status-up)" }}>
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span className="text-2xl font-bold w-10 text-center" style={{ color: "var(--text-secondary)" }}>{scaleInstances}</span>
                 <button onClick={() => setScaleInstances(Math.min(32, scaleInstances + 1))}
+                  aria-label="Increase instance count"
                   className="w-8 h-8 rounded flex items-center justify-center transition-all"
                   style={{ border: "2px solid var(--status-up-border)", color: "var(--status-up)" }}>
                   <Plus className="w-3.5 h-3.5" />
@@ -789,7 +793,7 @@ export function ServiceDetailPage() {
             </Button>
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded text-xs h-8" style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
+                <Button variant="outline" size="sm" className="rounded text-xs h-8" aria-label="Delete service" style={{ borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </DialogTrigger>
