@@ -215,27 +215,6 @@ export function DashboardPage() {
           </p>
         </div>
 
-        {/* System Health Ring */}
-        {totalServices > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex items-center gap-4 rounded px-5 py-3"
-            style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}
-          >
-            <div className="relative flex items-center justify-center">
-              <UptimeRing percent={healthPercent} size={64} />
-              <span className="absolute text-xs font-bold" style={{ color: healthPercent >= 95 ? "var(--status-up-text)" : healthPercent >= 80 ? "var(--status-warn-text)" : "var(--status-down-text)" }}>
-                {healthPercent}%
-              </span>
-            </div>
-            <div>
-              <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Sistem Sağlığı</p>
-              <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{activeServices}/{totalServices} aktif</p>
-            </div>
-          </motion.div>
-        )}
       </motion.div>
 
       {/* Onboarding — sadece hiç servis yokken göster */}

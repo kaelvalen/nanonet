@@ -8,6 +8,7 @@ import { authApi } from "./api/auth";
 import { useThemeStore } from "./store/themeStore";
 import { useA11yStore } from "./store/a11yStore";
 import { useA11y } from "./hooks/useA11y";
+import { LiveRegionProvider } from "./context/LiveRegionContext";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -121,24 +122,26 @@ export default function App() {
   return (
     <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <ThemeInit />
-      <A11yInit />
-      <AppInit />
-      <RouterProvider router={router} />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            borderRadius: "var(--radius)",
-            border: "1px solid var(--toast-border)",
-            background: "var(--toast-bg)",
-            backdropFilter: "blur(8px)",
-            fontSize: "12px",
-            fontFamily: "var(--font-quicksand)",
-            color: "var(--text-primary)",
-          },
-        }}
-      />
+      <LiveRegionProvider>
+        <ThemeInit />
+        <A11yInit />
+        <AppInit />
+        <RouterProvider router={router} />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              borderRadius: "var(--radius)",
+              border: "1px solid var(--toast-border)",
+              background: "var(--toast-bg)",
+              backdropFilter: "blur(8px)",
+              fontSize: "12px",
+              fontFamily: "var(--font-quicksand)",
+              color: "var(--text-primary)",
+            },
+          }}
+        />
+      </LiveRegionProvider>
     </QueryClientProvider>
     </ErrorBoundary>
   );
