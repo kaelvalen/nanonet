@@ -8,25 +8,54 @@ import { Trash2, Clock } from 'lucide-react';
  * Format timestamp as relative time (e.g., "2 minutes ago")
  */
 function formatRelativeTime(timestamp: string, language: string): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  try {
+    let date: Date;
+    
+    // Handle both string timestamps and timestamps_ms numbers
+    if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    } else if (typeof timestamp === 'string') {
+      // Try to parse ISO string or numeric timestamp
+      const numTime = parseInt(timestamp, 10);
+      if (!isNaN(numTime) && numTime > 1000000000) {
+        // Likely a millisecond timestamp
+        date = new Date(numTime);
+      } else {
+        // Try ISO string format
+        date = new Date(timestamp);
+      }
+    } else {
+      date = new Date();
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return language === 'tr' ? 'Bilinmeyen tarih' : 'Unknown date';
+    }
+    
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (seconds < 60) return language === 'tr' ? 'Az önce' : 'Just now';
-  if (seconds < 3600) {
-    const mins = Math.floor(seconds / 60);
-    return language === 'tr' ? `${mins} dakika önce` : `${mins} minute${mins > 1 ? 's' : ''} ago`;
-  }
-  if (seconds < 86400) {
-    const hours = Math.floor(seconds / 3600);
-    return language === 'tr' ? `${hours} saat önce` : `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  }
-  if (seconds < 604800) {
-    const days = Math.floor(seconds / 86400);
-    return language === 'tr' ? `${days} gün önce` : `${days} day${days > 1 ? 's' : ''} ago`;
-  }
+    if (seconds < 0) return language === 'tr' ? 'Şimdi' : 'Now';
+    if (seconds < 60) return language === 'tr' ? 'Az önce' : 'Just now';
+    if (seconds < 3600) {
+      const mins = Math.floor(seconds / 60);
+      return language === 'tr' ? `${mins} dakika önce` : `${mins} minute${mins > 1 ? 's' : ''} ago`;
+    }
+    if (seconds < 86400) {
+      const hours = Math.floor(seconds / 3600);
+      return language === 'tr' ? `${hours} saat önce` : `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    }
+    if (seconds < 604800) {
+      const days = Math.floor(seconds / 86400);
+      return language === 'tr' ? `${days} gün önce` : `${days} day${days > 1 ? 's' : ''} ago`;
+    }
 
-  return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US');
+    return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US');
+  } catch (e) {
+    console.error('Error formatting date:', timestamp, e);
+    return language === 'tr' ? 'Bilinmeyen tarih' : 'Unknown date';
+  }
 }
 
 /**
@@ -80,7 +109,7 @@ export function SettingsHistory() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{entry.description}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {formatRelativeTime(entry.timestamp, i18n.language)}
+                    {formatRelativeTime(entry.timestamp_ms as any, i18n.language)}
                   </p>
                 </div>
                 <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded whitespace-nowrap">
