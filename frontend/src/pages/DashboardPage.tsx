@@ -505,7 +505,7 @@ export function DashboardPage() {
                         <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{alert.message}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge className="text-[8px] px-1.5 py-0 rounded border" style={{ background: sevBg, color: sevColor, borderColor: sevBorder }}>
-                            {alert.severity.toUpperCase()}
+                            {(alert.severity || '').toUpperCase()}
                           </Badge>
                           <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
                             <Clock className="w-2.5 h-2.5 inline mr-0.5" />

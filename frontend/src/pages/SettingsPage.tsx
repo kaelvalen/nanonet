@@ -576,7 +576,7 @@ export function SettingsPage() {
                       LOGIN:  "var(--color-teal)",
                       LOGOUT: "var(--text-muted)",
                     };
-                    const actionColor = actionColorMap[log.action.toUpperCase()] ?? "var(--text-muted)";
+                    const actionColor = actionColorMap[(log.action || '').toUpperCase()] ?? "var(--text-muted)";
                     return (
                       <div key={log.id} className="flex items-start gap-3 p-2.5 rounded"
                         style={{ background: "var(--surface-sunken)", border: "1.5px solid var(--border-default)" }}>
