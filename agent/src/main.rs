@@ -48,6 +48,8 @@ async fn main() -> error::Result<()> {
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     tracing::info!("  Backend:       {}", config.backend);
     tracing::info!("  Service ID:    {}", config.service_id);
+    tracing::info!("  WS URL:        {}/ws/agent?service_id={}", config.backend, config.service_id);
+    tracing::info!("  Auth:          {}", if config.effective_token().is_some() { "Bearer ***" } else { "(yok — NANONET_AGENT_TOKEN veya NANONET_TOKEN gerekli)" });
     tracing::info!("  Health URL:    {}", config.health_url());
     tracing::info!("  Poll interval: {}s", config.poll_interval);
     tracing::info!("  Error window:  {} checks", config.error_rate_window);
@@ -73,7 +75,7 @@ async fn main() -> error::Result<()> {
         tracing::info!("  Agent port:    {}", config.agent_port);
     }
 
-    let agent_id = uuid::Uuid::new_v4().to_string();
+    let agent_id = load_or_create_agent_id(&config);
     tracing::info!("  Agent ID:      {}", agent_id);
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
@@ -321,4 +323,21 @@ async fn main() -> error::Result<()> {
     );
 
     Ok(())
+}
+
+fn load_or_create_agent_id(config: &Config) -> String {
+    let id_file = format!("/tmp/.nanonet_agent_id.{}", config.service_id);
+    if let Ok(content) = std::fs::read_to_string(&id_file) {
+        let trimmed = content.trim();
+        if !trimmed.is_empty() {
+            return trimmed.to_string();
+        }
+    }
+
+    let new_id = uuid::Uuid::new_v4().to_string();
+    if let Err(e) = std::fs::write(&id_file, &new_id) {
+        tracing::warn!("Agent ID kaydedilemedi ({}): {}", id_file, e);
+    }
+    
+    new_id
 }

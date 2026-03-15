@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -26,12 +25,10 @@ import (
 	"nanonet-backend/pkg/mailer"
 	"nanonet-backend/pkg/ratelimit"
 	"nanonet-backend/pkg/redisstore"
-	"nanonet-backend/pkg/response"
 	"nanonet-backend/pkg/tokenblacklist"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -86,13 +83,26 @@ func main() {
 
 	broadcaster := ws.NewMetricsBroadcaster(hub, db, alertSvc, time.Duration(cfg.PollDefaultSec)*time.Second)
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("[PANIC] Broadcaster panikledi: %v", r)
+		for {
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("[PANIC] Broadcaster panikledi: %v — 5s içinde yeniden başlıyor", r)
+					}
+				}()
+				broadcaster.Start(ctx)
+			}()
+			// Context iptal edildiyse döngüden çık
+			select {
+			case <-ctx.Done():
+				log.Println("[INFO] Broadcaster durduruluyor (context iptal)")
+				return
+			case <-time.After(5 * time.Second):
+				log.Println("[INFO] Broadcaster yeniden başlatılıyor...")
 			}
-		}()
-		broadcaster.Start(ctx)
+		}
 	}()
+
 
 	// ── Mailer ────────────────────────────────────────────────────
 	m := mailer.New(mailer.Config{
@@ -121,6 +131,7 @@ func main() {
 	cmdHandler := commands.NewHandler(db)
 	cmdService := commands.NewService(db)
 	settingsHandler := settings.NewHandler(db)
+	auditHandler := audit.NewHandler(db)
 
 	// ── Kubernetes (optional) ─────────────────────────────────────
 	var k8sClient *k8s.Client
@@ -141,7 +152,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(requestIDMiddleware())
-	router.Use(corsMiddleware(cfg.FrontendURL))
+	router.Use(corsMiddleware(cfg.FrontendURL, cfg.AllowedOrigins))
 	router.Use(securityHeadersMiddleware())
 
 	generalLimiter := auth.NewRateLimiter(100, time.Minute)
@@ -156,7 +167,7 @@ func main() {
 
 	// Askıda kalan komutları periyodik olarak timeout'a al
 	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
+		ticker := time.NewTicker(time.Minute)
 		defer ticker.Stop()
 		for {
 			select {
@@ -229,8 +240,11 @@ func main() {
 
 		auditGroup := v1.Group("/audit", authMiddleware.Required())
 		{
-			auditGroup.GET("", handleAuditLogs(db))
+			auditGroup.GET("", auditHandler.GetLogs)
 		}
+
+		// Tek istekle tüm servislerin uptime özetini döndürür (N+1 önleme)
+		v1.GET("/services/uptime/summary", authMiddleware.Required(), metricsHandler.GetBulkUptime)
 
 		k8sGroup := v1.Group("/k8s", authMiddleware.Required())
 		{
@@ -304,48 +318,6 @@ func main() {
 	log.Println("Server kapatıldı")
 }
 
-func handleAuditLogs(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := c.GetString("user_id")
-		if userID == "" {
-			response.Unauthorized(c, "geçersiz kullanıcı")
-			return
-		}
-
-		limit := 50
-		offset := 0
-		if l := c.Query("limit"); l != "" {
-			if v, err := strconv.Atoi(l); err == nil && v > 0 && v <= 200 {
-				limit = v
-			}
-		}
-		if o := c.Query("offset"); o != "" {
-			if v, err := strconv.Atoi(o); err == nil && v >= 0 {
-				offset = v
-			}
-		}
-
-		var logs []audit.Log
-		var total int64
-
-		q := db.WithContext(c.Request.Context()).
-			Where("user_id = ?", userID).
-			Order("created_at DESC")
-
-		q.Model(&audit.Log{}).Count(&total)
-		if err := q.Limit(limit).Offset(offset).Find(&logs).Error; err != nil {
-			response.InternalError(c, "audit loglar alınamadı")
-			return
-		}
-
-		response.Success(c, gin.H{
-			"logs":   logs,
-			"total":  total,
-			"limit":  limit,
-			"offset": offset,
-		})
-	}
-}
 
 func securityHeadersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -371,13 +343,16 @@ func requestIDMiddleware() gin.HandlerFunc {
 	}
 }
 
-func corsMiddleware(frontendURL string) gin.HandlerFunc {
+func corsMiddleware(frontendURL string, extraOrigins []string) gin.HandlerFunc {
 	allowedOrigins := map[string]bool{}
 	if frontendURL != "" {
 		allowedOrigins[frontendURL] = true
 	}
-	// Geliştirme ortamında localhost'lara izin ver
-	if gin.Mode() != gin.ReleaseMode {
+	for _, origin := range extraOrigins {
+		allowedOrigins[origin] = true
+	}
+	// Geliştirme ortamında ek origin belirtilmemişse localhost'lara varsayılan olarak izin ver
+	if len(extraOrigins) == 0 && gin.Mode() != gin.ReleaseMode {
 		allowedOrigins["http://localhost:3000"] = true
 		allowedOrigins["http://localhost:5173"] = true
 		allowedOrigins["http://localhost:4173"] = true

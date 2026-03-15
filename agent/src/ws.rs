@@ -3,7 +3,10 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, watch};
-use tokio_tungstenite::{connect_async, tungstenite::Message};
+use tokio_tungstenite::{
+    connect_async_with_config,
+    tungstenite::{client::IntoClientRequest, http::HeaderValue, Message},
+};
 
 use crate::buffer::MetricBuffer;
 use crate::commands;
@@ -119,9 +122,22 @@ async fn connect_and_run(
     buffer: &MetricBuffer,
     shutdown_rx: &mut watch::Receiver<bool>,
 ) -> Result<ShutdownReason, AgentError> {
+    let mut request = ws_url
+        .into_client_request()
+        .map_err(|e| AgentError::WebSocketConnection(format!("URL parse hatası: {}", e)))?;
+
+    // Token'ı Authorization header olarak gönder (URL'de açık değil)
+    if let Some(auth) = config.auth_header() {
+        request.headers_mut().insert(
+            "Authorization",
+            HeaderValue::from_str(&auth)
+                .map_err(|e| AgentError::WebSocketConnection(format!("Geçersiz token: {}", e)))?,
+        );
+    }
+
     let (ws_stream, _) = tokio::time::timeout(
         Duration::from_secs(30),
-        connect_async(ws_url),
+        connect_async_with_config(request, None, false),
     )
     .await
     .map_err(|_| AgentError::WebSocketConnection("Bağlantı zaman aşımı (30s)".to_string()))?

@@ -129,4 +129,9 @@ export const metricsApi = {
     const response = await apiClient.put(`/services/${serviceId}/alert-rules`, rules);
     return response.data.data;
   },
+
+  getBulkUptime: async (duration: string = '24h'): Promise<Record<string, number>> => {
+    const response = await apiClient.get('/services/uptime/summary', { params: { duration } });
+    return response.data.data?.uptime ?? {};
+  },
 };

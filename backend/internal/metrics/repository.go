@@ -216,3 +216,33 @@ func (r *Repository) GetUptime(ctx context.Context, serviceID uuid.UUID, duratio
 
 	return *result.UptimePercent, nil
 }
+
+// BulkUptimeResult tek servis için uptime sonucu.
+type BulkUptimeResult struct {
+	ServiceID string  `gorm:"column:service_id"`
+	Uptime    float64 `gorm:"column:uptime_percent"`
+}
+
+// GetBulkUptime — birden fazla servis için tek sorguda uptime döner.
+func (r *Repository) GetBulkUptime(ctx context.Context, serviceIDs []uuid.UUID, duration time.Duration) ([]BulkUptimeResult, error) {
+	if len(serviceIDs) == 0 {
+		return nil, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var results []BulkUptimeResult
+	err := r.db.WithContext(ctx).
+		Raw(`
+			SELECT
+				service_id::text AS service_id,
+				COUNT(*) FILTER (WHERE status = 'up')::float /
+				NULLIF(COUNT(*), 0) * 100 AS uptime_percent
+			FROM metrics
+			WHERE service_id = ANY(?) AND time > ?
+			GROUP BY service_id
+		`, serviceIDs, time.Now().Add(-duration)).
+		Scan(&results).Error
+
+	return results, err
+}

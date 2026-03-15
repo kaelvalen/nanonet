@@ -51,6 +51,11 @@ import {
 import { k8sApi, type PodInfo, type DeploymentInfo, type HPAInfo, type NodeInfo, type ServiceInfo, type EventInfo } from "@/api/k8s";
 import { servicesApi } from "@/api/services";
 import type { Service } from "@/types/service";
+import { ServicesTab } from "@/components/kubernetes/ServicesTab";
+import { EndpointsTab } from "@/components/kubernetes/EndpointsTab";
+import { EventsTab } from "@/components/kubernetes/EventsTab";
+import { NanonetTab } from "@/components/kubernetes/NanonetTab";
+import { PodsTab } from "@/components/kubernetes/PodsTab";
 
 type TabType = "overview" | "pods" | "deployments" | "hpa" | "services" | "endpoints" | "events" | "nanonet";
 
@@ -592,91 +597,18 @@ export function KubernetesPage() {
 
                         {/* ── PODS TAB ── */}
                         {activeTab === "pods" && (
-                            <motion.div key="pods" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="relative flex-1">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
-                                        <Input
-                                            placeholder="Pod adı veya label'a göre filtrele..."
-                                            value={podFilter}
-                                            onChange={(e) => setPodFilter(e.target.value)}
-                                            className="rounded-xl text-xs h-9 pl-8"
-                                            style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={() => refetchAllPods()}
-                                        disabled={allPodsLoading}
-                                        className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs border transition-all"
-                                        style={{ borderColor: "var(--color-blue-border)", color: "var(--color-blue)" }}
-                                    >
-                                        {allPodsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                                    </button>
-                                </div>
-
-                                {allPodsLoading && pods.length === 0 ? (
-                                    <div className="flex items-center gap-2 py-6" style={{ color: "var(--text-faint)" }}>
-                                        <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Pod'lar yükleniyor...</span>
-                                    </div>
-                                ) : filteredPods.length > 0 ? (
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                                            {filteredPods.length} pod {podFilter && `(filtrelendi)`}
-                                        </p>
-                                        {filteredPods.map((pod, i) => (
-                                            <motion.div key={pod.name} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}>
-                                                <Card className="p-3.5 rounded-xl" style={{ background: "var(--surface-glass)", border: `1px solid ${pod.ready ? "var(--color-blue-border)" : pod.status === "Pending" ? "var(--status-warn-border)" : "var(--status-down-border)"}` }}>
-                                                    <div className="flex items-center gap-3">
-                                                        <StatusDot ready={pod.ready} />
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-xs font-medium truncate" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>{pod.name}</p>
-                                                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                                                                {pod.node && <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{pod.node}</span>}
-                                                                {pod.ip && <span className="text-[10px]" style={{ color: "var(--text-faint)", fontFamily: "var(--font-mono)" }}>{pod.ip}</span>}
-                                                                {pod.age && <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>⏱ {pod.age}</span>}
-                                                                <span className="text-[10px]" style={{ color: pod.ready_count === pod.container_count && pod.container_count > 0 ? "var(--status-up)" : "var(--status-warn-text)" }}>
-                                                                    ▣ {pod.ready_count ?? 0}/{pod.container_count ?? 1}
-                                                                </span>
-                                                                {pod.restarts > 0 && (
-                                                                    <span className="flex items-center gap-0.5 text-[10px] font-medium" style={{ color: "var(--status-warn-text)" }}>
-                                                                        <AlertTriangle className="w-3 h-3" />↺ {pod.restarts}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <PodStatusBadge status={pod.status} />
-                                                        <button
-                                                            onClick={() => setLogPod(pod.name)}
-                                                            title="Log'ları Görüntüle"
-                                                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
-                                                            style={{ background: "var(--color-blue-subtle)", border: "1px solid var(--color-blue-border)", color: "var(--color-blue)" }}>
-                                                            <Terminal className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { if (confirm(`"${pod.name}" pod'ı silinsin mi? Kubernetes otomatik olarak yeniden başlatacak.`)) deletePodMutation.mutate(pod.name); }}
-                                                            title="Pod'u Sil (Yeniden Başlat)"
-                                                            aria-label="Delete pod"
-                                                            disabled={deletePodMutation.isPending && deletePodMutation.variables === pod.name}
-                                                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
-                                                            style={{ background: "color-mix(in srgb, var(--status-down) 10%, transparent)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }}>
-                                                            {deletePodMutation.isPending && deletePodMutation.variables === pod.name
-                                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                                : <Trash2 className="w-3.5 h-3.5" />}
-                                                        </button>
-                                                    </div>
-                                                </Card>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
-                                        <Box className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: "var(--color-blue)" }} />
-                                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                                            {podFilter ? "Filtrele uyan pod bulunamadı" : "Namespace'de pod yok"}
-                                        </p>
-                                    </Card>
-                                )}
-                            </motion.div>
+                            <PodsTab
+                                podFilter={podFilter}
+                                setPodFilter={setPodFilter}
+                                refetchAllPods={refetchAllPods}
+                                allPodsLoading={allPodsLoading}
+                                pods={pods}
+                                filteredPods={filteredPods}
+                                setLogPod={setLogPod}
+                                deletePodMutation={deletePodMutation}
+                                PodStatusBadge={PodStatusBadge}
+                                StatusDot={StatusDot}
+                            />
                         )}
 
                         {/* ── DEPLOYMENTS TAB ── */}
@@ -958,413 +890,56 @@ export function KubernetesPage() {
 
                         {/* ── SERVICES TAB ── */}
                         {activeTab === "services" && (
-                            <motion.div key="services" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                                        {services.length} service {servicesLoading && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
-                                    </p>
-                                    <button onClick={() => refetchServices()} disabled={servicesLoading}
-                                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
-                                        style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
-                                        <RefreshCw className="w-3.5 h-3.5" />Yenile
-                                    </button>
-                                </div>
-                                {servicesLoading && services.length === 0 ? (
-                                    <div className="flex items-center gap-2 py-6" style={{ color: "var(--text-faint)" }}>
-                                        <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Service'lar yükleniyor...</span>
-                                    </div>
-                                ) : services.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {services.map((svc) => (
-                                            <Card key={svc.name} className="p-4 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
-                                                <div className="flex items-start justify-between gap-3 mb-2">
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        <Globe className="w-4 h-4 shrink-0" style={{ color: "var(--status-up)" }} />
-                                                        <p className="text-xs font-semibold truncate" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>{svc.name}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 shrink-0">
-                                                        <ServiceTypeBadge type={svc.type} />
-                                                        {svc.age && <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>⏱ {svc.age}</span>}
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px]" style={{ color: "var(--text-faint)" }}>
-                                                    {svc.cluster_ip && (
-                                                        <span>ClusterIP: <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{svc.cluster_ip}</span></span>
-                                                    )}
-                                                    {svc.external_ip && svc.external_ip !== "<none>" && svc.external_ip !== "" && (
-                                                        <span>ExternalIP: <span style={{ color: "var(--status-up)", fontFamily: "var(--font-mono)" }}>{svc.external_ip}</span></span>
-                                                    )}
-                                                    {svc.namespace && (
-                                                        <span>NS: <span style={{ color: "var(--text-muted)" }}>{svc.namespace}</span></span>
-                                                    )}
-                                                </div>
-                                                {svc.ports && svc.ports.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                        {svc.ports.map((port, pi) => (
-                                                            <span key={pi} className="px-2 py-0.5 rounded-md text-[10px] font-mono"
-                                                                style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}>
-                                                                {port}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {svc.selector && Object.keys(svc.selector).length > 0 && (
-                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                        {Object.entries(svc.selector).map(([k, v]) => (
-                                                            <span key={k} className="px-2 py-0.5 rounded-md text-[10px]"
-                                                                style={{ background: "color-mix(in srgb, var(--status-up) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--status-up) 20%, transparent)", color: "var(--status-up)" }}>
-                                                                {k}={v}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </Card>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
-                                        <Globe className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: "var(--text-faint)" }} />
-                                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>Namespace'de service bulunamadı</p>
-                                    </Card>
-                                )}
-                            </motion.div>
+                            <ServicesTab
+                                services={services}
+                                servicesLoading={servicesLoading}
+                                refetchServices={refetchServices}
+                                ServiceTypeBadge={ServiceTypeBadge}
+                            />
                         )}
 
                         {/* ── ENDPOINTS TAB ── */}
                         {activeTab === "endpoints" && (
-                            <motion.div key="endpoints" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                                <Card className="p-4 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
-                                    <div className="flex items-center gap-2">
-                                        {services.length > 0 ? (
-                                            <Select value={endpointName} onValueChange={setEndpointName}>
-                                                <SelectTrigger className="rounded-lg text-xs h-9 flex-1" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}>
-                                                    <SelectValue placeholder="Service seçin..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {services.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        ) : (
-                                            <Input
-                                                placeholder="K8s Service adı (örn: my-service)"
-                                                value={endpointName}
-                                                onChange={(e) => setEndpointName(e.target.value)}
-                                                className="rounded-lg text-xs h-9 flex-1"
-                                                style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
-                                                onKeyDown={(e) => { if (e.key === "Enter") refetchEndpoints(); }}
-                                            />
-                                        )}
-                                        <Button onClick={() => refetchEndpoints()} disabled={!endpointName || endpointsLoading}
-                                            size="sm" className="text-white rounded-lg h-9 px-3" style={{ background: "var(--gradient-btn-primary)" }}>
-                                            {endpointsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                                        </Button>
-                                    </div>
-                                </Card>
-
-                                {endpointsData && (
-                                    <Card className="p-5 rounded-xl" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <Network className="w-4 h-4" style={{ color: "var(--status-warn)" }} />
-                                            <h3 className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{endpointsData.service}</h3>
-                                            <Badge className="text-[9px] px-2 py-0.5 rounded-full border ml-auto"
-                                                style={{ background: "color-mix(in srgb, var(--status-warn) 10%, transparent)", color: "var(--status-warn-text)", borderColor: "var(--status-warn-border)" }}>
-                                                {endpointsData.count} endpoint
-                                            </Badge>
-                                        </div>
-                                        {endpointsData.endpoints.length > 0 ? (
-                                            <div className="space-y-1.5">
-                                                {endpointsData.endpoints.map((ep, i) => (
-                                                    <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ background: "var(--surface-sunken)" }}>
-                                                        <HardDrive className="w-3 h-3 shrink-0" style={{ color: "var(--status-up)" }} />
-                                                        <span className="text-xs" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>{ep}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs text-center py-4" style={{ color: "var(--text-faint)" }}>Aktif endpoint bulunamadı</p>
-                                        )}
-                                    </Card>
-                                )}
-                            </motion.div>
+                            <EndpointsTab
+                                endpointName={endpointName}
+                                setEndpointName={setEndpointName}
+                                services={services}
+                                endpointsLoading={endpointsLoading}
+                                endpointsData={endpointsData}
+                                refetchEndpoints={refetchEndpoints}
+                            />
                         )}
 
                         {/* ── EVENTS TAB ── */}
                         {activeTab === "events" && (
-                            <motion.div key="events" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <div className="flex items-center gap-1">
-                                        {(["" , "Warning", "Normal"] as const).map((t) => (
-                                            <button key={t || "all"} onClick={() => setEventTypeFilter(t)}
-                                                className="px-3 py-1.5 rounded-xl text-xs border transition-all"
-                                                style={eventTypeFilter === t
-                                                    ? t === "Warning"
-                                                        ? { background: "var(--status-warn-subtle)", borderColor: "var(--status-warn-border)", color: "var(--status-warn-text)" }
-                                                        : t === "Normal"
-                                                            ? { background: "var(--status-up-subtle)", borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }
-                                                            : { background: "color-mix(in srgb, var(--color-blue) 12%, transparent)", borderColor: "var(--color-blue-border)", color: "var(--color-blue)" }
-                                                    : { color: "var(--text-muted)", borderColor: "var(--border-subtle)", background: "transparent" }}>
-                                                {t === "" ? "Tümü" : t}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <Select value={eventKindFilter} onValueChange={setEventKindFilter}>
-                                        <SelectTrigger className="rounded-xl text-xs h-8 w-36" style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}>
-                                            <SelectValue placeholder="Kind: Tümü" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Kind: Tümü</SelectItem>
-                                            <SelectItem value="Pod">Pod</SelectItem>
-                                            <SelectItem value="Deployment">Deployment</SelectItem>
-                                            <SelectItem value="ReplicaSet">ReplicaSet</SelectItem>
-                                            <SelectItem value="Node">Node</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <button onClick={() => refetchEvents()} disabled={eventsLoading}
-                                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border ml-auto"
-                                        style={{ borderColor: "var(--status-warn-border)", color: "var(--status-warn-text)" }}>
-                                        {eventsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                                        Yenile
-                                    </button>
-                                </div>
-
-                                <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                                    {filteredEvents.length} event
-                                    {warningCount > 0 && <span className="ml-2" style={{ color: "var(--status-warn-text)" }}>⚠ {warningCount} uyarı</span>}
-                                </p>
-
-                                {eventsLoading && allEvents.length === 0 ? (
-                                    <div className="flex items-center gap-2 py-6" style={{ color: "var(--text-faint)" }}>
-                                        <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Event'ler yükleniyor...</span>
-                                    </div>
-                                ) : filteredEvents.length === 0 ? (
-                                    <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
-                                        <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: "var(--text-faint)" }} />
-                                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>Event bulunamadı</p>
-                                    </Card>
-                                ) : (
-                                    <div className="space-y-1.5">
-                                        {filteredEvents.map((ev: EventInfo, i: number) => (
-                                            <motion.div key={ev.name + i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.02, 0.3) }}>
-                                                <Card className="px-4 py-3 rounded-xl" style={{
-                                                    background: "var(--surface-glass)",
-                                                    border: `1px solid ${ev.type === "Warning" ? "var(--status-warn-border)" : "var(--border-subtle)"}`
-                                                }}>
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="mt-0.5 shrink-0">
-                                                            {ev.type === "Warning"
-                                                                ? <AlertTriangle className="w-3.5 h-3.5" style={{ color: "var(--status-warn)" }} />
-                                                                : <Activity className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="text-xs font-semibold" style={{ color: ev.type === "Warning" ? "var(--status-warn-text)" : "var(--text-secondary)" }}>
-                                                                    {ev.reason}
-                                                                </span>
-                                                                <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: "var(--surface-sunken)", color: "var(--text-faint)" }}>
-                                                                    {ev.kind}/{ev.object}
-                                                                </span>
-                                                                {ev.count > 1 && (
-                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: "color-mix(in srgb, var(--status-warn) 12%, transparent)", color: "var(--status-warn-text)" }}>
-                                                                        ×{ev.count}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-[10px] mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>{ev.message}</p>
-                                                        </div>
-                                                        {ev.age && (
-                                                            <span className="text-[10px] shrink-0" style={{ color: "var(--text-faint)" }}>{ev.age}</span>
-                                                        )}
-                                                    </div>
-                                                </Card>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                )}
-                            </motion.div>
+                            <EventsTab
+                                eventKindFilter={eventKindFilter}
+                                setEventKindFilter={setEventKindFilter}
+                                eventTypeFilter={eventTypeFilter}
+                                setEventTypeFilter={setEventTypeFilter}
+                                filteredEvents={filteredEvents}
+                                warningCount={warningCount}
+                                eventsLoading={eventsLoading}
+                                allEvents={allEvents}
+                                refetchEvents={refetchEvents}
+                            />
                         )}
 
                         {/* ── NANONET SERVİSLERİ → K8S ── */}
                         {activeTab === "nanonet" && (
-                            <motion.div key="nanonet" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>NanoNet Servisleri</p>
-                                        <p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>
-                                            Agent tarafından izlenen servisleri K8s cluster'ına dahil edin veya çıkarın
-                                        </p>
-                                    </div>
-                                    <button onClick={() => { refetchNanonetServices(); refetchDeployments(); }} disabled={nanonetServicesLoading}
-                                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
-                                        style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>
-                                        {nanonetServicesLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                                        Yenile
-                                    </button>
-                                </div>
-
-                                {!isAvailable && (
-                                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs"
-                                        style={{ background: "var(--status-warn-subtle)", border: "1px solid var(--status-warn-border)", color: "var(--status-warn-text)" }}>
-                                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                                        <span>Kubernetes bağlantısı yok — K8s'e dağıtmak için backend'de <code className="px-1 py-0.5 rounded font-mono text-[10px]" style={{ background: "color-mix(in srgb, var(--status-warn) 15%, transparent)" }}>K8S_NAMESPACE</code> değişkenini tanımlayın.</span>
-                                    </div>
-                                )}
-
-                                {nanonetServicesLoading && nanonetServices.length === 0 ? (
-                                    <div className="flex items-center gap-2 py-6" style={{ color: "var(--text-faint)" }}>
-                                        <Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">Servisler yükleniyor...</span>
-                                    </div>
-                                ) : nanonetServices.length === 0 ? (
-                                    <Card className="p-8 rounded-xl text-center" style={{ background: "var(--surface-glass)", border: "1px solid var(--border-subtle)" }}>
-                                        <Package2 className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: "var(--text-faint)" }} />
-                                        <p className="text-sm font-medium mb-1" style={{ color: "var(--text-muted)" }}>Henüz servis yok</p>
-                                        <p className="text-xs" style={{ color: "var(--text-faint)" }}>Agent bağlandıktan sonra izlenen servisler burada görünür</p>
-                                    </Card>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {nanonetServices.map((svc: Service) => {
-                                            const slug = slugifyForK8s(svc.name);
-                                            const isDeployed = deployments.some(d => d.name === slug);
-                                            const form = deployForms[svc.name] ?? { image: "", replicas: 1, open: false };
-                                            const isDeploying = deployMutation.isPending && (deployMutation.variables as {name:string})?.name === svc.name;
-                                            const isUndeploying = undeployMutation.isPending && undeployMutation.variables === svc.name;
-
-                                            return (
-                                                <motion.div key={svc.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                                                    <Card className="p-4 rounded-xl" style={{
-                                                        background: "var(--surface-glass)",
-                                                        border: `1px solid ${isDeployed ? "var(--color-teal-border)" : "var(--border-subtle)"}`,
-                                                    }}>
-                                                        {/* Header row */}
-                                                        <div className="flex items-center gap-3">
-                                                            <StatusDot ready={svc.status === "up"} />
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-semibold truncate" style={{ color: "var(--text-secondary)" }}>{svc.name}</p>
-                                                                <p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)", fontFamily: "var(--font-mono)" }}>
-                                                                    {svc.host}:{svc.port}
-                                                                </p>
-                                                            </div>
-
-                                                            {/* K8s deployment status */}
-                                                            {isDeployed ? (
-                                                                <Badge className="text-[9px] px-2 py-0.5 rounded-full border shrink-0"
-                                                                    style={{ background: "var(--color-teal-subtle)", color: "var(--color-teal)", borderColor: "var(--color-teal-border)" }}>
-                                                                    <PackageCheck className="w-3 h-3 inline mr-1" />K8s'te
-                                                                </Badge>
-                                                            ) : (
-                                                                <Badge className="text-[9px] px-2 py-0.5 rounded-full border shrink-0"
-                                                                    style={{ background: "var(--surface-sunken)", color: "var(--text-faint)", borderColor: "var(--border-subtle)" }}>
-                                                                    K8s dışı
-                                                                </Badge>
-                                                            )}
-
-                                                            {/* Action buttons */}
-                                                            {isDeployed ? (
-                                                                <button
-                                                                    onClick={() => { if (confirm(`"${svc.name}" K8s'ten kaldırılsın mı? (Deployment + Service + HPA silinir)`)) undeployMutation.mutate(svc.name); }}
-                                                                    disabled={isUndeploying}
-                                                                    className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-[10px] border shrink-0 transition-opacity hover:opacity-80"
-                                                                    style={{ background: "color-mix(in srgb, var(--status-down) 10%, transparent)", borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }}>
-                                                                    {isUndeploying
-                                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                                                                        : <PackageX className="w-3 h-3" />}
-                                                                    K8s'ten Çıkar
-                                                                </button>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => setDeployForms(prev => ({ ...prev, [svc.name]: { ...form, open: !form.open } }))}
-                                                                    className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-[10px] border shrink-0 transition-all"
-                                                                    style={form.open
-                                                                        ? { background: "var(--color-teal-subtle)", borderColor: "var(--color-teal-border)", color: "var(--color-teal)" }
-                                                                        : { borderColor: "var(--color-teal-border)", color: "var(--color-teal)" }}>
-                                                                    <Package2 className="w-3 h-3" />
-                                                                    K8s'e Dahil Et
-                                                                </button>
-                                                            )}
-                                                        </div>
-
-                                                        {/* K8s slug info for deployed */}
-                                                        {isDeployed && (
-                                                            <div className="mt-2 flex items-center gap-1.5 text-[10px]" style={{ color: "var(--text-faint)" }}>
-                                                                <span>K8s adı:</span>
-                                                                <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-teal)" }}>{slug}</span>
-                                                                {deployments.find(d => d.name === slug) && (() => {
-                                                                    const dep = deployments.find(d => d.name === slug)!;
-                                                                    return (
-                                                                        <span style={{ color: dep.ready_replicas === dep.replicas && dep.replicas > 0 ? "var(--status-up)" : "var(--status-warn)" }}>
-                                                                            · {dep.ready_replicas}/{dep.replicas} ready
-                                                                        </span>
-                                                                    );
-                                                                })()}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Deploy form (expandable) */}
-                                                        {!isDeployed && form.open && (
-                                                            <div className="mt-3 pt-3 space-y-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                                                                <div>
-                                                                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Container İmajı <span style={{ color: "var(--color-red, #e57373)" }}>*</span></p>
-                                                                    <Input
-                                                                        placeholder={`nginx:latest, my-registry/${slug}:latest`}
-                                                                        value={form.image}
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.value;
-                                                                            setDeployForms(prev => ({ ...prev, [svc.name]: { ...(prev[svc.name] ?? { image: "", replicas: 1, open: true }), image: val } }));
-                                                                        }}
-                                                                        className="rounded-lg text-xs h-9"
-                                                                        style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}
-                                                                    />
-                                                                    {!form.image.trim() && (
-                                                                        <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>
-                                                                            Dağıtım için bir container imajı girin (örn: nginx:latest)
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex items-end gap-3">
-                                                                    <div>
-                                                                        <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Replica</p>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <button onClick={() => setDeployForms(prev => ({ ...prev, [svc.name]: { ...(prev[svc.name] ?? { image: "", replicas: 1, open: true }), replicas: Math.max(1, (prev[svc.name]?.replicas ?? 1) - 1) } }))
-}
-                                                                                aria-label="Decrease replicas"
-                                                                                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                                                                style={{ border: "1px solid var(--color-teal-border)", color: "var(--color-teal)" }}>
-                                                                                <Minus className="w-3 h-3" />
-                                                                            </button>
-                                                                            <span className="text-base font-bold w-6 text-center" style={{ color: "var(--text-secondary)" }}>{form.replicas}</span>
-                                                                            <button onClick={() => setDeployForms(prev => ({ ...prev, [svc.name]: { ...(prev[svc.name] ?? { image: "", replicas: 1, open: true }), replicas: Math.min(20, (prev[svc.name]?.replicas ?? 1) + 1) } }))
-}
-                                                                                aria-label="Increase replicas"
-                                                                                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                                                                style={{ border: "1px solid var(--color-teal-border)", color: "var(--color-teal)" }}>
-                                                                                <Plus className="w-3 h-3" />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                    <Button
-                                                                        onClick={() => deployMutation.mutate({ name: svc.name, image: form.image, port: svc.port, replicas: form.replicas })}
-                                                                        disabled={!form.image.trim() || isDeploying || !isAvailable}
-                                                                        title={!isAvailable ? "K8s bağlantısı yok" : !form.image.trim() ? "Container imajı gerekli" : ""}
-                                                                        className="flex-1 text-white rounded-xl h-9 text-xs"
-                                                                        style={{ background: (!form.image.trim() || isDeploying || !isAvailable) ? "var(--text-faint)" : "var(--color-teal)" }}>
-                                                                        {isDeploying
-                                                                            ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Dağıtılıyor...</>
-                                                                            : <><Package2 className="w-3.5 h-3.5 mr-1.5" />K8s'e Dağıt</>}
-                                                                    </Button>
-                                                                </div>
-                                                                <div className="text-[10px] px-3 py-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--color-teal) 8%, transparent)", border: "1px solid var(--color-teal-border)", color: "var(--text-faint)" }}>
-                                                                    Deployment + ClusterIP Service oluşturulacak &nbsp;·&nbsp;
-                                                                    K8s adı: <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-teal)" }}>{slug}</span>
-                                                                    &nbsp;·&nbsp; Port: <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-teal)" }}>{svc.port}</span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </Card>
-                                                </motion.div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </motion.div>
+                            <NanonetTab
+                                nanonetServicesLoading={nanonetServicesLoading}
+                                nanonetServices={nanonetServices}
+                                deployments={deployments}
+                                isAvailable={!!isAvailable}
+                                deployForms={deployForms}
+                                setDeployForms={setDeployForms}
+                                deployMutation={deployMutation}
+                                undeployMutation={undeployMutation}
+                                refetchNanonetServices={refetchNanonetServices}
+                                refetchDeployments={refetchDeployments}
+                                slugifyForK8s={slugifyForK8s}
+                            />
                         )}
                     </AnimatePresence>
                 </>

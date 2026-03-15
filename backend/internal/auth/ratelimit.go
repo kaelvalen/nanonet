@@ -1,99 +1,40 @@
 package auth
 
+// Bu paket pkg/ratelimit üzerinden sarmalanmış middleware'leri sunar.
+// Daha önce burada tutulan in-memory sliding-window implementasyonu
+// pkg/ratelimit.Limiter ile değiştirildi; böylece tüm rate limiter'lar
+// aynı altyapıyı paylaşır ve dağıtık ortamlarda tutarlı çalışır.
+
 import (
 	"net/http"
-	"sync"
 	"time"
 
+	"nanonet-backend/pkg/ratelimit"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-type rateLimitEntry struct {
-	timestamps []time.Time
-}
-
+// RateLimiter — pkg/ratelimit.Limiter etrafında bir wrapper; mevcut
+// çağrı yerlerini (NewRateLimiter, RateLimiter.Allow vb.) bozmadan
+// geçişi sağlar.
 type RateLimiter struct {
-	mu      sync.Mutex
-	entries map[string]*rateLimitEntry
-	limit   int
-	window  time.Duration
+	inner *ratelimit.Limiter
 }
 
+// NewRateLimiter — belirtilen limit ve pencere süresiyle yeni bir
+// RateLimiter oluşturur. pkg/ratelimit.Limiter kullanır.
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
-	rl := &RateLimiter{
-		entries: make(map[string]*rateLimitEntry),
-		limit:   limit,
-		window:  window,
-	}
-
-	go rl.cleanup()
-
-	return rl
+	return &RateLimiter{inner: ratelimit.New(limit, window)}
 }
 
-func (rl *RateLimiter) cleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		rl.mu.Lock()
-		cutoff := time.Now().Add(-rl.window)
-		for key, entry := range rl.entries {
-			var valid []time.Time
-			for _, t := range entry.timestamps {
-				if t.After(cutoff) {
-					valid = append(valid, t)
-				}
-			}
-			if len(valid) == 0 {
-				delete(rl.entries, key)
-			} else {
-				entry.timestamps = valid
-			}
-		}
-		rl.mu.Unlock()
-	}
-}
-
-const maxRateLimitEntries = 100000
-
+// Allow — verilen anahtar için rate limit kontrolü yapar.
 func (rl *RateLimiter) Allow(key string) bool {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	now := time.Now()
-	cutoff := now.Add(-rl.window)
-
-	entry, exists := rl.entries[key]
-	if !exists {
-		// Haritanın sınırsız büyümesini önle
-		if len(rl.entries) >= maxRateLimitEntries {
-			return false
-		}
-		rl.entries[key] = &rateLimitEntry{
-			timestamps: []time.Time{now},
-		}
-		return true
-	}
-
-	var valid []time.Time
-	for _, t := range entry.timestamps {
-		if t.After(cutoff) {
-			valid = append(valid, t)
-		}
-	}
-
-	if len(valid) >= rl.limit {
-		entry.timestamps = valid
-		return false
-	}
-
-	entry.timestamps = append(valid, now)
-	return true
+	return rl.inner.Allow(key)
 }
 
+// RateLimitMiddleware — genel IP bazlı rate limit middleware'i.
+// X-RateLimit-Remaining header'ını ekler.
 func RateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		key := c.ClientIP()
@@ -108,6 +49,8 @@ func RateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 	}
 }
 
+// AuthRateLimitMiddleware — kimlik doğrulama endpoint'leri için
+// daha sıkı rate limit middleware'i. Key: "auth:<IP>".
 func AuthRateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		key := "auth:" + c.ClientIP()

@@ -81,14 +81,19 @@ impl Config {
     }
 
     pub fn ws_url(&self) -> String {
-        let token = self.agent_token.clone()
-            .or_else(|| self.token.clone())
-            .unwrap_or_else(|| "no-token".to_string());
-        
+        // Token URL'de taşınmaz — auth_header() kullan.
         format!(
-            "{}/ws/agent?service_id={}&token={}",
-            self.backend, self.service_id, token
+            "{}/ws/agent?service_id={}",
+            self.backend, self.service_id
         )
+    }
+
+    /// WebSocket handshake Authorization header değeri.
+    pub fn auth_header(&self) -> Option<String> {
+        self.agent_token
+            .as_deref()
+            .or(self.token.as_deref())
+            .map(|t| format!("Bearer {}", t))
     }
 
     /// Backend HTTP base URL (ws:// → http://, wss:// → https://)
@@ -99,7 +104,6 @@ impl Config {
             .replace("wss://", "https://")
     }
 
-    #[allow(dead_code)]
     pub fn effective_token(&self) -> Option<&str> {
         self.agent_token.as_deref().or(self.token.as_deref())
     }

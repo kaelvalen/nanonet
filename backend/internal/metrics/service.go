@@ -41,3 +41,7 @@ func (s *Service) GetUptime(ctx context.Context, serviceID uuid.UUID, duration t
 func (s *Service) GetRollup(ctx context.Context, serviceID uuid.UUID, duration time.Duration, bucketSize string) ([]RollupBucket, error) {
 	return s.repo.GetRollup(ctx, serviceID, duration, bucketSize)
 }
+
+func (s *Service) GetBulkUptime(ctx context.Context, serviceIDs []uuid.UUID, duration time.Duration) ([]BulkUptimeResult, error) {
+	return s.repo.GetBulkUptime(ctx, serviceIDs, duration)
+}
