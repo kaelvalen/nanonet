@@ -84,8 +84,14 @@ func (s *ServiceState) setScenario(sc Scenario) {
 	defer s.mu.Unlock()
 	s.scenario = sc
 	s.scenarioSince = time.Now()
+	
+	// Sayaçları sıfırla
+	atomic.StoreUint64(&s.requestCount, 0)
+	atomic.StoreUint64(&s.errorCount, 0)
+	s.memoryBase = 40.0 + rand.Float64()*30.0
+
 	if sc == ScenarioMemoryLeak {
-		s.memoryLeak = 0.05
+		s.memoryLeak = 0.5 // İstek başına artış miktarı
 	} else {
 		s.memoryLeak = 0
 	}
@@ -107,12 +113,12 @@ func (s *ServiceState) computeSnapshot() snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	req := atomic.LoadUint64(&s.requestCount)
-	elapsed := time.Since(s.startTime).Seconds()
-	_ = elapsed
+	// unused değişkenleri yoksay
+	_ = atomic.LoadUint64(&s.requestCount)
+	_ = time.Since(s.startTime).Seconds()
 
-	// Memory leak birikimi
-	s.memoryBase += s.memoryLeak * float64(req) * 0.001
+	// Memory leak birikimi — s.memoryLeak sabit miktar, her çağrıda eklenir (doğrusal)
+	s.memoryBase += s.memoryLeak
 
 	sc := s.scenario
 
@@ -307,6 +313,13 @@ func scenarioHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
+		adminKey := r.Header.Get("X-Admin-Key")
+		if adminKey != "secret123" && os.Getenv("REQUIRE_ADMIN_KEY") == "true" {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]any{"error": "Yetkisiz işlem: X-Admin-Key geçersiz."})
+			return
+		}
+
 		var body struct {
 			Scenario string `json:"scenario"`
 		}

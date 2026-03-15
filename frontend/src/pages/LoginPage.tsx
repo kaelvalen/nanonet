@@ -96,6 +96,7 @@ export function LoginPage() {
                   className="rounded transition-all"
                   style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
                   required
+                  disabled={isLoggingIn}
                 />
               </motion.div>
 
@@ -121,6 +122,7 @@ export function LoginPage() {
                     className="rounded pr-10 transition-all"
                     style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" }}
                     required
+                    disabled={isLoggingIn}
                   />
                   <button
                     type="button"

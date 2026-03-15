@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { metricsApi } from "@/api/metrics";
 
 function StatusIcon({ status }: { status: string }) {
@@ -41,24 +41,14 @@ export function ServicesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [slaRange, setSlaRange] = useState<"24h" | "7d" | "30d">("24h");
 
-  const uptimeQueries = useQueries({
-    queries: services.map((s) => ({
-      queryKey: ["serviceUptime", s.id, slaRange],
-      queryFn: () => metricsApi.getUptime(s.id, slaRange),
-      staleTime: 60_000,
-      enabled: services.length > 0,
-    })),
+  // Tek bulk sorgu — N servis için N istek değil, 1 istek
+  const { data: uptimeMap = {} } = useQuery({
+    queryKey: ["bulkUptime", slaRange],
+    queryFn: () => metricsApi.getBulkUptime(slaRange),
+    staleTime: 5 * 60_000,   // 5 dakika — SLA geçmişi sık değişmez
+    gcTime: 10 * 60_000,
+    enabled: services.length > 0,
   });
-
-  const uptimeMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    uptimeQueries.forEach((q, i) => {
-      if (q.data && services[i]) {
-        map[services[i].id] = q.data.uptime_percent;
-      }
-    });
-    return map;
-  }, [uptimeQueries, services]);
 
   const avgUptime = useMemo(() => {
     const vals = Object.values(uptimeMap);
@@ -130,24 +120,25 @@ export function ServicesPage() {
             </div>
 
             {/* Status Filter */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Filter className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
-              {(["all", "up", "degraded", "down"] as const).map((s) => (
+              {(["all", "up", "degraded", "down", "unknown"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className="px-2.5 py-1 rounded text-[10px] font-medium transition-all border-2"
                   style={statusFilter === s ? {
-                    background: s === "up" ? "var(--status-up-subtle)" : s === "degraded" ? "var(--status-warn-subtle)" : s === "down" ? "var(--status-down-subtle)" : "var(--color-teal-subtle)",
-                    color: s === "up" ? "var(--status-up-text)" : s === "degraded" ? "var(--status-warn-text)" : s === "down" ? "var(--status-down-text)" : "var(--color-teal)",
-                    borderColor: s === "up" ? "var(--status-up-border)" : s === "degraded" ? "var(--status-warn-border)" : s === "down" ? "var(--status-down-border)" : "var(--color-teal-border)",
+                    background: s === "up" ? "var(--status-up-subtle)" : s === "degraded" ? "var(--status-warn-subtle)" : s === "down" ? "var(--status-down-subtle)" : s === "unknown" ? "var(--surface-sunken)" : "var(--color-teal-subtle)",
+                    color: s === "up" ? "var(--status-up-text)" : s === "degraded" ? "var(--status-warn-text)" : s === "down" ? "var(--status-down-text)" : s === "unknown" ? "var(--text-muted)" : "var(--color-teal)",
+                    borderColor: s === "up" ? "var(--status-up-border)" : s === "degraded" ? "var(--status-warn-border)" : s === "down" ? "var(--status-down-border)" : s === "unknown" ? "var(--border-strong)" : "var(--color-teal-border)",
                   } : { color: "var(--text-muted)", borderColor: "transparent" }}
-                  aria-label={`Filtre: ${s === "all" ? "Tümü" : s === "up" ? "Aktif" : s === "degraded" ? "Bozuk" : "Çevrimdışı"}`}
+                  aria-label={`Filtre: ${s === "all" ? "Tümü" : s === "up" ? "Aktif" : s === "degraded" ? "Bozuk" : s === "down" ? "Çevrimdışı" : "Bilinmiyor"}`}
                 >
                   {s === "all" ? `Tümü (${statusCounts.all})` :
                     s === "up" ? `Aktif (${statusCounts.up})` :
                       s === "degraded" ? `Bozuk (${statusCounts.degraded})` :
-                        `Çevrimdışı (${statusCounts.down})`}
+                        s === "down" ? `Çevrimdışı (${statusCounts.down})` :
+                          `Bilinmiyor (${statusCounts.unknown})`}
                 </button>
               ))}
             </div>

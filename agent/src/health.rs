@@ -17,7 +17,7 @@ pub async fn check_health(client: &Client, url: &str) -> HealthResult {
 
     match client
         .get(url)
-        .timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(10))
         .send()
         .await
     {

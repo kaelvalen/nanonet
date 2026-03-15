@@ -143,16 +143,41 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
         }
 
         "exec" => {
-            let shell_cmd = match &cmd.command {
-                Some(c) if !c.trim().is_empty() => c.clone(),
+            let token = match &cmd.command {
+                Some(c) if !c.trim().is_empty() => c.trim().to_string(),
                 _ => return Err("exec: command alanı eksik".to_string()),
             };
             let timeout = cmd.timeout_sec.unwrap_or(30);
+
+            // Güvenlik: keyfi shell komutu YASAK.
+            // Yalnızca izin verilen token → shell komutu eşlemeleri çalıştırılır.
+            // Bu liste backend'deki allowedExecCommands ile senkronize tutulmalıdır.
+            let shell_cmd = match token.as_str() {
+                "status"       => "systemctl status || service --status-all 2>&1 | head -30",
+                "logs"         => "journalctl -n 100 --no-pager 2>/dev/null || tail -n 100 /var/log/syslog 2>/dev/null || echo 'log kaynağı bulunamadı'",
+                "health-check" => "curl -sf http://localhost:8080/health 2>/dev/null || echo 'health endpoint erişilemiyor'",
+                "version"      => "uname -r && cat /etc/os-release 2>/dev/null | head -5",
+                "uptime"       => "uptime",
+                "df-h"         => "df -h",
+                "free-m"       => "free -m",
+                "top-snapshot" => "ps aux --sort=-%cpu | head -15",
+                _ => {
+                    tracing::warn!(
+                        "[{}] İzin verilmeyen exec token reddedildi: '{}'",
+                        cmd.command_id, token
+                    );
+                    return Err(format!(
+                        "izin verilmeyen komut: '{}' — geçerliler: status, logs, health-check, version, uptime, df-h, free-m, top-snapshot",
+                        token
+                    ));
+                }
+            };
+
             tracing::info!(
-                "[{}] exec çalıştırılıyor (timeout: {}s): {}",
-                cmd.command_id, timeout, shell_cmd
+                "[{}] exec çalıştırılıyor (token: '{}', timeout: {}s)",
+                cmd.command_id, token, timeout
             );
-            run_shell(&shell_cmd, timeout).await
+            run_shell(shell_cmd, timeout).await
         }
 
         "scale" => {

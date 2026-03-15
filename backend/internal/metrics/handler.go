@@ -303,3 +303,72 @@ func (h *Handler) GetUptime(c *gin.Context) {
 		"duration":       durationStr,
 	})
 }
+
+// GetBulkUptime — GET /api/v1/services/uptime/summary?duration=24h
+// Kullanıcının tüm servisleri için tek sorguda uptime özeti döndürür.
+// N+1 sorununu önler.
+func (h *Handler) GetBulkUptime(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	// Kullanıcının sahip olduğu tüm servis ID'lerini çek
+	type serviceRow struct {
+		ID uuid.UUID `gorm:"column:id"`
+	}
+	var rows []serviceRow
+	if err := h.db.WithContext(c.Request.Context()).
+		Raw("SELECT id FROM services WHERE user_id = ?", userID).
+		Scan(&rows).Error; err != nil {
+		response.InternalError(c, "servis listesi alınamadı")
+		return
+	}
+
+	if len(rows) == 0 {
+		response.Success(c, gin.H{"uptime": map[string]float64{}, "duration": c.DefaultQuery("duration", "24h"), "count": 0})
+		return
+	}
+
+	serviceIDs := make([]uuid.UUID, 0, len(rows))
+	for _, r := range rows {
+		serviceIDs = append(serviceIDs, r.ID)
+	}
+
+	durationStr := c.DefaultQuery("duration", "24h")
+	var duration time.Duration
+	switch durationStr {
+	case "24h":
+		duration = 24 * time.Hour
+	case "7d":
+		duration = 7 * 24 * time.Hour
+	case "30d":
+		duration = 30 * 24 * time.Hour
+	default:
+		var parseErr error
+		duration, parseErr = time.ParseDuration(durationStr)
+		if parseErr != nil {
+			response.BadRequest(c, "geçersiz duration formatı (24h, 7d, 30d)")
+			return
+		}
+	}
+
+	results, err := h.service.GetBulkUptime(c.Request.Context(), serviceIDs, duration)
+	if err != nil {
+		response.InternalError(c, "uptime hesaplanamadı")
+		return
+	}
+
+	// map[service_id] -> uptime_percent formatına çevir
+	uptimeMap := make(map[string]float64, len(results))
+	for _, r := range results {
+		uptimeMap[r.ServiceID] = r.Uptime
+	}
+
+	response.Success(c, gin.H{
+		"uptime":   uptimeMap,
+		"duration": durationStr,
+		"count":    len(uptimeMap),
+	})
+}

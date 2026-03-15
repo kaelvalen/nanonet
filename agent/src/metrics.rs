@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use sysinfo::{Disks, Networks, System};
 
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricSnapshot {
     pub cpu_percent: f32,
@@ -80,12 +81,8 @@ pub fn collect_system(
     let disk_used_gb = disk_used as f32 / 1024.0 / 1024.0 / 1024.0;
     let disk_total_gb = disk_total as f32 / 1024.0 / 1024.0 / 1024.0;
 
-    // Disk I/O (bytes since last refresh)
-    let (cur_read, cur_write) = disks.iter().fold((0u64, 0u64), |(r, w), _d| {
-        // sysinfo Disks does not expose I/O counters; use 0 as placeholder
-        // Real I/O can be read from /proc/diskstats if needed
-        (r, w)
-    });
+    // Disk I/O — /proc/diskstats (önce), yoksa 0
+    let (cur_read, cur_write) = read_proc_diskstats();
     let elapsed = elapsed_secs.max(0.001);
     let disk_read_bytes_sec = (cur_read.saturating_sub(prev_disk.read_bytes)) as f64 / elapsed;
     let disk_write_bytes_sec = (cur_write.saturating_sub(prev_disk.write_bytes)) as f64 / elapsed;
@@ -145,6 +142,47 @@ fn process_to_metrics(p: &sysinfo::Process) -> ProcessMetrics {
         memory_mb: p.memory() as f32 / 1024.0 / 1024.0,
         status: status_str,
     }
+}
+
+/// /proc/diskstats'tan tüm disk aygıtlarının kümülatif okuma/yazma baytlarını toplar.
+/// Dosya yoksa (Linux dışı) (0, 0) döner.
+///
+/// /proc/diskstats formatı:
+///   alan[2]  = aygıt adı
+///   alan[5]  = toplam sektör okuma (1 sektör = 512 bayt)
+///   alan[9]  = toplam sektör yazma
+fn read_proc_diskstats() -> (u64, u64) {
+    let content = match std::fs::read_to_string("/proc/diskstats") {
+        Ok(c) => c,
+        Err(_) => return (0, 0),
+    };
+
+    let mut total_read: u64 = 0;
+    let mut total_write: u64 = 0;
+
+    for line in content.lines() {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        if fields.len() < 14 {
+            continue;
+        }
+        // Yalnızca ana disk aygıtlarını say (partition'ları at)
+        // Partition'lar genellikle sayısal sonek taşır: sda1, nvme0n1p1 vb.
+        let dev_name = fields[2];
+        if dev_name.chars().last().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+            // Olası NVMe aygıt formatı: nvme0n1 (partition değil)
+            // Alan[2] içeren 'p' varsa partition say.
+            if dev_name.contains('p') && dev_name[dev_name.rfind('p').unwrap()..].len() > 1 {
+                continue; // nvme0n1p1 gibi partition
+            }
+        }
+
+        let sectors_read  = fields[5].parse::<u64>().unwrap_or(0);
+        let sectors_write = fields[9].parse::<u64>().unwrap_or(0);
+        total_read  += sectors_read  * 512;
+        total_write += sectors_write * 512;
+    }
+
+    (total_read, total_write)
 }
 
 /// Servis /metrics endpoint'inden uygulama metriklerini çeker ve snapshot'a ekler
