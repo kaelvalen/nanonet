@@ -149,7 +149,7 @@ export function useWebSocket() {
 	useEffect(() => {
 		mountedRef.current = true;
 
-		const connect = () => {
+		const _connect = () => {
 			if (!mountedRef.current) return;
 
 			const wsUrl = import.meta.env.VITE_WS_URL;
@@ -227,17 +227,19 @@ export function useWebSocket() {
 							try {
 								const { authApi } = await import("../api/auth");
 								const tokens = await authApi.refresh(authState.refreshToken);
-								authState.setAuth(
-									authState.user!,
-									tokens.access_token,
-									tokens.refresh_token,
-								);
+								if (authState.user) {
+									authState.setAuth(
+										authState.user,
+										tokens.access_token,
+										tokens.refresh_token,
+									);
+								}
 							} catch {
 								// Refresh başarısız olursa mevcut token ile devam et
 							}
 						}
 
-						connect();
+						_connect();
 					}, delay);
 				};
 			} catch (err) {
@@ -246,7 +248,7 @@ export function useWebSocket() {
 			}
 		};
 
-		connect();
+		_connect();
 
 		return () => {
 			mountedRef.current = false;

@@ -283,6 +283,7 @@ function PodLogModal({
 					</p>
 					{([100, 200, 500] as const).map((n) => (
 						<button
+							type="button"
 							key={n}
 							onClick={() => setLines(n)}
 							className="px-2.5 py-0.5 rounded-lg text-[10px] border transition-all"
@@ -304,6 +305,7 @@ function PodLogModal({
 						</button>
 					))}
 					<button
+						type="button"
 						onClick={() => refetch()}
 						disabled={isFetching}
 						className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] border ml-auto transition-all"
@@ -711,6 +713,7 @@ export function KubernetesPage() {
 					<div className="flex items-center gap-2">
 						{isAvailable && (
 							<button
+								type="button"
 								onClick={() => {
 									refetchNodes();
 									refetchAllPods();
@@ -812,6 +815,7 @@ export function KubernetesPage() {
 						<div className="flex items-center gap-1.5 flex-wrap">
 							{tabs.map((tab) => (
 								<button
+									type="button"
 									key={tab.key}
 									onClick={() => setActiveTab(tab.key)}
 									className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all"
@@ -932,6 +936,7 @@ export function KubernetesPage() {
 													}}
 												>
 													<button
+														type="button"
 														className="w-full p-4 flex items-center gap-3 text-left"
 														onClick={() =>
 															setExpandedNode(
@@ -1150,6 +1155,7 @@ export function KubernetesPage() {
 										{deployments.length} deployment
 									</p>
 									<button
+										type="button"
 										onClick={() => refetchDeployments()}
 										disabled={deploymentsLoading}
 										className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
@@ -1243,6 +1249,7 @@ export function KubernetesPage() {
 																</p>
 															</div>
 															<button
+																type="button"
 																onClick={() => {
 																	if (
 																		confirm(
@@ -1337,6 +1344,7 @@ export function KubernetesPage() {
 															</p>
 															<div className="flex items-center gap-2">
 																<button
+																	type="button"
 																	onClick={() =>
 																		setScaleReplicas((prev) => ({
 																			...prev,
@@ -1363,6 +1371,7 @@ export function KubernetesPage() {
 																	{depReplicas}
 																</span>
 																<button
+																	type="button"
 																	onClick={() =>
 																		setScaleReplicas((prev) => ({
 																			...prev,
@@ -1385,6 +1394,7 @@ export function KubernetesPage() {
 																<div className="flex gap-1 ml-1">
 																	{[0, 1, 2, 3, 5, 10].map((n) => (
 																		<button
+																			type="button"
 																			key={n}
 																			onClick={() =>
 																				setScaleReplicas((prev) => ({
@@ -1467,6 +1477,7 @@ export function KubernetesPage() {
 										)}
 									</p>
 									<button
+										type="button"
 										onClick={() => refetchHPAs()}
 										disabled={hpasLoading}
 										className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
@@ -1519,6 +1530,7 @@ export function KubernetesPage() {
 													</div>
 													<div className="flex items-center gap-1.5 shrink-0">
 														<button
+															type="button"
 															onClick={() => {
 																setHpaDeployment(
 																	hpa.deployment_name ?? hpa.name,
@@ -1539,6 +1551,7 @@ export function KubernetesPage() {
 															<Settings2 className="w-3.5 h-3.5" />
 														</button>
 														<button
+															type="button"
 															onClick={() => {
 																if (confirm(`"${hpa.name}" HPA silinsin mi?`))
 																	deleteHPAMutation.mutate(
@@ -1733,6 +1746,7 @@ export function KubernetesPage() {
 												</p>
 												<div className="flex items-center gap-2">
 													<button
+														type="button"
 														onClick={() => set(Math.max(min, val - 1))}
 														className="w-7 h-7 rounded-lg flex items-center justify-center"
 														style={{
@@ -1749,6 +1763,7 @@ export function KubernetesPage() {
 														{val}
 													</span>
 													<button
+														type="button"
 														onClick={() => set(Math.min(max, val + 1))}
 														className="w-7 h-7 rounded-lg flex items-center justify-center"
 														style={{

@@ -13,12 +13,18 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 
+export interface EndpointsData {
+	service: string;
+	count: number;
+	endpoints: string[];
+}
+
 export interface EndpointsTabProps {
 	endpointName: string;
 	setEndpointName: (name: string) => void;
 	services: ServiceInfo[];
 	endpointsLoading: boolean;
-	endpointsData: any;
+	endpointsData: EndpointsData | null | undefined;
 	refetchEndpoints: () => void;
 }
 
@@ -131,9 +137,9 @@ export function EndpointsTab({
 					</div>
 					{endpointsData.endpoints && endpointsData.endpoints.length > 0 ? (
 						<div className="space-y-1.5">
-							{endpointsData.endpoints.map((ep: string, i: number) => (
+							{endpointsData.endpoints.map((ep: string) => (
 								<div
-									key={i}
+									key={ep}
 									className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
 									style={{ background: "var(--surface-sunken)" }}
 								>

@@ -111,12 +111,14 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 					<div className="grid grid-cols-2 gap-3">
 						<div>
 							<label
+								htmlFor="maintenance-starts"
 								className="text-[10px] uppercase tracking-wider block mb-1"
 								style={{ color: "var(--text-muted)" }}
 							>
 								Başlangıç
 							</label>
 							<Input
+								id="maintenance-starts"
 								type="datetime-local"
 								value={starts}
 								onChange={(e) => setStarts(e.target.value)}
@@ -130,12 +132,14 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 						</div>
 						<div>
 							<label
+								htmlFor="maintenance-ends"
 								className="text-[10px] uppercase tracking-wider block mb-1"
 								style={{ color: "var(--text-muted)" }}
 							>
 								Bitiş
 							</label>
 							<Input
+								id="maintenance-ends"
 								type="datetime-local"
 								value={ends}
 								onChange={(e) => setEnds(e.target.value)}
@@ -211,6 +215,7 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 							] as const
 						).map((f) => (
 							<button
+								type="button"
 								key={f.key}
 								onClick={() => setFilter(f.key)}
 								className="px-2 py-1 rounded text-[10px] font-medium border-2 transition-all"

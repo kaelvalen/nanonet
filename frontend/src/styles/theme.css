@@ -1477,6 +1477,7 @@
 }
 
 /* ── Dark mode ───────────────────────────────────────────────────────────── */
+/* biome-ignore lint/style/noDescendingSpecificity: intentional base dark mode after theme overrides */
 .dark {
 	color-scheme: dark;
 }

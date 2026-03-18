@@ -99,27 +99,27 @@ export function ServiceDetailPage() {
 
 	const { data: service, isLoading: serviceLoading } = useQuery({
 		queryKey: ["service", serviceId],
-		queryFn: () => servicesApi.get(serviceId!),
+		queryFn: () => servicesApi.get(serviceId ?? ""),
 		enabled: !!serviceId,
 		refetchInterval: 15000,
 	});
 
 	const { data: metrics = [], isLoading: metricsLoading } = useQuery({
 		queryKey: ["serviceMetrics", serviceId, metricsDuration],
-		queryFn: () => metricsApi.getHistory(serviceId!, metricsDuration),
+		queryFn: () => metricsApi.getHistory(serviceId ?? "", metricsDuration),
 		enabled: !!serviceId,
 		refetchInterval: 30000,
 	});
 
 	const { data: uptime } = useQuery({
 		queryKey: ["serviceUptime", serviceId],
-		queryFn: () => metricsApi.getUptime(serviceId!, "24h"),
+		queryFn: () => metricsApi.getUptime(serviceId ?? "", "24h"),
 		enabled: !!serviceId,
 	});
 
 	const { data: alerts = [] } = useQuery({
 		queryKey: ["serviceAlerts", serviceId],
-		queryFn: () => metricsApi.getAlerts(serviceId!, false),
+		queryFn: () => metricsApi.getAlerts(serviceId ?? "", false),
 		enabled: !!serviceId,
 	});
 
@@ -335,6 +335,7 @@ export function ServiceDetailPage() {
 			>
 				<div className="flex items-center gap-3 mb-4">
 					<button
+						type="button"
 						onClick={() => navigate("/services")}
 						className="p-2 rounded transition-all"
 						style={{ color: "var(--text-muted)" }}
@@ -773,6 +774,7 @@ export function ServiceDetailPage() {
 						<div className="flex items-center gap-1">
 							{["15m", "1h", "6h", "24h"].map((d) => (
 								<button
+									type="button"
 									key={d}
 									onClick={() => setMetricsDuration(d)}
 									className="px-2 py-1 rounded text-[10px] font-medium transition-all border-2"
@@ -1264,6 +1266,7 @@ export function ServiceDetailPage() {
 								<div className="ml-auto flex items-center gap-2">
 									{execHistory.length > 0 && (
 										<button
+											type="button"
 											onClick={() => setExecHistory([])}
 											className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
 										>
@@ -1286,6 +1289,7 @@ export function ServiceDetailPage() {
 										<div className="flex flex-wrap gap-2 mt-1 justify-center">
 											{["uptime", "ps aux", "df -h", "free -m"].map((s) => (
 												<button
+													type="button"
 													key={s}
 													onClick={() => setExecCommand(s)}
 													className="px-2 py-1 rounded text-[10px] transition-colors"
@@ -1298,8 +1302,8 @@ export function ServiceDetailPage() {
 									</div>
 								) : (
 									<>
-										{execHistory.map((entry, i) => (
-											<div key={i} className="space-y-1">
+										{execHistory.map((entry) => (
+											<div key={entry.command_id} className="space-y-1">
 												{/* Command line */}
 												<div className="flex items-center gap-1.5">
 													<span
@@ -1454,7 +1458,7 @@ export function ServiceDetailPage() {
 					{/* Load Balancing & Orchestration Tab */}
 					<TabsContent value="scale" className="space-y-4">
 						<LoadBalancingTab
-							serviceId={serviceId!}
+							serviceId={serviceId ?? ""}
 							serviceName={service?.name ?? ""}
 							scaleInstances={scaleInstances}
 							setScaleInstances={setScaleInstances}
@@ -1467,17 +1471,17 @@ export function ServiceDetailPage() {
 
 					{/* Command History Tab */}
 					<TabsContent value="history" className="space-y-3">
-						<CommandHistoryTab serviceId={serviceId!} />
+						<CommandHistoryTab serviceId={serviceId ?? ""} />
 					</TabsContent>
 
 					{/* Alert Rules Tab */}
 					<TabsContent value="alert-rules">
-						<AlertRulesTab serviceId={serviceId!} />
+						<AlertRulesTab serviceId={serviceId ?? ""} />
 					</TabsContent>
 
 					{/* Maintenance Tab */}
 					<TabsContent value="maintenance">
-						<MaintenanceTab serviceId={serviceId!} />
+						<MaintenanceTab serviceId={serviceId ?? ""} />
 					</TabsContent>
 
 					{/* AI Tab */}
@@ -1509,6 +1513,7 @@ export function ServiceDetailPage() {
 										style={{ borderColor: "var(--color-lavender-border)" }}
 									>
 										<button
+											type="button"
 											onClick={() => setDeepAnalysis(false)}
 											className="px-3 py-1.5 text-[10px] font-medium transition-all"
 											style={
@@ -1523,6 +1528,7 @@ export function ServiceDetailPage() {
 											Hızlı
 										</button>
 										<button
+											type="button"
 											onClick={() => setDeepAnalysis(true)}
 											className="px-3 py-1.5 text-[10px] font-medium transition-all"
 											style={
@@ -1620,8 +1626,11 @@ export function ServiceDetailPage() {
 													Öneriler
 												</h4>
 												<ul className="space-y-2">
-													{analysisResult.recommendations.map((rec, i) => (
-														<li key={i} className="flex items-start gap-2">
+													{analysisResult.recommendations.map((rec) => (
+														<li
+															key={rec.action}
+															className="flex items-start gap-2"
+														>
 															<Badge
 																className="text-[9px] px-1.5 py-0 rounded shrink-0 mt-0.5"
 																style={{

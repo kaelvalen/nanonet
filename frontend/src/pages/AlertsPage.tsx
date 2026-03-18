@@ -51,7 +51,7 @@ function AlertRulesPanel() {
 		refetch: refetchRules,
 	} = useQuery({
 		queryKey: ["alert-rules", selectedServiceId],
-		queryFn: () => metricsApi.getAlertRules(selectedServiceId!),
+		queryFn: () => metricsApi.getAlertRules(selectedServiceId ?? ""),
 		enabled: !!selectedServiceId,
 		staleTime: 10_000,
 	});
@@ -75,7 +75,7 @@ function AlertRulesPanel() {
 
 	const saveMutation = useMutation({
 		mutationFn: () =>
-			metricsApi.updateAlertRules(selectedServiceId!, effectiveDraft),
+			metricsApi.updateAlertRules(selectedServiceId ?? "", effectiveDraft),
 		onSuccess: () => {
 			toast.success("Eşik değerleri kaydedildi");
 			queryClient.invalidateQueries({
@@ -168,6 +168,7 @@ function AlertRulesPanel() {
 				) : (
 					services.map((svc) => (
 						<button
+							type="button"
 							key={svc.id}
 							onClick={() => {
 								setSelectedServiceId(svc.id);
@@ -346,6 +347,7 @@ function AlertRulesPanel() {
 						<div className="flex items-center gap-2 justify-end pt-1">
 							{isDirty && (
 								<button
+									type="button"
 									onClick={() => {
 										setDraft(null);
 									}}
@@ -542,6 +544,7 @@ export function AlertsPage() {
 					{ key: "rules" as const, label: "Eşik Ayarları", icon: Settings2 },
 				].map((tab) => (
 					<button
+						type="button"
 						key={tab.key}
 						onClick={() => setActiveTab(tab.key)}
 						className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
@@ -613,6 +616,7 @@ export function AlertsPage() {
 								transition={{ duration: 0.3, delay: 0.1 + i * 0.06 }}
 							>
 								<button
+									type="button"
 									onClick={() =>
 										setSeverityFilter(severityFilter === s.key ? "all" : s.key)
 									}
@@ -669,6 +673,7 @@ export function AlertsPage() {
 							/>
 							{(["all", "crit", "warn", "info"] as const).map((s) => (
 								<button
+									type="button"
 									key={s}
 									onClick={() => setSeverityFilter(s)}
 									className="px-2.5 py-1 rounded text-[10px] font-medium transition-all border-2"
@@ -716,6 +721,7 @@ export function AlertsPage() {
 								</button>
 							))}
 							<button
+								type="button"
 								onClick={() => setShowResolved(!showResolved)}
 								className="ml-auto px-2.5 py-1 rounded text-[10px] font-medium transition-all border-2"
 								style={

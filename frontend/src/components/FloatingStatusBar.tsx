@@ -116,6 +116,7 @@ export function FloatingStatusBar({
 
 					{downCount > 0 && (
 						<button
+							type="button"
 							onClick={() => navigate("/alerts")}
 							className="hidden sm:flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold animate-pulse"
 							style={{
@@ -130,6 +131,7 @@ export function FloatingStatusBar({
 					)}
 
 					<button
+						type="button"
 						onClick={onOpenCommandPalette}
 						className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded transition-all"
 						style={{
@@ -216,6 +218,7 @@ export function FloatingStatusBar({
 
 					{/* Toggle: switch to floating */}
 					<button
+						type="button"
 						onClick={toggleNavMode}
 						title="Floating bar moduna geç"
 						className="flex items-center justify-center w-7 h-7 rounded transition-all shrink-0"
@@ -230,9 +233,9 @@ export function FloatingStatusBar({
 
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<button className="relative group shrink-0">
+							<button type="button" className="relative group shrink-0">
 								<div
-									className="w-7 h-7 rounded flex items-center justify-center"
+									className="w-7 h-7 rounded flex items-center justify-center transition-all"
 									style={{
 										background: "var(--gradient-logo)",
 										border: "2px solid var(--border-default)",
@@ -310,6 +313,7 @@ export function FloatingStatusBar({
 				>
 					{/* Logo */}
 					<button
+						type="button"
 						onClick={() => navigate("/")}
 						className="flex items-center gap-2 group cursor-pointer shrink-0"
 					>
@@ -442,6 +446,7 @@ export function FloatingStatusBar({
 
 					{/* Search trigger */}
 					<button
+						type="button"
 						onClick={onOpenCommandPalette}
 						className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded transition-all"
 						style={{
@@ -548,6 +553,7 @@ export function FloatingStatusBar({
 
 					{/* Toggle: switch to sidebar */}
 					<button
+						type="button"
 						onClick={toggleNavMode}
 						title="Sidebar moduna geç"
 						className="flex items-center justify-center w-7 h-7 rounded transition-all shrink-0"
@@ -564,7 +570,7 @@ export function FloatingStatusBar({
 					{/* User Avatar */}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<button className="relative group shrink-0">
+							<button type="button" className="relative group shrink-0">
 								<div
 									className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
 									style={{

@@ -128,7 +128,7 @@ export function SettingsHistory() {
 									<p className="font-medium text-sm">{entry.description}</p>
 									<p className="text-xs text-gray-500 mt-1">
 										{formatRelativeTime(
-											entry.timestamp_ms as any,
+											String(entry.timestamp_ms),
 											i18n.language,
 										)}
 									</p>

@@ -220,6 +220,7 @@ export function ServicesPage() {
 							{(["all", "up", "degraded", "down", "unknown"] as const).map(
 								(s) => (
 									<button
+										type="button"
 										key={s}
 										onClick={() => setStatusFilter(s)}
 										className="px-2.5 py-1 rounded text-[10px] font-medium transition-all border-2"
@@ -284,6 +285,7 @@ export function ServicesPage() {
 							style={{ border: "2px solid var(--border-default)" }}
 						>
 							<button
+								type="button"
 								onClick={() => setViewMode("grid")}
 								className="p-1.5 rounded-md transition-all"
 								style={
@@ -299,6 +301,7 @@ export function ServicesPage() {
 								<LayoutGrid className="w-3.5 h-3.5" />
 							</button>
 							<button
+								type="button"
 								onClick={() => setViewMode("list")}
 								className="p-1.5 rounded-md transition-all"
 								style={
@@ -349,6 +352,7 @@ export function ServicesPage() {
 							<div className="flex items-center gap-1">
 								{(["24h", "7d", "30d"] as const).map((r) => (
 									<button
+										type="button"
 										key={r}
 										onClick={() => setSlaRange(r)}
 										className="px-2 py-0.5 rounded text-[10px] font-medium border-2 transition-all"

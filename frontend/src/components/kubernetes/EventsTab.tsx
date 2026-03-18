@@ -51,6 +51,7 @@ export function EventsTab({
 				<div className="flex items-center gap-1">
 					{(["", "Warning", "Normal"] as const).map((t) => (
 						<button
+							type="button"
 							key={t || "all"}
 							onClick={() => setEventTypeFilter(t)}
 							className="px-3 py-1.5 rounded-xl text-xs border transition-all"
@@ -105,6 +106,7 @@ export function EventsTab({
 					</SelectContent>
 				</Select>
 				<button
+					type="button"
 					onClick={() => refetchEvents()}
 					disabled={eventsLoading}
 					className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border ml-auto"
@@ -160,12 +162,11 @@ export function EventsTab({
 				</Card>
 			) : (
 				<div className="space-y-1.5">
-					{filteredEvents.map((ev: EventInfo, i: number) => (
+					{filteredEvents.map((ev: EventInfo) => (
 						<motion.div
-							key={ev.name + i}
+							key={`${ev.name}-${ev.reason}-${ev.message}`}
 							initial={{ opacity: 0, x: -4 }}
 							animate={{ opacity: 1, x: 0 }}
-							transition={{ delay: Math.min(i * 0.02, 0.3) }}
 						>
 							<Card
 								className="px-4 py-3 rounded-xl"

@@ -405,6 +405,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 									{agentCmd}
 								</pre>
 								<button
+									type="button"
 									onClick={handleCopy}
 									className="absolute top-2 right-2 p-1.5 rounded transition-all"
 									style={{

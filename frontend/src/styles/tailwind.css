@@ -1,4 +1,6 @@
+/* biome-ignore lint/correctness/noUnknownMediaFeatureName: Tailwind v4 source() syntax */
 @import 'tailwindcss' source(none);
 @source '../**/*.{js,ts,jsx,tsx}';
 
+/* biome-ignore lint/correctness/noInvalidPositionAtImportRule: tw-animate-css must follow tailwindcss import */
 @import "tw-animate-css";
