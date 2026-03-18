@@ -25,7 +25,7 @@ pub enum AgentError {
     Io(#[from] std::io::Error),
 
     #[error("WebSocket protokol hatası: {0}")]
-    Tungstenite(#[from] tokio_tungstenite::tungstenite::Error),
+    Tungstenite(#[from] Box<tokio_tungstenite::tungstenite::Error>),
 }
 
 pub type Result<T> = std::result::Result<T, AgentError>;
