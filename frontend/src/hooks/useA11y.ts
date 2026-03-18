@@ -8,7 +8,7 @@ export function useA11y() {
 	// Apply preferences on mount and when they change
 	useEffect(() => {
 		applyPreferences();
-	}, [preferences, applyPreferences]);
+	}, [applyPreferences]);
 
 	return preferences;
 }

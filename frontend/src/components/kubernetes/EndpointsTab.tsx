@@ -1,6 +1,5 @@
 import { HardDrive, Loader2, Network, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
-import React from "react";
 import type { ServiceInfo } from "@/api/k8s";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -244,7 +244,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 										max={65535}
 										value={port}
 										onChange={(e) => {
-											setPort(parseInt(e.target.value) || 0);
+											setPort(parseInt(e.target.value, 10) || 0);
 											setErrors((p) => ({ ...p, port: "" }));
 										}}
 										className="rounded"
@@ -320,7 +320,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 										max={300}
 										value={pollInterval}
 										onChange={(e) => {
-											setPollInterval(parseInt(e.target.value) || 10);
+											setPollInterval(parseInt(e.target.value, 10) || 10);
 											setErrors((p) => ({ ...p, pollInterval: "" }));
 										}}
 										className="rounded w-24"

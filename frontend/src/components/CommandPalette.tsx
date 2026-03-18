@@ -14,7 +14,6 @@ import {
 	Server,
 	Settings,
 	Sparkles,
-	Terminal,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
@@ -64,7 +63,7 @@ export function CommandPalette() {
 				setOpen((prev) => !prev);
 			}
 			if (open && e.metaKey) {
-				const num = parseInt(e.key);
+				const num = parseInt(e.key, 10);
 				if (num >= 1 && num <= 5) {
 					e.preventDefault();
 					const item = navigationItems[num - 1];

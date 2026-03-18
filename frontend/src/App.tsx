@@ -4,7 +4,6 @@ import { RouterProvider } from "react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { authApi } from "./api/auth";
 import { LiveRegionProvider } from "./context/LiveRegionContext";
-import { useA11y } from "./hooks/useA11y";
 import { router } from "./routes";
 import { useA11yStore } from "./store/a11yStore";
 import { useAuthStore } from "./store/authStore";
@@ -120,7 +119,15 @@ function AppInit() {
 			// We have both tokens, don't need to refresh
 			setInitializing(false);
 		}
-	}, []);
+	}, [
+		accessToken, // No refresh token, clear auth and complete initialization immediately
+		clearAuth,
+		refreshToken, // If no user in store, fetch it from /auth/me
+		setAuth, // We have both tokens, don't need to refresh
+		setInitializing,
+		updateUser,
+		user,
+	]);
 
 	if (isInitializing) {
 		return (

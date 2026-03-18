@@ -240,7 +240,7 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 								value={value}
 								onChange={(e) => {
 									const v = parseFloat(e.target.value);
-									if (!isNaN(v)) {
+									if (!Number.isNaN(v)) {
 										setForm({ ...current, [key]: v });
 									}
 								}}

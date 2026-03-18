@@ -73,7 +73,7 @@ export function generateHistoryDescription(
 	setting: keyof A11yPreferences,
 	oldValue: any,
 	newValue: any,
-	t?: (key: string) => string,
+	_t?: (key: string) => string,
 ): string {
 	switch (setting) {
 		case "language":

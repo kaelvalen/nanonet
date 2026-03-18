@@ -177,7 +177,7 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 							{!collapsed && (
 								<>
 									<span className="truncate flex-1">{item.label}</span>
-									{item.badge && item.badge()}
+									{item.badge?.()}
 								</>
 							)}
 							{collapsed && item.badge && (

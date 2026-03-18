@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	Activity,
-	AlertTriangle,
 	Bell,
 	Box,
 	ChevronDown,
@@ -11,40 +10,26 @@ import {
 	Cpu,
 	Gauge,
 	GitBranch,
-	Globe,
-	HardDrive,
 	Layers,
 	Loader2,
 	MemoryStick,
 	Minus,
 	Network,
 	Package2,
-	PackageCheck,
-	PackageX,
 	Plus,
 	RefreshCw,
 	RotateCcw,
-	Search,
 	Server,
 	Settings2,
 	Share2,
 	Terminal,
 	Trash2,
-	X,
 	Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-	type DeploymentInfo,
-	type EventInfo,
-	type HPAInfo,
-	k8sApi,
-	type NodeInfo,
-	type PodInfo,
-	type ServiceInfo,
-} from "@/api/k8s";
+import { k8sApi } from "@/api/k8s";
 import { servicesApi } from "@/api/services";
 import { EndpointsTab } from "@/components/kubernetes/EndpointsTab";
 import { EventsTab } from "@/components/kubernetes/EventsTab";
@@ -68,7 +53,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import type { Service } from "@/types/service";
 
 type TabType =
 	| "overview"
@@ -188,7 +172,7 @@ function PodStatusBadge({ status }: { status: string }) {
 			border: "var(--border-subtle)",
 		},
 	};
-	const s = cfg[status] ?? cfg["Failed"];
+	const s = cfg[status] ?? cfg.Failed;
 	return (
 		<Badge
 			className="text-[9px] px-2 py-0.5 rounded-full border shrink-0"
@@ -201,9 +185,9 @@ function PodStatusBadge({ status }: { status: string }) {
 
 function MemoryToGB(raw: string): string {
 	if (!raw) return "—";
-	const ki = parseInt(raw.replace("Ki", ""));
-	if (isNaN(ki)) return raw;
-	return (ki / 1024 / 1024).toFixed(1) + " GB";
+	const ki = parseInt(raw.replace("Ki", ""), 10);
+	if (Number.isNaN(ki)) return raw;
+	return `${(ki / 1024 / 1024).toFixed(1)} GB`;
 }
 
 // ─── Servis tipi rozeti ─────────────────────────────────────────────────────────────────
@@ -230,7 +214,7 @@ function ServiceTypeBadge({ type }: { type: string }) {
 			border: "var(--color-lavender-border)",
 		},
 	};
-	const s = cfg[type] ?? cfg["ClusterIP"];
+	const s = cfg[type] ?? cfg.ClusterIP;
 	return (
 		<Badge
 			className="text-[9px] px-2 py-0.5 rounded-full border shrink-0"

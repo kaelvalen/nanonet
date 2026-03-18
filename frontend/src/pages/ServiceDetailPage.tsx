@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	Activity,
 	AlertCircle,
@@ -6,7 +6,6 @@ import {
 	Bell,
 	CalendarClock,
 	CheckCircle2,
-	ChevronRight,
 	Clock,
 	Cpu,
 	Eye,
@@ -14,14 +13,11 @@ import {
 	History,
 	Layers,
 	Loader2,
-	Minus,
 	Play,
-	Plus,
 	Power,
 	RefreshCw,
 	Send,
 	Server,
-	Settings,
 	Shield,
 	Sparkles,
 	Terminal,
@@ -38,27 +34,13 @@ import {
 	Area,
 	AreaChart,
 	CartesianGrid,
-	Line,
-	LineChart,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
 	YAxis,
 } from "recharts";
 import { toast } from "sonner";
-import {
-	type DeploymentInfo,
-	type HPAInfo,
-	k8sApi,
-	type PodInfo,
-} from "@/api/k8s";
-import { type MaintenanceWindow, maintenanceApi } from "@/api/maintenance";
-import {
-	type Alert,
-	type AlertRules,
-	type AnalysisResult,
-	metricsApi,
-} from "@/api/metrics";
+import { type AnalysisResult, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { AgentSetupWizard } from "@/components/AgentSetupWizard";
 import { AlertRulesTab } from "@/components/service-detail/AlertRulesTab";
@@ -173,7 +155,7 @@ export function ServiceDetailPage() {
 
 	useEffect(() => {
 		terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [execHistory]);
+	}, []);
 
 	const handleRestart = () => {
 		if (serviceId) restartService(serviceId);

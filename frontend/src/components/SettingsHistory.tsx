@@ -2,10 +2,7 @@ import { Clock, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-	generateHistoryDescription,
-	useSettingsHistoryStore,
-} from "@/store/settingsHistoryStore";
+import { useSettingsHistoryStore } from "@/store/settingsHistoryStore";
 
 /**
  * Format timestamp as relative time (e.g., "2 minutes ago")
@@ -20,7 +17,7 @@ function formatRelativeTime(timestamp: string, language: string): string {
 		} else if (typeof timestamp === "string") {
 			// Try to parse ISO string or numeric timestamp
 			const numTime = parseInt(timestamp, 10);
-			if (!isNaN(numTime) && numTime > 1000000000) {
+			if (!Number.isNaN(numTime) && numTime > 1000000000) {
 				// Likely a millisecond timestamp
 				date = new Date(numTime);
 			} else {
@@ -32,7 +29,7 @@ function formatRelativeTime(timestamp: string, language: string): string {
 		}
 
 		// Check if date is valid
-		if (isNaN(date.getTime())) {
+		if (Number.isNaN(date.getTime())) {
 			return language === "tr" ? "Bilinmeyen tarih" : "Unknown date";
 		}
 

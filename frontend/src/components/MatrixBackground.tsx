@@ -105,10 +105,10 @@ export function MatrixBackground() {
 				if (shape.type === "circle") {
 					ctx.beginPath();
 					ctx.arc(shape.x, shape.y, shape.size, 0, Math.PI * 2);
-					ctx.fillStyle = shape.color + alpha + ")";
+					ctx.fillStyle = `${shape.color + alpha})`;
 					ctx.fill();
 				} else if (shape.type === "star") {
-					ctx.strokeStyle = shape.color + alpha + ")";
+					ctx.strokeStyle = `${shape.color + alpha})`;
 					ctx.lineWidth = 1;
 					drawStar(ctx, shape.x, shape.y, shape.size, shape.rotation);
 				} else {
@@ -121,7 +121,7 @@ export function MatrixBackground() {
 					ctx.lineTo(0, shape.size);
 					ctx.lineTo(-shape.size * 0.6, 0);
 					ctx.closePath();
-					ctx.fillStyle = shape.color + alpha + ")";
+					ctx.fillStyle = `${shape.color + alpha})`;
 					ctx.fill();
 					ctx.restore();
 				}
