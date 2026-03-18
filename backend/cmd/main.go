@@ -46,7 +46,7 @@ func main() {
 	// Uygulama kapandığında DB bağlantı havuzunu temizle
 	defer func() {
 		if sqlDB, err := db.DB(); err == nil {
-			sqlDB.Close()
+			_ = sqlDB.Close()
 		}
 	}()
 
@@ -102,7 +102,6 @@ func main() {
 			}
 		}
 	}()
-
 
 	// ── Mailer ────────────────────────────────────────────────────
 	m := mailer.New(mailer.Config{
@@ -162,7 +161,7 @@ func main() {
 	strictLimiter := ratelimit.StrictMiddleware(10, time.Minute)
 
 	hub.SetOnCommandResult(func(commandID, status string, msg ws.AgentMessage) {
-		cmdService.UpdateStatus(context.Background(), commandID, status, nil)
+		_ = cmdService.UpdateStatus(context.Background(), commandID, status, nil)
 	})
 
 	// Askıda kalan komutları periyodik olarak timeout'a al
@@ -317,7 +316,6 @@ func main() {
 
 	log.Println("Server kapatıldı")
 }
-
 
 func securityHeadersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

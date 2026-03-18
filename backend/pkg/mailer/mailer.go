@@ -57,11 +57,12 @@ func buildAlertEmail(toEmail, serviceName, alertType, message, severity string) 
 	color := "#f59e0b"
 	icon := "⚠️"
 	label := "Uyarı"
-	if severity == "crit" {
+	switch severity {
+	case "crit":
 		color = "#ef4444"
 		icon = "🚨"
 		label = "Kritik"
-	} else if severity == "info" {
+	case "info":
 		color = "#00b4d8"
 		icon = "ℹ️"
 		label = "Bilgi"
@@ -126,9 +127,9 @@ func (m *Mailer) send(to, subject, htmlBody string) error {
 	}
 
 	header := strings.Builder{}
-	header.WriteString(fmt.Sprintf("From: NanoNet <%s>\r\n", from))
-	header.WriteString(fmt.Sprintf("To: %s\r\n", to))
-	header.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	fmt.Fprintf(&header, "From: NanoNet <%s>\r\n", from)
+	fmt.Fprintf(&header, "To: %s\r\n", to)
+	fmt.Fprintf(&header, "Subject: %s\r\n", subject)
 	header.WriteString("MIME-Version: 1.0\r\n")
 	header.WriteString("Content-Type: text/html; charset=UTF-8\r\n")
 	header.WriteString("\r\n")
@@ -151,13 +152,13 @@ func (m *Mailer) sendTLS(addr string, auth smtp.Auth, from, to string, msg []byt
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client, err := smtp.NewClient(conn, m.cfg.Host)
 	if err != nil {
 		return err
 	}
-	defer client.Quit()
+	defer func() { _ = client.Quit() }()
 
 	if err = client.Auth(auth); err != nil {
 		return err

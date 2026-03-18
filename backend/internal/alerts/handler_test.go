@@ -22,10 +22,10 @@ func init() {
 // ── mock service ──────────────────────────────────────────────────
 
 type mockAlertService struct {
-	alerts      []Alert
+	alerts       []Alert
 	activeAlerts []Alert
-	isOwner     bool
-	err         error
+	isOwner      bool
+	err          error
 }
 
 func (m *mockAlertService) GetAlertsPage(_ context.Context, _ uuid.UUID, _ bool, limit, _ int) ([]Alert, int64, error) {
