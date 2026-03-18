@@ -36,9 +36,7 @@ async fn main() -> error::Result<()> {
             .with_env_filter(env_filter)
             .init();
     } else {
-        tracing_subscriber::fmt()
-            .with_env_filter(env_filter)
-            .init();
+        tracing_subscriber::fmt().with_env_filter(env_filter).init();
     }
 
     let config = Config::parse();
@@ -48,8 +46,19 @@ async fn main() -> error::Result<()> {
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     tracing::info!("  Backend:       {}", config.backend);
     tracing::info!("  Service ID:    {}", config.service_id);
-    tracing::info!("  WS URL:        {}/ws/agent?service_id={}", config.backend, config.service_id);
-    tracing::info!("  Auth:          {}", if config.effective_token().is_some() { "Bearer ***" } else { "(yok — NANONET_AGENT_TOKEN veya NANONET_TOKEN gerekli)" });
+    tracing::info!(
+        "  WS URL:        {}/ws/agent?service_id={}",
+        config.backend,
+        config.service_id
+    );
+    tracing::info!(
+        "  Auth:          {}",
+        if config.effective_token().is_some() {
+            "Bearer ***"
+        } else {
+            "(yok — NANONET_AGENT_TOKEN veya NANONET_TOKEN gerekli)"
+        }
+    );
     tracing::info!("  Health URL:    {}", config.health_url());
     tracing::info!("  Poll interval: {}s", config.poll_interval);
     tracing::info!("  Error window:  {} checks", config.error_rate_window);
@@ -96,7 +105,14 @@ async fn main() -> error::Result<()> {
     let ws_restart_count = Arc::clone(&restart_count);
     let ws_buffer = metric_buffer.clone();
     let ws_task = tokio::spawn(async move {
-        ws::run(&ws_config, ws_rx, ws_restart_count, ws_buffer, shutdown_rx_ws).await;
+        ws::run(
+            &ws_config,
+            ws_rx,
+            ws_restart_count,
+            ws_buffer,
+            shutdown_rx_ws,
+        )
+        .await;
     });
 
     // ─── Agent Health Endpoint ───
@@ -133,8 +149,7 @@ async fn main() -> error::Result<()> {
         sys.refresh_cpu_usage();
         tokio::time::sleep(Duration::from_secs(1)).await;
 
-        let mut interval =
-            tokio::time::interval(Duration::from_secs(metrics_config.poll_interval));
+        let mut interval = tokio::time::interval(Duration::from_secs(metrics_config.poll_interval));
         let agent_start = std::time::Instant::now();
 
         // Hata oranı için kayan pencere
@@ -259,7 +274,10 @@ async fn main() -> error::Result<()> {
             // WS bağlıysa doğrudan gönder, değilse buffer'a ekle
             if ws::WS_CONNECTED.load(Ordering::Relaxed) {
                 if let Err(e) = ws_tx.send(msg_str.clone()).await {
-                    tracing::warn!("Metrik WS kanalına gönderilemedi: {} — buffer'a alınıyor", e);
+                    tracing::warn!(
+                        "Metrik WS kanalına gönderilemedi: {} — buffer'a alınıyor",
+                        e
+                    );
                     metrics_buffer.push(msg_str).await;
                 }
             } else {
@@ -282,7 +300,7 @@ async fn main() -> error::Result<()> {
         {
             use tokio::signal::unix::{signal, SignalKind};
             let mut sigterm = signal(SignalKind::terminate()).expect("SIGTERM handler kurulamadı");
-            let mut sigint  = signal(SignalKind::interrupt()).expect("SIGINT handler kurulamadı");
+            let mut sigint = signal(SignalKind::interrupt()).expect("SIGINT handler kurulamadı");
             tokio::select! {
                 _ = sigterm.recv() => tracing::info!("SIGTERM alındı, kapatılıyor..."),
                 _ = sigint.recv()  => tracing::info!("SIGINT alındı, kapatılıyor..."),
@@ -290,7 +308,9 @@ async fn main() -> error::Result<()> {
         }
         #[cfg(not(unix))]
         {
-            tokio::signal::ctrl_c().await.expect("Ctrl+C handler kurulamadı");
+            tokio::signal::ctrl_c()
+                .await
+                .expect("Ctrl+C handler kurulamadı");
             tracing::info!("Ctrl+C alındı, kapatılıyor...");
         }
         let _ = shutdown_tx.send(true);
@@ -338,6 +358,6 @@ fn load_or_create_agent_id(config: &Config) -> String {
     if let Err(e) = std::fs::write(&id_file, &new_id) {
         tracing::warn!("Agent ID kaydedilemedi ({}): {}", id_file, e);
     }
-    
+
     new_id
 }

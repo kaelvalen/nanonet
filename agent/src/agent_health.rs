@@ -18,20 +18,28 @@ pub async fn serve(port: u16, start_time: Instant, buffer: MetricBuffer) {
     }
 
     let app = Router::new()
-        .route("/health", get({
-            let buffer = buffer.clone();
-            move || health_handler(start_time, buffer.clone())
-        }))
-        .route("/status", get({
-            let buffer = buffer.clone();
-            move || status_handler(start_time, buffer.clone())
-        }));
+        .route(
+            "/health",
+            get({
+                let buffer = buffer.clone();
+                move || health_handler(start_time, buffer.clone())
+            }),
+        )
+        .route(
+            "/status",
+            get({
+                let buffer = buffer.clone();
+                move || status_handler(start_time, buffer.clone())
+            }),
+        );
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("Agent health endpoint: http://0.0.0.0:{}/health", port);
 
     if let Err(e) = axum::serve(
-        tokio::net::TcpListener::bind(addr).await.expect("Agent port bind edilemedi"),
+        tokio::net::TcpListener::bind(addr)
+            .await
+            .expect("Agent port bind edilemedi"),
         app,
     )
     .await

@@ -26,7 +26,8 @@ pub async fn check_health(client: &Client, url: &str) -> HealthResult {
             let status_code = response.status();
             let http_code = status_code.as_u16();
 
-            let (status, is_error) = if status_code.is_success() && latency_ms < DEGRADED_LATENCY_MS {
+            let (status, is_error) = if status_code.is_success() && latency_ms < DEGRADED_LATENCY_MS
+            {
                 ("up", false)
             } else if status_code.is_success() {
                 // Slow response — degraded but not an error
