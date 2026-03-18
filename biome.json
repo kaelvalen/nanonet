@@ -1,0 +1,5 @@
+{
+	"files": {
+		"includes": ["**", "!**/target", "!**/node_modules", "!**/.git"]
+	}
+}

@@ -1,111 +1,223 @@
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap");
 
 :root {
-  --font-size-xs:   0.6875rem;  /* 11px */
-  --font-size-sm:   0.75rem;    /* 12px */
-  --font-size-base: 0.8125rem;  /* 13px */
-  --font-size-lg:   0.875rem;   /* 14px */
-  --font-size-xl:   1rem;       /* 16px */
-  --font-size-2xl:  1.125rem;   /* 18px */
-  --font-size-3xl:  1.375rem;   /* 22px */
-  --font-size-4xl:  1.75rem;    /* 28px */
+	--font-size-xs: 0.6875rem; /* 11px */
+	--font-size-sm: 0.75rem; /* 12px */
+	--font-size-base: 0.8125rem; /* 13px */
+	--font-size-lg: 0.875rem; /* 14px */
+	--font-size-xl: 1rem; /* 16px */
+	--font-size-2xl: 1.125rem; /* 18px */
+	--font-size-3xl: 1.375rem; /* 22px */
+	--font-size-4xl: 1.75rem; /* 28px */
 
-  --line-height-tight:   1.2;
-  --line-height-snug:    1.35;
-  --line-height-normal:  1.5;
-  --line-height-relaxed: 1.625;
-  --line-height-loose:   2;
+	--line-height-tight: 1.2;
+	--line-height-snug: 1.35;
+	--line-height-normal: 1.5;
+	--line-height-relaxed: 1.625;
+	--line-height-loose: 2;
 
-  --font-quicksand: 'Quicksand', system-ui, -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Monaco', monospace;
+	--font-quicksand: "Quicksand", system-ui, -apple-system, sans-serif;
+	--font-mono: "IBM Plex Mono", "Monaco", monospace;
 }
 
-html { font-size: 100%; }
-html[style*="font-size: 80%"]  { font-size: 80%;  }
-html[style*="font-size: 125%"] { font-size: 125%; }
-html[style*="font-size: 150%"] { font-size: 150%; }
+html {
+	font-size: 100%;
+}
+html[style*="font-size: 80%"] {
+	font-size: 80%;
+}
+html[style*="font-size: 125%"] {
+	font-size: 125%;
+}
+html[style*="font-size: 150%"] {
+	font-size: 150%;
+}
 
 body {
-  font-family: var(--font-quicksand);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-normal);
-  letter-spacing: var(--letter-spacing, 0px);
-  font-weight: 400;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	font-family: var(--font-quicksand);
+	font-size: var(--font-size-base);
+	line-height: var(--line-height-normal);
+	letter-spacing: var(--letter-spacing, 0px);
+	font-weight: 400;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
-h1 { font-size: var(--font-size-3xl); line-height: var(--line-height-tight); font-weight: 700; margin-bottom: 0.4em; }
-h2 { font-size: var(--font-size-2xl); line-height: var(--line-height-tight); font-weight: 700; margin-bottom: 0.4em; }
-h3 { font-size: var(--font-size-xl);  line-height: var(--line-height-snug);  font-weight: 600; margin-bottom: 0.35em; }
-h4 { font-size: var(--font-size-lg);  line-height: var(--line-height-snug);  font-weight: 600; margin-bottom: 0.35em; }
-h5 { font-size: var(--font-size-base);line-height: var(--line-height-snug);  font-weight: 600; margin-bottom: 0.3em; }
-h6 { font-size: var(--font-size-xs);  line-height: var(--line-height-snug);  font-weight: 600; margin-bottom: 0.3em; text-transform: uppercase; letter-spacing: 0.06em; }
-
-p  { font-size: var(--font-size-base); line-height: var(--line-height-normal); margin-bottom: 0.875em; }
-
-small { font-size: var(--font-size-xs); line-height: var(--line-height-normal); }
-
-code, pre {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
+h1 {
+	font-size: var(--font-size-3xl);
+	line-height: var(--line-height-tight);
+	font-weight: 700;
+	margin-bottom: 0.4em;
 }
-code { font-size: 0.9em; }
-pre  { line-height: var(--line-height-relaxed); padding: 0.875em; overflow-x: auto; }
+h2 {
+	font-size: var(--font-size-2xl);
+	line-height: var(--line-height-tight);
+	font-weight: 700;
+	margin-bottom: 0.4em;
+}
+h3 {
+	font-size: var(--font-size-xl);
+	line-height: var(--line-height-snug);
+	font-weight: 600;
+	margin-bottom: 0.35em;
+}
+h4 {
+	font-size: var(--font-size-lg);
+	line-height: var(--line-height-snug);
+	font-weight: 600;
+	margin-bottom: 0.35em;
+}
+h5 {
+	font-size: var(--font-size-base);
+	line-height: var(--line-height-snug);
+	font-weight: 600;
+	margin-bottom: 0.3em;
+}
+h6 {
+	font-size: var(--font-size-xs);
+	line-height: var(--line-height-snug);
+	font-weight: 600;
+	margin-bottom: 0.3em;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+p {
+	font-size: var(--font-size-base);
+	line-height: var(--line-height-normal);
+	margin-bottom: 0.875em;
+}
+
+small {
+	font-size: var(--font-size-xs);
+	line-height: var(--line-height-normal);
+}
+
+code,
+pre {
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	line-height: var(--line-height-snug);
+}
+code {
+	font-size: 0.9em;
+}
+pre {
+	line-height: var(--line-height-relaxed);
+	padding: 0.875em;
+	overflow-x: auto;
+}
 
 a {
-  color: inherit;
-  text-decoration: none;
-  text-underline-offset: 2px;
-  transition: color 0.15s ease;
+	color: inherit;
+	text-decoration: none;
+	text-underline-offset: 2px;
+	transition: color 0.15s ease;
 }
-a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
-
-ul, ol { margin-bottom: 0.875em; padding-left: 1.25em; }
-li     { margin-bottom: 0.2em; line-height: var(--line-height-normal); }
-
-table { font-size: var(--font-size-sm); line-height: var(--line-height-normal); border-collapse: collapse; }
-th    { font-weight: 600; text-align: left; padding: 0.5em 0.75em; }
-td    { padding: 0.5em 0.75em; }
-
-input, textarea, select, button {
-  font-family: inherit;
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-normal);
+a:hover {
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
 }
-textarea { font-family: var(--font-mono); font-size: var(--font-size-sm); }
+
+ul,
+ol {
+	margin-bottom: 0.875em;
+	padding-left: 1.25em;
+}
+li {
+	margin-bottom: 0.2em;
+	line-height: var(--line-height-normal);
+}
+
+table {
+	font-size: var(--font-size-sm);
+	line-height: var(--line-height-normal);
+	border-collapse: collapse;
+}
+th {
+	font-weight: 600;
+	text-align: left;
+	padding: 0.5em 0.75em;
+}
+td {
+	padding: 0.5em 0.75em;
+}
+
+input,
+textarea,
+select,
+button {
+	font-family: inherit;
+	font-size: var(--font-size-base);
+	line-height: var(--line-height-normal);
+}
+textarea {
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+}
 
 blockquote {
-  font-size: var(--font-size-lg);
-  font-style: italic;
-  line-height: var(--line-height-relaxed);
-  margin: 0 0 0.875em 1.25em;
-  padding-left: 0.875em;
-  border-left: 3px solid currentColor;
-  opacity: 0.8;
+	font-size: var(--font-size-lg);
+	font-style: italic;
+	line-height: var(--line-height-relaxed);
+	margin: 0 0 0.875em 1.25em;
+	padding-left: 0.875em;
+	border-left: 3px solid currentColor;
+	opacity: 0.8;
 }
 
-dt { font-weight: 600; margin-top: 0.875em; margin-bottom: 0.2em; }
-dd { margin-bottom: 0.4em; margin-left: 1.25em; }
+dt {
+	font-weight: 600;
+	margin-top: 0.875em;
+	margin-bottom: 0.2em;
+}
+dd {
+	margin-bottom: 0.4em;
+	margin-left: 1.25em;
+}
 
-abbr[title] { border-bottom: 1px dotted; cursor: help; text-decoration: none; }
+abbr[title] {
+	border-bottom: 1px dotted;
+	cursor: help;
+	text-decoration: none;
+}
 
-mark { background-color: rgba(255, 255, 0, 0.3); padding: 0.1em 0.2em; border-radius: 2px; }
+mark {
+	background-color: rgba(255, 255, 0, 0.3);
+	padding: 0.1em 0.2em;
+	border-radius: 2px;
+}
 
-hr { margin: 1.25em 0; border: none; border-top: 1px solid currentColor; opacity: 0.1; }
+hr {
+	margin: 1.25em 0;
+	border: none;
+	border-top: 1px solid currentColor;
+	opacity: 0.1;
+}
 
 @media (max-width: 640px) {
-  h1 { font-size: var(--font-size-2xl); }
-  h2 { font-size: var(--font-size-xl);  }
-  h3 { font-size: var(--font-size-lg);  }
-  p, body { line-height: var(--line-height-relaxed); }
+	h1 {
+		font-size: var(--font-size-2xl);
+	}
+	h2 {
+		font-size: var(--font-size-xl);
+	}
+	h3 {
+		font-size: var(--font-size-lg);
+	}
+	p,
+	body {
+		line-height: var(--line-height-relaxed);
+	}
 }
 
 @supports (font-variation-settings: normal) {
-  body {
-    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
-    font-kerning: auto;
-    font-variant-ligatures: contextual;
-  }
+	body {
+		font-feature-settings:
+			"kern" 1,
+			"liga" 1,
+			"calt" 1;
+		font-kerning: auto;
+		font-variant-ligatures: contextual;
+	}
 }
