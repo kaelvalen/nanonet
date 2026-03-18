@@ -119,7 +119,7 @@ func (h *Handler) Dashboard(c *gin.Context) {
 	}
 
 	// İlk mesaj ile kimlik doğrulama (token URL'de taşınmaz)
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	_, rawMsg, err := conn.ReadMessage()
 	if err != nil {
 		_ = conn.WriteMessage(websocket.CloseMessage,
@@ -233,7 +233,7 @@ func (h *Handler) ServiceStream(c *gin.Context) {
 	}
 
 	// İlk mesaj ile kimlik doğrulama
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	_, rawMsg, err := conn.ReadMessage()
 	if err != nil {
 		_ = conn.WriteMessage(websocket.CloseMessage,

@@ -157,7 +157,7 @@ func (h *Hub) StartRedis(ctx context.Context) {
 		"nanonet:broadcast:*", // metric/alert broadcasts
 		"nanonet:cmd:*",       // cross-node agent commands
 	)
-	defer pubsub.Close()
+	defer func() { _ = pubsub.Close() }()
 
 	log.Println("Redis pub/sub dinleyici başlatıldı")
 

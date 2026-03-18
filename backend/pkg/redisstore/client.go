@@ -21,7 +21,7 @@ func New(redisURL string) (*redis.Client, error) {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		client.Close()
+		_ = client.Close()
 		return nil, fmt.Errorf("redis ping hatası: %w", err)
 	}
 
