@@ -122,29 +122,29 @@ func (h *Handler) Dashboard(c *gin.Context) {
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	_, rawMsg, err := conn.ReadMessage()
 	if err != nil {
-		conn.WriteMessage(websocket.CloseMessage,
+		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "authentication required"))
-		conn.Close()
+		_ = conn.Close()
 		return
 	}
-	conn.SetReadDeadline(time.Time{})
+	_ = conn.SetReadDeadline(time.Time{})
 
 	var authMsg struct {
 		Type  string `json:"type"`
 		Token string `json:"token"`
 	}
 	if jsonErr := json.Unmarshal(rawMsg, &authMsg); jsonErr != nil || authMsg.Type != "auth" || authMsg.Token == "" {
-		conn.WriteMessage(websocket.CloseMessage,
+		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "invalid auth message"))
-		conn.Close()
+		_ = conn.Close()
 		return
 	}
 
 	userID, err := h.validateUserToken(authMsg.Token)
 	if err != nil {
-		conn.WriteMessage(websocket.CloseMessage,
+		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "unauthorized"))
-		conn.Close()
+		_ = conn.Close()
 		return
 	}
 
@@ -236,29 +236,29 @@ func (h *Handler) ServiceStream(c *gin.Context) {
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	_, rawMsg, err := conn.ReadMessage()
 	if err != nil {
-		conn.WriteMessage(websocket.CloseMessage,
+		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "authentication required"))
-		conn.Close()
+		_ = conn.Close()
 		return
 	}
-	conn.SetReadDeadline(time.Time{})
+	_ = conn.SetReadDeadline(time.Time{})
 
 	var authMsg struct {
 		Type  string `json:"type"`
 		Token string `json:"token"`
 	}
 	if jsonErr := json.Unmarshal(rawMsg, &authMsg); jsonErr != nil || authMsg.Type != "auth" || authMsg.Token == "" {
-		conn.WriteMessage(websocket.CloseMessage,
+		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "invalid auth message"))
-		conn.Close()
+		_ = conn.Close()
 		return
 	}
 
 	userID, err := h.validateUserToken(authMsg.Token)
 	if err != nil {
-		conn.WriteMessage(websocket.CloseMessage,
+		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "unauthorized"))
-		conn.Close()
+		_ = conn.Close()
 		return
 	}
 

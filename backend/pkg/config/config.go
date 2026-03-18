@@ -43,11 +43,11 @@ func Load() *Config {
 		PollDefaultSec:   getEnvInt("POLL_DEFAULT_SEC", 10),
 		WSMaxConnections: getEnvInt("WS_MAX_CONNECTIONS", 1000),
 
-		SMTPHost:     getEnv("SMTP_HOST", ""),
-		SMTPPort:     getEnv("SMTP_PORT", "587"),
-		SMTPUser:     getEnv("SMTP_USER", ""),
-		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
-		SMTPFrom:     getEnv("SMTP_FROM", ""),
+		SMTPHost:       getEnv("SMTP_HOST", ""),
+		SMTPPort:       getEnv("SMTP_PORT", "587"),
+		SMTPUser:       getEnv("SMTP_USER", ""),
+		SMTPPassword:   getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:       getEnv("SMTP_FROM", ""),
 		AllowedOrigins: parseAllowedOrigins(),
 	}
 

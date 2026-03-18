@@ -191,8 +191,8 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		alertsText.WriteString("Son alert bulunmuyor.")
 	} else {
 		for _, a := range recentAlerts {
-			alertsText.WriteString(fmt.Sprintf("- [%s] %s: %s (%s)\n",
-				a.Severity, a.Type, SanitizeForPrompt(a.Message), a.TriggeredAt.Format("15:04 02 Jan")))
+			fmt.Fprintf(&alertsText, "- [%s] %s: %s (%s)\n",
+				a.Severity, a.Type, SanitizeForPrompt(a.Message), a.TriggeredAt.Format("15:04 02 Jan"))
 		}
 	}
 
@@ -207,7 +207,7 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		otherSvcInfo.WriteString("Başka servis bulunmuyor.")
 	} else {
 		for _, os := range otherServices {
-			otherSvcInfo.WriteString(fmt.Sprintf("- %s (%s:%d): durum=%s\n", os.Name, os.Host, os.Port, os.Status))
+			fmt.Fprintf(&otherSvcInfo, "- %s (%s:%d): durum=%s\n", os.Name, os.Host, os.Port, os.Status)
 		}
 	}
 
@@ -275,7 +275,7 @@ func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("[Claude API] HTTP %d hatası (body: %.200s)", resp.StatusCode, string(body))
-		return nil, fmt.Errorf("Claude API hatası (HTTP %d)", resp.StatusCode)
+		return nil, fmt.Errorf("claude API hatası (HTTP %d)", resp.StatusCode)
 	}
 
 	var claudeResp ClaudeResponse
@@ -284,7 +284,7 @@ func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
 	}
 
 	if len(claudeResp.Content) == 0 {
-		return nil, fmt.Errorf("Claude boş yanıt döndü")
+		return nil, fmt.Errorf("claude boş yanıt döndü")
 	}
 
 	if claudeResp.StopReason == "max_tokens" {

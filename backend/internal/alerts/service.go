@@ -130,14 +130,15 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 	}
 
 	// Service status
-	if metric.Status == "down" {
+	switch metric.Status {
+	case "down":
 		newAlerts = append(newAlerts, Alert{
 			ServiceID: serviceID,
 			Type:      "service_down",
 			Severity:  "crit",
 			Message:   "Servis çalışmıyor",
 		})
-	} else if metric.Status == "up" {
+	case "up":
 		resolveTypes = append(resolveTypes, "service_down")
 	}
 
