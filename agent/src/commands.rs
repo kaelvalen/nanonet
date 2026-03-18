@@ -51,7 +51,12 @@ impl IncomingCommand {
         .unwrap_or_default()
     }
 
-    pub fn result_json(&self, success: bool, error: Option<String>, output: Option<String>) -> String {
+    pub fn result_json(
+        &self,
+        success: bool,
+        error: Option<String>,
+        output: Option<String>,
+    ) -> String {
         serde_json::to_string(&CommandResult {
             msg_type: "result".to_string(),
             command_id: self.command_id.clone(),
@@ -126,21 +131,19 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
             }
         }
 
-        "start" => {
-            match &config.start_cmd {
-                Some(start_cmd) => {
-                    tracing::info!("[{}] Start komutu çalıştırılıyor", cmd.command_id);
-                    run_shell(start_cmd, 60).await
-                }
-                None => {
-                    tracing::warn!(
-                        "[{}] start_cmd yapılandırılmamış — NANONET_START_CMD eksik",
-                        cmd.command_id
-                    );
-                    Err("NANONET_START_CMD yapılandırılmamış".to_string())
-                }
+        "start" => match &config.start_cmd {
+            Some(start_cmd) => {
+                tracing::info!("[{}] Start komutu çalıştırılıyor", cmd.command_id);
+                run_shell(start_cmd, 60).await
             }
-        }
+            None => {
+                tracing::warn!(
+                    "[{}] start_cmd yapılandırılmamış — NANONET_START_CMD eksik",
+                    cmd.command_id
+                );
+                Err("NANONET_START_CMD yapılandırılmamış".to_string())
+            }
+        },
 
         "exec" => {
             let token = match &cmd.command {
@@ -175,7 +178,9 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
 
             tracing::info!(
                 "[{}] exec çalıştırılıyor (token: '{}', timeout: {}s)",
-                cmd.command_id, token, timeout
+                cmd.command_id,
+                token,
+                timeout
             );
             run_shell(shell_cmd, timeout).await
         }
@@ -201,7 +206,9 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
 
             tracing::info!(
                 "[{}] scale: {} instance, strateji: {}",
-                cmd.command_id, instances, strategy
+                cmd.command_id,
+                instances,
+                strategy
             );
             match &config.scale_cmd {
                 Some(scale_cmd) => {
@@ -211,12 +218,10 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
                     );
                     run_shell(&full_cmd, 60).await
                 }
-                None => {
-                    Ok(Some(format!(
-                        "scale acknowledged: {} instance(s), strategy={}",
-                        instances, strategy
-                    )))
-                }
+                None => Ok(Some(format!(
+                    "scale acknowledged: {} instance(s), strategy={}",
+                    instances, strategy
+                ))),
             }
         }
 
@@ -238,7 +243,11 @@ async fn run_shell(cmd: &str, timeout_sec: u64) -> Result<Option<String>, String
             let stderr = String::from_utf8_lossy(&out.stderr).trim().to_string();
 
             if out.status.success() {
-                let output = if stdout.is_empty() { None } else { Some(stdout) };
+                let output = if stdout.is_empty() {
+                    None
+                } else {
+                    Some(stdout)
+                };
                 Ok(output)
             } else {
                 let msg = if !stderr.is_empty() {

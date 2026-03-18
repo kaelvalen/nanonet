@@ -82,10 +82,7 @@ impl Config {
 
     pub fn ws_url(&self) -> String {
         // Token URL'de taşınmaz — auth_header() kullan.
-        format!(
-            "{}/ws/agent?service_id={}",
-            self.backend, self.service_id
-        )
+        format!("{}/ws/agent?service_id={}", self.backend, self.service_id)
     }
 
     /// WebSocket handshake Authorization header değeri.
