@@ -31,7 +31,7 @@ const defaultPreferences: A11yPreferences = {
 	reducedMotion: false,
 };
 
-const lineHeightValues = {
+const _lineHeightValues = {
 	1.5: "line-height-1.5",
 	1.75: "line-height-1.75",
 	2.0: "line-height-2.0",

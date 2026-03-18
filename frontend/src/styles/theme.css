@@ -1254,34 +1254,34 @@
 /* ── Remove ALL backdrop blur and glass effects ─────────────────────────── */
 [data-theme="cinnamiku"] [class*="backdrop-blur"],
 [data-theme="cinnamiku"] [class*="backdrop-filter"] {
-	backdrop-filter: none !important;
-	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 }
 
 /* ── Slightly rounded corners — Win98 windows have small radius ──────────── */
 [data-theme="cinnamiku"] [class*="rounded-full"]:not(.rounded-full-keep) {
-	border-radius: 50% !important;
+	border-radius: 50%;
 }
 [data-theme="cinnamiku"] [class*="rounded-2xl"] {
-	border-radius: 0.25rem !important;
+	border-radius: 0.25rem;
 }
 [data-theme="cinnamiku"] [class*="rounded-xl"] {
-	border-radius: 0.25rem !important;
+	border-radius: 0.25rem;
 }
 [data-theme="cinnamiku"] [class*="rounded-lg"] {
-	border-radius: 0.25rem !important;
+	border-radius: 0.25rem;
 }
 [data-theme="cinnamiku"] [class*="rounded-md"] {
-	border-radius: 0.25rem !important;
+	border-radius: 0.25rem;
 }
 
 /* ── Card: Win98 window frame — solid 2px border, soft offset shadow ─────── */
 [data-theme="cinnamiku"] [data-slot="card"] {
-	background: var(--surface-card) !important;
-	border: 2px solid var(--border-default) !important;
-	border-radius: 0.25rem !important;
-	box-shadow: var(--card-shadow) !important;
-	backdrop-filter: none !important;
+	background: var(--surface-card);
+	border: 2px solid var(--border-default);
+	border-radius: 0.25rem;
+	box-shadow: var(--card-shadow);
+	backdrop-filter: none;
 	overflow: hidden;
 }
 
@@ -1299,33 +1299,33 @@
 [data-theme="cinnamiku"] [data-slot="popover-content"],
 [data-theme="cinnamiku"] [role="dialog"],
 [data-theme="cinnamiku"] [data-radix-popper-content-wrapper] > div {
-	background: var(--surface-card) !important;
-	border: 2px solid var(--border-default) !important;
-	border-radius: 0.25rem !important;
-	box-shadow: var(--card-shadow) !important;
-	backdrop-filter: none !important;
+	background: var(--surface-card);
+	border: 2px solid var(--border-default);
+	border-radius: 0.25rem;
+	box-shadow: var(--card-shadow);
+	backdrop-filter: none;
 }
 
 /* ── Buttons: soft offset shadow, no translate ───────────────────────────── */
 [data-theme="cinnamiku"] [data-slot="button"],
 [data-theme="cinnamiku"] button[class*="bg-primary"],
 [data-theme="cinnamiku"] button[class*="bg-secondary"] {
-	border-radius: 0.25rem !important;
-	box-shadow: var(--btn-shadow) !important;
-	transition: box-shadow 0.12s ease !important;
-	font-weight: 600 !important;
+	border-radius: 0.25rem;
+	box-shadow: var(--btn-shadow);
+	transition: box-shadow 0.12s ease;
+	font-weight: 600;
 }
 
 [data-theme="cinnamiku"] [data-slot="button"]:hover,
 [data-theme="cinnamiku"] button[class*="bg-primary"]:hover {
-	box-shadow: var(--btn-shadow-hover) !important;
-	transform: none !important;
+	box-shadow: var(--btn-shadow-hover);
+	transform: none;
 }
 
 [data-theme="cinnamiku"] [data-slot="button"]:active,
 [data-theme="cinnamiku"] button[class*="bg-primary"]:active {
-	box-shadow: var(--btn-shadow-active) !important;
-	transform: none !important;
+	box-shadow: var(--btn-shadow-active);
+	transform: none;
 }
 
 /* ── Inputs: 2px solid border, inset look ────────────────────────────────── */
@@ -1333,44 +1333,44 @@
 	input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
 [data-theme="cinnamiku"] textarea,
 [data-theme="cinnamiku"] select {
-	background: var(--input-bg) !important;
-	border: 2px solid var(--input-border) !important;
-	border-radius: 0.25rem !important;
-	color: var(--text-primary) !important;
-	box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.08) !important;
+	background: var(--input-bg);
+	border: 2px solid var(--input-border);
+	border-radius: 0.25rem;
+	color: var(--text-primary);
+	box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="cinnamiku"] input:focus,
 [data-theme="cinnamiku"] textarea:focus,
 [data-theme="cinnamiku"] select:focus {
-	border-color: var(--input-border-focus) !important;
-	outline: none !important;
+	border-color: var(--input-border-focus);
+	outline: none;
 	box-shadow:
 		inset 1px 1px 2px rgba(0, 0, 0, 0.08),
-		0 0 0 2px rgba(57, 197, 187, 0.2) !important;
+		0 0 0 2px rgba(57, 197, 187, 0.2);
 }
 
 /* ── Badge ────────────────────────────────────────────────────────────────── */
 [data-theme="cinnamiku"] [data-slot="badge"] {
-	border-radius: 0.2rem !important;
-	border-width: 1.5px !important;
-	border-style: solid !important;
-	font-weight: 700 !important;
+	border-radius: 0.2rem;
+	border-width: 1.5px;
+	border-style: solid;
+	font-weight: 700;
 }
 
 /* ── Separator ────────────────────────────────────────────────────────────── */
 [data-theme="cinnamiku"] [data-slot="separator"] {
-	background-color: var(--border-divider) !important;
+	background-color: var(--border-divider);
 }
 
 /* ── Dialog / Sheet / Modal: window-frame style ──────────────────────────── */
 [data-theme="cinnamiku"] [data-slot="dialog-content"],
 [data-theme="cinnamiku"] [data-slot="sheet-content"] {
-	background: var(--surface-card) !important;
-	border: 2px solid var(--border-default) !important;
-	border-radius: 0.25rem !important;
-	box-shadow: var(--panel-shadow) !important;
-	backdrop-filter: none !important;
+	background: var(--surface-card);
+	border: 2px solid var(--border-default);
+	border-radius: 0.25rem;
+	box-shadow: var(--panel-shadow);
+	backdrop-filter: none;
 	overflow: hidden;
 }
 
@@ -1385,32 +1385,32 @@
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 [data-theme="cinnamiku"] [data-slot="tabs-list"] {
-	background: var(--surface-sunken) !important;
-	border: 2px solid var(--border-default) !important;
-	border-radius: 0.25rem !important;
-	gap: 2px !important;
+	background: var(--surface-sunken);
+	border: 2px solid var(--border-default);
+	border-radius: 0.25rem;
+	gap: 2px;
 }
 
 [data-theme="cinnamiku"] [data-slot="tabs-trigger"][data-state="active"] {
-	background: var(--surface-card) !important;
-	color: var(--primary) !important;
-	border-radius: 0.2rem !important;
-	box-shadow: none !important;
-	border-bottom: 2px solid var(--primary) !important;
-	font-weight: 700 !important;
+	background: var(--surface-card);
+	color: var(--primary);
+	border-radius: 0.2rem;
+	box-shadow: none;
+	border-bottom: 2px solid var(--primary);
+	font-weight: 700;
 }
 
 /* ── Select trigger ──────────────────────────────────────────────────────── */
 [data-theme="cinnamiku"] [data-slot="select-trigger"] {
-	border: 2px solid var(--input-border) !important;
-	border-radius: 0.25rem !important;
-	background: var(--input-bg) !important;
+	border: 2px solid var(--input-border);
+	border-radius: 0.25rem;
+	background: var(--input-bg);
 }
 
 /* ── Switch ──────────────────────────────────────────────────────────────── */
 [data-theme="cinnamiku"] [data-slot="switch"] {
-	border: 2px solid var(--border-default) !important;
-	border-radius: 9999px !important;
+	border: 2px solid var(--border-default);
+	border-radius: 9999px;
 }
 
 /* ── Scrollbar: thin, square ─────────────────────────────────────────────── */
@@ -1423,7 +1423,7 @@
 }
 [data-theme="cinnamiku"] ::-webkit-scrollbar-thumb {
 	background: var(--scrollbar-thumb);
-	border-radius: 0 !important;
+	border-radius: 0;
 	border: 1px solid var(--border-default);
 }
 [data-theme="cinnamiku"] ::-webkit-scrollbar-thumb:hover {
@@ -1432,19 +1432,19 @@
 
 /* ── Shadow utility overrides ────────────────────────────────────────────── */
 [data-theme="cinnamiku"] .shadow-sm {
-	box-shadow: var(--card-shadow) !important;
+	box-shadow: var(--card-shadow);
 }
 [data-theme="cinnamiku"] .shadow-md {
-	box-shadow: var(--card-shadow) !important;
+	box-shadow: var(--card-shadow);
 }
 [data-theme="cinnamiku"] .shadow-lg {
-	box-shadow: var(--panel-shadow) !important;
+	box-shadow: var(--panel-shadow);
 }
 [data-theme="cinnamiku"] .shadow-xl {
-	box-shadow: var(--panel-shadow) !important;
+	box-shadow: var(--panel-shadow);
 }
 [data-theme="cinnamiku"] .shadow-2xl {
-	box-shadow: var(--panel-shadow) !important;
+	box-shadow: var(--panel-shadow);
 }
 
 /* ── Remove blur/glow blobs ──────────────────────────────────────────────── */
@@ -1452,28 +1452,28 @@
 [data-theme="cinnamiku"] .blur-2xl,
 [data-theme="cinnamiku"] .blur-xl,
 [data-theme="cinnamiku"] .blur-lg {
-	display: none !important;
+	display: none;
 }
 
 /* ── FloatingStatusBar ───────────────────────────────────────────────────── */
 [data-theme="cinnamiku"] header.fixed {
-	top: 6px !important;
+	top: 6px;
 }
 [data-theme="cinnamiku"] header.fixed > div > div:last-child {
-	background: var(--surface-card) !important;
-	border: 2px solid var(--border-default) !important;
-	border-radius: 0.25rem !important;
-	box-shadow: var(--card-shadow) !important;
-	backdrop-filter: none !important;
+	background: var(--surface-card);
+	border: 2px solid var(--border-default);
+	border-radius: 0.25rem;
+	box-shadow: var(--card-shadow);
+	backdrop-filter: none;
 }
 
 /* ── Dropdown menu ───────────────────────────────────────────────────────── */
 [data-theme="cinnamiku"] [role="menu"] {
-	background: var(--surface-card) !important;
-	border: 2px solid var(--border-default) !important;
-	border-radius: 0.25rem !important;
-	box-shadow: var(--card-shadow) !important;
-	backdrop-filter: none !important;
+	background: var(--surface-card);
+	border: 2px solid var(--border-default);
+	border-radius: 0.25rem;
+	box-shadow: var(--card-shadow);
+	backdrop-filter: none;
 }
 
 /* ── Dark mode ───────────────────────────────────────────────────────────── */
@@ -1485,13 +1485,13 @@
 .dark input:not([type="range"]),
 .dark textarea,
 .dark select {
-	background-color: var(--input-bg) !important;
-	color: var(--text-primary) !important;
-	border-color: var(--input-border) !important;
+	background-color: var(--input-bg);
+	color: var(--text-primary);
+	border-color: var(--input-border);
 }
 .dark input::placeholder,
 .dark textarea::placeholder {
-	color: var(--text-placeholder) !important;
+	color: var(--text-placeholder);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1502,75 +1502,75 @@
 
 /* Card: soft shadow, 1px border */
 [data-theme="pro"] [data-slot="card"] {
-	border-width: 1px !important;
-	border-style: solid !important;
-	border-color: var(--border-default) !important;
-	box-shadow: var(--card-shadow) !important;
-	border-radius: var(--radius) !important;
+	border-width: 1px;
+	border-style: solid;
+	border-color: var(--border-default);
+	box-shadow: var(--card-shadow);
+	border-radius: var(--radius);
 	backdrop-filter: none;
 }
 
 /* Inline-style borders on divs/cards set to 2px — restore to 1px */
 [data-theme="pro"] [style*="border: 2px solid"],
 [data-theme="pro"] [style*="border:2px solid"] {
-	border-width: 1px !important;
+	border-width: 1px;
 }
 
 /* Inline border-2 Tailwind class */
 [data-theme="pro"] .border-2 {
-	border-width: 1px !important;
+	border-width: 1px;
 }
 
 /* Buttons: soft shadow */
 [data-theme="pro"] [data-slot="button"],
 [data-theme="pro"] button {
-	box-shadow: var(--btn-shadow) !important;
-	border-radius: var(--radius) !important;
-	transform: none !important;
+	box-shadow: var(--btn-shadow);
+	border-radius: var(--radius);
+	transform: none;
 }
 
 [data-theme="pro"] [data-slot="button"]:hover,
 [data-theme="pro"] button:hover {
-	box-shadow: var(--btn-shadow-hover) !important;
-	transform: none !important;
+	box-shadow: var(--btn-shadow-hover);
+	transform: none;
 }
 
 [data-theme="pro"] [data-slot="button"]:active,
 [data-theme="pro"] button:active {
-	box-shadow: var(--btn-shadow-active) !important;
-	transform: none !important;
+	box-shadow: var(--btn-shadow-active);
+	transform: none;
 }
 
 /* Rounded corners: restore pro's original radius */
 [data-theme="pro"] .rounded {
-	border-radius: 0.25rem !important;
+	border-radius: 0.25rem;
 }
 [data-theme="pro"] .rounded-lg {
-	border-radius: var(--radius) !important;
+	border-radius: var(--radius);
 }
 [data-theme="pro"] .rounded-xl {
-	border-radius: calc(var(--radius) + 4px) !important;
+	border-radius: calc(var(--radius) + 4px);
 }
 [data-theme="pro"] .rounded-2xl {
-	border-radius: calc(var(--radius) + 8px) !important;
+	border-radius: calc(var(--radius) + 8px);
 }
 [data-theme="pro"] .rounded-full {
-	border-radius: 9999px !important;
+	border-radius: 9999px;
 }
 
 /* Tabs list */
 [data-theme="pro"] [role="tablist"] {
-	border-width: 1px !important;
-	border-radius: var(--radius) !important;
+	border-width: 1px;
+	border-radius: var(--radius);
 }
 
 /* Dialog / popover */
 [data-theme="pro"] [data-slot="dialog-content"],
 [data-theme="pro"] [data-slot="popover-content"],
 [data-theme="pro"] [role="dialog"] {
-	border-width: 1px !important;
-	border-radius: calc(var(--radius) + 4px) !important;
-	box-shadow: var(--panel-shadow) !important;
+	border-width: 1px;
+	border-radius: calc(var(--radius) + 4px);
+	box-shadow: var(--panel-shadow);
 }
 
 /* Inputs */
@@ -1578,7 +1578,7 @@
 	input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
 [data-theme="pro"] textarea,
 [data-theme="pro"] select {
-	border-width: 1px !important;
-	border-radius: var(--radius) !important;
-	box-shadow: none !important;
+	border-width: 1px;
+	border-radius: var(--radius);
+	box-shadow: none;
 }

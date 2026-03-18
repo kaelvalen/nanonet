@@ -11,7 +11,6 @@ import {
 	Cloud,
 	Eye,
 	Heart,
-	HelpCircle,
 	Lightbulb,
 	Plus,
 	Server,
@@ -109,7 +108,7 @@ function AnimatedCounter({
 	return <span ref={ref}>{display}</span>;
 }
 
-function UptimeRing({
+function _UptimeRing({
 	percent,
 	size = 56,
 }: {

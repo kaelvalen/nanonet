@@ -22,7 +22,6 @@ import { Link } from "react-router";
 import { metricsApi } from "@/api/metrics";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useServices } from "@/hooks/useServices";

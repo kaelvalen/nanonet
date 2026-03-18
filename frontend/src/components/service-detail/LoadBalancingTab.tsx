@@ -9,7 +9,7 @@ import {
 	Terminal,
 	TrendingUp,
 } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import { toast } from "sonner";
 import { k8sApi } from "@/api/k8s";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,7 @@ export function LoadBalancingTab({
 	scaleLoading,
 	handleScale,
 }: LoadBalancingTabProps) {
-	const queryClient = useQueryClient();
+	const _queryClient = useQueryClient();
 	const [k8sMode, setK8sMode] = React.useState<"k8s" | "agent">("k8s");
 	const [k8sDeployName, setK8sDeployName] = React.useState(
 		serviceName.toLowerCase().replace(/\s+/g, "-"),
@@ -78,7 +78,7 @@ export function LoadBalancingTab({
 		queryKey: ["k8s-hpa-lb", k8sDeployName],
 		queryFn: async () => {
 			try {
-				return await k8sApi.getHPA(k8sDeployName + "-hpa");
+				return await k8sApi.getHPA(`${k8sDeployName}-hpa`);
 			} catch (err: any) {
 				const status = err?.response?.status;
 				if (status === 404) return null;

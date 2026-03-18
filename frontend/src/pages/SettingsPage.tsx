@@ -631,7 +631,7 @@ export function SettingsPage() {
 									onChange={(e) =>
 										setMonitoring((p) => ({
 											...p,
-											pollInterval: parseInt(e.target.value) || 10,
+											pollInterval: parseInt(e.target.value, 10) || 10,
 										}))
 									}
 									className="rounded text-xs h-9 w-24"
@@ -716,7 +716,7 @@ export function SettingsPage() {
 									onChange={(e) =>
 										setAi((p) => ({
 											...p,
-											window: parseInt(e.target.value) || 30,
+											window: parseInt(e.target.value, 10) || 30,
 										}))
 									}
 									className="rounded text-xs h-9 w-24"

@@ -6,7 +6,6 @@ import {
 	RefreshCw,
 } from "lucide-react";
 import { motion } from "motion/react";
-import React from "react";
 import type { EventInfo } from "@/api/k8s";
 import { Card } from "@/components/ui/card";
 import {

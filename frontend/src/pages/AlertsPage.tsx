@@ -22,7 +22,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { type Alert, type AlertRules, metricsApi } from "@/api/metrics";
+import { type AlertRules, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -231,163 +231,160 @@ function AlertRulesPanel() {
 				</Card>
 			)}
 
-			{selectedServiceId && (
-				<>
-					{rulesLoading ? (
-						<div
-							className="flex items-center gap-2 py-6 text-xs"
-							style={{ color: "var(--text-faint)" }}
-						>
-							<Loader2 className="w-4 h-4 animate-spin" />
-							Eşik değerleri yükleniyor...
-						</div>
-					) : (
-						<div className="space-y-3">
-							{rules?.is_default === true && (
-								<div
-									className="flex items-center gap-2 px-3 py-2 rounded text-xs"
-									style={{
-										background: "var(--color-blue-subtle)",
-										border: "2px solid var(--color-blue-border)",
-										color: "var(--color-blue-text)",
-									}}
-								>
-									<Info className="w-3.5 h-3.5 shrink-0" />
-									Bu servis şu an global varsayılan eşik değerlerini kullanıyor.
-								</div>
-							)}
-							{fields.map((f) => (
-								<Card
-									key={f.key}
-									className="p-4 rounded"
-									style={{
-										background: "var(--surface-card)",
-										border: "2px solid var(--border-default)",
-										boxShadow: "var(--card-shadow)",
-									}}
-								>
-									<div className="flex items-center gap-2 mb-3">
-										<div
-											className="w-8 h-8 rounded flex items-center justify-center shrink-0"
-											style={{
-												border: `1.5px solid ${f.color}`,
-												backgroundColor: `color-mix(in srgb, ${f.color} 12%, transparent)`,
-											}}
-										>
-											<f.icon className="w-4 h-4" style={{ color: f.color }} />
-										</div>
-										<div className="flex-1 min-w-0">
-											<p
-												className="text-xs font-semibold"
-												style={{ color: "var(--text-secondary)" }}
-											>
-												{f.label}
-											</p>
-											<p
-												className="text-[10px] truncate"
-												style={{ color: "var(--text-faint)" }}
-											>
-												{f.hint}
-											</p>
-										</div>
-										<div className="flex items-center gap-1.5 shrink-0">
-											<Input
-												type="number"
-												value={f.value}
-												min={f.min}
-												max={f.max}
-												step={f.step}
-												onChange={(e) =>
-													setField(f.key, Number(e.target.value) as never)
-												}
-												className="w-24 h-8 text-xs text-right rounded"
-												style={{
-													background: "var(--input-bg)",
-													borderColor: `color-mix(in srgb, ${f.color} 40%, var(--input-border))`,
-													color: "var(--text-secondary)",
-												}}
-											/>
-											<span
-												className="text-[10px] w-6"
-												style={{ color: "var(--text-faint)" }}
-											>
-												{f.unit}
-											</span>
-										</div>
-									</div>
-									<Slider
-										value={[f.value]}
-										min={f.min}
-										max={f.max}
-										step={f.step}
-										onValueChange={([v]) => setField(f.key, v as never)}
-										className="mt-1"
-									/>
-									<div
-										className="flex justify-between text-[9px] mt-1"
-										style={{ color: "var(--text-faint)" }}
-									>
-										<span>
-											{f.min}
-											{f.unit}
-										</span>
-										<span style={{ color: f.color, fontWeight: 600 }}>
-											{f.key === "error_rate_threshold"
-												? (f.value * 100).toFixed(0) + "%"
-												: f.value + f.unit}
-										</span>
-										<span>
-											{f.max}
-											{f.unit}
-										</span>
-									</div>
-								</Card>
-							))}
-
-							<div className="flex items-center gap-2 justify-end pt-1">
-								{isDirty && (
-									<button
-										onClick={() => {
-											setDraft(null);
-										}}
-										className="px-3 h-9 rounded text-xs border-2"
-										style={{
-											borderColor: "var(--border-default)",
-											color: "var(--text-muted)",
-											boxShadow: "var(--btn-shadow)",
-										}}
-									>
-										<RefreshCw className="w-3.5 h-3.5 inline mr-1" />
-										Sıfırla
-									</button>
-								)}
-								<Button
-									onClick={() => saveMutation.mutate()}
-									disabled={!isDirty || saveMutation.isPending}
-									className="h-9 px-4 rounded text-xs text-white"
-									style={{
-										background: isDirty
-											? "var(--color-teal)"
-											: "var(--text-faint)",
-									}}
-								>
-									{saveMutation.isPending ? (
-										<>
-											<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-											Kaydediliyor...
-										</>
-									) : (
-										<>
-											<Save className="w-3.5 h-3.5 mr-1.5" />
-											Kaydet
-										</>
-									)}
-								</Button>
+			{selectedServiceId &&
+				(rulesLoading ? (
+					<div
+						className="flex items-center gap-2 py-6 text-xs"
+						style={{ color: "var(--text-faint)" }}
+					>
+						<Loader2 className="w-4 h-4 animate-spin" />
+						Eşik değerleri yükleniyor...
+					</div>
+				) : (
+					<div className="space-y-3">
+						{rules?.is_default === true && (
+							<div
+								className="flex items-center gap-2 px-3 py-2 rounded text-xs"
+								style={{
+									background: "var(--color-blue-subtle)",
+									border: "2px solid var(--color-blue-border)",
+									color: "var(--color-blue-text)",
+								}}
+							>
+								<Info className="w-3.5 h-3.5 shrink-0" />
+								Bu servis şu an global varsayılan eşik değerlerini kullanıyor.
 							</div>
+						)}
+						{fields.map((f) => (
+							<Card
+								key={f.key}
+								className="p-4 rounded"
+								style={{
+									background: "var(--surface-card)",
+									border: "2px solid var(--border-default)",
+									boxShadow: "var(--card-shadow)",
+								}}
+							>
+								<div className="flex items-center gap-2 mb-3">
+									<div
+										className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+										style={{
+											border: `1.5px solid ${f.color}`,
+											backgroundColor: `color-mix(in srgb, ${f.color} 12%, transparent)`,
+										}}
+									>
+										<f.icon className="w-4 h-4" style={{ color: f.color }} />
+									</div>
+									<div className="flex-1 min-w-0">
+										<p
+											className="text-xs font-semibold"
+											style={{ color: "var(--text-secondary)" }}
+										>
+											{f.label}
+										</p>
+										<p
+											className="text-[10px] truncate"
+											style={{ color: "var(--text-faint)" }}
+										>
+											{f.hint}
+										</p>
+									</div>
+									<div className="flex items-center gap-1.5 shrink-0">
+										<Input
+											type="number"
+											value={f.value}
+											min={f.min}
+											max={f.max}
+											step={f.step}
+											onChange={(e) =>
+												setField(f.key, Number(e.target.value) as never)
+											}
+											className="w-24 h-8 text-xs text-right rounded"
+											style={{
+												background: "var(--input-bg)",
+												borderColor: `color-mix(in srgb, ${f.color} 40%, var(--input-border))`,
+												color: "var(--text-secondary)",
+											}}
+										/>
+										<span
+											className="text-[10px] w-6"
+											style={{ color: "var(--text-faint)" }}
+										>
+											{f.unit}
+										</span>
+									</div>
+								</div>
+								<Slider
+									value={[f.value]}
+									min={f.min}
+									max={f.max}
+									step={f.step}
+									onValueChange={([v]) => setField(f.key, v as never)}
+									className="mt-1"
+								/>
+								<div
+									className="flex justify-between text-[9px] mt-1"
+									style={{ color: "var(--text-faint)" }}
+								>
+									<span>
+										{f.min}
+										{f.unit}
+									</span>
+									<span style={{ color: f.color, fontWeight: 600 }}>
+										{f.key === "error_rate_threshold"
+											? `${(f.value * 100).toFixed(0)}%`
+											: f.value + f.unit}
+									</span>
+									<span>
+										{f.max}
+										{f.unit}
+									</span>
+								</div>
+							</Card>
+						))}
+
+						<div className="flex items-center gap-2 justify-end pt-1">
+							{isDirty && (
+								<button
+									onClick={() => {
+										setDraft(null);
+									}}
+									className="px-3 h-9 rounded text-xs border-2"
+									style={{
+										borderColor: "var(--border-default)",
+										color: "var(--text-muted)",
+										boxShadow: "var(--btn-shadow)",
+									}}
+								>
+									<RefreshCw className="w-3.5 h-3.5 inline mr-1" />
+									Sıfırla
+								</button>
+							)}
+							<Button
+								onClick={() => saveMutation.mutate()}
+								disabled={!isDirty || saveMutation.isPending}
+								className="h-9 px-4 rounded text-xs text-white"
+								style={{
+									background: isDirty
+										? "var(--color-teal)"
+										: "var(--text-faint)",
+								}}
+							>
+								{saveMutation.isPending ? (
+									<>
+										<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+										Kaydediliyor...
+									</>
+								) : (
+									<>
+										<Save className="w-3.5 h-3.5 mr-1.5" />
+										Kaydet
+									</>
+								)}
+							</Button>
 						</div>
-					)}
-				</>
-			)}
+					</div>
+				))}
 		</div>
 	);
 }
