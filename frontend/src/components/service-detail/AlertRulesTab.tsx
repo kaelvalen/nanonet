@@ -209,12 +209,12 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 							}}
 						>
 							<div className="flex items-center justify-between">
-								<label
+								<p
 									className="text-[10px] uppercase tracking-wider font-semibold"
 									style={{ color }}
 								>
 									{label}
-								</label>
+								</p>
 								<span
 									className="text-xs font-bold tabular-nums"
 									style={{ color: "var(--text-secondary)" }}

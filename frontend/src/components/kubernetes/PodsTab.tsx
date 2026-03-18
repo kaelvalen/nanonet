@@ -21,7 +21,11 @@ export interface PodsTabProps {
 	pods: PodInfo[];
 	filteredPods: PodInfo[];
 	setLogPod: (name: string | null) => void;
-	deletePodMutation: any;
+	deletePodMutation: {
+		mutate: (args: unknown) => void;
+		isPending: boolean;
+		variables?: string;
+	};
 	PodStatusBadge: React.FC<{ status: string }>;
 	StatusDot: React.FC<{ ready: boolean; size?: "sm" | "md" }>;
 }
@@ -65,6 +69,7 @@ export function PodsTab({
 					/>
 				</div>
 				<button
+					type="button"
 					onClick={() => refetchAllPods()}
 					disabled={allPodsLoading}
 					className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs border transition-all"
@@ -175,6 +180,7 @@ export function PodsTab({
 									</div>
 									<PodStatusBadge status={pod.status} />
 									<button
+										type="button"
 										onClick={() => setLogPod(pod.name)}
 										title="Log'ları Görüntüle"
 										className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
@@ -187,6 +193,7 @@ export function PodsTab({
 										<Terminal className="w-3.5 h-3.5" />
 									</button>
 									<button
+										type="button"
 										onClick={() => {
 											if (
 												confirm(

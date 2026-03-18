@@ -7,8 +7,8 @@ export interface SettingsHistoryEntry {
 	timestamp: string;
 	timestamp_ms: number;
 	setting: keyof A11yPreferences;
-	old_value: any;
-	new_value: any;
+	old_value: unknown;
+	new_value: unknown;
 	description: string;
 }
 
@@ -71,8 +71,8 @@ export const useSettingsHistoryStore = create<SettingsHistoryStore>()(
  */
 export function generateHistoryDescription(
 	setting: keyof A11yPreferences,
-	oldValue: any,
-	newValue: any,
+	oldValue: unknown,
+	newValue: unknown,
 	_t?: (key: string) => string,
 ): string {
 	switch (setting) {

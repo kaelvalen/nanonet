@@ -105,6 +105,7 @@ export function AIAssistant() {
 						className="fixed bottom-6 right-6 z-50"
 					>
 						<button
+							type="button"
 							onClick={() => setIsOpen(true)}
 							className="relative w-16 h-16 rounded transition-all duration-200 group"
 							style={{
@@ -203,9 +204,9 @@ export function AIAssistant() {
 								<>
 									{/* Messages */}
 									<div className="flex-1 p-4 space-y-4 overflow-y-auto">
-										{chatMessages.map((msg, i) => (
+										{chatMessages.map((msg) => (
 											<div
-												key={i}
+												key={msg.time + msg.role}
 												className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
 											>
 												{msg.role === "ai" && (
@@ -264,9 +265,10 @@ export function AIAssistant() {
 												>
 													Önerilen sorular:
 												</p>
-												{suggestions.map((suggestion, i) => (
+												{suggestions.map((suggestion) => (
 													<button
-														key={i}
+														type="button"
+														key={suggestion}
 														className="w-full text-left px-3 py-2 rounded text-sm transition-all"
 														style={{
 															background: "var(--surface-sunken)",

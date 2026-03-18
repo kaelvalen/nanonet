@@ -223,6 +223,7 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 
 				{/* Collapse button */}
 				<button
+					type="button"
 					onClick={handleToggle}
 					className="w-full flex items-center justify-center py-1.5 rounded text-xs transition-colors"
 					style={{

@@ -29,7 +29,7 @@ export interface LoadBalancingTabProps {
 }
 
 export function LoadBalancingTab({
-	serviceId,
+	serviceId: _serviceId,
 	serviceName,
 	scaleInstances,
 	setScaleInstances,
@@ -38,7 +38,7 @@ export function LoadBalancingTab({
 	scaleLoading,
 	handleScale,
 }: LoadBalancingTabProps) {
-	const _queryClient = useQueryClient();
+	useQueryClient();
 	const [k8sMode, setK8sMode] = React.useState<"k8s" | "agent">("k8s");
 	const [k8sDeployName, setK8sDeployName] = React.useState(
 		serviceName.toLowerCase().replace(/\s+/g, "-"),
@@ -79,8 +79,9 @@ export function LoadBalancingTab({
 		queryFn: async () => {
 			try {
 				return await k8sApi.getHPA(`${k8sDeployName}-hpa`);
-			} catch (err: any) {
-				const status = err?.response?.status;
+			} catch (err: unknown) {
+				const status = (err as { response?: { status?: number } })?.response
+					?.status;
 				if (status === 404) return null;
 				throw err;
 			}
@@ -125,6 +126,7 @@ export function LoadBalancingTab({
 			{/* Mode Toggle */}
 			<div className="flex items-center gap-2">
 				<button
+					type="button"
 					onClick={() => setK8sMode("k8s")}
 					className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
 					style={
@@ -143,6 +145,7 @@ export function LoadBalancingTab({
 						fill="none"
 						stroke="currentColor"
 						strokeWidth="2"
+						aria-hidden="true"
 					>
 						<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
 					</svg>
@@ -163,6 +166,7 @@ export function LoadBalancingTab({
 					)}
 				</button>
 				<button
+					type="button"
 					onClick={() => setK8sMode("agent")}
 					className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
 					style={
@@ -234,6 +238,7 @@ export function LoadBalancingTab({
 								}}
 							>
 								<label
+									htmlFor="k8s-deploy-name"
 									className="text-[10px] uppercase tracking-wider block mb-2"
 									style={{ color: "var(--text-muted)" }}
 								>
@@ -241,6 +246,7 @@ export function LoadBalancingTab({
 								</label>
 								<div className="flex items-center gap-2">
 									<Input
+										id="k8s-deploy-name"
 										value={k8sDeployName}
 										onChange={(e) => setK8sDeployName(e.target.value)}
 										placeholder="deployment-name"
@@ -358,14 +364,15 @@ export function LoadBalancingTab({
 											border: "2px solid var(--border-default)",
 										}}
 									>
-										<label
+										<p
 											className="text-[10px] uppercase tracking-wider block mb-2"
 											style={{ color: "var(--text-muted)" }}
 										>
 											Kubernetes Scale
-										</label>
+										</p>
 										<div className="flex items-center gap-3">
 											<button
+												type="button"
 												onClick={() =>
 													setK8sReplicas(Math.max(0, k8sReplicas - 1))
 												}
@@ -385,6 +392,7 @@ export function LoadBalancingTab({
 												{k8sReplicas}
 											</span>
 											<button
+												type="button"
 												onClick={() =>
 													setK8sReplicas(Math.min(32, k8sReplicas + 1))
 												}
@@ -400,6 +408,7 @@ export function LoadBalancingTab({
 											<div className="flex gap-1 ml-1">
 												{[1, 2, 4, 8].map((n) => (
 													<button
+														type="button"
 														key={n}
 														onClick={() => setK8sReplicas(n)}
 														className="px-2 py-1 rounded text-[10px] font-medium border-2 transition-all"
@@ -469,69 +478,77 @@ export function LoadBalancingTab({
 												borderColor: "var(--color-teal-border)",
 											}}
 										>
-											{pods.filter((p: any) => p.ready).length}/{pods.length}{" "}
-											hazır
+											{pods.filter((p: { ready: boolean }) => p.ready).length}/
+											{pods.length} hazır
 										</Badge>
 									</div>
 									<div className="space-y-1.5">
-										{pods.map((pod: any) => (
-											<div
-												key={pod.name}
-												className="flex items-center gap-2 px-3 py-2 rounded"
-												style={{
-													background: "var(--surface-sunken)",
-													border: "1.5px solid var(--border-default)",
-												}}
-											>
+										{pods.map(
+											(pod: {
+												name: string;
+												ready: boolean;
+												ip: string;
+												restarts: number;
+												status: string;
+											}) => (
 												<div
-													className="w-2 h-2 rounded-full shrink-0"
+													key={pod.name}
+													className="flex items-center gap-2 px-3 py-2 rounded"
 													style={{
-														backgroundColor: pod.ready
-															? "var(--status-up)"
-															: "var(--status-down)",
+														background: "var(--surface-sunken)",
+														border: "1.5px solid var(--border-default)",
 													}}
-												/>
-												<span
-													className="text-[11px] font-mono truncate flex-1"
-													style={{ color: "var(--text-secondary)" }}
 												>
-													{pod.name}
-												</span>
-												<span
-													className="text-[9px]"
-													style={{ color: "var(--text-faint)" }}
-												>
-													{pod.ip}
-												</span>
-												{pod.restarts > 0 && (
-													<span
-														className="text-[9px] px-1.5 py-0.5 rounded-full"
+													<div
+														className="w-2 h-2 rounded-full shrink-0"
 														style={{
-															background: "var(--status-warn-subtle)",
-															color: "var(--status-warn-text)",
+															backgroundColor: pod.ready
+																? "var(--status-up)"
+																: "var(--status-down)",
 														}}
+													/>
+													<span
+														className="text-[11px] font-mono truncate flex-1"
+														style={{ color: "var(--text-secondary)" }}
 													>
-														{pod.restarts}↻
+														{pod.name}
 													</span>
-												)}
-												<Badge
-													className="text-[8px] px-1 py-0 rounded shrink-0"
-													style={
-														pod.status === "Running"
-															? {
-																	background: "var(--status-up-subtle)",
-																	color: "var(--status-up-text)",
-																}
-															: {
-																	background: "var(--status-down-subtle)",
-																	color: "var(--status-down-text)",
-																}
-													}
-												>
-													{pod.status}
-												</Badge>
-											</div>
-										))}
+													<span
+														className="text-[9px]"
+														style={{ color: "var(--text-faint)" }}
+													>
+														{pod.ip}
+													</span>
+													{pod.restarts > 0 && (
+														<span
+															className="text-[9px] px-1.5 py-0.5 rounded-full"
+															style={{
+																background: "var(--status-warn-subtle)",
+																color: "var(--status-warn-text)",
+															}}
+														>
+															{pod.restarts}↻
+														</span>
+													)}
+													<Badge
+														className="text-[8px] px-1 py-0 rounded shrink-0"
+														style={
+															pod.status === "Running"
+																? {
+																		background: "var(--status-up-subtle)",
+																		color: "var(--status-up-text)",
+																	}
+																: {
+																		background: "var(--status-down-subtle)",
+																		color: "var(--status-down-text)",
+																	}
+														}
+													>
+														{pod.status}
+													</Badge>
+												</div>
+											),
+										)}
 									</div>
 								</Card>
 							)}
@@ -579,23 +596,27 @@ export function LoadBalancingTab({
 											{[
 												{
 													label: "Min",
-													value: (hpaInfo as any).min_replicas,
+													value: (hpaInfo as { min_replicas: number })
+														.min_replicas,
 													color: "var(--color-lavender)",
 												},
 												{
 													label: "Max",
-													value: (hpaInfo as any).max_replicas,
+													value: (hpaInfo as { max_replicas: number })
+														.max_replicas,
 													color: "var(--color-lavender)",
 												},
 												{
 													label: "Mevcut",
-													value: (hpaInfo as any).current_replicas,
+													value: (hpaInfo as { current_replicas: number })
+														.current_replicas,
 													color: "var(--color-blue)",
 												},
 												{
 													label: "CPU Hedef",
-													value: (hpaInfo as any).cpu_target_percent
-														? `%${(hpaInfo as any).cpu_target_percent}`
+													value: (hpaInfo as { cpu_target_percent?: number })
+														.cpu_target_percent
+														? `%${(hpaInfo as { cpu_target_percent: number }).cpu_target_percent}`
 														: "-",
 													color: "var(--status-up)",
 												},
@@ -627,14 +648,15 @@ export function LoadBalancingTab({
 
 									<div className="grid grid-cols-3 gap-3 mb-3">
 										<div>
-											<label
+											<p
 												className="text-[9px] uppercase tracking-wider block mb-1"
 												style={{ color: "var(--text-faint)" }}
 											>
 												Min
-											</label>
+											</p>
 											<div className="flex items-center gap-1">
 												<button
+													type="button"
 													onClick={() => setHpaMin(Math.max(1, hpaMin - 1))}
 													aria-label="Decrease minimum replicas"
 													className="w-6 h-6 rounded flex items-center justify-center"
@@ -652,6 +674,7 @@ export function LoadBalancingTab({
 													{hpaMin}
 												</span>
 												<button
+													type="button"
 													onClick={() => setHpaMin(hpaMin + 1)}
 													aria-label="Increase minimum replicas"
 													className="w-6 h-6 rounded flex items-center justify-center"
@@ -665,14 +688,15 @@ export function LoadBalancingTab({
 											</div>
 										</div>
 										<div>
-											<label
+											<p
 												className="text-[9px] uppercase tracking-wider block mb-1"
 												style={{ color: "var(--text-faint)" }}
 											>
 												Max
-											</label>
+											</p>
 											<div className="flex items-center gap-1">
 												<button
+													type="button"
 													onClick={() =>
 														setHpaMax(Math.max(hpaMin, hpaMax - 1))
 													}
@@ -692,6 +716,7 @@ export function LoadBalancingTab({
 													{hpaMax}
 												</span>
 												<button
+													type="button"
 													onClick={() => setHpaMax(hpaMax + 1)}
 													aria-label="Increase maximum replicas"
 													className="w-6 h-6 rounded flex items-center justify-center"
@@ -705,12 +730,12 @@ export function LoadBalancingTab({
 											</div>
 										</div>
 										<div>
-											<label
+											<p
 												className="text-[9px] uppercase tracking-wider block mb-1"
 												style={{ color: "var(--text-faint)" }}
 											>
 												CPU %
-											</label>
+											</p>
 											<Input
 												type="number"
 												value={hpaCpu}
@@ -790,14 +815,15 @@ export function LoadBalancingTab({
 					<div className="space-y-4">
 						{/* Instance count */}
 						<div>
-							<label
+							<p
 								className="text-[10px] uppercase tracking-wider block mb-2"
 								style={{ color: "var(--text-muted)" }}
 							>
 								Instance Sayısı
-							</label>
+							</p>
 							<div className="flex items-center gap-3">
 								<button
+									type="button"
 									onClick={() =>
 										setScaleInstances(Math.max(0, scaleInstances - 1))
 									}
@@ -817,6 +843,7 @@ export function LoadBalancingTab({
 									{scaleInstances}
 								</span>
 								<button
+									type="button"
 									onClick={() =>
 										setScaleInstances(Math.min(32, scaleInstances + 1))
 									}
@@ -832,6 +859,7 @@ export function LoadBalancingTab({
 								<div className="flex gap-1 ml-2">
 									{[1, 2, 4, 8].map((n) => (
 										<button
+											type="button"
 											key={n}
 											onClick={() => setScaleInstances(n)}
 											className="px-2.5 py-1 rounded text-[10px] font-medium border-2 transition-all"
@@ -857,12 +885,12 @@ export function LoadBalancingTab({
 
 						{/* Strategy */}
 						<div>
-							<label
+							<p
 								className="text-[10px] uppercase tracking-wider block mb-2"
 								style={{ color: "var(--text-muted)" }}
 							>
 								LB Stratejisi
-							</label>
+							</p>
 							<div className="grid grid-cols-3 gap-2">
 								{[
 									{
@@ -882,6 +910,7 @@ export function LoadBalancingTab({
 									},
 								].map((s) => (
 									<button
+										type="button"
 										key={s.value}
 										onClick={() => setScaleStrategy(s.value)}
 										className="p-3 rounded border-2 text-left transition-all"

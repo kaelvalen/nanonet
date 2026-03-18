@@ -36,6 +36,7 @@ export function ServicesTab({
 					)}
 				</p>
 				<button
+					type="button"
 					onClick={() => refetchServices()}
 					disabled={servicesLoading}
 					className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
@@ -138,9 +139,9 @@ export function ServicesTab({
 							</div>
 							{svc.ports && svc.ports.length > 0 && (
 								<div className="flex flex-wrap gap-1.5 mt-2">
-									{svc.ports.map((port, pi) => (
+									{svc.ports.map((port) => (
 										<span
-											key={pi}
+											key={String(port)}
 											className="px-2 py-0.5 rounded-md text-[10px] font-mono"
 											style={{
 												background: "var(--surface-sunken)",

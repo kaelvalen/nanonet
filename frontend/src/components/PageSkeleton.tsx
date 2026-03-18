@@ -40,9 +40,9 @@ export function PageSkeleton() {
 
 			{/* Content blocks */}
 			<div className="space-y-3">
-				{[80, 65, 90, 55].map((w, i) => (
+				{[80, 65, 90, 55].map((w) => (
 					<Card
-						key={i}
+						key={w}
 						className="p-4 rounded"
 						style={{
 							background: "var(--surface-card)",
@@ -73,7 +73,7 @@ export function CardSkeleton({ rows = 3 }: { rows?: number }) {
 				border: "2px solid var(--border-default)",
 			}}
 		>
-			{Array.from({ length: rows }).map((_, i) => (
+			{Array.from({ length: rows }, (_, i) => i).map((i) => (
 				<div
 					key={i}
 					className="h-3 rounded mb-2 last:mb-0"

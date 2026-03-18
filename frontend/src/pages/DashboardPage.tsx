@@ -125,7 +125,7 @@ function _UptimeRing({
 				? "var(--status-warn)"
 				: "var(--status-down)";
 	return (
-		<svg width={size} height={size} className="-rotate-90">
+		<svg width={size} height={size} className="-rotate-90" aria-hidden="true">
 			<circle
 				cx={size / 2}
 				cy={size / 2}

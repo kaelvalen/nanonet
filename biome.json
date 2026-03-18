@@ -5,7 +5,9 @@
       "!**/target/**",
       "!**/node_modules/**",
       "!**/.git/**",
-      "!**/dist/**"
+      "!**/dist/**",
+      "!frontend/src/styles/tailwind.css",
+      "!frontend/src/styles/theme.css"
     ]
   }
 }

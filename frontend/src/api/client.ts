@@ -63,15 +63,21 @@ apiClient.interceptors.response.use(
 					throw new Error("Geçersiz token yenileme yanıtı");
 				}
 				const store = useAuthStore.getState();
-				store.setAuth(store.user!, access_token, refreshToken);
+				if (store.user) {
+					store.setAuth(store.user, access_token, refreshToken);
+				}
 
-				pendingRequests.forEach(({ resolve }) => resolve(access_token));
+				pendingRequests.forEach(({ resolve }) => {
+					resolve(access_token);
+				});
 				pendingRequests = [];
 
 				originalRequest.headers.Authorization = `Bearer ${access_token}`;
 				return apiClient(originalRequest);
 			} catch (refreshError) {
-				pendingRequests.forEach(({ reject }) => reject(refreshError));
+				pendingRequests.forEach(({ reject }) => {
+					reject(refreshError);
+				});
 				pendingRequests = [];
 				clearAuth();
 				window.location.href = "/login";

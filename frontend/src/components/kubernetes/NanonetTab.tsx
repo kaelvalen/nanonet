@@ -31,8 +31,16 @@ export interface NanonetTabProps {
 			Record<string, { image: string; replicas: number; open: boolean }>
 		>
 	>;
-	deployMutation: any;
-	undeployMutation: any;
+	deployMutation: {
+		mutate: (args: unknown) => void;
+		isPending: boolean;
+		variables?: { name: string };
+	};
+	undeployMutation: {
+		mutate: (args: unknown) => void;
+		isPending: boolean;
+		variables?: string;
+	};
 	refetchNanonetServices: () => void;
 	refetchDeployments: () => void;
 	slugifyForK8s: (name: string) => string;
@@ -102,6 +110,7 @@ export function NanonetTab({
 					</p>
 				</div>
 				<button
+					type="button"
 					onClick={() => {
 						refetchNanonetServices();
 						refetchDeployments();
@@ -258,6 +267,7 @@ export function NanonetTab({
 										{/* Action buttons */}
 										{isDeployed ? (
 											<button
+												type="button"
 												onClick={() => {
 													if (
 														confirm(
@@ -284,6 +294,7 @@ export function NanonetTab({
 											</button>
 										) : (
 											<button
+												type="button"
 												onClick={() =>
 													setDeployForms((prev) => ({
 														...prev,
@@ -325,23 +336,24 @@ export function NanonetTab({
 											>
 												{slug}
 											</span>
-											{deployments.find((d) => d.name === slug) &&
-												(() => {
-													const dep = deployments.find((d) => d.name === slug)!;
-													return (
-														<span
-															style={{
-																color:
-																	dep.ready_replicas === dep.replicas &&
-																	dep.replicas > 0
-																		? "var(--status-up)"
-																		: "var(--status-warn)",
-															}}
-														>
-															· {dep.ready_replicas}/{dep.replicas} ready
-														</span>
-													);
-												})()}
+											{(() => {
+												const dep = deployments.find((d) => d.name === slug);
+												if (!dep) return null;
+												const isReady =
+													dep.ready_replicas === dep.replicas &&
+													dep.replicas > 0;
+												return (
+													<span
+														style={{
+															color: isReady
+																? "var(--status-up)"
+																: "var(--status-warn)",
+														}}
+													>
+														· {dep.ready_replicas}/{dep.replicas} ready
+													</span>
+												);
+											})()}
 										</div>
 									)}
 
@@ -406,6 +418,7 @@ export function NanonetTab({
 													</p>
 													<div className="flex items-center gap-2">
 														<button
+															type="button"
 															onClick={() =>
 																setDeployForms((prev) => ({
 																	...prev,
@@ -438,6 +451,7 @@ export function NanonetTab({
 															{form.replicas}
 														</span>
 														<button
+															type="button"
 															onClick={() =>
 																setDeployForms((prev) => ({
 																	...prev,

@@ -289,6 +289,7 @@ export function AIInsightsPage() {
 								style={{ borderColor: "var(--color-lavender-border)" }}
 							>
 								<button
+									type="button"
 									onClick={() => setDeepAnalysis(false)}
 									className="px-3 py-1.5 text-[10px] font-medium transition-all"
 									style={
@@ -303,6 +304,7 @@ export function AIInsightsPage() {
 									Hızlı
 								</button>
 								<button
+									type="button"
 									onClick={() => setDeepAnalysis(true)}
 									className="px-3 py-1.5 text-[10px] font-medium transition-all"
 									style={
@@ -364,7 +366,7 @@ export function AIInsightsPage() {
 						</div>
 						{[80, 60, 90, 50].map((w, i) => (
 							<div
-								key={i}
+								key={`skeleton-${w}`}
 								className="h-2 rounded animate-pulse"
 								style={{
 									width: `${w}%`,
@@ -431,7 +433,12 @@ export function AIInsightsPage() {
 									{liveResult.confidence !== undefined && (
 										<div className="flex items-center gap-2 shrink-0">
 											<div className="relative flex items-center justify-center">
-												<svg width="56" height="56" className="-rotate-90">
+												<svg
+													width="56"
+													height="56"
+													className="-rotate-90"
+													aria-hidden="true"
+												>
 													<circle
 														cx="28"
 														cy="28"
@@ -560,10 +567,13 @@ export function AIInsightsPage() {
 													</span>
 												</div>
 												<ul className="space-y-2">
-													{liveResult.recommendations.map((rec, i) => (
-														<li key={i} className="flex items-start gap-2">
+													{liveResult.recommendations.map((rec) => (
+														<li
+															key={rec.action}
+															className="flex items-start gap-2"
+														>
 															<Badge
-																className="text-[9px] px-1.5 py-0 rounded shrink-0 mt-0.5 border-2"
+																className="text-[9px] px-1.5 py-0 rounded-full shrink-0 mt-0.5 border"
 																style={priorityBadgeStyle(rec.priority)}
 															>
 																{rec.priority}
@@ -667,6 +677,7 @@ export function AIInsightsPage() {
 							/>
 							{(["all", "high", "medium", "low"] as const).map((p) => (
 								<button
+									type="button"
 									key={p}
 									onClick={() => setPriorityFilter(p)}
 									className="px-2 py-0.5 rounded text-[10px] font-medium border-2 transition-all"
@@ -772,7 +783,7 @@ export function AIInsightsPage() {
 												}}
 											>
 												<button
-													className="w-full p-4 text-left"
+													type="button"
 													onClick={() =>
 														setExpandedInsight(
 															expandedInsight === insight.id
@@ -827,7 +838,7 @@ export function AIInsightsPage() {
 																	{insight.recommendations &&
 																		insight.recommendations.length > 0 && (
 																			<Badge
-																				className="text-[8px] px-1.5 py-0 rounded border-2"
+																				className="text-[8px] px-1 py-0 rounded border-2"
 																				style={priorityBadgeStyle(topPriority)}
 																			>
 																				<Eye className="w-2 h-2 mr-0.5 inline" />
@@ -912,15 +923,12 @@ export function AIInsightsPage() {
 																		</span>
 																		<ul className="space-y-1.5">
 																			{insight.recommendations.map(
-																				(
-																					rec: {
-																						action: string;
-																						priority: string;
-																					},
-																					i: number,
-																				) => (
+																				(rec: {
+																					action: string;
+																					priority: string;
+																				}) => (
 																					<li
-																						key={i}
+																						key={rec.action}
 																						className="flex items-start gap-2"
 																					>
 																						<Badge

@@ -58,6 +58,7 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 				{value}
 			</pre>
 			<button
+				type="button"
 				onClick={copy}
 				className="absolute top-2 right-2 p-1.5 rounded transition-all"
 				style={{

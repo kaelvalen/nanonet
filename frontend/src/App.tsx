@@ -40,12 +40,14 @@ class ErrorBoundary extends Component<
 						</p>
 						<div className="flex gap-3 justify-center">
 							<button
+								type="button"
 								className="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
 								onClick={() => window.location.reload()}
 							>
 								Sayfayı Yenile
 							</button>
 							<button
+								type="button"
 								className="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
 								onClick={() => {
 									window.location.href = "/";
