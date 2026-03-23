@@ -95,7 +95,7 @@ export function AIAssistant() {
 						initial={{ scale: 0, opacity: 0 }}
 						animate={{ scale: 1, opacity: 1 }}
 						exit={{ scale: 0, opacity: 0 }}
-						className="fixed bottom-6 right-6 z-50"
+						className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50"
 					>
 						<button
 							type="button"
@@ -121,10 +121,10 @@ export function AIAssistant() {
 						initial={{ opacity: 0, y: 20, scale: 0.95 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
 						exit={{ opacity: 0, y: 20, scale: 0.95 }}
-						className="fixed bottom-6 right-6 z-50"
+						className="fixed inset-x-0 bottom-0 z-50 md:inset-x-auto md:bottom-6 md:right-6"
 					>
 						<Card
-							className={`${isMinimized ? "w-80" : "w-96"} ${isMinimized ? "h-16" : "h-150"} transition-all duration-200 flex flex-col`}
+							className={`w-full md:${isMinimized ? "w-80" : "w-96"} ${isMinimized ? "h-16" : "h-[85vh] md:h-150"} transition-all duration-200 flex flex-col rounded-t-2xl md:rounded`}
 							style={{
 								background: "var(--surface-card)",
 								border: "2px solid var(--border-default)",

@@ -231,6 +231,12 @@ func (r *Repository) GetBulkUptime(ctx context.Context, serviceIDs []uuid.UUID, 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
+	// uuid.UUID slice'ını string slice'a çevir — GORM uuid[] cast yapamıyor
+	strIDs := make([]string, len(serviceIDs))
+	for i, id := range serviceIDs {
+		strIDs[i] = id.String()
+	}
+
 	var results []BulkUptimeResult
 	err := r.db.WithContext(ctx).
 		Raw(`
@@ -239,9 +245,9 @@ func (r *Repository) GetBulkUptime(ctx context.Context, serviceIDs []uuid.UUID, 
 				COUNT(*) FILTER (WHERE status = 'up')::float /
 				NULLIF(COUNT(*), 0) * 100 AS uptime_percent
 			FROM metrics
-			WHERE service_id = ANY(?) AND time > ?
+			WHERE service_id::text IN (?) AND time > ?
 			GROUP BY service_id
-		`, serviceIDs, time.Now().Add(-duration)).
+		`, strIDs, time.Now().Add(-duration)).
 		Scan(&results).Error
 
 	return results, err

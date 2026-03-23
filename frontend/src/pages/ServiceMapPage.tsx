@@ -10,7 +10,7 @@ export function ServiceMapPage() {
 		<div
 			className="flex flex-col"
 			style={{
-				margin: "-1rem -1rem -2rem",
+				margin: "-0.75rem -0.75rem -2rem",
 				height: isSidebar ? "calc(100vh - 56px)" : "calc(100vh - 72px)",
 			}}
 		>
@@ -28,7 +28,7 @@ export function ServiceMapPage() {
 					<h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
 						Servis Bağımlılık Haritası
 					</h1>
-					<p className="text-xs" style={{ color: "var(--text-faint)" }}>
+					<p className="text-xs hidden sm:block" style={{ color: "var(--text-faint)" }}>
 						Servisleri sürükle, bağlantı kurmak için bir node'dan diğerine çiz. Haritayı kaydetmek için Kaydet'e bas.
 					</p>
 				</div>

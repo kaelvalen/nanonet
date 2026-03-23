@@ -366,12 +366,12 @@ export function ServiceDetailPage() {
 							{service?.poll_interval_sec}s poll
 						</p>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-1.5 flex-wrap justify-end">
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={() => setAgentWizardOpen(true)}
-							className="rounded text-xs h-8"
+							className="rounded text-xs h-8 hidden sm:flex"
 							style={{
 								borderColor: "var(--color-blue-border)",
 								color: "var(--color-blue)",
@@ -391,11 +391,11 @@ export function ServiceDetailPage() {
 							}}
 						>
 							{startLoading ? (
-								<Loader2 className="w-3 h-3 mr-1 animate-spin" />
+								<Loader2 className="w-3 h-3 sm:mr-1 animate-spin" />
 							) : (
-								<Play className="w-3 h-3 mr-1" />
-							)}{" "}
-							Start
+								<Play className="w-3 h-3 sm:mr-1" />
+							)}
+							<span className="hidden sm:inline">Start</span>
 						</Button>
 						<Button
 							variant="outline"
@@ -407,7 +407,8 @@ export function ServiceDetailPage() {
 								color: "var(--color-teal)",
 							}}
 						>
-							<RefreshCw className="w-3 h-3 mr-1" /> Restart
+							<RefreshCw className="w-3 h-3 sm:mr-1" />
+							<span className="hidden sm:inline">Restart</span>
 						</Button>
 						<Button
 							variant="outline"
@@ -419,7 +420,8 @@ export function ServiceDetailPage() {
 								color: "var(--status-warn-text)",
 							}}
 						>
-							<Power className="w-3 h-3 mr-1" /> Stop
+							<Power className="w-3 h-3 sm:mr-1" />
+							<span className="hidden sm:inline">Stop</span>
 						</Button>
 						<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
 							<DialogTrigger asChild>
@@ -736,9 +738,9 @@ export function ServiceDetailPage() {
 				transition={{ duration: 0.4, delay: 0.2 }}
 			>
 				<Tabs defaultValue="metrics" className="space-y-4">
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
 						<TabsList
-							className="rounded p-1"
+							className="rounded p-1 overflow-x-auto w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap"
 							style={{
 								background: "var(--surface-card)",
 								border: "2px solid var(--border-default)",

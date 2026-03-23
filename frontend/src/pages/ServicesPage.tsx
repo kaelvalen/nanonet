@@ -212,7 +212,7 @@ export function ServicesPage() {
 						</div>
 
 						{/* Status Filter */}
-						<div className="flex items-center gap-1.5 flex-wrap">
+						<div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
 							<Filter
 								className="w-3 h-3"
 								style={{ color: "var(--text-faint)" }}
@@ -502,7 +502,7 @@ export function ServicesPage() {
 				<div
 					className={
 						viewMode === "grid"
-							? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+							? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
 							: "space-y-3"
 					}
 				>
@@ -562,7 +562,7 @@ export function ServicesPage() {
 					</p>
 				</Card>
 			) : viewMode === "grid" ? (
-				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
 					<AnimatePresence mode="popLayout">
 						{filtered.map((service, index) => {
 							const sv = statusVars(service.status);
@@ -749,13 +749,13 @@ export function ServicesPage() {
 													)}
 												</div>
 												<span
-													className="text-sm font-semibold w-40 truncate transition-colors"
+													className="text-sm font-semibold flex-1 min-w-0 truncate transition-colors"
 													style={{ color: "var(--text-secondary)" }}
 												>
 													{service.name}
 												</span>
 												<span
-													className="text-xs font-(--font-mono) flex-1 truncate"
+													className="text-xs font-(--font-mono) hidden sm:block truncate min-w-0"
 													style={{ color: "var(--text-faint)" }}
 												>
 													{service.host}:{service.port}
