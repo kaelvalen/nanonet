@@ -3,6 +3,7 @@ package ai
 import (
 	"errors"
 	"log"
+	"net/http"
 	"strconv"
 
 	"nanonet-backend/pkg/response"
@@ -13,13 +14,42 @@ import (
 )
 
 type Handler struct {
-	service *Service
+	service     *Service
+	chatService *ChatService
 }
 
 func NewHandler(db *gorm.DB, apiKey string) *Handler {
 	return &Handler{
-		service: NewService(db, apiKey),
+		service:     NewService(db, apiKey),
+		chatService: NewChatService(db, apiKey),
 	}
+}
+
+func (h *Handler) Chat(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	var req ChatRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	result, err := h.chatService.Chat(c.Request.Context(), userID, req)
+	if err != nil {
+		if errors.Is(err, ErrRateLimitExceeded) {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("[AI Chat ERROR] user=%s: %v", userID, err)
+		response.InternalError(c, "AI asistanı geçici olarak kullanılamıyor")
+		return
+	}
+
+	response.Success(c, result)
 }
 
 func (h *Handler) Analyze(c *gin.Context) {

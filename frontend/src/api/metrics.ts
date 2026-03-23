@@ -183,3 +183,29 @@ export const metricsApi = {
 		return response.data.data?.uptime ?? {};
 	},
 };
+
+export interface ChatMessage {
+	role: "user" | "assistant";
+	content: string;
+}
+
+export interface ChatResponse {
+	reply: string;
+	model: string;
+	tokens_used?: number;
+}
+
+export const aiChatApi = {
+	chat: async (
+		message: string,
+		history: ChatMessage[],
+		context: string = "global",
+	): Promise<ChatResponse> => {
+		const response = await apiClient.post(
+			"/ai/chat",
+			{ message, history, context },
+			{ timeout: 60000 },
+		);
+		return response.data.data;
+	},
+};

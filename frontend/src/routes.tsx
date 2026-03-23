@@ -11,6 +11,7 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
+import { ServiceMapPage } from "@/pages/ServiceMapPage";
 import { ServicesPage } from "@/pages/ServicesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { useAuthStore } from "@/store/authStore";
@@ -106,6 +107,7 @@ export const router = createBrowserRouter([
 			{ path: "services/:serviceId", element: <ServiceDetailPage /> },
 			{ path: "alerts", element: <AlertsPage /> },
 			{ path: "ai-insights", element: <AIInsightsPage /> },
+			{ path: "service-map", element: <ServiceMapPage /> },
 			{ path: "settings", element: <SettingsPage /> },
 			{ path: "kubernetes", element: <KubernetesPage /> },
 		],

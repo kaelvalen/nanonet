@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { type AnalysisResult, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { AgentSetupWizard } from "@/components/AgentSetupWizard";
+import { LogViewer } from "@/components/LogViewer";
 import { AlertRulesTab } from "@/components/service-detail/AlertRulesTab";
 import { CommandHistoryTab } from "@/components/service-detail/CommandHistoryTab";
 import { LoadBalancingTab } from "@/components/service-detail/LoadBalancingTab";
@@ -768,6 +769,9 @@ export function ServiceDetailPage() {
 							<TabsTrigger value="maintenance" className="rounded text-xs">
 								<CalendarClock className="w-3 h-3 mr-1" /> Maintenance
 							</TabsTrigger>
+							<TabsTrigger value="logs" className="rounded text-xs">
+								<Terminal className="w-3 h-3 mr-1" /> Logs
+							</TabsTrigger>
 						</TabsList>
 
 						{/* Duration picker for metrics */}
@@ -1482,6 +1486,14 @@ export function ServiceDetailPage() {
 					{/* Maintenance Tab */}
 					<TabsContent value="maintenance">
 						<MaintenanceTab serviceId={serviceId ?? ""} />
+					</TabsContent>
+
+					{/* Logs Tab */}
+					<TabsContent value="logs" className="h-150">
+						<LogViewer
+							serviceId={serviceId ?? ""}
+							serviceName={service?.name}
+						/>
 					</TabsContent>
 
 					{/* AI Tab */}

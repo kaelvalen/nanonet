@@ -1,7 +1,7 @@
 import { Maximize2, Minimize2, Send, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import { metricsApi } from "@/api/metrics";
+import { type ChatMessage, aiChatApi } from "@/api/metrics";
 import { useServiceStore } from "@/store/serviceStore";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -14,6 +14,7 @@ export function AIAssistant() {
 	const [chatMessages, setChatMessages] = useState<
 		{ role: "ai" | "user"; text: string; time: string }[]
 	>([
+
 		{
 			role: "ai",
 			text: "Merhaba! Sistem analizi yapmak, anomali tespit etmek veya servisleriniz hakkında bilgi almak için bana soru sorabilirsiniz.",
@@ -22,6 +23,7 @@ export function AIAssistant() {
 	]);
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
 	const { services } = useServiceStore();
+	const contextServiceId = services[0]?.id;
 
 	const suggestions = [
 		"Sistem durumu nedir?",
@@ -32,64 +34,55 @@ export function AIAssistant() {
 	const handleSend = async () => {
 		if (!message.trim()) return;
 		const userMsg = message;
+		const now = new Date().toLocaleTimeString("tr-TR", {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 		setMessage("");
 		setChatMessages((prev) => [
 			...prev,
-			{
-				role: "user",
-				text: userMsg,
-				time: new Date().toLocaleTimeString("tr-TR", {
-					hour: "2-digit",
-					minute: "2-digit",
-				}),
-			},
+			{ role: "user", text: userMsg, time: now },
 		]);
 
-		// Try to run analysis on first service if available
-		if (services.length > 0) {
-			setIsAnalyzing(true);
-			try {
-				const result = await metricsApi.analyze(services[0].id, 30);
-				setChatMessages((prev) => [
-					...prev,
-					{
-						role: "ai",
-						text:
-							result?.summary ||
-							"Analiz tamamlandı, şu an bir anomali tespit edilmedi.",
-						time: new Date().toLocaleTimeString("tr-TR", {
-							hour: "2-digit",
-							minute: "2-digit",
-						}),
-					},
-				]);
-			} catch {
-				setChatMessages((prev) => [
-					...prev,
-					{
-						role: "ai",
-						text: "Analiz çalıştırılırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
-						time: new Date().toLocaleTimeString("tr-TR", {
-							hour: "2-digit",
-							minute: "2-digit",
-						}),
-					},
-				]);
-			} finally {
-				setIsAnalyzing(false);
-			}
-		} else {
+		setIsAnalyzing(true);
+		try {
+			const history: ChatMessage[] = chatMessages
+				.slice(-10)
+				.map((m) => ({
+					role: m.role === "user" ? "user" : "assistant",
+					content: m.text,
+				}));
+
+			const result = await aiChatApi.chat(
+				userMsg,
+				history,
+				contextServiceId ?? "global",
+			);
 			setChatMessages((prev) => [
 				...prev,
 				{
 					role: "ai",
-					text: "Henüz kayıtlı servis bulunmuyor. Önce bir servis ekleyin.",
+					text: result.reply,
 					time: new Date().toLocaleTimeString("tr-TR", {
 						hour: "2-digit",
 						minute: "2-digit",
 					}),
 				},
 			]);
+		} catch {
+			setChatMessages((prev) => [
+				...prev,
+				{
+					role: "ai",
+					text: "AI asistanı geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+					time: new Date().toLocaleTimeString("tr-TR", {
+						hour: "2-digit",
+						minute: "2-digit",
+					}),
+				},
+			]);
+		} finally {
+			setIsAnalyzing(false);
 		}
 	};
 

@@ -10,6 +10,7 @@ import {
 	Clock,
 	Cloud,
 	Eye,
+	GitFork,
 	Heart,
 	Lightbulb,
 	Plus,
@@ -66,6 +67,15 @@ const navCards = [
 		icon: Settings,
 		colorVar: "var(--color-blue)",
 		borderVar: "var(--color-blue-border)",
+		pulse: false,
+	},
+	{
+		to: "/service-map",
+		label: "Servis Haritası",
+		description: "Servis bağımlılıklarını görsel olarak keşfet ve yönet",
+		icon: GitFork,
+		colorVar: "var(--color-teal)",
+		borderVar: "var(--color-teal-border)",
 		pulse: false,
 	},
 	{

@@ -4,6 +4,7 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Cloud,
+	GitFork,
 	LayoutDashboard,
 	Server,
 	Settings,
@@ -87,6 +88,11 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 			to: "/ai-insights",
 			label: "AI Analiz",
 			icon: Sparkles,
+		},
+		{
+			to: "/service-map",
+			label: "Servis Haritası",
+			icon: GitFork,
 		},
 		{
 			to: "/kubernetes",

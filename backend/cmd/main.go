@@ -197,6 +197,11 @@ func main() {
 			authGroup.PUT("/password", authMiddleware.Required(), authHandler.ChangePassword)
 		}
 
+		aiGroup := v1.Group("/ai", authMiddleware.Required())
+		{
+			aiGroup.POST("/chat", strictLimiter, aiHandler.Chat)
+		}
+
 		svcGroup := v1.Group("/services", authMiddleware.Required())
 		{
 			svcGroup.GET("", serviceHandler.List)
