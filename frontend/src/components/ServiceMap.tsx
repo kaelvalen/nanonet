@@ -2,7 +2,9 @@ import {
 	Background,
 	Controls,
 	type Edge,
+	Handle,
 	type Node,
+	Position,
 	ReactFlow,
 	ReactFlowProvider,
 	addEdge,
@@ -20,7 +22,7 @@ import {
 	Trash2,
 	XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useServices } from "@/hooks/useServices";
@@ -35,10 +37,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_BG: Record<string, string> = {
-	up: "var(--status-up-bg)",
-	degraded: "var(--status-warn-bg)",
-	down: "var(--status-down-bg)",
-	unknown: "var(--bg-elevated)",
+	up: "var(--status-up-subtle)",
+	degraded: "var(--status-warn-subtle)",
+	down: "var(--status-down-subtle)",
+	unknown: "var(--bg-elevated, #1a1a2e)",
 };
 
 function StatusIcon({ status }: { status: string }) {
@@ -109,21 +111,46 @@ const nodeTypes = { serviceNode: ServiceNode };
 const STORAGE_KEY = "nanonet_service_map";
 
 interface SavedMap {
-	nodes: Node[];
+	nodes: SerializedNode[];
 	edges: Edge[];
 }
 
 function loadMap(): SavedMap | null {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
-		if (raw) return JSON.parse(raw) as SavedMap;
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as SavedMap;
+		// Eski format kontrolü: node'larda data.service varsa bozuk eski kayıt
+		if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+			localStorage.removeItem(STORAGE_KEY);
+			return null;
+		}
+		// Eski format: node içinde data key'i varsa (fonksiyon serialize edilmiş)
+		const firstNode = parsed.nodes[0] as unknown as Record<string, unknown>;
+		if (firstNode && "data" in firstNode) {
+			localStorage.removeItem(STORAGE_KEY);
+			return null;
+		}
+		return parsed;
 	} catch {
+		localStorage.removeItem(STORAGE_KEY);
 	}
 	return null;
 }
 
+interface SerializedNode {
+	id: string;
+	type: string;
+	position: { x: number; y: number };
+}
+
 function saveMap(nodes: Node[], edges: Edge[]) {
-	localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes, edges }));
+	const serialized: SerializedNode[] = nodes.map((n) => ({
+		id: n.id,
+		type: n.type ?? "serviceNode",
+		position: n.position,
+	}));
+	localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes: serialized, edges }));
 }
 
 function buildDefaultLayout(services: Service[]): Node[] {
@@ -142,12 +169,25 @@ function buildDefaultLayout(services: Service[]): Node[] {
 function ServiceMapInner() {
 	const { services: queryServices, isLoading } = useServices();
 	const storeServices = useServiceStore((s) => s.services);
-	// Store'da veri varsa anında kullan, yoksa query sonucunu bekle
 	const services = storeServices.length > 0 ? storeServices : queryServices;
 	const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
 	const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 	const [addMode, setAddMode] = useState(false);
 	const [initialized, setInitialized] = useState(false);
+
+	const flowCanvasRef = useRef<HTMLDivElement>(null);
+	const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+
+	useEffect(() => {
+		const el = flowCanvasRef.current;
+		if (!el) return;
+		const ro = new ResizeObserver((entries) => {
+			const { width, height } = entries[0].contentRect;
+			setCanvasSize({ width, height });
+		});
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, []);
 
 	const handleDelete = useCallback(
 		(id: string) => {
@@ -164,20 +204,18 @@ function ServiceMapInner() {
 		const serviceIds = new Set(services.map((s) => s.id));
 
 		if (saved) {
-				const validNodes: Node[] = saved.nodes
-				.filter((n: Node) => serviceIds.has(n.id))
-				.map((n: Node) => {
-					const svc = services.find((s) => s.id === n.id);
-					return {
-						...n,
-						data: {
-							service: svc!,
-							onDelete: handleDelete,
-						},
-					};
-				});
+			const validSaved = saved.nodes.filter((n) => serviceIds.has(n.id));
+			const validNodes: Node[] = validSaved.map((n) => {
+				const svc = services.find((s) => s.id === n.id)!;
+				return {
+					id: n.id,
+					type: n.type,
+					position: n.position,
+					data: { service: svc, onDelete: handleDelete },
+				};
+			});
 
-			const presentIds = new Set(validNodes.map((n: Node) => n.id));
+			const presentIds = new Set(validNodes.map((n) => n.id));
 			const newServices = services.filter((s) => !presentIds.has(s.id));
 
 			const newNodes: Node[] = newServices.map((svc, i) => ({
@@ -191,7 +229,7 @@ function ServiceMapInner() {
 			}));
 
 			setNodes([...validNodes, ...newNodes]);
-			setEdges(saved.edges.filter((e: Edge) => serviceIds.has(e.source) && serviceIds.has(e.target)));
+			setEdges(saved.edges.filter((e) => serviceIds.has(e.source) && serviceIds.has(e.target)));
 		} else {
 			const defaultNodes = buildDefaultLayout(services).map((n) => ({
 				...n,
@@ -239,11 +277,8 @@ function ServiceMapInner() {
 
 	const handleReset = () => {
 		localStorage.removeItem(STORAGE_KEY);
-		const defaultNodes = buildDefaultLayout(services).map((n) => ({
-			...n,
-			data: { ...n.data, onDelete: handleDelete },
-		}));
-		setNodes(defaultNodes);
+		setInitialized(false);
+		setNodes([]);
 		setEdges([]);
 		toast.info("Harita sıfırlandı");
 	};
@@ -265,7 +300,7 @@ function ServiceMapInner() {
 	};
 
 	return (
-		<div className="flex flex-col h-full" style={{ background: "var(--bg-primary)" }}>
+		<div className="flex flex-col" style={{ background: "var(--bg-primary)", flex: 1, minHeight: 0 }}>
 			{/* Toolbar */}
 			<div
 				className="flex items-center gap-2 px-4 py-2 border-b"
@@ -338,38 +373,37 @@ function ServiceMapInner() {
 					</div>
 				))}
 				<span style={{ color: "var(--text-faint)" }}>·</span>
-				<span style={{ color: "var(--text-faint)" }}>
-					{edges.length} bağlantı
-				</span>
+				<span style={{ color: "var(--text-faint)" }}>{edges.length} bağlantı</span>
 			</div>
 
 			{/* React Flow Canvas */}
-			<div className="flex-1">
-				<ReactFlow
-					nodes={nodes}
-					edges={edges}
-					onNodesChange={onNodesChange}
-					onEdgesChange={onEdgesChange}
-					onConnect={onConnect}
-					nodeTypes={nodeTypes}
-					fitView
-					fitViewOptions={{ padding: 0.2 }}
-					style={{ background: "var(--bg-primary)" }}
-					deleteKeyCode="Delete"
-				>
-					<Background
-						color="var(--border-subtle)"
-						gap={20}
-						size={1}
-					/>
-					<Controls
-						style={{
-							background: "var(--bg-card)",
-							border: "1px solid var(--border-subtle)",
-							borderRadius: "8px",
-						}}
-					/>
-				</ReactFlow>
+			<div
+				ref={flowCanvasRef}
+				style={{ flex: 1, minHeight: 0, position: "relative" }}
+			>
+				{canvasSize.width > 0 && canvasSize.height > 0 && (
+					<ReactFlow
+						nodes={nodes}
+						edges={edges}
+						onNodesChange={onNodesChange}
+						onEdgesChange={onEdgesChange}
+						onConnect={onConnect}
+						nodeTypes={nodeTypes}
+						fitView
+						fitViewOptions={{ padding: 0.2 }}
+						style={{ width: canvasSize.width, height: canvasSize.height, background: "var(--bg-primary)" }}
+						deleteKeyCode="Delete"
+					>
+						<Background color="var(--border-subtle)" gap={20} size={1} />
+						<Controls
+							style={{
+								background: "var(--bg-card)",
+								border: "1px solid var(--border-subtle)",
+								borderRadius: "8px",
+							}}
+						/>
+					</ReactFlow>
+				)}
 			</div>
 
 			{isLoading && services.length === 0 && (
@@ -394,7 +428,9 @@ function ServiceMapInner() {
 export function ServiceMap() {
 	return (
 		<ReactFlowProvider>
-			<ServiceMapInner />
+			<div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%" }}>
+				<ServiceMapInner />
+			</div>
 		</ReactFlowProvider>
 	);
 }

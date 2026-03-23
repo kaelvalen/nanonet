@@ -100,14 +100,15 @@ export function AIAssistant() {
 						<button
 							type="button"
 							onClick={() => setIsOpen(true)}
-							className="relative w-16 h-16 rounded transition-all duration-200 group"
+							className="flex items-center gap-2.5 px-4 py-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
 							style={{
 								background: "var(--gradient-logo)",
 								border: "2px solid var(--border-default)",
-								boxShadow: "var(--btn-shadow)",
+								boxShadow: "0 4px 20px rgba(0,0,0,0.3), var(--btn-shadow)",
 							}}
 						>
-							<Sparkles className="w-8 h-8 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-glow" />
+							<Sparkles className="w-4 h-4 text-white shrink-0" />
+							<span className="text-white text-xs font-semibold">AI</span>
 						</button>
 					</motion.div>
 				)}

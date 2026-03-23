@@ -50,9 +50,9 @@ export function DashboardLayout() {
 				{/* Floating Status Bar — sticky in sidebar mode, fixed in floating mode */}
 				<FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
-				{/* Main Content — extra top padding in floating mode so content clears the fixed bar */}
+				{/* Main Content */}
 				<main
-					className={`flex-1 pb-8 px-4 sm:px-6 lg:px-8 max-w-6xl w-full mx-auto ${isSidebar ? "pt-6" : "pt-20"}`}
+					className={`flex-1 flex flex-col min-h-0 pb-8 px-4 sm:px-6 lg:px-8 ${isSidebar ? "pt-4" : "pt-18"}`}
 				>
 					<ErrorBoundary key={pathname}>
 						<Outlet />

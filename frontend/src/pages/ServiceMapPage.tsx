@@ -1,9 +1,19 @@
 import { GitFork } from "lucide-react";
 import { ServiceMap } from "@/components/ServiceMap";
+import { useNavStore } from "@/store/navStore";
 
 export function ServiceMapPage() {
+	const { navMode } = useNavStore();
+	const isSidebar = navMode === "sidebar";
+
 	return (
-		<div className="flex flex-col h-full" style={{ minHeight: "calc(100vh - 60px)" }}>
+		<div
+			className="flex flex-col"
+			style={{
+				margin: "-1rem -1rem -2rem",
+				height: isSidebar ? "calc(100vh - 56px)" : "calc(100vh - 72px)",
+			}}
+		>
 			<div
 				className="flex items-center gap-3 px-6 py-4 border-b shrink-0"
 				style={{ borderColor: "var(--border-subtle)" }}
@@ -24,7 +34,7 @@ export function ServiceMapPage() {
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-hidden">
+			<div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
 				<ServiceMap />
 			</div>
 		</div>
