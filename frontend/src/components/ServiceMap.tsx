@@ -22,7 +22,7 @@ import {
 	Trash2,
 	XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useServices } from "@/hooks/useServices";
@@ -61,11 +61,13 @@ function ServiceNode({ data }: { data: { service: Service; onDelete: (id: string
 		<div
 			className="px-3 py-2.5 rounded-xl border min-w-40 shadow-md group relative"
 			style={{
-				background: "var(--bg-card)",
+				background: "var(--surface-card)",
 				borderColor: color,
 				borderWidth: "1.5px",
 			}}
 		>
+			<Handle type="target" position={Position.Left} style={{ background: color, width: 8, height: 8 }} />
+			<Handle type="source" position={Position.Right} style={{ background: color, width: 8, height: 8 }} />
 			<button
 				type="button"
 				onClick={() => onDelete(service.id)}
@@ -174,20 +176,6 @@ function ServiceMapInner() {
 	const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 	const [addMode, setAddMode] = useState(false);
 	const [initialized, setInitialized] = useState(false);
-
-	const flowCanvasRef = useRef<HTMLDivElement>(null);
-	const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-
-	useEffect(() => {
-		const el = flowCanvasRef.current;
-		if (!el) return;
-		const ro = new ResizeObserver((entries) => {
-			const { width, height } = entries[0].contentRect;
-			setCanvasSize({ width, height });
-		});
-		ro.observe(el);
-		return () => ro.disconnect();
-	}, []);
 
 	const handleDelete = useCallback(
 		(id: string) => {
@@ -303,7 +291,7 @@ function ServiceMapInner() {
 		<div className="flex flex-col" style={{ background: "var(--bg-primary)", flex: 1, minHeight: 0 }}>
 			{/* Toolbar */}
 			<div
-				className="flex items-center gap-2 px-4 py-2 border-b"
+				className="flex items-center gap-2 px-4 py-2 border-b shrink-0"
 				style={{ borderColor: "var(--border-subtle)" }}
 			>
 				<span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
@@ -356,7 +344,7 @@ function ServiceMapInner() {
 
 			{/* Legend */}
 			<div
-				className="flex items-center gap-4 px-4 py-1.5 border-b text-xs"
+				className="flex items-center gap-4 px-4 py-1.5 border-b text-xs shrink-0"
 				style={{ borderColor: "var(--border-subtle)" }}
 			>
 				{[
@@ -365,10 +353,7 @@ function ServiceMapInner() {
 					{ status: "down", label: "Çökmüş" },
 				].map(({ status, label }) => (
 					<div key={status} className="flex items-center gap-1">
-						<div
-							className="w-2 h-2 rounded-full"
-							style={{ background: STATUS_COLORS[status] }}
-						/>
+						<div className="w-2 h-2 rounded-full" style={{ background: STATUS_COLORS[status] }} />
 						<span style={{ color: "var(--text-faint)" }}>{label}</span>
 					</div>
 				))}
@@ -377,11 +362,8 @@ function ServiceMapInner() {
 			</div>
 
 			{/* React Flow Canvas */}
-			<div
-				ref={flowCanvasRef}
-				style={{ flex: 1, minHeight: 0, position: "relative" }}
-			>
-				{canvasSize.width > 0 && canvasSize.height > 0 && (
+			<div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+				<div style={{ position: "absolute", inset: 0 }}>
 					<ReactFlow
 						nodes={nodes}
 						edges={edges}
@@ -391,7 +373,7 @@ function ServiceMapInner() {
 						nodeTypes={nodeTypes}
 						fitView
 						fitViewOptions={{ padding: 0.2 }}
-						style={{ width: canvasSize.width, height: canvasSize.height, background: "var(--bg-primary)" }}
+						style={{ width: "100%", height: "100%", background: "var(--bg-primary)" }}
 						deleteKeyCode="Delete"
 					>
 						<Background color="var(--border-subtle)" gap={20} size={1} />
@@ -403,24 +385,23 @@ function ServiceMapInner() {
 							}}
 						/>
 					</ReactFlow>
+				</div>
+				{isLoading && services.length === 0 && (
+					<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+						<div className="flex items-center gap-2">
+							<Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
+							<p className="text-sm" style={{ color: "var(--text-faint)" }}>Servisler yükleniyor...</p>
+						</div>
+					</div>
+				)}
+				{!isLoading && services.length === 0 && (
+					<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+						<p className="text-sm" style={{ color: "var(--text-faint)" }}>
+							Henüz servis yok. Önce bir servis ekleyin.
+						</p>
+					</div>
 				)}
 			</div>
-
-			{isLoading && services.length === 0 && (
-				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-					<div className="flex items-center gap-2">
-						<Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
-						<p className="text-sm" style={{ color: "var(--text-faint)" }}>Servisler yükleniyor...</p>
-					</div>
-				</div>
-			)}
-			{!isLoading && services.length === 0 && (
-				<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-					<p className="text-sm" style={{ color: "var(--text-faint)" }}>
-						Henüz servis yok. Önce bir servis ekleyin.
-					</p>
-				</div>
-			)}
 		</div>
 	);
 }

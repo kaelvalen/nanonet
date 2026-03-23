@@ -26,7 +26,7 @@ export function DashboardLayout() {
 	}, []);
 
 	return (
-		<div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+		<div className="min-h-screen bg-background text-foreground relative">
 			{/* Dot grid background */}
 			<MatrixBackground />
 			<div
@@ -42,7 +42,7 @@ export function DashboardLayout() {
 
 			{/* Page wrapper — shifts right of sidebar only in sidebar mode */}
 			<div
-				className="relative z-10 flex flex-col min-h-screen transition-all duration-200"
+				className="relative z-10 flex flex-col min-h-screen transition-[margin] duration-200"
 				style={{
 					marginLeft: isSidebar ? (sidebarCollapsed ? "56px" : "200px") : "0px",
 				}}
