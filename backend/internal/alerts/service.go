@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"nanonet-backend/internal/metrics"
@@ -12,6 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const emailCooldown = 45 * time.Minute
+
 // alertNotifier is satisfied by pkg/mailer.Mailer without a direct import cycle.
 type alertNotifier interface {
 	Enabled() bool
@@ -19,19 +22,37 @@ type alertNotifier interface {
 }
 
 type Service struct {
-	repo     *Repository
-	rules    AlertRule
-	maint    maintenanceChecker
-	notifier alertNotifier
-	db       *gorm.DB
+	repo      *Repository
+	rules     AlertRule
+	maint     maintenanceChecker
+	notifier  alertNotifier
+	db        *gorm.DB
+	muCool    sync.Mutex
+	cooldowns map[string]time.Time // key: "serviceID:alertType" → cooldown bitiş zamanı
 }
 
 func NewService(db *gorm.DB) *Service {
 	return &Service{
-		repo:  NewRepository(db),
-		rules: DefaultAlertRules,
-		db:    db,
+		repo:      NewRepository(db),
+		rules:     DefaultAlertRules,
+		db:        db,
+		cooldowns: make(map[string]time.Time),
 	}
+}
+
+func (s *Service) emailCooldownActive(serviceID uuid.UUID, alertType string) bool {
+	key := serviceID.String() + ":" + alertType
+	s.muCool.Lock()
+	defer s.muCool.Unlock()
+	until, ok := s.cooldowns[key]
+	return ok && time.Now().Before(until)
+}
+
+func (s *Service) setEmailCooldown(serviceID uuid.UUID, alertType string) {
+	key := serviceID.String() + ":" + alertType
+	s.muCool.Lock()
+	s.cooldowns[key] = time.Now().Add(emailCooldown)
+	s.muCool.Unlock()
 }
 
 // SetMaintenanceChecker wires in a maintenance window checker after construction.
@@ -159,8 +180,10 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 			if err := s.repo.Create(ctx, &alert); err != nil {
 				return err
 			}
-			// Email bildirimi — sadece crit/warn, async
-			if s.notifier != nil && s.notifier.Enabled() && alert.Severity != "info" {
+			// Email bildirimi — sadece crit/warn, async, cooldown korumalı
+			if s.notifier != nil && s.notifier.Enabled() && alert.Severity != "info" &&
+				!s.emailCooldownActive(serviceID, alert.Type) {
+				s.setEmailCooldown(serviceID, alert.Type)
 				go s.sendAlertEmail(serviceID, alert)
 			}
 		}
