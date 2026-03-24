@@ -42,6 +42,11 @@ services:
       POLL_DEFAULT_SEC: "10"
       WS_MAX_CONNECTIONS: "1000"
       MIGRATIONS_PATH: /migrations
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       K8S_NAMESPACE: ${K8S_NAMESPACE:-}
       KUBECONFIG: /tmp/kubeconfig
     ports:
