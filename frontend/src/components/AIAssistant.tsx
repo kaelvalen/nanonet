@@ -121,10 +121,10 @@ export function AIAssistant() {
 						initial={{ opacity: 0, y: 20, scale: 0.95 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
 						exit={{ opacity: 0, y: 20, scale: 0.95 }}
-						className="fixed inset-x-0 bottom-0 z-50 md:inset-x-auto md:bottom-6 md:right-6"
+						className="fixed bottom-6 right-6 z-50 md:bottom-8 md:right-8"
 					>
 						<Card
-							className={`w-full md:${isMinimized ? "w-80" : "w-96"} ${isMinimized ? "h-16" : "h-[85vh] md:h-150"} transition-all duration-200 flex flex-col rounded-t-2xl md:rounded`}
+							className={`${isMinimized ? "w-72 h-16" : "w-[calc(100vw-2rem)] max-w-sm h-[70vh] md:w-96 md:h-150"} transition-all duration-200 flex flex-col rounded-2xl`}
 							style={{
 								background: "var(--surface-card)",
 								border: "2px solid var(--border-default)",
