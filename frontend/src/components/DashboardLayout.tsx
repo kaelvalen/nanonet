@@ -54,7 +54,7 @@ export function DashboardLayout() {
 
 				{/* Main Content */}
 				<main
-					className={`flex-1 flex flex-col min-h-0 pb-20 md:pb-8 px-3 sm:px-4 md:px-6 lg:px-8 ${isSidebar ? "pt-4" : "pt-18"}`}
+					className={`flex-1 flex flex-col min-h-0 pb-20 md:pb-8 ${isSidebar ? "px-3 sm:px-4 md:px-6 lg:px-8 pt-4" : "px-6 sm:px-10 md:px-14 lg:px-20 pt-18"}`}
 				>
 					<ErrorBoundary key={pathname}>
 						<Outlet />
