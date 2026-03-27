@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	Background,
 	Controls,
@@ -74,6 +74,29 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STORAGE_KEY = "nanonet_service_map_v2";
+const ANALYSIS_STORAGE_KEY = "nanonet_map_analysis_v1";
+
+function loadAnalysis(serviceId: string): AnalysisResult | null {
+	try {
+		const raw = localStorage.getItem(ANALYSIS_STORAGE_KEY);
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as Record<string, AnalysisResult>;
+		return parsed[serviceId] ?? null;
+	} catch {
+		return null;
+	}
+}
+
+function saveAnalysis(serviceId: string, result: AnalysisResult) {
+	try {
+		const raw = localStorage.getItem(ANALYSIS_STORAGE_KEY);
+		const existing: Record<string, AnalysisResult> = raw ? JSON.parse(raw) : {};
+		existing[serviceId] = result;
+		localStorage.setItem(ANALYSIS_STORAGE_KEY, JSON.stringify(existing));
+	} catch {
+		// ignore
+	}
+}
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -102,6 +125,13 @@ interface SerializedMap {
 function edgeColorForStatuses(srcStatus: string, tgtStatus: string): string {
 	if (srcStatus === "down" || tgtStatus === "down") return "var(--status-down)";
 	if (srcStatus === "degraded" || tgtStatus === "degraded") return "var(--status-warn)";
+	return "var(--status-up)";
+}
+
+function edgeColorForSide(status: string, alertCount: number): string {
+	if (status === "down") return "var(--status-down)";
+	if (alertCount > 0) return "var(--status-down)";
+	if (status === "degraded") return "var(--status-warn)";
 	return "var(--status-up)";
 }
 
@@ -166,7 +196,7 @@ function StatusEdge({
 	data,
 	markerEnd,
 	selected,
-}: EdgeProps & { data?: { srcStatus?: string; tgtStatus?: string; latency?: number } }) {
+}: EdgeProps & { data?: { srcStatus?: string; tgtStatus?: string; latency?: number; srcAlerts?: number; tgtAlerts?: number } }) {
 	const [edgePath, labelX, labelY] = getBezierPath({
 		sourceX,
 		sourceY,
@@ -178,13 +208,14 @@ function StatusEdge({
 
 	const srcStatus = data?.srcStatus ?? "unknown";
 	const tgtStatus = data?.tgtStatus ?? "unknown";
-	const srcColor = STATUS_COLOR[srcStatus] ?? STATUS_COLOR.unknown;
-	const tgtColor = STATUS_COLOR[tgtStatus] ?? STATUS_COLOR.unknown;
+	const srcAlerts = data?.srcAlerts ?? 0;
+	const tgtAlerts = data?.tgtAlerts ?? 0;
+	const srcColor = edgeColorForSide(srcStatus, srcAlerts);
+	const tgtColor = edgeColorForSide(tgtStatus, tgtAlerts);
 	const isDown = srcStatus === "down" || tgtStatus === "down";
-	const isDegraded = !isDown && (srcStatus === "degraded" || tgtStatus === "degraded");
+	const isDegraded = !isDown && (srcStatus === "degraded" || tgtStatus === "degraded" || srcAlerts > 0 || tgtAlerts > 0);
 	const latency = data?.latency;
 	const gradientId = `edge-grad-${id}`;
-	// Use gradient only when statuses differ or either side is degraded/down
 	const useGradient = srcColor !== tgtColor;
 	const strokePaint = useGradient ? `url(#${gradientId})` : srcColor;
 
@@ -410,7 +441,10 @@ interface RightPanelProps {
 
 function RightPanel({ service, onClose }: RightPanelProps) {
 	const color = STATUS_COLOR[service.status] ?? STATUS_COLOR.unknown;
-	const [persistedAnalysis, setPersistedAnalysis] = useState<AnalysisResult | null>(null);
+	const queryClient = useQueryClient();
+	const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+		() => loadAnalysis(service.id),
+	);
 
 	const { data: alerts = [] } = useQuery({
 		queryKey: ["mapAlerts", service.id],
@@ -430,13 +464,14 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 	const analyzeMutation = useMutation({
 		mutationFn: () => metricsApi.analyze(service.id, 30, false),
 		onSuccess: (result: AnalysisResult) => {
-			setPersistedAnalysis(result);
-			toast.success("AI analizi tamamlandı");
+			saveAnalysis(service.id, result);
+			setAnalysisResult(result);
+			// Invalidate AI Insights page cache so it picks up the new insight
+			queryClient.invalidateQueries({ queryKey: ["insights"] });
+			toast.success("AI analizi tamamlandı ve kaydedildi");
 		},
 		onError: () => toast.error("AI analizi şu anda kullanılamıyor"),
 	});
-
-	const analysisResult = persistedAnalysis;
 
 	return (
 		<motion.div
@@ -796,11 +831,11 @@ function ServiceMapInner() {
 		);
 	}, [services, initialized, setNodes, buildNodeData]);
 
-	// ── Update edge colors when services change ──
+	// ── Update edge colors when services/alerts change ──
 	useEffect(() => {
 		if (!initialized) return;
-		setEdges((es: Edge[]) => es.map((e) => enrichEdge(e, services)));
-	}, [services, initialized, setEdges]);
+		setEdges((es: Edge[]) => es.map((e) => enrichEdge(e, services, alertCountMap)));
+	}, [services, alertCountMap, initialized, setEdges]);
 
 	// ── Compute worstConnectedStatus per node from current edges ──
 	useEffect(() => {
@@ -848,7 +883,6 @@ function ServiceMapInner() {
 		(connection: Parameters<typeof addEdge>[0]) => {
 			const src = services.find((s) => s.id === connection.source);
 			const tgt = services.find((s) => s.id === connection.target);
-			const strokeColor = edgeColorForStatuses(src?.status ?? "unknown", tgt?.status ?? "unknown");
 			setEdges((eds: Edge[]) =>
 				addEdge(
 					{
@@ -858,14 +892,15 @@ function ServiceMapInner() {
 						data: {
 							srcStatus: src?.status ?? "unknown",
 							tgtStatus: tgt?.status ?? "unknown",
-							strokeColor,
+							srcAlerts: alertCountMap[connection.source ?? ""] ?? 0,
+							tgtAlerts: alertCountMap[connection.target ?? ""] ?? 0,
 						},
 					},
 					eds,
 				),
 			);
 		},
-		[setEdges, services],
+		[setEdges, services, alertCountMap],
 	);
 
 	const handleSave = () => {
@@ -1062,18 +1097,22 @@ function ServiceMapInner() {
 
 // ─── Edge enrichment helper ───────────────────────────────────────────────────
 
-function enrichEdge(edge: Edge, services: Service[]): Edge {
+function enrichEdge(edge: Edge, services: Service[], alertCountMap: Record<string, number> = {}): Edge {
 	const src = services.find((s) => s.id === edge.source);
 	const tgt = services.find((s) => s.id === edge.target);
-	const isUp = src?.status === "up" && tgt?.status === "up";
+	const srcStatus = src?.status ?? "unknown";
+	const tgtStatus = tgt?.status ?? "unknown";
+	const isUp = srcStatus === "up" && tgtStatus === "up";
 	return {
 		...edge,
 		type: "statusEdge",
 		animated: isUp,
 		data: {
 			...((edge.data as object) ?? {}),
-			srcStatus: src?.status ?? "unknown",
-			tgtStatus: tgt?.status ?? "unknown",
+			srcStatus,
+			tgtStatus,
+			srcAlerts: alertCountMap[edge.source] ?? 0,
+			tgtAlerts: alertCountMap[edge.target] ?? 0,
 		},
 	};
 }
