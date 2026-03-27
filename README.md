@@ -137,6 +137,17 @@ curl -sSL https://nanonet.dev/install.sh | sh -s -- \
 - Rate limiting (IP bazlı)
 - CORS konfigürasyonu
 - SQL injection koruması (parameterized queries)
+- Opaque agent token'lar (SHA-256 hash'li, DB'de revocable)
+
+### ⚠️ Bilinen Sınırlamalar
+
+**Token Blacklist — Multi-Instance:**
+Token blacklist şu an in-memory (`sync.Map`) olarak çalışmaktadır.
+Birden fazla backend instance'ı çalıştırıldığında (horizontal scaling / load balancer),
+bir instance'daki logout/refresh token invalidation diğer instance'lara yansımaz.
+Bu durum kısa süreli (token TTL'e kadar) token reuse'a yol açabilir.
+
+Çözüm: Production'da Redis blacklist kullanın (`pkg/tokenblacklist` Redis adapter'ı V2'de eklenecek).
 
 ## 📊 Veritabanı
 

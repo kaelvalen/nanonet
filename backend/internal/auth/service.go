@@ -2,6 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
@@ -106,10 +109,74 @@ func (s *Service) generateToken(userID uuid.UUID, duration time.Duration, tokenT
 	return token.SignedString([]byte(s.jwtSecret))
 }
 
-// ValidateRefreshToken refresh token'ını doğrular; access token ile kullanılamaz.
-// GenerateAgentToken uzun ömürlü (1 yıl) agent token'ı üretir.
-func (s *Service) GenerateAgentToken(userID uuid.UUID) (string, error) {
-	return s.generateToken(userID, 3650*24*time.Hour, "agent")
+// GenerateAgentToken creates a new opaque agent token, stores its SHA-256 hash
+// in the database, and returns the raw token to the caller (shown only once).
+func (s *Service) GenerateAgentToken(userID uuid.UUID, name string) (string, *AgentToken, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", nil, fmt.Errorf("token üretilemedi: %w", err)
+	}
+	tokenStr := "nnat_" + hex.EncodeToString(raw)
+
+	sum := sha256.Sum256([]byte(tokenStr))
+	hash := hex.EncodeToString(sum[:])
+
+	rec := &AgentToken{
+		UserID:    userID,
+		TokenHash: hash,
+		Name:      name,
+	}
+	if err := s.db.Create(rec).Error; err != nil {
+		return "", nil, fmt.Errorf("token kaydedilemedi: %w", err)
+	}
+	return tokenStr, rec, nil
+}
+
+// ValidateAgentToken looks up the SHA-256 hash of the raw token and returns
+// the owning user ID. It also updates last_used_at on a successful lookup.
+func (s *Service) ValidateAgentToken(ctx context.Context, rawToken string) (uuid.UUID, error) {
+	sum := sha256.Sum256([]byte(rawToken))
+	hash := hex.EncodeToString(sum[:])
+
+	var rec AgentToken
+	err := s.db.WithContext(ctx).
+		Where("token_hash = ? AND revoked_at IS NULL", hash).
+		First(&rec).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return uuid.Nil, errors.New("geçersiz agent token")
+		}
+		return uuid.Nil, err
+	}
+
+	now := time.Now()
+	_ = s.db.WithContext(ctx).Model(&rec).Update("last_used_at", now).Error
+	return rec.UserID, nil
+}
+
+// RevokeAgentToken revokes a specific agent token by its ID, enforcing user ownership.
+func (s *Service) RevokeAgentToken(ctx context.Context, tokenID, userID uuid.UUID) error {
+	now := time.Now()
+	res := s.db.WithContext(ctx).Model(&AgentToken{}).
+		Where("id = ? AND user_id = ? AND revoked_at IS NULL", tokenID, userID).
+		Update("revoked_at", now)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return errors.New("token bulunamadı veya zaten iptal edilmiş")
+	}
+	return nil
+}
+
+// ListAgentTokens returns all non-revoked agent tokens for a user.
+func (s *Service) ListAgentTokens(ctx context.Context, userID uuid.UUID) ([]AgentToken, error) {
+	var tokens []AgentToken
+	err := s.db.WithContext(ctx).
+		Where("user_id = ? AND revoked_at IS NULL", userID).
+		Order("created_at DESC").
+		Find(&tokens).Error
+	return tokens, err
 }
 
 // ValidateRefreshToken validates a refresh token and returns the user ID and token expiry time.

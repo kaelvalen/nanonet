@@ -6,6 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type AgentToken struct {
+	ID         uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID     uuid.UUID  `gorm:"type:uuid;not null" json:"user_id"`
+	TokenHash  string     `gorm:"type:varchar(64);unique;not null" json:"-"`
+	Name       string     `gorm:"type:varchar(100);not null;default:''" json:"name"`
+	LastUsedAt *time.Time `json:"last_used_at"`
+	RevokedAt  *time.Time `json:"revoked_at"`
+	CreatedAt  time.Time  `gorm:"not null;default:now()" json:"created_at"`
+}
+
 type User struct {
 	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	Email        string    `gorm:"type:varchar(255);unique;not null" json:"email"`

@@ -11,6 +11,7 @@ const INITIAL_RECONNECT_DELAY = 1000;
 const HEARTBEAT_INTERVAL = 30000;
 const MAX_CACHED_POINTS = 500;
 const METRICS_TTL_MS = 24 * 60 * 60 * 1000; // 24 saat
+const AUTH_ACK_TIMEOUT_MS = 10000; // backend'den auth_ok bekleme süresi
 
 export function useWebSocket() {
 	const queryClient = useQueryClient();
@@ -26,6 +27,7 @@ export function useWebSocket() {
 	const wsRef = useRef<WebSocket | null>(null);
 	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 	const heartbeatRef = useRef<ReturnType<typeof setInterval>>();
+	const authAckTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 	const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
 	const mountedRef = useRef(true);
 
@@ -36,6 +38,23 @@ export function useWebSocket() {
 				const message = JSON.parse(event.data);
 
 				switch (message.type) {
+					case "auth_ok": {
+						const activeWS = wsRef.current;
+						if (!activeWS) break;
+						// ACK zamanında geldi — timeout'u iptal et
+						if (authAckTimeoutRef.current) {
+							clearTimeout(authAckTimeoutRef.current);
+							authAckTimeoutRef.current = undefined;
+						}
+						setConnected(true);
+						setWS(activeWS);
+						setLastError(null);
+						resetReconnect();
+						reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+						startHeartbeat(activeWS);
+						break;
+					}
+
 					case "metric_update":
 						if (message.service_id && message.data?.status) {
 							updateServiceStatus(message.service_id, message.data.status);
@@ -174,18 +193,21 @@ export function useWebSocket() {
 				ws.onopen = () => {
 					if (!mountedRef.current) return;
 					// Token'ı URL yerine ilk mesaj olarak gönder (server log / browser history'de görünmez)
+					// setConnected backend'den auth_ok mesajı geldikten sonra çağrılır.
 					try {
 						ws.send(JSON.stringify({ type: "auth", token }));
 					} catch {
 						ws.close(1000, "auth send failed");
 						return;
 					}
-					setConnected(true);
-					setWS(ws);
-					setLastError(null);
-					resetReconnect();
-					reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
-					startHeartbeat(ws);
+					// auth_ok gelmezse bağlantıyı kapat → onclose → normal reconnect akışı
+					authAckTimeoutRef.current = setTimeout(() => {
+						if (!mountedRef.current) return;
+						if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) {
+							setLastError("Sunucu kimlik doğrulama yanıtı vermedi");
+							ws.close(4408, "auth ack timeout");
+						}
+					}, AUTH_ACK_TIMEOUT_MS);
 				};
 
 				ws.onmessage = handleMessage;
@@ -253,6 +275,9 @@ export function useWebSocket() {
 		return () => {
 			mountedRef.current = false;
 			stopHeartbeat();
+			if (authAckTimeoutRef.current) {
+				clearTimeout(authAckTimeoutRef.current);
+			}
 			if (reconnectTimeoutRef.current) {
 				clearTimeout(reconnectTimeoutRef.current);
 			}

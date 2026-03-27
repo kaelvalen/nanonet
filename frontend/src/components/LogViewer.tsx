@@ -162,18 +162,27 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 		wsRef.current = ws;
 
 		ws.onopen = () => {
+			// setConnected backend'den auth_ok mesajı geldikten sonra çağrılır.
 			ws.send(JSON.stringify({ type: "auth", token }));
-			setConnected(true);
-			addLog({
-				id: "sys-connect",
-				timestamp: new Date().toISOString(),
-				level: "info",
-				source: "system",
-				message: `Log akışı başlatıldı — ${serviceName ?? serviceId}`,
-			});
 		};
 
 		ws.onmessage = (e) => {
+			try {
+				const msg = JSON.parse(e.data);
+				if (msg.type === "auth_ok") {
+					setConnected(true);
+					addLog({
+						id: "sys-connect",
+						timestamp: new Date().toISOString(),
+						level: "info",
+						source: "system",
+						message: `Log akışı başlatıldı — ${serviceName ?? serviceId}`,
+					});
+					return;
+				}
+			} catch {
+				// not JSON or not auth_ok — fall through to parseAgentMessage
+			}
 			const entry = parseAgentMessage(e.data, serviceId);
 			if (entry) addLog(entry);
 		};

@@ -51,7 +51,7 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 }
 
 func (rl *RateLimiter) cleanup() {
-	ticker := time.NewTicker(time.Hour)
+	ticker := time.NewTicker(15 * time.Minute)
 	defer ticker.Stop()
 	for range ticker.C {
 		rl.mu.Lock()

@@ -121,11 +121,12 @@ func main() {
 	// ── Handlers ──────────────────────────────────────────────────
 	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL, bl)
 	authMiddleware := auth.NewMiddleware(cfg.JWTSecret, bl)
+	authSvc := auth.NewService(db, cfg.JWTSecret)
 	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)
 	alertHandler := alerts.NewHandler(alertSvc)
 	maintHandler := maintenance.NewHandler(maintRepo)
-	wsHandler := ws.NewHandler(hub, cfg.JWTSecret, cfg.FrontendURL)
+	wsHandler := ws.NewHandler(hub, cfg.JWTSecret, cfg.FrontendURL, authSvc)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
 	cmdHandler := commands.NewHandler(db)
 	cmdService := commands.NewService(db)
@@ -193,6 +194,8 @@ func main() {
 			authGroup.POST("/reset-password", authHandler.ResetPassword)
 			authGroup.POST("/logout", authMiddleware.Required(), authHandler.Logout)
 			authGroup.POST("/agent-token", authMiddleware.Required(), authHandler.AgentToken)
+			authGroup.GET("/agent-tokens", authMiddleware.Required(), authHandler.ListAgentTokens)
+			authGroup.DELETE("/agent-tokens/:token_id", authMiddleware.Required(), authHandler.RevokeAgentToken)
 			authGroup.GET("/me", authMiddleware.Required(), authHandler.Me)
 			authGroup.PUT("/password", authMiddleware.Required(), authHandler.ChangePassword)
 		}

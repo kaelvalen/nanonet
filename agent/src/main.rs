@@ -346,7 +346,15 @@ async fn main() -> error::Result<()> {
 }
 
 fn load_or_create_agent_id(config: &Config) -> String {
-    let id_file = format!("/tmp/.nanonet_agent_id.{}", config.service_id);
+    let state_dir = std::env::var("HOME")
+        .map(|h| format!("{}/.nanonet", h))
+        .unwrap_or_else(|_| "/var/lib/nanonet".to_string());
+
+    if let Err(e) = std::fs::create_dir_all(&state_dir) {
+        tracing::warn!("Agent state dizini oluşturulamadı ({}): {}", state_dir, e);
+    }
+
+    let id_file = format!("{}/.agent_id.{}", state_dir, config.service_id);
     if let Ok(content) = std::fs::read_to_string(&id_file) {
         let trimmed = content.trim();
         if !trimmed.is_empty() {

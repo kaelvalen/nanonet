@@ -125,7 +125,8 @@ func (h *Handler) Refresh(c *gin.Context) {
 	response.Success(c, tokens)
 }
 
-// AgentToken generates a long-lived token suitable for agent processes.
+// AgentToken generates a new opaque agent token stored in the database.
+// The raw token is returned only once; subsequent requests cannot retrieve it.
 func (h *Handler) AgentToken(c *gin.Context) {
 	userIDStr := c.GetString("user_id")
 	if userIDStr == "" {
@@ -139,16 +140,64 @@ func (h *Handler) AgentToken(c *gin.Context) {
 		return
 	}
 
-	token, err := h.service.GenerateAgentToken(userID)
+	var req struct {
+		Name string `json:"name"`
+	}
+	_ = c.ShouldBindJSON(&req)
+
+	rawToken, rec, err := h.service.GenerateAgentToken(userID, req.Name)
 	if err != nil {
 		response.InternalError(c, "agent token oluşturulamadı")
 		return
 	}
 
 	response.Success(c, gin.H{
-		"agent_token": token,
-		"expires_in":  int64((3650 * 24 * time.Hour).Seconds()),
+		"token_id":    rec.ID,
+		"agent_token": rawToken,
+		"name":        rec.Name,
+		"created_at":  rec.CreatedAt,
 	})
+}
+
+// ListAgentTokens returns all active (non-revoked) agent tokens for the authenticated user.
+func (h *Handler) ListAgentTokens(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	tokens, err := h.service.ListAgentTokens(c.Request.Context(), userID)
+	if err != nil {
+		response.InternalError(c, "token listesi alınamadı")
+		return
+	}
+
+	response.Success(c, tokens)
+}
+
+// RevokeAgentToken revokes the agent token specified by :token_id.
+func (h *Handler) RevokeAgentToken(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	tokenID, err := uuid.Parse(c.Param("token_id"))
+	if err != nil {
+		response.BadRequest(c, "geçersiz token_id")
+		return
+	}
+
+	if err := h.service.RevokeAgentToken(c.Request.Context(), tokenID, userID); err != nil {
+		response.Error(c, 404, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"message": "token iptal edildi"})
 }
 
 func (h *Handler) Logout(c *gin.Context) {

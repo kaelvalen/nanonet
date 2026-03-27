@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"nanonet-backend/internal/auth"
 	"nanonet-backend/pkg/ratelimit"
 
 	"github.com/gin-gonic/gin"
@@ -19,13 +21,14 @@ import (
 type Handler struct {
 	hub              *Hub
 	jwtSecret        string
+	authService      *auth.Service
 	allowedOrigins   map[string]bool
 	upgrader         websocket.Upgrader
 	dashboardLimiter *ratelimit.Limiter
 	agentLimiter     *ratelimit.Limiter
 }
 
-func NewHandler(hub *Hub, jwtSecret string, frontendURL string) *Handler {
+func NewHandler(hub *Hub, jwtSecret string, frontendURL string, authSvc *auth.Service) *Handler {
 	allowed := map[string]bool{}
 	if frontendURL != "" {
 		allowed[frontendURL] = true
@@ -40,6 +43,7 @@ func NewHandler(hub *Hub, jwtSecret string, frontendURL string) *Handler {
 	h := &Handler{
 		hub:              hub,
 		jwtSecret:        jwtSecret,
+		authService:      authSvc,
 		allowedOrigins:   allowed,
 		dashboardLimiter: ratelimit.New(10, time.Minute),
 		agentLimiter:     ratelimit.New(5, time.Minute),
@@ -148,6 +152,11 @@ func (h *Handler) Dashboard(c *gin.Context) {
 		return
 	}
 
+	// Acknowledge successful authentication before starting pumps.
+	if ackMsg, _ := json.Marshal(map[string]string{"type": "auth_ok"}); ackMsg != nil {
+		_ = conn.WriteMessage(websocket.TextMessage, ackMsg)
+	}
+
 	clientID := uuid.New().String()
 	client := NewClient(clientID, DashboardClient, h.hub, conn)
 	client.userID = userID
@@ -164,7 +173,7 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 		return
 	}
 
-	// Token'ı header veya query'den al ve tip kontrolü yap
+	// Token'ı header veya query'den al
 	var tokenString string
 	authHeader := c.GetHeader("Authorization")
 	if authHeader != "" {
@@ -182,10 +191,18 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 		return
 	}
 
-	tokenType := h.extractTokenType(tokenString)
-	if tokenType != "agent" && tokenType != "access" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "geçersiz token tipi: agent veya access token gerekli"})
-		return
+	// Opaque agent token (nnat_ prefix) → DB lookup; JWT access token → JWT validation.
+	if strings.HasPrefix(tokenString, "nnat_") {
+		if _, err := h.authService.ValidateAgentToken(context.Background(), tokenString); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "geçersiz agent token"})
+			return
+		}
+	} else {
+		tokenType := h.extractTokenType(tokenString)
+		if tokenType != "access" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "geçersiz token tipi: agent token veya access token gerekli"})
+			return
+		}
 	}
 
 	ip := c.ClientIP()
@@ -260,6 +277,11 @@ func (h *Handler) ServiceStream(c *gin.Context) {
 			websocket.FormatCloseMessage(4401, "unauthorized"))
 		_ = conn.Close()
 		return
+	}
+
+	// Acknowledge successful authentication before starting pumps.
+	if ackMsg, _ := json.Marshal(map[string]string{"type": "auth_ok"}); ackMsg != nil {
+		_ = conn.WriteMessage(websocket.TextMessage, ackMsg)
 	}
 
 	clientID := uuid.New().String()
