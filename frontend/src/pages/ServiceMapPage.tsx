@@ -1,4 +1,4 @@
-import { GitFork } from "lucide-react";
+import { Brain, GitFork } from "lucide-react";
 import { ServiceMap } from "@/components/ServiceMap";
 import { useNavStore } from "@/store/navStore";
 
@@ -15,23 +15,37 @@ export function ServiceMapPage() {
 			}}
 		>
 			<div
-				className="flex items-center gap-3 px-6 py-4 border-b shrink-0"
-				style={{ borderColor: "var(--border-subtle)" }}
+				className="flex items-center gap-3 px-6 py-3.5 shrink-0"
+				style={{ borderBottom: "2px solid var(--border-default)" }}
 			>
 				<div
-					className="w-8 h-8 rounded-lg flex items-center justify-center"
-					style={{ background: "var(--color-teal-border)" }}
+					className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+					style={{
+						background: "var(--color-teal-subtle)",
+						border: "2px solid var(--color-teal-border)",
+					}}
 				>
 					<GitFork className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
 				</div>
-				<div>
-					<h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+				<div className="flex-1 min-w-0">
+					<h1 className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>
 						Servis Bağımlılık Haritası
 					</h1>
-					<p className="text-xs hidden sm:block" style={{ color: "var(--text-faint)" }}>
-						Servisleri sürükle, bağlantı kurmak için bir node'dan diğerine çiz. Haritayı kaydetmek için Kaydet'e bas.
+					<p className="text-[10px] hidden sm:block" style={{ color: "var(--text-faint)" }}>
+						Servisleri sürükle · bağlantı için bir node'dan diğerine çiz · node'a tıkla detay ve AI analizi için
 					</p>
 				</div>
+				<span
+					className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-medium"
+					style={{
+						background: "var(--color-lavender-subtle)",
+						border: "2px solid var(--color-lavender-border)",
+						color: "var(--color-lavender)",
+					}}
+				>
+					<Brain className="w-3 h-3" />
+					AI Destekli
+				</span>
 			</div>
 
 			<div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
