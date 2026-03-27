@@ -45,10 +45,11 @@ export function EndpointsTab({
 			className="space-y-4"
 		>
 			<Card
-				className="p-4 rounded-xl"
+				className="p-4 rounded"
 				style={{
-					background: "var(--surface-glass)",
-					border: "1px solid var(--border-subtle)",
+					background: "var(--surface-card)",
+					border: "2px solid var(--border-default)",
+					boxShadow: "var(--card-shadow)",
 				}}
 			>
 				<div className="flex items-center gap-2">
@@ -106,10 +107,11 @@ export function EndpointsTab({
 
 			{endpointsData && (
 				<Card
-					className="p-5 rounded-xl"
+					className="p-5 rounded"
 					style={{
-						background: "var(--surface-glass)",
-						border: "1px solid var(--border-subtle)",
+						background: "var(--surface-card)",
+						border: "2px solid var(--border-default)",
+						boxShadow: "var(--card-shadow)",
 					}}
 				>
 					<div className="flex items-center gap-2 mb-4">

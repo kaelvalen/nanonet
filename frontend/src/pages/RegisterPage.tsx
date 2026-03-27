@@ -31,7 +31,7 @@ export function RegisterPage() {
 				: password.length < 10
 					? 2
 					: 3;
-	const strengthLabel = ["", "Weak", "Good", "Strong"][passwordStrength];
+	const strengthLabel = ["", "Zayıf", "İyi", "Güçlü"][passwordStrength];
 	const strengthColor = ["", "#fb7185", "#fbbf24", "#34d399"][passwordStrength];
 	const passwordsMatch =
 		confirmPassword.length > 0 && password === confirmPassword;
@@ -98,7 +98,7 @@ export function RegisterPage() {
 						className="text-sm mt-1"
 						style={{ color: "var(--text-muted)" }}
 					>
-						Create your account
+						Hesabınızı oluşturun
 					</motion.p>
 				</div>
 
@@ -120,13 +120,13 @@ export function RegisterPage() {
 								className="text-lg font-semibold"
 								style={{ color: "var(--text-secondary)" }}
 							>
-								Get started
+								Hoş Geldiniz
 							</h2>
 							<p
 								className="text-xs mt-0.5"
 								style={{ color: "var(--text-muted)" }}
 							>
-								Fill in the details below
+								Yeni hesap oluşturun
 							</p>
 						</div>
 
@@ -142,12 +142,12 @@ export function RegisterPage() {
 									className="text-xs font-medium"
 									style={{ color: "var(--text-secondary)" }}
 								>
-									Email
+									E-posta
 								</Label>
 								<Input
 									id="email"
 									type="email"
-									placeholder="you@nanonet.dev"
+									placeholder="örnek@nanonet.dev"
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									className="rounded transition-all"
@@ -171,13 +171,13 @@ export function RegisterPage() {
 									className="text-xs font-medium"
 									style={{ color: "var(--text-secondary)" }}
 								>
-									Password
+									Şifre
 								</Label>
 								<div className="relative">
 									<Input
 										id="password"
 										type={showPassword ? "text" : "password"}
-										placeholder="Min. 6 characters"
+										placeholder="En az 12 karakter"
 										value={password}
 										onChange={(e) => setPassword(e.target.value)}
 										className="rounded pr-10 transition-all"
@@ -239,7 +239,7 @@ export function RegisterPage() {
 									className="text-xs font-medium"
 									style={{ color: "var(--text-secondary)" }}
 								>
-									Confirm Password
+									Şifre Tekrar
 								</Label>
 								<Input
 									id="confirm-password"
@@ -264,7 +264,7 @@ export function RegisterPage() {
 										className="text-[10px]"
 										style={{ color: "var(--status-down-text)" }}
 									>
-										Passwords don't match
+										Şifreler eşleşmiyor
 									</p>
 								)}
 								{passwordsMatch && (
@@ -272,7 +272,7 @@ export function RegisterPage() {
 										className="text-[10px]"
 										style={{ color: "var(--status-up-text)" }}
 									>
-										Passwords match ✓
+										Şifreler eşleşiyor ✓
 									</p>
 								)}
 							</motion.div>
@@ -300,12 +300,12 @@ export function RegisterPage() {
 									{isRegistering ? (
 										<div className="flex items-center gap-2">
 											<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-											Creating account...
+											Hesap oluşturuluyor...
 										</div>
 									) : (
 										<div className="flex items-center gap-2">
 											<Sparkles className="w-4 h-4" />
-											Create Account
+											Kayıt Ol
 										</div>
 									)}
 								</Button>
@@ -319,13 +319,13 @@ export function RegisterPage() {
 							className="mt-6 text-center"
 						>
 							<p className="text-xs" style={{ color: "var(--text-muted)" }}>
-								Already have an account?{" "}
+								Zaten hesabınız var mı?{" "}
 								<Link
 									to="/login"
 									className="font-medium transition-colors"
 									style={{ color: "var(--text-link)" }}
 								>
-									Sign In
+									Giriş Yap
 								</Link>
 							</p>
 						</motion.div>

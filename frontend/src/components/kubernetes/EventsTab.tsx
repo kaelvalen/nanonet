@@ -54,7 +54,7 @@ export function EventsTab({
 							type="button"
 							key={t || "all"}
 							onClick={() => setEventTypeFilter(t)}
-							className="px-3 py-1.5 rounded-xl text-xs border transition-all"
+							className="px-3 py-1.5 rounded text-xs border-2 transition-all"
 							style={
 								eventTypeFilter === t
 									? t === "Warning"
@@ -88,7 +88,7 @@ export function EventsTab({
 				</div>
 				<Select value={eventKindFilter} onValueChange={setEventKindFilter}>
 					<SelectTrigger
-						className="rounded-xl text-xs h-8 w-36"
+						className="rounded text-xs h-8 w-36"
 						style={{
 							background: "var(--input-bg)",
 							borderColor: "var(--input-border)",
@@ -109,7 +109,7 @@ export function EventsTab({
 					type="button"
 					onClick={() => refetchEvents()}
 					disabled={eventsLoading}
-					className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border ml-auto"
+					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2 ml-auto"
 					style={{
 						borderColor: "var(--status-warn-border)",
 						color: "var(--status-warn-text)",
@@ -146,10 +146,11 @@ export function EventsTab({
 				</div>
 			) : filteredEvents.length === 0 ? (
 				<Card
-					className="p-8 rounded-xl text-center"
+					className="p-8 rounded text-center"
 					style={{
-						background: "var(--surface-glass)",
-						border: "1px solid var(--border-subtle)",
+						background: "var(--surface-card)",
+						border: "2px solid var(--border-default)",
+						boxShadow: "var(--card-shadow)",
 					}}
 				>
 					<Bell
@@ -169,10 +170,11 @@ export function EventsTab({
 							animate={{ opacity: 1, x: 0 }}
 						>
 							<Card
-								className="px-4 py-3 rounded-xl"
+								className="px-4 py-3 rounded"
 								style={{
-									background: "var(--surface-glass)",
-									border: `1px solid ${ev.type === "Warning" ? "var(--status-warn-border)" : "var(--border-subtle)"}`,
+									background: "var(--surface-card)",
+									border: `2px solid ${ev.type === "Warning" ? "var(--status-warn-border)" : "var(--border-default)"}`,
+									boxShadow: "var(--card-shadow)",
 								}}
 							>
 								<div className="flex items-start gap-3">

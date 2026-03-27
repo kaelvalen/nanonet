@@ -105,15 +105,16 @@ function StatCard({
 }) {
 	return (
 		<Card
-			className="p-4 rounded-xl"
+			className="p-4 rounded"
 			style={{
-				background: "var(--surface-glass)",
-				border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
+				background: "var(--surface-card)",
+				border: `2px solid color-mix(in srgb, ${color} 30%, var(--border-default))`,
+				boxShadow: "var(--card-shadow)",
 			}}
 		>
 			<div className="flex items-center gap-3">
 				<div
-					className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+					className="w-9 h-9 rounded flex items-center justify-center shrink-0"
 					style={{
 						backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
 					}}
@@ -338,7 +339,7 @@ function PodLogModal({
 						</div>
 					)}
 					<pre
-						className="text-[10px] leading-relaxed p-4 rounded-xl overflow-auto max-h-96 whitespace-pre-wrap break-all"
+						className="text-[10px] leading-relaxed p-4 rounded overflow-auto max-h-96 whitespace-pre-wrap break-all"
 						style={{
 							background: "var(--surface-sunken)",
 							border: "1px solid var(--border-subtle)",
@@ -719,7 +720,7 @@ export function KubernetesPage() {
 									refetchAllPods();
 									refetchDeployments();
 								}}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border transition-all"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border-2 transition-all"
 								style={{
 									borderColor: "var(--border-subtle)",
 									color: "var(--text-muted)",
@@ -734,7 +735,7 @@ export function KubernetesPage() {
 							</button>
 						)}
 						<div
-							className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border"
+							className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border-2"
 							style={
 								isAvailable
 									? {
@@ -771,10 +772,11 @@ export function KubernetesPage() {
 			{!statusLoading && !isAvailable && (
 				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
 					<Card
-						className="p-8 rounded-xl text-center"
+						className="p-8 rounded text-center"
 						style={{
-							background: "var(--surface-glass)",
-							border: "1px solid var(--status-warn-border)",
+							background: "var(--surface-card)",
+							border: "2px solid var(--status-warn-border)",
+							boxShadow: "var(--card-shadow)",
 						}}
 					>
 						<CloudOff
@@ -818,7 +820,7 @@ export function KubernetesPage() {
 									type="button"
 									key={tab.key}
 									onClick={() => setActiveTab(tab.key)}
-									className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all"
+									className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all"
 									style={
 										activeTab === tab.key
 											? {
@@ -911,10 +913,11 @@ export function KubernetesPage() {
 										</div>
 									) : nodes.length === 0 ? (
 										<Card
-											className="p-5 text-center rounded-xl"
+											className="p-5 text-center rounded"
 											style={{
-												background: "var(--surface-glass)",
-												border: "1px solid var(--border-subtle)",
+												background: "var(--surface-card)",
+												border: "2px solid var(--border-default)",
+												boxShadow: "var(--card-shadow)",
 											}}
 										>
 											<p
@@ -929,10 +932,11 @@ export function KubernetesPage() {
 											{nodes.map((node) => (
 												<Card
 													key={node.name}
-													className="rounded-xl overflow-hidden"
+													className="rounded overflow-hidden"
 													style={{
-														background: "var(--surface-glass)",
-														border: `1px solid ${node.ready ? "var(--color-teal-border)" : "var(--status-down-border)"}`,
+														background: "var(--surface-card)",
+														border: `2px solid ${node.ready ? "var(--color-teal-border)" : "var(--status-down-border)"}`,
+														boxShadow: "var(--card-shadow)",
 													}}
 												>
 													<button
@@ -1074,10 +1078,11 @@ export function KubernetesPage() {
 												return (
 													<Card
 														key={dep.name}
-														className="p-3 rounded-xl flex items-center gap-3"
+														className="p-3 rounded flex items-center gap-3"
 														style={{
-															background: "var(--surface-glass)",
-															border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+															background: "var(--surface-card)",
+															border: `2px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+															boxShadow: "var(--card-shadow)",
 														}}
 													>
 														<StatusDot ready={healthy} />
@@ -1158,7 +1163,7 @@ export function KubernetesPage() {
 										type="button"
 										onClick={() => refetchDeployments()}
 										disabled={deploymentsLoading}
-										className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
+										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
 										style={{
 											borderColor: "var(--color-lavender-border)",
 											color: "var(--color-lavender)",
@@ -1183,10 +1188,11 @@ export function KubernetesPage() {
 									</div>
 								) : deployments.length === 0 ? (
 									<Card
-										className="p-8 text-center rounded-xl"
+										className="p-5 text-center rounded"
 										style={{
-											background: "var(--surface-glass)",
-											border: "1px solid var(--border-subtle)",
+											background: "var(--surface-card)",
+											border: "2px solid var(--border-default)",
+											boxShadow: "var(--card-shadow)",
 										}}
 									>
 										<Layers
@@ -1195,7 +1201,7 @@ export function KubernetesPage() {
 										/>
 										<p
 											className="text-xs"
-											style={{ color: "var(--text-muted)" }}
+											style={{ color: "var(--text-faint)" }}
 										>
 											Deployment bulunamadı
 										</p>
@@ -1215,15 +1221,16 @@ export function KubernetesPage() {
 													transition={{ delay: i * 0.04 }}
 												>
 													<Card
-														className="p-5 rounded-xl"
+														className="p-5 rounded"
 														style={{
-															background: "var(--surface-glass)",
-															border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+															background: "var(--surface-card)",
+															border: `2px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+															boxShadow: "var(--card-shadow)",
 														}}
 													>
 														<div className="flex items-center gap-3 mb-4">
 															<div
-																className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+																className="w-9 h-9 rounded flex items-center justify-center shrink-0"
 																style={{
 																	background: "var(--color-lavender-subtle)",
 																}}
@@ -1263,12 +1270,11 @@ export function KubernetesPage() {
 																	rolloutRestartMutation.isPending &&
 																	rolloutRestartMutation.variables === dep.name
 																}
-																className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
+																className="w-8 h-8 rounded flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
 																style={{
 																	background:
 																		"color-mix(in srgb, var(--color-lavender) 12%, transparent)",
-																	border:
-																		"1px solid var(--color-lavender-border)",
+																	border: "1px solid var(--color-lavender-border)",
 																	color: "var(--color-lavender)",
 																}}
 															>
@@ -1330,10 +1336,10 @@ export function KubernetesPage() {
 
 														{/* Scale Controls */}
 														<div
-															className="p-3 rounded-xl"
+															className="p-3 rounded"
 															style={{
 																background: "var(--surface-sunken)",
-																border: "1px solid var(--border-subtle)",
+																border: "2px solid var(--border-subtle)",
 															}}
 														>
 															<p
@@ -1357,8 +1363,7 @@ export function KubernetesPage() {
 																	aria-label="Decrease replicas"
 																	className="w-7 h-7 rounded-lg flex items-center justify-center"
 																	style={{
-																		border:
-																			"1px solid var(--color-lavender-border)",
+																		border: "1px solid var(--color-lavender-border)",
 																		color: "var(--color-lavender)",
 																	}}
 																>
@@ -1384,8 +1389,7 @@ export function KubernetesPage() {
 																	aria-label="Increase replicas"
 																	className="w-7 h-7 rounded-lg flex items-center justify-center"
 																	style={{
-																		border:
-																			"1px solid var(--color-lavender-border)",
+																		border: "1px solid var(--color-lavender-border)",
 																		color: "var(--color-lavender)",
 																	}}
 																>
@@ -1480,7 +1484,7 @@ export function KubernetesPage() {
 										type="button"
 										onClick={() => refetchHPAs()}
 										disabled={hpasLoading}
-										className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
+										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
 										style={{
 											borderColor: "var(--color-pink-border)",
 											color: "var(--color-pink)",
@@ -1496,10 +1500,11 @@ export function KubernetesPage() {
 										{hpas.map((hpa) => (
 											<Card
 												key={hpa.name}
-												className="p-4 rounded-xl"
+												className="p-4 rounded"
 												style={{
-													background: "var(--surface-glass)",
-													border: "1px solid var(--color-pink-border)",
+													background: "var(--surface-card)",
+													border: "2px solid var(--color-pink-border)",
+													boxShadow: "var(--card-shadow)",
 												}}
 											>
 												<div className="flex items-start justify-between gap-3 mb-3">
@@ -1613,9 +1618,9 @@ export function KubernetesPage() {
 														style={{ color: "var(--text-faint)" }}
 													>
 														CPU hedef:{" "}
-														<span style={{ color: "var(--color-pink)" }}>
+														<strong style={{ color: "var(--color-pink)" }}>
 															%{hpa.cpu_target_percent}
-														</span>
+														</strong>
 														{hpa.cpu_current_percent !== undefined && (
 															<>
 																{" "}
@@ -1656,10 +1661,11 @@ export function KubernetesPage() {
 
 								{/* Create / Update HPA form */}
 								<Card
-									className="p-5 rounded-xl"
+									className="p-5 rounded"
 									style={{
-										background: "var(--surface-glass)",
-										border: "1px solid var(--color-pink-border)",
+										background: "var(--surface-card)",
+										border: "2px solid var(--color-pink-border)",
+										boxShadow: "var(--card-shadow)",
 									}}
 								>
 									<div className="flex items-center gap-2 mb-4">
@@ -1800,7 +1806,7 @@ export function KubernetesPage() {
 									</div>
 
 									<div
-										className="p-3 rounded-xl text-[10px] leading-relaxed mb-4"
+										className="p-3 rounded text-[10px] leading-relaxed mb-4"
 										style={{
 											background:
 												"color-mix(in srgb, var(--color-pink) 8%, transparent)",
@@ -1820,7 +1826,7 @@ export function KubernetesPage() {
 									<Button
 										onClick={() => hpaMutation.mutate()}
 										disabled={hpaMutation.isPending || !hpaDeployment}
-										className="w-full text-white rounded-xl h-9 text-sm"
+										className="w-full text-white rounded h-9 text-sm"
 										style={{ background: "var(--color-pink)" }}
 									>
 										{hpaMutation.isPending ? (

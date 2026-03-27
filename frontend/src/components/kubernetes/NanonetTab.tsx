@@ -116,7 +116,7 @@ export function NanonetTab({
 						refetchDeployments();
 					}}
 					disabled={nanonetServicesLoading}
-					className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
+					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
 					style={{
 						borderColor: "var(--border-subtle)",
 						color: "var(--text-muted)",
@@ -133,7 +133,7 @@ export function NanonetTab({
 
 			{!isAvailable && (
 				<div
-					className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs"
+					className="flex items-center gap-2.5 px-4 py-3 rounded text-xs"
 					style={{
 						background: "var(--status-warn-subtle)",
 						border: "1px solid var(--status-warn-border)",
@@ -167,10 +167,11 @@ export function NanonetTab({
 				</div>
 			) : nanonetServices.length === 0 ? (
 				<Card
-					className="p-8 rounded-xl text-center"
+					className="p-8 rounded text-center"
 					style={{
-						background: "var(--surface-glass)",
-						border: "1px solid var(--border-subtle)",
+						background: "var(--surface-card)",
+						border: "2px solid var(--border-default)",
+						boxShadow: "var(--card-shadow)",
 					}}
 				>
 					<Package2
@@ -211,10 +212,11 @@ export function NanonetTab({
 								animate={{ opacity: 1, y: 0 }}
 							>
 								<Card
-									className="p-4 rounded-xl"
+									className="p-4 rounded"
 									style={{
-										background: "var(--surface-glass)",
-										border: `1px solid ${isDeployed ? "var(--color-teal-border)" : "var(--border-subtle)"}`,
+										background: "var(--surface-card)",
+										border: `2px solid ${isDeployed ? "var(--color-teal-border)" : "var(--border-default)"}`,
+										boxShadow: "var(--card-shadow)",
 									}}
 								>
 									{/* Header row */}
@@ -277,7 +279,7 @@ export function NanonetTab({
 														undeployMutation.mutate(svc.name);
 												}}
 												disabled={isUndeploying}
-												className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-[10px] border shrink-0 transition-opacity hover:opacity-80"
+												className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border-2 shrink-0 transition-opacity hover:opacity-80"
 												style={{
 													background:
 														"color-mix(in srgb, var(--status-down) 10%, transparent)",
@@ -301,7 +303,7 @@ export function NanonetTab({
 														[svc.name]: { ...form, open: !form.open },
 													}))
 												}
-												className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-[10px] border shrink-0 transition-all"
+												className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border-2 shrink-0 transition-all"
 												style={
 													form.open
 														? {
@@ -498,7 +500,7 @@ export function NanonetTab({
 																? "Container imajı gerekli"
 																: ""
 													}
-													className="flex-1 text-white rounded-xl h-9 text-xs"
+													className="flex-1 text-white rounded h-9 text-xs"
 													style={{
 														background:
 															!form.image.trim() || isDeploying || !isAvailable

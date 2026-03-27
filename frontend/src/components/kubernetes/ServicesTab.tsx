@@ -39,7 +39,7 @@ export function ServicesTab({
 					type="button"
 					onClick={() => refetchServices()}
 					disabled={servicesLoading}
-					className="flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs border"
+					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
 					style={{
 						borderColor: "var(--border-subtle)",
 						color: "var(--text-muted)",
@@ -62,10 +62,11 @@ export function ServicesTab({
 					{services.map((svc) => (
 						<Card
 							key={svc.name}
-							className="p-4 rounded-xl"
+							className="p-4 rounded"
 							style={{
-								background: "var(--surface-glass)",
-								border: "1px solid var(--border-subtle)",
+								background: "var(--surface-card)",
+								border: "2px solid var(--border-default)",
+								boxShadow: "var(--card-shadow)",
 							}}
 						>
 							<div className="flex items-start justify-between gap-3 mb-2">
@@ -178,10 +179,11 @@ export function ServicesTab({
 				</div>
 			) : (
 				<Card
-					className="p-8 rounded-xl text-center"
+					className="p-8 rounded text-center"
 					style={{
-						background: "var(--surface-glass)",
-						border: "1px solid var(--border-subtle)",
+						background: "var(--surface-card)",
+						border: "2px solid var(--border-default)",
+						boxShadow: "var(--card-shadow)",
 					}}
 				>
 					<Globe

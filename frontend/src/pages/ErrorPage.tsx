@@ -26,10 +26,11 @@ export function ErrorPage() {
 				initial={{ opacity: 0, y: 24 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4 }}
-				className="backdrop-blur-sm rounded-2xl shadow-lg p-10 max-w-md w-full text-center"
+				className="rounded p-10 max-w-md w-full text-center"
 				style={{
-					background: "var(--surface-glass)",
-					border: "1px solid var(--border-default)",
+					background: "var(--surface-card)",
+					border: "2px solid var(--border-default)",
+					boxShadow: "var(--card-shadow)",
 				}}
 			>
 				<div className="flex justify-center mb-6">
@@ -62,21 +63,21 @@ export function ErrorPage() {
 						variant="outline"
 						size="sm"
 						onClick={() => navigate(-1)}
-						className="rounded-lg text-xs h-8"
+						className="rounded text-xs h-8"
 						style={{
 							borderColor: "var(--border-default)",
 							color: "var(--text-muted)",
 						}}
 					>
-						<RefreshCw className="w-3 h-3 mr-1.5" /> Go back
+						<RefreshCw className="w-3 h-3 mr-1.5" /> Geri Dön
 					</Button>
 					<Button
 						size="sm"
 						onClick={() => navigate("/", { replace: true })}
-						className="text-white rounded-lg text-xs h-8 border-0 hover:opacity-90"
-						style={{ background: "var(--gradient-btn-primary)" }}
+						className="text-white rounded text-xs h-8 border-0 hover:opacity-90"
+						style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
 					>
-						<Home className="w-3 h-3 mr-1.5" /> Dashboard
+						<Home className="w-3 h-3 mr-1.5" /> Ana Sayfa
 					</Button>
 				</div>
 			</motion.div>

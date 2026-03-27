@@ -507,7 +507,7 @@ export function AlertsPage() {
 						</p>
 					</div>
 					<div
-						className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border transition-all"
+						className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border-2 transition-all"
 						style={
 							activeCount > 0
 								? {

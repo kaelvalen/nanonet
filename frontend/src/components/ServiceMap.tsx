@@ -59,11 +59,11 @@ function ServiceNode({ data }: { data: { service: Service; onDelete: (id: string
 
 	return (
 		<div
-			className="px-3 py-2.5 rounded-xl border min-w-40 shadow-md group relative"
+			className="px-3 py-2.5 rounded min-w-40 group relative"
 			style={{
 				background: "var(--surface-card)",
-				borderColor: color,
-				borderWidth: "1.5px",
+				border: `2px solid ${color}`,
+				boxShadow: "var(--card-shadow)",
 			}}
 		>
 			<Handle type="target" position={Position.Left} style={{ background: color, width: 8, height: 8 }} />
@@ -311,8 +311,8 @@ function ServiceMapInner() {
 						</Button>
 						{addMode && (
 							<div
-								className="absolute top-9 right-0 z-10 rounded-xl border shadow-lg p-2 min-w-45 space-y-1"
-								style={{ background: "var(--bg-card)", borderColor: "var(--border-subtle)" }}
+								className="absolute top-9 right-0 z-10 rounded p-2 min-w-45 space-y-1"
+								style={{ background: "var(--surface-card)", border: "2px solid var(--border-default)", boxShadow: "var(--card-shadow)" }}
 							>
 								{addableServices.map((svc) => (
 									<button

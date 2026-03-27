@@ -31,27 +31,9 @@ export function ForgotPasswordPage() {
 		<div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
 			<div
 				className="fixed inset-0 pointer-events-none z-0"
-				style={{ background: "var(--gradient-light)", opacity: 0.5 }}
-			/>
-			<div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-				<div
-					className="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl animate-blob"
-					style={{ backgroundColor: "var(--blob-1)" }}
-				/>
-				<div
-					className="absolute top-1/3 -right-32 w-80 h-80 rounded-full blur-3xl animate-blob animation-delay-2000"
-					style={{ backgroundColor: "var(--blob-2)" }}
-				/>
-				<div
-					className="absolute -bottom-32 left-1/3 w-96 h-96 rounded-full blur-3xl animate-blob animation-delay-4000"
-					style={{ backgroundColor: "var(--blob-3)" }}
-				/>
-			</div>
-			<div
-				className="fixed inset-0 pointer-events-none z-0"
 				style={{
 					backgroundImage: `radial-gradient(var(--dot-pattern) 1px, transparent 1px)`,
-					backgroundSize: "32px 32px",
+					backgroundSize: "28px 28px",
 				}}
 			/>
 
@@ -62,7 +44,7 @@ export function ForgotPasswordPage() {
 					duration: 0.5,
 					type: "spring",
 					stiffness: 220,
-					damping: 20,
+					damping: 18,
 				}}
 				className="relative z-10 w-full max-w-sm"
 			>
@@ -79,8 +61,12 @@ export function ForgotPasswordPage() {
 						className="inline-block mb-4"
 					>
 						<div
-							className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg mx-auto"
-							style={{ background: "var(--gradient-logo)" }}
+							className="w-16 h-16 rounded flex items-center justify-center mx-auto"
+							style={{
+								background: "var(--gradient-logo)",
+								border: "2px solid var(--border-default)",
+								boxShadow: "var(--btn-shadow)",
+							}}
 						>
 							<span className="text-white text-2xl">✦</span>
 						</div>
@@ -102,11 +88,11 @@ export function ForgotPasswordPage() {
 					transition={{ delay: 0.2 }}
 				>
 					<Card
-						className="backdrop-blur-xl rounded-2xl p-8"
+						className="rounded p-8"
 						style={{
-							background: "var(--surface-glass)",
-							border: "1px solid var(--color-teal-border)",
-							boxShadow: "0 20px 40px var(--shadow-card)",
+							background: "var(--surface-card)",
+							border: "2px solid var(--border-default)",
+							boxShadow: "var(--card-shadow)",
 						}}
 					>
 						{sent ? (
@@ -192,7 +178,7 @@ export function ForgotPasswordPage() {
 												placeholder="ornek@nanonet.dev"
 												value={email}
 												onChange={(e) => setEmail(e.target.value)}
-												className="rounded-xl pl-9 transition-all"
+												className="rounded pl-9 transition-all"
 												style={{
 													background: "var(--input-bg)",
 													borderColor: "var(--input-border)",
@@ -206,8 +192,11 @@ export function ForgotPasswordPage() {
 									<Button
 										type="submit"
 										disabled={loading || !email}
-										className="w-full text-white rounded-xl h-10 shadow-sm hover:shadow-md transition-all disabled:opacity-60"
-										style={{ background: "var(--gradient-btn-primary)" }}
+										className="w-full text-white rounded h-10 transition-all disabled:opacity-60"
+										style={{
+											background: "var(--gradient-btn-primary)",
+											boxShadow: "var(--btn-shadow)",
+										}}
 									>
 										{loading ? (
 											<div className="flex items-center gap-2">

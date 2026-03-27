@@ -11,26 +11,23 @@ export function NotFoundPage() {
 			className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden"
 			style={{ background: "var(--gradient-bg)" }}
 		>
-			{/* Ambient blobs */}
-			<div className="absolute inset-0 pointer-events-none overflow-hidden">
-				<div
-					className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-30"
-					style={{ backgroundColor: "var(--color-lavender-subtle)" }}
-				/>
-				<div
-					className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-30"
-					style={{ backgroundColor: "var(--color-pink-subtle)" }}
-				/>
-			</div>
+			<div
+				className="fixed inset-0 pointer-events-none z-0"
+				style={{
+					backgroundImage: `radial-gradient(var(--dot-pattern) 1px, transparent 1px)`,
+					backgroundSize: "28px 28px",
+				}}
+			/>
 
 			<motion.div
 				initial={{ opacity: 0, y: 32 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.6 }}
-				className="relative backdrop-blur-xl rounded-3xl shadow-lg p-12 max-w-lg w-full text-center"
+				className="relative z-10 rounded p-12 max-w-lg w-full text-center"
 				style={{
-					background: "var(--surface-glass)",
-					border: "1px solid var(--color-teal-border)",
+					background: "var(--surface-card)",
+					border: "2px solid var(--border-default)",
+					boxShadow: "var(--card-shadow)",
 				}}
 			>
 				{/* 404 Big Number */}
@@ -50,7 +47,7 @@ export function NotFoundPage() {
 					transition={{ delay: 0.4 }}
 				>
 					<div
-						className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+						className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4"
 						style={{ backgroundColor: "var(--color-lavender-subtle)" }}
 					>
 						<Search
@@ -77,9 +74,9 @@ export function NotFoundPage() {
 							variant="outline"
 							size="sm"
 							onClick={() => navigate(-1)}
-							className="rounded-xl text-xs h-9 px-4"
+							className="rounded text-xs h-9 px-4"
 							style={{
-								borderColor: "var(--color-teal-border)",
+								borderColor: "var(--border-default)",
 								color: "var(--text-muted)",
 							}}
 						>
@@ -88,8 +85,8 @@ export function NotFoundPage() {
 						<Button
 							size="sm"
 							onClick={() => navigate("/", { replace: true })}
-							className="text-white rounded-xl text-xs h-9 px-4 border-0 hover:opacity-90"
-							style={{ background: "var(--gradient-btn-primary)" }}
+							className="text-white rounded text-xs h-9 px-4 border-0 hover:opacity-90"
+							style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
 						>
 							<Home className="w-3.5 h-3.5 mr-1.5" /> Ana Sayfaya Git
 						</Button>

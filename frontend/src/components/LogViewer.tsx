@@ -244,10 +244,11 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 
 	return (
 		<div
-			className="flex flex-col h-full rounded-xl border overflow-hidden"
+			className="flex flex-col h-full rounded overflow-hidden"
 			style={{
-				background: "var(--bg-card)",
-				borderColor: "var(--border-subtle)",
+				background: "var(--surface-card)",
+				border: "2px solid var(--border-default)",
+				boxShadow: "var(--card-shadow)",
 				fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
 			}}
 		>

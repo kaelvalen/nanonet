@@ -60,7 +60,7 @@ export function PodsTab({
 						placeholder="Pod adı veya label'a göre filtrele..."
 						value={podFilter}
 						onChange={(e) => setPodFilter(e.target.value)}
-						className="rounded-xl text-xs h-9 pl-8"
+						className="rounded text-xs h-9 pl-8"
 						style={{
 							background: "var(--input-bg)",
 							borderColor: "var(--input-border)",
@@ -72,7 +72,7 @@ export function PodsTab({
 					type="button"
 					onClick={() => refetchAllPods()}
 					disabled={allPodsLoading}
-					className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs border transition-all"
+					className="flex items-center gap-1.5 px-3 h-9 rounded text-xs border-2 transition-all"
 					style={{
 						borderColor: "var(--color-blue-border)",
 						color: "var(--color-blue)",
@@ -110,10 +110,11 @@ export function PodsTab({
 							transition={{ delay: i * 0.03 }}
 						>
 							<Card
-								className="p-3.5 rounded-xl"
+								className="p-3.5 rounded"
 								style={{
-									background: "var(--surface-glass)",
-									border: `1px solid ${pod.ready ? "var(--color-blue-border)" : pod.status === "Pending" ? "var(--status-warn-border)" : "var(--status-down-border)"}`,
+									background: "var(--surface-card)",
+									border: `2px solid ${pod.ready ? "var(--color-blue-border)" : pod.status === "Pending" ? "var(--status-warn-border)" : "var(--status-down-border)"}`,
+									boxShadow: "var(--card-shadow)",
 								}}
 							>
 								<div className="flex items-center gap-3">
@@ -230,10 +231,11 @@ export function PodsTab({
 				</div>
 			) : (
 				<Card
-					className="p-8 rounded-xl text-center"
+					className="p-8 rounded text-center"
 					style={{
-						background: "var(--surface-glass)",
-						border: "1px solid var(--border-subtle)",
+						background: "var(--surface-card)",
+						border: "2px solid var(--border-default)",
+						boxShadow: "var(--card-shadow)",
 					}}
 				>
 					<Box
