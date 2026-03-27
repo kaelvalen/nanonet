@@ -1582,7 +1582,7 @@ export function KubernetesPage() {
 														</button>
 													</div>
 												</div>
-												<div className="grid grid-cols-4 gap-2 mb-2">
+												<div className="grid grid-cols-4 gap-2 mb-3">
 													{[
 														{ label: "Min", value: hpa.min_replicas },
 														{ label: "Max", value: hpa.max_replicas },
@@ -1591,20 +1591,20 @@ export function KubernetesPage() {
 													].map((s) => (
 														<div
 															key={s.label}
-															className="p-2 rounded-lg text-center"
+															className="p-3 rounded text-center"
 															style={{
 																background: "var(--surface-sunken)",
-																border: "1px solid var(--border-subtle)",
+																border: "2px solid var(--border-default)",
 															}}
 														>
 															<p
-																className="text-[9px] uppercase tracking-wider mb-0.5"
-																style={{ color: "var(--text-faint)" }}
+																className="text-[10px] uppercase tracking-wider mb-1"
+																style={{ color: "var(--text-muted)" }}
 															>
 																{s.label}
 															</p>
 															<p
-																className="text-lg font-bold"
+																className="text-xl font-bold tabular-nums"
 																style={{ color: "var(--color-pink)" }}
 															>
 																{s.value}
@@ -1642,7 +1642,7 @@ export function KubernetesPage() {
 												)}
 												{hpa.max_replicas > 0 && (
 													<div
-														className="mt-2 h-1.5 rounded-full overflow-hidden"
+														className="h-1.5 rounded-full overflow-hidden"
 														style={{ background: "var(--surface-sunken)" }}
 													>
 														<div

@@ -143,10 +143,10 @@ export function ServicesTab({
 									{svc.ports.map((port) => (
 										<span
 											key={String(port)}
-											className="px-2 py-0.5 rounded-md text-[10px] font-mono"
+											className="px-2 py-0.5 rounded text-[10px] font-mono"
 											style={{
 												background: "var(--surface-sunken)",
-												border: "1px solid var(--border-subtle)",
+												border: "2px solid var(--border-subtle)",
 												color: "var(--text-secondary)",
 											}}
 										>
@@ -160,12 +160,12 @@ export function ServicesTab({
 									{Object.entries(svc.selector).map(([k, v]) => (
 										<span
 											key={k}
-											className="px-2 py-0.5 rounded-md text-[10px]"
+											className="px-2 py-0.5 rounded text-[10px]"
 											style={{
 												background:
 													"color-mix(in srgb, var(--status-up) 8%, transparent)",
 												border:
-													"1px solid color-mix(in srgb, var(--status-up) 20%, transparent)",
+													"2px solid color-mix(in srgb, var(--status-up) 20%, transparent)",
 												color: "var(--status-up)",
 											}}
 										>

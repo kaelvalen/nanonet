@@ -378,25 +378,33 @@ export function ServicesPage() {
 						<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 							{/* Avg Uptime */}
 							<div
-								className="p-3 rounded text-center"
+								className="p-4 rounded"
 								style={{
 									background: "var(--surface-sunken)",
 									border: "2px solid var(--border-default)",
 								}}
 							>
-								<TrendingUp
-									className="w-4 h-4 mx-auto mb-1"
-									style={{
-										color:
-											avgUptime != null && avgUptime >= 99
-												? "var(--status-up)"
-												: avgUptime != null && avgUptime >= 95
-													? "var(--status-warn)"
-													: "var(--status-down)",
-									}}
-								/>
+								<div className="flex items-center gap-2 mb-2">
+									<TrendingUp
+										className="w-4 h-4 shrink-0"
+										style={{
+											color:
+												avgUptime != null && avgUptime >= 99
+													? "var(--status-up)"
+													: avgUptime != null && avgUptime >= 95
+														? "var(--status-warn)"
+														: "var(--status-down)",
+										}}
+									/>
+									<p
+										className="text-[10px] uppercase tracking-wider"
+										style={{ color: "var(--text-muted)" }}
+									>
+										Ort. Uptime
+									</p>
+								</div>
 								<p
-									className="text-lg font-bold tabular-nums"
+									className="text-2xl font-bold tabular-nums"
 									style={{
 										color:
 											avgUptime != null && avgUptime >= 99
@@ -410,86 +418,86 @@ export function ServicesPage() {
 								>
 									{avgUptime != null ? `${avgUptime.toFixed(2)}%` : "—"}
 								</p>
-								<p
-									className="text-[10px] uppercase tracking-wider mt-0.5"
-									style={{ color: "var(--text-muted)" }}
-								>
-									Ort. Uptime
-								</p>
 							</div>
 							{/* SLA ≥99.9% */}
 							<div
-								className="p-3 rounded text-center"
+								className="p-4 rounded"
 								style={{
 									background: "var(--status-up-subtle)",
 									border: "2px solid var(--status-up-border)",
 								}}
 							>
-								<Shield
-									className="w-4 h-4 mx-auto mb-1"
-									style={{ color: "var(--status-up)" }}
-								/>
+								<div className="flex items-center gap-2 mb-2">
+									<Shield
+										className="w-4 h-4 shrink-0"
+										style={{ color: "var(--status-up)" }}
+									/>
+									<p
+										className="text-[10px] uppercase tracking-wider"
+										style={{ color: "var(--text-muted)" }}
+									>
+										≥99.9% SLA
+									</p>
+								</div>
 								<p
-									className="text-lg font-bold tabular-nums"
+									className="text-2xl font-bold tabular-nums"
 									style={{ color: "var(--status-up-text)" }}
 								>
 									{slaOk}
 								</p>
-								<p
-									className="text-[10px] uppercase tracking-wider mt-0.5"
-									style={{ color: "var(--text-muted)" }}
-								>
-									≥99.9% SLA
-								</p>
 							</div>
 							{/* 95-99.9% */}
 							<div
-								className="p-3 rounded text-center"
+								className="p-4 rounded"
 								style={{
 									background: "var(--status-warn-subtle)",
 									border: "2px solid var(--status-warn-border)",
 								}}
 							>
-								<AlertTriangle
-									className="w-4 h-4 mx-auto mb-1"
-									style={{ color: "var(--status-warn)" }}
-								/>
+								<div className="flex items-center gap-2 mb-2">
+									<AlertTriangle
+										className="w-4 h-4 shrink-0"
+										style={{ color: "var(--status-warn)" }}
+									/>
+									<p
+										className="text-[10px] uppercase tracking-wider"
+										style={{ color: "var(--text-muted)" }}
+									>
+										95–99.9%
+									</p>
+								</div>
 								<p
-									className="text-lg font-bold tabular-nums"
+									className="text-2xl font-bold tabular-nums"
 									style={{ color: "var(--status-warn-text)" }}
 								>
 									{slaWarn}
 								</p>
-								<p
-									className="text-[10px] uppercase tracking-wider mt-0.5"
-									style={{ color: "var(--text-muted)" }}
-								>
-									95–99.9%
-								</p>
 							</div>
 							{/* <95% */}
 							<div
-								className="p-3 rounded text-center"
+								className="p-4 rounded"
 								style={{
 									background: "var(--status-down-subtle)",
 									border: "2px solid var(--status-down-border)",
 								}}
 							>
-								<XCircle
-									className="w-4 h-4 mx-auto mb-1"
-									style={{ color: "var(--status-down)" }}
-								/>
+								<div className="flex items-center gap-2 mb-2">
+									<XCircle
+										className="w-4 h-4 shrink-0"
+										style={{ color: "var(--status-down)" }}
+									/>
+									<p
+										className="text-[10px] uppercase tracking-wider"
+										style={{ color: "var(--text-muted)" }}
+									>
+										&lt;95%
+									</p>
+								</div>
 								<p
-									className="text-lg font-bold tabular-nums"
+									className="text-2xl font-bold tabular-nums"
 									style={{ color: "var(--status-down-text)" }}
 								>
 									{slaCrit}
-								</p>
-								<p
-									className="text-[10px] uppercase tracking-wider mt-0.5"
-									style={{ color: "var(--text-muted)" }}
-								>
-									&lt;95%
 								</p>
 							</div>
 						</div>

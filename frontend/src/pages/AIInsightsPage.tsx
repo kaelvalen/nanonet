@@ -205,22 +205,24 @@ export function AIInsightsPage() {
 						].map(({ label, value, icon: Icon, color, bg, border }) => (
 							<Card
 								key={label}
-								className="p-3 rounded text-center"
+								className="p-4 rounded"
 								style={{
 									background: bg,
 									border: `2px solid ${border}`,
 									boxShadow: "var(--card-shadow)",
 								}}
 							>
-								<Icon className="w-4 h-4 mx-auto mb-1" style={{ color }} />
-								<p className="text-xl font-bold tabular-nums" style={{ color }}>
+								<div className="flex items-center gap-2 mb-2">
+									<Icon className="w-4 h-4 shrink-0" style={{ color }} />
+									<p
+										className="text-[10px] uppercase tracking-wider"
+										style={{ color: "var(--text-muted)" }}
+									>
+										{label}
+									</p>
+								</div>
+								<p className="text-2xl font-bold tabular-nums" style={{ color }}>
 									{value}
-								</p>
-								<p
-									className="text-[10px] uppercase tracking-wider mt-0.5"
-									style={{ color: "var(--text-muted)" }}
-								>
-									{label}
 								</p>
 							</Card>
 						))}
@@ -784,6 +786,7 @@ export function AIInsightsPage() {
 											>
 												<button
 													type="button"
+													className="w-full px-4 pt-4 pb-3 text-left"
 													onClick={() =>
 														setExpandedInsight(
 															expandedInsight === insight.id
@@ -810,7 +813,7 @@ export function AIInsightsPage() {
 															</div>
 															<div className="min-w-0">
 																<p
-																	className="text-xs font-medium leading-relaxed line-clamp-2"
+																	className="text-xs font-medium leading-relaxed line-clamp-3"
 																	style={{ color: "var(--text-secondary)" }}
 																>
 																	{insight.summary}
@@ -868,7 +871,7 @@ export function AIInsightsPage() {
 														animate={{ height: "auto", opacity: 1 }}
 														exit={{ height: 0, opacity: 0 }}
 														transition={{ duration: 0.2 }}
-														className="px-4 pb-4"
+														className="px-4 pb-4 pt-3"
 														style={{
 															borderTop: "2px solid var(--border-default)",
 														}}

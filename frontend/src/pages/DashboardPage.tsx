@@ -418,18 +418,12 @@ export function DashboardPage() {
 								boxShadow: "var(--card-shadow)",
 							}}
 						>
-							<div
-								className="absolute inset-x-0 top-0 h-px opacity-20"
-								style={{
-									background: `linear-gradient(to right, transparent, ${stat.iconVar}, transparent)`,
-								}}
-							/>
-							<div className="flex items-start justify-between mb-3">
+							<div className="flex items-center justify-between mb-3">
 								<div
 									className="w-8 h-8 rounded flex items-center justify-center"
 									style={{
 										backgroundColor: stat.bgVar,
-										border: `1.5px solid ${stat.borderVar}`,
+										border: `2px solid ${stat.borderVar}`,
 									}}
 								>
 									<stat.icon
@@ -437,19 +431,19 @@ export function DashboardPage() {
 										style={{ color: stat.iconVar }}
 									/>
 								</div>
-								<span
-									className="text-2xl font-bold tabular-nums"
-									style={{ color: stat.iconVar }}
+								<p
+									className="text-[10px] uppercase tracking-wider"
+									style={{ color: "var(--text-muted)" }}
 								>
-									<AnimatedCounter value={stat.value} />
-								</span>
+									{stat.label}
+								</p>
 							</div>
-							<p
-								className="text-[10px] uppercase tracking-wider mb-2"
-								style={{ color: "var(--text-muted)" }}
+							<span
+								className="text-3xl font-bold tabular-nums block mb-3"
+								style={{ color: stat.iconVar }}
 							>
-								{stat.label}
-							</p>
+								<AnimatedCounter value={stat.value} />
+							</span>
 							<div
 								className="h-1 rounded-full overflow-hidden"
 								style={{ backgroundColor: "var(--border-track)" }}
