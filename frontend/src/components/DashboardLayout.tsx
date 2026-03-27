@@ -6,7 +6,6 @@ import { AIAssistant } from "./AIAssistant";
 import { CommandPalette } from "./CommandPalette";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { FloatingStatusBar } from "./FloatingStatusBar";
-import { MatrixBackground } from "./MatrixBackground";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 
@@ -28,8 +27,6 @@ export function DashboardLayout() {
 
 	return (
 		<div className="min-h-screen bg-background text-foreground relative">
-			{/* Dot grid background */}
-			<MatrixBackground />
 			<div
 				className="fixed inset-0 pointer-events-none z-0"
 				style={{

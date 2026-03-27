@@ -165,6 +165,7 @@ function StatusEdge({
 	targetPosition,
 	data,
 	markerEnd,
+	selected,
 }: EdgeProps & { data?: { srcStatus?: string; tgtStatus?: string; latency?: number } }) {
 	const [edgePath, labelX, labelY] = getBezierPath({
 		sourceX,
@@ -177,54 +178,93 @@ function StatusEdge({
 
 	const srcStatus = data?.srcStatus ?? "unknown";
 	const tgtStatus = data?.tgtStatus ?? "unknown";
-	const strokeColor = edgeColorForStatuses(srcStatus, tgtStatus);
+	const srcColor = STATUS_COLOR[srcStatus] ?? STATUS_COLOR.unknown;
+	const tgtColor = STATUS_COLOR[tgtStatus] ?? STATUS_COLOR.unknown;
 	const isDown = srcStatus === "down" || tgtStatus === "down";
 	const isDegraded = !isDown && (srcStatus === "degraded" || tgtStatus === "degraded");
 	const latency = data?.latency;
+	const gradientId = `edge-grad-${id}`;
+	// Use gradient only when statuses differ or either side is degraded/down
+	const useGradient = srcColor !== tgtColor;
+	const strokePaint = useGradient ? `url(#${gradientId})` : srcColor;
 
 	return (
 		<>
+			<defs>
+				<linearGradient
+					id={gradientId}
+					gradientUnits="userSpaceOnUse"
+					x1={sourceX}
+					y1={sourceY}
+					x2={targetX}
+					y2={targetY}
+				>
+					<stop offset="0%" stopColor={srcColor} />
+					<stop offset="100%" stopColor={tgtColor} />
+				</linearGradient>
+			</defs>
+			{/* Invisible wide hit area for easier selection */}
+			<path
+				d={edgePath}
+				stroke="transparent"
+				strokeWidth={16}
+				fill="none"
+				className="react-flow__edge-interaction"
+			/>
 			<path
 				id={id}
 				className="react-flow__edge-path"
 				d={edgePath}
 				markerEnd={markerEnd as string}
 				style={{
-					stroke: strokeColor,
-					strokeWidth: isDown ? 2.5 : isDegraded ? 2 : 1.5,
-					strokeDasharray: isDown ? "6 3" : "none",
-					animation: isDown
-						? "dashdraw 1.2s linear infinite"
-						: isDegraded
-							? "dashdraw 2s linear infinite"
-							: undefined,
-					strokeDashoffset: isDown || isDegraded ? 1 : undefined,
+					stroke: strokePaint,
+					strokeWidth: selected ? 3 : isDown ? 2.5 : isDegraded ? 2 : 1.5,
+					strokeDasharray: isDown ? "6 3" : undefined,
+					filter: selected ? "drop-shadow(0 0 3px rgba(255,60,60,0.5))" : undefined,
 				}}
 			/>
-			{latency !== undefined && (
-				<EdgeLabelRenderer>
-					<div
-						style={{
-							position: "absolute",
-							transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-							pointerEvents: "all",
-						}}
-						className="nodrag nopan"
-					>
+			<EdgeLabelRenderer>
+				<div
+					style={{
+						position: "absolute",
+						transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+						pointerEvents: "all",
+					}}
+					className="nodrag nopan"
+				>
+					{selected && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								const event = new CustomEvent("delete-edge", { detail: { id } });
+								document.dispatchEvent(event);
+							}}
+							className="w-5 h-5 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+							style={{
+								background: "var(--status-down)",
+								color: "white",
+								boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+							}}
+						>
+							<X className="w-2.5 h-2.5" />
+						</button>
+					)}
+					{latency !== undefined && !selected && (
 						<span
 							className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold"
 							style={{
 								background: "var(--surface-card)",
-								border: `2px solid ${strokeColor}`,
-								color: strokeColor,
+								border: `2px solid ${srcColor}`,
+								color: srcColor,
 								boxShadow: "var(--card-shadow)",
 							}}
 						>
 							{latency}ms
 						</span>
-					</div>
-				</EdgeLabelRenderer>
-			)}
+					)}
+				</div>
+			</EdgeLabelRenderer>
 		</>
 	);
 }
@@ -239,19 +279,12 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 	const bg = STATUS_BG[service.status] ?? STATUS_BG.unknown;
 	const border = STATUS_BORDER[service.status] ?? STATUS_BORDER.unknown;
 
-	// Gradient overlay when a connected neighbour is degraded/down
-	const wcs = extra?.worstConnectedStatus;
-	const showGradient = wcs && (STATUS_SEVERITY[wcs] ?? 0) >= 2;
-	const gradientOverlay = showGradient
-		? `linear-gradient(to right, var(--surface-card) 50%, color-mix(in srgb, var(--status-down) 22%, var(--surface-card)) 100%)`
-		: "var(--surface-card)";
-
 	return (
 		<div
 			className="rounded group relative cursor-pointer"
 			style={{
 				width: 200,
-				background: gradientOverlay,
+				background: "var(--surface-card)",
 				border: selected ? `2px solid ${color}` : `2px solid ${border}`,
 				boxShadow: selected ? `0 0 0 3px color-mix(in srgb, ${color} 25%, transparent), var(--card-shadow)` : "var(--card-shadow)",
 				transition: "box-shadow 0.15s, border-color 0.15s",
@@ -685,6 +718,16 @@ function ServiceMapInner() {
 		setSelectedServiceId((prev) => (prev === id ? null : id));
 	}, []);
 
+	// ── Edge delete via custom event from StatusEdge button ──
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const edgeId = (e as CustomEvent<{ id: string }>).detail.id;
+			setEdges((es) => es.filter((edge) => edge.id !== edgeId));
+		};
+		document.addEventListener("delete-edge", handler);
+		return () => document.removeEventListener("delete-edge", handler);
+	}, [setEdges]);
+
 	// Build node data helper
 	const buildNodeData = useCallback(
 		(svc: Service): ServiceNodeData => ({
@@ -758,6 +801,47 @@ function ServiceMapInner() {
 		if (!initialized) return;
 		setEdges((es: Edge[]) => es.map((e) => enrichEdge(e, services)));
 	}, [services, initialized, setEdges]);
+
+	// ── Compute worstConnectedStatus per node from current edges ──
+	useEffect(() => {
+		if (!initialized) return;
+		// Build adjacency: for each node id → worst neighbor status
+		const worstMap: Record<string, string> = {};
+		for (const edge of edges) {
+			const srcSvc = services.find((s) => s.id === edge.source);
+			const tgtSvc = services.find((s) => s.id === edge.target);
+			const srcStatus = srcSvc?.status ?? "unknown";
+			const tgtStatus = tgtSvc?.status ?? "unknown";
+			// target node sees source's status, source node sees target's status
+			const prevForTgt = worstMap[edge.target] ?? "up";
+			const prevForSrc = worstMap[edge.source] ?? "up";
+			if ((STATUS_SEVERITY[srcStatus] ?? 0) > (STATUS_SEVERITY[prevForTgt] ?? 0)) {
+				worstMap[edge.target] = srcStatus;
+			}
+			if ((STATUS_SEVERITY[tgtStatus] ?? 0) > (STATUS_SEVERITY[prevForSrc] ?? 0)) {
+				worstMap[edge.source] = tgtStatus;
+			}
+		}
+		setNodes((ns: Node[]) =>
+			ns.map((n: Node) => {
+				const svc = services.find((s) => s.id === n.id);
+				if (!svc) return n;
+				const prev = (n.data as ServiceNodeData).extra?.worstConnectedStatus;
+				const next = worstMap[n.id];
+				if (prev === next) return n;
+				return {
+					...n,
+					data: {
+						...(n.data as ServiceNodeData),
+						extra: {
+							...(n.data as ServiceNodeData).extra,
+							worstConnectedStatus: next,
+						},
+					},
+				};
+			}),
+		);
+	}, [edges, services, initialized, setNodes]);
 
 	// ── Connect ──
 	const onConnect = useCallback(
