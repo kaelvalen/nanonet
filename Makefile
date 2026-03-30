@@ -1,5 +1,7 @@
-.PHONY: dev dev-bg down logs logs-backend logs-frontend ps dev-backend dev-frontend \
-        mock mock-all mock-stop \
+.PHONY: dev dev-bg down ps dev-backend dev-frontend \
+        logs logs-all logs-app logs-mock logs-infra logs-err logs-warn logs-since \
+        logs-backend logs-frontend \
+        mock mock-all mock-stop mock-scenario \
         agent stop-agent \
         agent-build agent-build-all \
         agent-linux-amd64 agent-linux-arm64 \
@@ -15,11 +17,13 @@ endif
 
 COMPOSE = docker compose -f docker-compose.dev.yml
 
-# Geliştirme ortamını başlat (hot reload)
+# Geliştirme ortamını başlat — build arka planda, loglar renkli viewer üzerinden
 dev:
-	$(COMPOSE) up --build
+	@echo "Building and starting services..."
+	@$(COMPOSE) up --build -d 2>&1 | grep -E "(Started|Error|failed)" || true
+	@bash scripts/dev-logs.sh app --since 5s --level debug
 
-# Arka planda başlat
+# Arka planda başlat (log viewer olmadan)
 dev-bg:
 	$(COMPOSE) up --build -d
 
@@ -30,15 +34,53 @@ dev-backend:
 dev-frontend:
 	$(COMPOSE) up --build frontend
 
-# Logları takip et
-logs:
-	$(COMPOSE) logs -f
+# ── Log komutları ────────────────────────────────────────────────────────────
+# Renkli + severity filtreli log viewer (scripts/dev-logs.sh)
+SINCE  ?= 10m
+LEVEL  ?= debug
 
+# Backend + frontend, son 10 dakika, follow
+logs:
+	@bash scripts/dev-logs.sh app --since $(SINCE) --level $(LEVEL)
+
+# Tüm container'lar
+logs-all:
+	@bash scripts/dev-logs.sh all --since $(SINCE) --level $(LEVEL)
+
+# Sadece uygulama servisleri (backend + frontend)
+logs-app:
+	@bash scripts/dev-logs.sh app --since $(SINCE) --level $(LEVEL)
+
+# Sadece mock servisler
+logs-mock:
+	@bash scripts/dev-logs.sh mock --since $(SINCE) --level $(LEVEL)
+
+# Sadece altyapı (db + redis)
+logs-infra:
+	@bash scripts/dev-logs.sh infra --since $(SINCE) --level $(LEVEL)
+
+# Sadece ERROR ve üzeri — tüm container'lar
+logs-err:
+	@bash scripts/dev-logs.sh all --since $(SINCE) --level error
+
+# WARN ve üzeri — tüm container'lar
+logs-warn:
+	@bash scripts/dev-logs.sh all --since $(SINCE) --level warn
+
+# Belirli bir süre aralığı: make logs-since SINCE=1h
+logs-since:
+	@bash scripts/dev-logs.sh all --since $(SINCE) --level $(LEVEL)
+
+# Snapshot (follow yok): make logs-snap
+logs-snap:
+	@bash scripts/dev-logs.sh app --since $(SINCE) --level $(LEVEL) --no-follow
+
+# Eski compat alias'ları
 logs-backend:
-	$(COMPOSE) logs -f backend
+	@bash scripts/dev-logs.sh backend --since $(SINCE) --level $(LEVEL)
 
 logs-frontend:
-	$(COMPOSE) logs -f frontend
+	@bash scripts/dev-logs.sh frontend --since $(SINCE) --level $(LEVEL)
 
 # Çalışan container'ları listele
 ps:
@@ -56,13 +98,19 @@ reset:
 mock:
 	cd mock-service && PORT=4000 SERVICE_NAME=mock SERVICE_SCENARIO=healthy go run main.go
 
-# Tüm 5 mock servisi Docker ile başlat
+# Tüm mock servisleri Docker ile başlat (17 senaryo)
+MOCK_SERVICES = mock-healthy mock-degraded mock-spike mock-memory-leak mock-flapping \
+                mock-high-latency mock-down mock-connection-leak mock-slow-start \
+                mock-database-issue mock-network-jitter mock-resource-starved \
+                mock-circuit-breaker mock-random-crash mock-load-spike \
+                mock-dependency-issue mock-error-burst
+
 mock-all:
-	$(COMPOSE) up --build mock-healthy mock-degraded mock-spike mock-memory-leak mock-flapping
+	$(COMPOSE) up --build -d $(MOCK_SERVICES)
 
 # Mock servislerini durdur
 mock-stop:
-	$(COMPOSE) stop mock-healthy mock-degraded mock-spike mock-memory-leak mock-flapping
+	$(COMPOSE) stop $(MOCK_SERVICES)
 
 # Belirli bir serviste senaryo değiştir
 # Kullanım: make mock-scenario SVC=http://localhost:8002 SCENARIO=down
