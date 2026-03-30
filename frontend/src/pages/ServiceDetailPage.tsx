@@ -107,7 +107,7 @@ export function ServiceDetailPage() {
 		queryKey: ["service", serviceId],
 		queryFn: () => servicesApi.get(serviceId ?? ""),
 		enabled: !!serviceId,
-		refetchInterval: 15000,
+		refetchInterval: 5000,
 	});
 
 	const { data: metrics = [], isLoading: metricsLoading } = useQuery({
@@ -1311,8 +1311,16 @@ export function ServiceDetailPage() {
 
 					{/* Terminal Tab */}
 					<TabsContent value="terminal" className="space-y-3">
-						{/* Agent gereksinimi uyarısı */}
-						{!service?.agent_id && (
+						{/* Agent bağlantı durumu */}
+						{service?.agent_connected ? (
+							<div
+								className="flex items-center gap-2 px-3 py-2 rounded text-xs"
+								style={{ background: "var(--status-up-subtle)", border: "2px solid var(--status-up-border)" }}
+							>
+								<CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--status-up)" }} />
+								<span style={{ color: "var(--status-up-text)" }}>Agent bağlı — komutlar doğrudan iletilecek</span>
+							</div>
+						) : (
 							<div
 								className="flex items-start gap-3 px-4 py-3 rounded text-xs"
 								style={{ background: "var(--status-warn-subtle)", border: "2px solid var(--status-warn-border)" }}
@@ -1320,7 +1328,7 @@ export function ServiceDetailPage() {
 								<AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--status-warn)" }} />
 								<div>
 									<p className="font-medium mb-0.5" style={{ color: "var(--status-warn-text)" }}>Agent bağlı değil</p>
-									<p style={{ color: "var(--text-muted)" }}>Terminal, servis üzerinde komut çalıştırmak için NanoNet Agent gerektirir. “Agent Kur” butonuyla kurulum talimatlarını alabilirsiniz.</p>
+									<p style={{ color: "var(--text-muted)" }}>Terminal, servis üzerinde komut çalıştırmak için NanoNet Agent gerektirir. "Agent Kur" butonuyla kurulum talimatlarını alabilirsiniz.</p>
 								</div>
 							</div>
 						)}
