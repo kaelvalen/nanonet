@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"math/rand"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -18,29 +20,48 @@ import (
 type Scenario string
 
 const (
-	ScenarioHealthy     Scenario = "healthy"      // Normal operasyon
-	ScenarioDegraded    Scenario = "degraded"     // Yavaş yanıt, yüksek latency
-	ScenarioDown        Scenario = "down"         // Servis tamamen çökmüş
-	ScenarioSpike       Scenario = "spike"        // CPU/bellek ani artış
-	ScenarioMemoryLeak  Scenario = "memory_leak"  // Bellek sürekli artıyor
-	ScenarioFlapping    Scenario = "flapping"     // Up/down dalgalanması
-	ScenarioHighLatency Scenario = "high_latency" // Sadece latency yüksek
-	ScenarioErrorBurst  Scenario = "error_burst"  // Ani hata patlaması
+	ScenarioHealthy         Scenario = "healthy"          // Normal operasyon
+	ScenarioDegraded        Scenario = "degraded"         // Yavaş yanıt, yüksek latency
+	ScenarioDown            Scenario = "down"             // Servis tamamen çökmüş
+	ScenarioSpike           Scenario = "spike"            // CPU/bellek ani artış
+	ScenarioMemoryLeak      Scenario = "memory_leak"      // Bellek sürekli artıyor
+	ScenarioFlapping        Scenario = "flapping"         // Up/down dalgalanması
+	ScenarioHighLatency     Scenario = "high_latency"     // Sadece latency yüksek
+	ScenarioErrorBurst      Scenario = "error_burst"      // Ani hata patlaması
+	ScenarioConnectionLeak  Scenario = "connection_leak"  // Bağlantı sızıntısı
+	ScenarioSlowStart       Scenario = "slow_start"       // Yavaş başlangıç
+	ScenarioDatabaseIssue   Scenario = "database_issue"   // Veritabanı sorunları
+	ScenarioNetworkJitter   Scenario = "network_jitter"   // Ağ kararsızlığı
+	ScenarioResourceStarved Scenario = "resource_starved" // Kaynak yetersizliği
+	ScenarioCircuitBreaker  Scenario = "circuit_breaker"  // Circuit breaker davranışı
+	ScenarioRandomCrash     Scenario = "random_crash"     // Rastgele çökme
+	ScenarioLoadSpike       Scenario = "load_spike"       // Yük artışı simülasyonu
+	ScenarioDependencyIssue Scenario = "dependency_issue" // Bağımlılık sorunları
 )
 
 // ── Servis durumu ────────────────────────────────────────────────────────────
 
 type ServiceState struct {
-	mu            sync.RWMutex
-	scenario      Scenario
-	requestCount  uint64
-	startTime     time.Time
-	memoryBase    float64 // MB — memory leak için artar
-	memoryLeak    float64 // her istek başına eklenen MB
-	errorCount    uint64
-	version       string
-	name          string
-	scenarioSince time.Time
+	mu                sync.RWMutex
+	scenario          Scenario
+	requestCount      uint64
+	errorCount        uint64
+	startTime         time.Time
+	memoryBase        float64 // MB
+	memoryLeak        float64 // her istek başına eklenen MB
+	cpuBase           float64
+	latencyBase       float64
+	version           string
+	name              string
+	scenarioSince     time.Time
+	lastRequestTime   time.Time
+	concurrentReqs    int32
+	peakMemory        float64
+	uptime            time.Duration
+	responseTimeHist  []float64
+	circuitState      string // "closed", "open", "half-open"
+	circuitFailures   int
+	lastCircuitChange time.Time
 }
 
 func newServiceState() *ServiceState {
@@ -49,24 +70,35 @@ func newServiceState() *ServiceState {
 	if name == "" {
 		name = "mock-service"
 	}
+
 	s := &ServiceState{
-		scenario:      scenario,
-		startTime:     time.Now(),
-		memoryBase:    40.0 + rand.Float64()*30.0,
-		version:       "2.0.0",
-		name:          name,
-		scenarioSince: time.Now(),
+		scenario:          scenario,
+		startTime:         time.Now(),
+		memoryBase:        40.0 + rand.Float64()*30.0,
+		cpuBase:           15.0 + rand.Float64()*10.0,
+		latencyBase:       50.0 + rand.Float64()*30.0,
+		version:           "2.1.0",
+		name:              name,
+		scenarioSince:     time.Now(),
+		lastRequestTime:   time.Now(),
+		responseTimeHist:  make([]float64, 0, 1000),
+		circuitState:      "closed",
+		lastCircuitChange: time.Now(),
 	}
+
 	if scenario == ScenarioMemoryLeak {
 		s.memoryLeak = 0.05
 	}
+
 	return s
 }
 
 func parseScenario(s string) Scenario {
 	switch Scenario(strings.ToLower(s)) {
-	case ScenarioDegraded, ScenarioDown, ScenarioSpike,
-		ScenarioMemoryLeak, ScenarioFlapping, ScenarioHighLatency, ScenarioErrorBurst:
+	case ScenarioDegraded, ScenarioDown, ScenarioSpike, ScenarioMemoryLeak,
+		ScenarioFlapping, ScenarioHighLatency, ScenarioErrorBurst, ScenarioConnectionLeak,
+		ScenarioSlowStart, ScenarioDatabaseIssue, ScenarioNetworkJitter, ScenarioResourceStarved,
+		ScenarioCircuitBreaker, ScenarioRandomCrash, ScenarioLoadSpike, ScenarioDependencyIssue:
 		return Scenario(strings.ToLower(s))
 	default:
 		return ScenarioHealthy
@@ -84,14 +116,16 @@ func (s *ServiceState) setScenario(sc Scenario) {
 	defer s.mu.Unlock()
 	s.scenario = sc
 	s.scenarioSince = time.Now()
-	
-	// Sayaçları sıfırla
 	atomic.StoreUint64(&s.requestCount, 0)
 	atomic.StoreUint64(&s.errorCount, 0)
 	s.memoryBase = 40.0 + rand.Float64()*30.0
+	s.cpuBase = 15.0 + rand.Float64()*10.0
+	s.latencyBase = 50.0 + rand.Float64()*30.0
+	s.circuitState = "closed"
+	s.circuitFailures = 0
 
 	if sc == ScenarioMemoryLeak {
-		s.memoryLeak = 0.5 // İstek başına artış miktarı
+		s.memoryLeak = 0.5
 	} else {
 		s.memoryLeak = 0
 	}
@@ -101,24 +135,38 @@ func (s *ServiceState) setScenario(sc Scenario) {
 // ── Metrik hesapları ─────────────────────────────────────────────────────────
 
 type snapshot struct {
-	CPU       float64
-	MemoryMB  float64
-	LatencyMs float64
-	ErrorRate float64
-	Status    string
-	Code      int
+	CPU           float64
+	MemoryMB      float64
+	LatencyMs     float64
+	ErrorRate     float64
+	Status        string
+	Code          int
+	OpenPorts     []int
+	Connections   int
+	Threads       int
+	QueueSize     int
+	ThroughputRPS float64
 }
 
 func (s *ServiceState) computeSnapshot() snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// unused değişkenleri yoksay
-	_ = atomic.LoadUint64(&s.requestCount)
-	_ = time.Since(s.startTime).Seconds()
+	atomic.AddUint64(&s.requestCount, 1)
+	s.lastRequestTime = time.Now()
 
-	// Memory leak birikimi — s.memoryLeak sabit miktar, her çağrıda eklenir (doğrusal)
+	// Memory leak birikimi
 	s.memoryBase += s.memoryLeak
+	if s.memoryBase > s.peakMemory {
+		s.peakMemory = s.memoryBase
+	}
+
+	// Response time history
+	latency := s.calculateLatency()
+	if len(s.responseTimeHist) >= 1000 {
+		s.responseTimeHist = s.responseTimeHist[1:]
+	}
+	s.responseTimeHist = append(s.responseTimeHist, latency)
 
 	sc := s.scenario
 
@@ -132,291 +180,665 @@ func (s *ServiceState) computeSnapshot() snapshot {
 		}
 	}
 
+	// Circuit breaker logic
+	if sc == ScenarioCircuitBreaker {
+		s.updateCircuitBreaker()
+		if s.circuitState == "open" {
+			return snapshot{
+				CPU:           0,
+				MemoryMB:      s.memoryBase,
+				LatencyMs:     0,
+				ErrorRate:     1.0,
+				Status:        "down",
+				Code:          http.StatusServiceUnavailable,
+				OpenPorts:     []int{8000},
+				Connections:   0,
+				Threads:       0,
+				QueueSize:     0,
+				ThroughputRPS: s.calculateRPS(),
+			}
+		}
+	}
+
+	// Random crash
+	if sc == ScenarioRandomCrash && rand.Float32() < 0.01 { // 1% crash chance
+		atomic.AddUint64(&s.errorCount, 1)
+		return snapshot{
+			CPU:           0,
+			MemoryMB:      0,
+			LatencyMs:     0,
+			ErrorRate:     1.0,
+			Status:        "down",
+			Code:          http.StatusInternalServerError,
+			ThroughputRPS: s.calculateRPS(),
+		}
+	}
+
 	switch sc {
 	case ScenarioDown:
 		atomic.AddUint64(&s.errorCount, 1)
-		return snapshot{CPU: 0, MemoryMB: 0, LatencyMs: 0, ErrorRate: 1.0, Status: "down", Code: http.StatusServiceUnavailable}
+		return snapshot{
+			CPU:           0,
+			MemoryMB:      0,
+			LatencyMs:     0,
+			ErrorRate:     1.0,
+			Status:        "down",
+			Code:          http.StatusServiceUnavailable,
+			ThroughputRPS: s.calculateRPS(),
+		}
 
 	case ScenarioDegraded:
 		cpu := 60.0 + rand.Float64()*25.0
 		mem := s.memoryBase + rand.Float64()*20.0
 		lat := 800.0 + rand.Float64()*1200.0
 		er := 0.05 + rand.Float64()*0.1
-		return snapshot{CPU: cpu, MemoryMB: mem, LatencyMs: lat, ErrorRate: er, Status: "degraded", Code: http.StatusOK}
+		return snapshot{
+			CPU:           cpu,
+			MemoryMB:      mem,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        "degraded",
+			Code:          http.StatusOK,
+			OpenPorts:     []int{8000, 8080},
+			Connections:   int(rand.Int31n(50) + 10),
+			Threads:       int(rand.Int31n(20) + 5),
+			QueueSize:     int(rand.Int31n(100)),
+			ThroughputRPS: s.calculateRPS(),
+		}
 
 	case ScenarioSpike:
-		// Sinüs dalgası ile CPU spike simülasyonu
 		t := time.Since(s.scenarioSince).Seconds()
-		spikeFactor := (math.Sin(t/5.0) + 1.0) / 2.0
-		cpu := 30.0 + spikeFactor*70.0
-		mem := s.memoryBase + spikeFactor*200.0
-		lat := 20.0 + spikeFactor*500.0
-		return snapshot{CPU: cpu, MemoryMB: mem, LatencyMs: lat, ErrorRate: 0.01, Status: "up", Code: http.StatusOK}
+		spike := math.Sin(t*0.1)*0.5 + 0.5
+		cpu := 30.0 + spike*70.0 + rand.Float64()*10.0
+		mem := s.memoryBase + spike*30.0 + rand.Float64()*10.0
+		lat := s.latencyBase + spike*500.0 + rand.Float64()*100.0
+		er := spike * 0.1
+
+		status := "up"
+		code := http.StatusOK
+		if cpu > 80 {
+			status = "degraded"
+			code = http.StatusTooManyRequests
+		}
+
+		return snapshot{
+			CPU:           cpu,
+			MemoryMB:      mem,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        status,
+			Code:          code,
+			OpenPorts:     []int{8000},
+			Connections:   int(spike * 100),
+			Threads:       int(spike * 50),
+			QueueSize:     int(spike * 200),
+			ThroughputRPS: s.calculateRPS(),
+		}
 
 	case ScenarioMemoryLeak:
-		cpu := 15.0 + rand.Float64()*20.0
-		mem := s.memoryBase // sürekli artıyor
-		lat := 30.0 + rand.Float64()*50.0
-		return snapshot{CPU: cpu, MemoryMB: mem, LatencyMs: lat, ErrorRate: 0.0, Status: "up", Code: http.StatusOK}
+		cpu := 20.0 + (s.memoryBase/100.0)*30.0 + rand.Float64()*10.0
+		mem := s.memoryBase
+		lat := s.latencyBase + (s.memoryBase/100.0)*20.0 + rand.Float64()*50.0
+		er := 0.0
+		if s.memoryBase > 200 {
+			er = 0.1
+			cpu = 90.0 + rand.Float64()*10.0
+		}
+
+		status := "up"
+		code := http.StatusOK
+		if s.memoryBase > 200 {
+			status = "degraded"
+			code = http.StatusTooManyRequests
+		}
+
+		return snapshot{
+			CPU:           cpu,
+			MemoryMB:      mem,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        status,
+			Code:          code,
+			ThroughputRPS: s.calculateRPS(),
+		}
 
 	case ScenarioHighLatency:
-		cpu := 20.0 + rand.Float64()*15.0
+		cpu := s.cpuBase + rand.Float64()*10.0
 		mem := s.memoryBase + rand.Float64()*10.0
-		lat := 2000.0 + rand.Float64()*3000.0
-		return snapshot{CPU: cpu, MemoryMB: mem, LatencyMs: lat, ErrorRate: 0.02, Status: "degraded", Code: http.StatusOK}
+		lat := 2000.0 + rand.Float64()*3000.0 + math.Sin(float64(time.Now().Unix())*0.1)*500.0
+		er := 0.02 + rand.Float64()*0.03
+
+		status := "up"
+		code := http.StatusOK
+		if lat > 4000 {
+			status = "degraded"
+			code = http.StatusGatewayTimeout
+		}
+
+		return snapshot{
+			CPU:           cpu,
+			MemoryMB:      mem,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        status,
+			Code:          code,
+			OpenPorts:     []int{8000, 8443},
+			Connections:   int(rand.Int31n(30) + 5),
+			ThroughputRPS: s.calculateRPS(),
+		}
 
 	case ScenarioErrorBurst:
-		cpu := 50.0 + rand.Float64()*30.0
-		mem := s.memoryBase + rand.Float64()*40.0
-		lat := 100.0 + rand.Float64()*400.0
-		er := 0.3 + rand.Float64()*0.5
-		atomic.AddUint64(&s.errorCount, 1)
-		return snapshot{CPU: cpu, MemoryMB: mem, LatencyMs: lat, ErrorRate: er, Status: "degraded", Code: http.StatusOK}
+		t := time.Since(s.scenarioSince).Seconds()
+		burst := math.Mod(t, 30) < 5 // 5 saniye hata patlaması, 25 saniye normal
+		if burst {
+			atomic.AddUint64(&s.errorCount, 1)
+			return snapshot{
+				CPU:           80.0 + rand.Float64()*15.0,
+				MemoryMB:      s.memoryBase + rand.Float64()*20.0,
+				LatencyMs:     100.0 + rand.Float64()*200.0,
+				ErrorRate:     0.8 + rand.Float64()*0.2,
+				Status:        "down",
+				Code:          http.StatusInternalServerError,
+				ThroughputRPS: s.calculateRPS(),
+			}
+		}
+		return s.generateHealthySnapshot()
 
-	default: // healthy
-		cpu := 5.0 + rand.Float64()*25.0
-		mem := s.memoryBase + rand.Float64()*10.0
-		lat := 5.0 + rand.Float64()*45.0
-		return snapshot{CPU: cpu, MemoryMB: mem, LatencyMs: lat, ErrorRate: 0.0, Status: "up", Code: http.StatusOK}
+	case ScenarioConnectionLeak:
+		concurrent := atomic.LoadInt32(&s.concurrentReqs)
+		s.memoryBase += float64(concurrent) * 0.01
+		cpu := s.cpuBase + float64(concurrent)*0.5 + rand.Float64()*10.0
+		mem := s.memoryBase
+		lat := s.latencyBase + float64(concurrent)*2.0 + rand.Float64()*50.0
+		er := 0.0
+		if concurrent > 50 {
+			er = 0.3
+			cpu = 85.0 + rand.Float64()*10.0
+		}
+
+		status := "up"
+		code := http.StatusOK
+		if concurrent > 50 {
+			status = "degraded"
+			code = http.StatusTooManyRequests
+		}
+
+		return snapshot{
+			CPU:           cpu,
+			MemoryMB:      mem,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        status,
+			Code:          code,
+			Connections:   int(concurrent) * 2,
+			Threads:       int(concurrent),
+			QueueSize:     int(concurrent) * 5,
+			ThroughputRPS: s.calculateRPS(),
+		}
+
+	case ScenarioDatabaseIssue:
+		dbLatency := 500.0 + rand.Float64()*2000.0
+		if rand.Float32() < 0.3 { // 30% timeout
+			atomic.AddUint64(&s.errorCount, 1)
+			return snapshot{
+				CPU:           40.0 + rand.Float64()*20.0,
+				MemoryMB:      s.memoryBase + rand.Float64()*10.0,
+				LatencyMs:     30000.0, // 30s timeout
+				ErrorRate:     1.0,
+				Status:        "down",
+				Code:          http.StatusGatewayTimeout,
+				ThroughputRPS: s.calculateRPS(),
+			}
+		}
+		return snapshot{
+			CPU:           s.cpuBase + rand.Float64()*10.0,
+			MemoryMB:      s.memoryBase + rand.Float64()*10.0,
+			LatencyMs:     dbLatency,
+			ErrorRate:     0.1,
+			Status:        "degraded",
+			Code:          http.StatusOK,
+			ThroughputRPS: s.calculateRPS(),
+		}
+
+	case ScenarioNetworkJitter:
+		baseLat := s.latencyBase
+		jitter := rand.Float64()*1000.0 - 500.0 // ±500ms jitter
+		lat := baseLat + jitter
+		if lat < 0 {
+			lat = 10.0
+		}
+		er := 0.0
+		if math.Abs(jitter) > 400.0 {
+			er = 0.05
+		}
+
+		status := "up"
+		code := http.StatusOK
+		if er > 0 {
+			status = "degraded"
+			code = http.StatusGatewayTimeout
+		}
+
+		return snapshot{
+			CPU:           s.cpuBase + rand.Float64()*5.0,
+			MemoryMB:      s.memoryBase + rand.Float64()*5.0,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        status,
+			Code:          code,
+			ThroughputRPS: s.calculateRPS(),
+		}
+
+	case ScenarioResourceStarved:
+		cpu := 5.0 + rand.Float64()*10.0
+		mem := s.memoryBase * 0.3 // Sadece %30 memory
+		lat := s.latencyBase*5.0 + rand.Float64()*1000.0
+		er := 0.2 + rand.Float64()*0.3
+		return snapshot{
+			CPU:           cpu,
+			MemoryMB:      mem,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        "degraded",
+			Code:          http.StatusTooManyRequests,
+			ThroughputRPS: s.calculateRPS() * 0.2,
+		}
+
+	case ScenarioLoadSpike:
+		hour := time.Now().Hour()
+		var loadFactor float64
+		// Saatlik trafik paterni
+		switch {
+		case hour >= 9 && hour <= 11:
+			loadFactor = 0.8 + rand.Float64()*0.2 // Sabah yoğunluğu
+		case hour >= 14 && hour <= 16:
+			loadFactor = 0.9 + rand.Float64()*0.1 // Öğleden sonra zirve
+		case hour >= 20 && hour <= 22:
+			loadFactor = 0.6 + rand.Float64()*0.3 // Akşam kullanımı
+		default:
+			loadFactor = 0.2 + rand.Float64()*0.2 // Düşük trafik
+		}
+
+		cpu := s.cpuBase + loadFactor*60.0 + rand.Float64()*10.0
+		mem := s.memoryBase + loadFactor*40.0 + rand.Float64()*10.0
+		lat := s.latencyBase + loadFactor*800.0 + rand.Float64()*200.0
+		er := loadFactor * 0.15
+
+		status := "up"
+		code := http.StatusOK
+		if loadFactor > 0.85 {
+			status = "degraded"
+			code = http.StatusTooManyRequests
+		}
+
+		return snapshot{
+			CPU:           cpu,
+			MemoryMB:      mem,
+			LatencyMs:     lat,
+			ErrorRate:     er,
+			Status:        status,
+			Code:          code,
+			Connections:   int(loadFactor * 150),
+			Threads:       int(loadFactor * 80),
+			QueueSize:     int(loadFactor * 300),
+			ThroughputRPS: s.calculateRPS() * loadFactor,
+		}
+
+	case ScenarioDependencyIssue:
+		// Bağımlı servislerden bir yavaş
+		depLatency := 1000.0 + rand.Float64()*2000.0
+		if rand.Float32() < 0.4 { // 40% dependency failure
+			atomic.AddUint64(&s.errorCount, 1)
+			return snapshot{
+				CPU:           30.0 + rand.Float64()*20.0,
+				MemoryMB:      s.memoryBase + rand.Float64()*10.0,
+				LatencyMs:     5000.0,
+				ErrorRate:     0.6,
+				Status:        "degraded",
+				Code:          http.StatusBadGateway,
+				ThroughputRPS: s.calculateRPS(),
+			}
+		}
+		return snapshot{
+			CPU:           s.cpuBase + rand.Float64()*10.0,
+			MemoryMB:      s.memoryBase + rand.Float64()*10.0,
+			LatencyMs:     depLatency,
+			ErrorRate:     0.1,
+			Status:        "degraded",
+			Code:          http.StatusOK,
+			ThroughputRPS: s.calculateRPS(),
+		}
+
+	default: // ScenarioHealthy
+		return s.generateHealthySnapshot()
 	}
 }
 
-// ── Global state ─────────────────────────────────────────────────────────────
+func (s *ServiceState) generateHealthySnapshot() snapshot {
+	cpu := s.cpuBase + rand.Float64()*10.0
+	mem := s.memoryBase + rand.Float64()*10.0
+	lat := s.latencyBase + rand.Float64()*30.0
 
-var state = newServiceState()
+	return snapshot{
+		CPU:           cpu,
+		MemoryMB:      mem,
+		LatencyMs:     lat,
+		ErrorRate:     0.0,
+		Status:        "up",
+		Code:          http.StatusOK,
+		OpenPorts:     []int{8000, 8080, 8443},
+		Connections:   int(rand.Int31n(20) + 5),
+		Threads:       int(rand.Int31n(10) + 3),
+		QueueSize:     int(rand.Int31n(10)),
+		ThroughputRPS: s.calculateRPS(),
+	}
+}
+
+func (s *ServiceState) calculateLatency() float64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Response time history'den 95th percentile hesapla
+	if len(s.responseTimeHist) == 0 {
+		return s.latencyBase
+	}
+
+	sorted := make([]float64, len(s.responseTimeHist))
+	copy(sorted, s.responseTimeHist)
+	sort.Float64s(sorted)
+
+	index := int(float64(len(sorted)) * 0.95)
+	if index >= len(sorted) {
+		index = len(sorted) - 1
+	}
+
+	return sorted[index]
+}
+
+func (s *ServiceState) calculateRPS() float64 {
+	// Basit yaklaşım: toplam request / toplam süre (lifetime)
+	// Gerçek sliding window için request timestamp'leri tutmak gerekirdi
+	elapsed := time.Since(s.startTime).Seconds()
+	if elapsed == 0 {
+		return 0
+	}
+	reqs := float64(atomic.LoadUint64(&s.requestCount))
+	return reqs / elapsed
+}
+
+func (s *ServiceState) updateCircuitBreaker() {
+	now := time.Now()
+
+	if s.circuitState == "open" {
+		// 30 saniye sonra half-open'a geç
+		if now.Sub(s.lastCircuitChange) > 30*time.Second {
+			s.circuitState = "half-open"
+			s.lastCircuitChange = now
+			s.circuitFailures = 0
+			log.Printf("[%s] Circuit breaker: half-open", s.name)
+		}
+		return
+	}
+
+	// Sliding window: son 5 saniyedeki hataları say
+	// Her request'te circuitFailures artırılıyor, ama 5 saniye sonra otomatik reset
+	if now.Sub(s.lastCircuitChange) > 5*time.Second {
+		s.circuitFailures = 0
+		s.lastCircuitChange = now
+
+		if s.circuitState == "half-open" {
+			s.circuitState = "closed"
+			log.Printf("[%s] Circuit breaker: closed", s.name)
+		}
+	}
+
+	// 5 saniye içinde 3 hata = open
+	if s.circuitFailures >= 3 {
+		s.circuitState = "open"
+		s.lastCircuitChange = now
+		s.circuitFailures = 0
+		log.Printf("[%s] Circuit breaker: open", s.name)
+	}
+}
+
+// ── HTTP handlers ─────────────────────────────────────────────────────────────
+
+func (s *ServiceState) handleHealth(w http.ResponseWriter, r *http.Request) {
+	atomic.AddInt32(&s.concurrentReqs, 1)
+	defer atomic.AddInt32(&s.concurrentReqs, -1)
+
+	snap := s.computeSnapshot()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Service-Version", s.version)
+	w.Header().Set("X-Service-Name", s.name)
+	w.Header().Set("X-Request-ID", fmt.Sprintf("req-%d", atomic.LoadUint64(&s.requestCount)))
+
+	if snap.Code >= 500 {
+		atomic.AddUint64(&s.errorCount, 1)
+	}
+
+	w.WriteHeader(snap.Code)
+	json.NewEncoder(w).Encode(snap)
+}
+
+func (s *ServiceState) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	atomic.AddInt32(&s.concurrentReqs, 1)
+	defer atomic.AddInt32(&s.concurrentReqs, -1)
+
+	snap := s.computeSnapshot()
+
+	metrics := map[string]interface{}{
+		"timestamp":           time.Now().Unix(),
+		"service_name":        s.name,
+		"version":             s.version,
+		"uptime_seconds":      time.Since(s.startTime).Seconds(),
+		"total_requests":      atomic.LoadUint64(&s.requestCount),
+		"total_errors":        atomic.LoadUint64(&s.errorCount),
+		"cpu_percent":         snap.CPU,
+		"memory_mb":           snap.MemoryMB,
+		"latency_ms":          snap.LatencyMs,
+		"error_rate":          snap.ErrorRate,
+		"status":              snap.Status,
+		"throughput_rps":      snap.ThroughputRPS,
+		"concurrent_requests": atomic.LoadInt32(&s.concurrentReqs),
+		"peak_memory_mb":      s.peakMemory,
+		"open_ports":          snap.OpenPorts,
+		"connections":         snap.Connections,
+		"threads":             snap.Threads,
+		"queue_size":          snap.QueueSize,
+		"scenario":            s.scenario,
+		"circuit_breaker":     s.circuitState,
+		"response_time_p95":   s.calculateLatency(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
+}
+
+func (s *ServiceState) handleInfo(w http.ResponseWriter, r *http.Request) {
+	info := map[string]interface{}{
+		"service":     s.name,
+		"version":     s.version,
+		"started_at":  s.startTime.Format(time.RFC3339),
+		"scenario":    s.scenario,
+		"uptime":      time.Since(s.startTime).String(),
+		"git_commit":  "abc123def",
+		"build_time":  "2024-03-30T10:00:00Z",
+		"go_version":  "go1.21.0",
+		"environment": "development",
+		"features": []string{
+			"graceful_shutdown",
+			"health_checks",
+			"metrics_endpoint",
+			"circuit_breaker",
+			"rate_limiting",
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(info)
+}
+
+func (s *ServiceState) handleScenario(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		current := map[string]string{
+			"current": string(s.scenario),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(current)
+		return
+	}
+
+	if r.Method == "POST" {
+		var req struct {
+			Scenario string `json:"scenario"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		newScenario := parseScenario(req.Scenario)
+		s.setScenario(newScenario)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": fmt.Sprintf("Scenario changed to %s", newScenario),
+		})
+	}
+}
+
+func (s *ServiceState) handleLoad(w http.ResponseWriter, r *http.Request) {
+	atomic.AddInt32(&s.concurrentReqs, 1)
+	defer atomic.AddInt32(&s.concurrentReqs, -1)
+
+	// Simulate different load patterns
+	loadType := r.URL.Query().Get("type")
+
+	switch loadType {
+	case "cpu":
+		// CPU intensive work
+		for i := 0; i < 1000000; i++ {
+			math.Sqrt(float64(i))
+		}
+	case "memory":
+		// Memory allocation
+		data := make([]byte, 1024*1024) // 1MB
+		_ = data
+	case "io":
+		// Simulate I/O wait
+		time.Sleep(100 * time.Millisecond)
+	default:
+		// Mixed load
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	snap := s.computeSnapshot()
+
+	response := map[string]interface{}{
+		"load_type":    loadType,
+		"processed_at": time.Now().Unix(),
+		"worker_id":    rand.Intn(10),
+		"queue_depth":  rand.Intn(100),
+		"status":       snap.Status,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(snap.Code)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *ServiceState) handleChaos(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		var req struct {
+			Action  string `json:"action"`
+			Target  string `json:"target"`
+			Percent int    `json:"percent"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		message := fmt.Sprintf("Chaos action %s on %s with %d%% intensity", req.Action, req.Target, req.Percent)
+		log.Printf("[%s] Chaos: %s", s.name, message)
+
+		// Apply chaos effects with lock
+		s.mu.Lock()
+		switch req.Action {
+		case "latency":
+			s.latencyBase += float64(req.Percent) * 10.0
+		case "memory":
+			s.memoryLeak += float64(req.Percent) * 0.001
+		}
+		s.mu.Unlock()
+
+		// Error injection doesn't need lock (atomic)
+		if req.Action == "error" {
+			if rand.Intn(100) < req.Percent {
+				atomic.AddUint64(&s.errorCount, 1)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Chaos error injected"})
+				return
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": message})
+	}
+}
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8001"
+		port = "8000"
 	}
+
+	state := newServiceState()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/metrics", metricsHandler)
-	mux.HandleFunc("/scenario", scenarioHandler)
-	mux.HandleFunc("/api/users", usersHandler)
-	mux.HandleFunc("/api/orders", ordersHandler)
-	mux.HandleFunc("/api/products", productsHandler)
-	mux.HandleFunc("/", rootHandler)
+	mux.HandleFunc("/health", state.handleHealth)
+	mux.HandleFunc("/metrics", state.handleMetrics)
+	mux.HandleFunc("/info", state.handleInfo)
+	mux.HandleFunc("/scenario", state.handleScenario)
+	mux.HandleFunc("/load", state.handleLoad)
+	mux.HandleFunc("/chaos", state.handleChaos)
 
-	log.Printf("[%s] Mock Service v2 başlatılıyor | port=%s | senaryo=%s",
-		state.name, port, state.currentScenario())
-	log.Printf("  GET  /health           — sağlık durumu")
-	log.Printf("  GET  /metrics          — sistem metrikleri")
-	log.Printf("  GET  /scenario         — aktif senaryo")
-	log.Printf("  POST /scenario         — senaryo değiştir: {\"scenario\":\"spike\"}")
-	log.Printf("  GET  /api/users        — kullanıcı listesi")
-	log.Printf("  GET  /api/orders       — sipariş listesi")
-	log.Printf("  GET  /api/products     — ürün listesi")
-	log.Printf("Senaryolar: healthy degraded down spike memory_leak flapping high_latency error_burst")
+	// Add middleware for request tracking
+	handler := requestLogger(state)(mux)
 
-	if err := http.ListenAndServe(":"+port, middleware(mux)); err != nil {
-		log.Fatalf("Server başlatılamadı: %v", err)
+	log.Printf("[%s] Mock service starting on port %s with scenario: %s", state.name, port, state.scenario)
+
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
+		log.Fatalf("Server failed: %v", err)
 	}
 }
 
-// ── Middleware ───────────────────────────────────────────────────────────────
+func requestLogger(state *ServiceState) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
 
-func middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddUint64(&state.requestCount, 1)
-		start := time.Now()
+			// Wrap ResponseWriter to capture status code
+			wrapped := &responseWriter{ResponseWriter: w, statusCode: 200}
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("X-Service-Name", state.name)
-		w.Header().Set("X-Scenario", string(state.currentScenario()))
+			next.ServeHTTP(wrapped, r)
 
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Down senaryosunda tüm istekleri reddet (health hariç)
-		if state.currentScenario() == ScenarioDown && r.URL.Path != "/scenario" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]any{
-				"status":  "down",
-				"message": "service unavailable",
-			})
-			log.Printf("DOWN  %s %s - %v", r.Method, r.URL.Path, time.Since(start))
-			return
-		}
-
-		// High latency / degraded gecikmesi simülasyonu
-		snap := state.computeSnapshot()
-		if snap.LatencyMs > 0 && r.URL.Path == "/health" {
-			jitter := time.Duration(snap.LatencyMs*0.3) * time.Millisecond
-			time.Sleep(jitter)
-		}
-
-		next.ServeHTTP(w, r)
-		log.Printf("%-6s %s - %v", r.Method, r.URL.Path, time.Since(start))
-	})
-}
-
-// ── Handler'lar ──────────────────────────────────────────────────────────────
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	snap := state.computeSnapshot()
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(snap.Code)
-	json.NewEncoder(w).Encode(map[string]any{
-		"status":    snap.Status,
-		"service":   state.name,
-		"scenario":  string(state.currentScenario()),
-		"timestamp": time.Now().UTC(),
-		"uptime":    time.Since(state.startTime).String(),
-		"requests":  atomic.LoadUint64(&state.requestCount),
-		"errors":    atomic.LoadUint64(&state.errorCount),
-		"version":   state.version,
-	})
-}
-
-func metricsHandler(w http.ResponseWriter, r *http.Request) {
-	snap := state.computeSnapshot()
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
-		"service":        state.name,
-		"scenario":       string(state.currentScenario()),
-		"cpu_percent":    round2(snap.CPU),
-		"memory_used_mb": round2(snap.MemoryMB),
-		"latency_ms":     round2(snap.LatencyMs),
-		"error_rate":     round2(snap.ErrorRate),
-		"status":         snap.Status,
-		"requests":       atomic.LoadUint64(&state.requestCount),
-		"errors":         atomic.LoadUint64(&state.errorCount),
-		"uptime_seconds": time.Since(state.startTime).Seconds(),
-		"timestamp":      time.Now().UTC(),
-	})
-}
-
-func scenarioHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == http.MethodGet {
-		json.NewEncoder(w).Encode(map[string]any{
-			"current": string(state.currentScenario()),
-			"service": state.name,
-			"since":   state.scenarioSince,
-			"available": []string{
-				"healthy", "degraded", "down", "spike",
-				"memory_leak", "flapping", "high_latency", "error_burst",
-			},
+			duration := time.Since(start)
+			log.Printf("[%s] %s %s %d %v", state.name, r.Method, r.URL.Path, wrapped.statusCode, duration)
 		})
-		return
 	}
-
-	if r.Method == http.MethodPost {
-		adminKey := r.Header.Get("X-Admin-Key")
-		if adminKey != "secret123" && os.Getenv("REQUIRE_ADMIN_KEY") == "true" {
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]any{"error": "Yetkisiz işlem: X-Admin-Key geçersiz."})
-			return
-		}
-
-		var body struct {
-			Scenario string `json:"scenario"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Scenario == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]any{"error": "scenario alanı gerekli"})
-			return
-		}
-		state.setScenario(parseScenario(body.Scenario))
-		json.NewEncoder(w).Encode(map[string]any{
-			"ok":      true,
-			"current": string(state.currentScenario()),
-		})
-		return
-	}
-
-	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
-func usersHandler(w http.ResponseWriter, r *http.Request) {
-	snap := state.computeSnapshot()
-	if snap.ErrorRate > rand.Float64() {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"error": "internal server error"})
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	users := []map[string]any{
-		{"id": 1, "name": "Alice Johnson", "email": "alice@example.com", "role": "admin", "active": true},
-		{"id": 2, "name": "Bob Smith", "email": "bob@example.com", "role": "user", "active": true},
-		{"id": 3, "name": "Charlie Brown", "email": "charlie@example.com", "role": "user", "active": false},
-		{"id": 4, "name": "Diana Prince", "email": "diana@example.com", "role": "moderator", "active": true},
-		{"id": 5, "name": "Eve Torres", "email": "eve@example.com", "role": "user", "active": true},
-	}
-	json.NewEncoder(w).Encode(map[string]any{"success": true, "data": users, "count": len(users)})
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
 }
 
-func ordersHandler(w http.ResponseWriter, r *http.Request) {
-	snap := state.computeSnapshot()
-	if snap.ErrorRate > rand.Float64() {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"error": "database connection timeout"})
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	orders := []map[string]any{
-		{"id": "ORD-001", "user_id": 1, "total": 1099.98, "status": "delivered", "items": 2},
-		{"id": "ORD-002", "user_id": 2, "total": 29.99, "status": "processing", "items": 1},
-		{"id": "ORD-003", "user_id": 4, "total": 449.97, "status": "shipped", "items": 3},
-		{"id": "ORD-004", "user_id": 1, "total": 79.99, "status": "pending", "items": 1},
-	}
-	json.NewEncoder(w).Encode(map[string]any{"success": true, "data": orders, "count": len(orders)})
-}
-
-func productsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	products := []map[string]any{
-		{"id": 1, "name": "Laptop Pro", "price": 999.99, "stock": 15, "category": "electronics"},
-		{"id": 2, "name": "Wireless Mouse", "price": 29.99, "stock": 50, "category": "accessories"},
-		{"id": 3, "name": "Mechanical Keyboard", "price": 79.99, "stock": 30, "category": "accessories"},
-		{"id": 4, "name": "4K Monitor", "price": 299.99, "stock": 8, "category": "electronics"},
-		{"id": 5, "name": "Noise-Canceling Headphones", "price": 149.99, "stock": 25, "category": "audio"},
-		{"id": 6, "name": "USB-C Hub", "price": 49.99, "stock": 100, "category": "accessories"},
-	}
-	json.NewEncoder(w).Encode(map[string]any{"success": true, "data": products, "count": len(products)})
-}
-
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]any{"error": "not found"})
-		return
-	}
-	snap := state.computeSnapshot()
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
-		"service":   state.name,
-		"version":   state.version,
-		"scenario":  string(state.currentScenario()),
-		"status":    snap.Status,
-		"uptime":    time.Since(state.startTime).String(),
-		"requests":  atomic.LoadUint64(&state.requestCount),
-		"timestamp": time.Now().UTC(),
-		"endpoints": []string{
-			"GET  /health",
-			"GET  /metrics",
-			"GET  /scenario",
-			"POST /scenario  {\"scenario\":\"...\"}",
-			"GET  /api/users",
-			"GET  /api/orders",
-			"GET  /api/products",
-		},
-	})
-}
-
-// ── Yardımcılar ──────────────────────────────────────────────────────────────
-
-func round2(f float64) float64 {
-	return math.Round(f*100) / 100
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }

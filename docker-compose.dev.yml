@@ -138,6 +138,138 @@ services:
     ports:
       - "8005:8005"
 
+  mock-high-latency:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-high-latency
+    environment:
+      PORT: "8006"
+      SERVICE_NAME: "external-api"
+      SCENARIO: "high_latency"
+    ports:
+      - "8006:8006"
+
+  mock-down:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-down
+    environment:
+      PORT: "8007"
+      SERVICE_NAME: "database-proxy"
+      SCENARIO: "down"
+    ports:
+      - "8007:8007"
+
+  mock-connection-leak:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-connection-leak
+    environment:
+      PORT: "8008"
+      SERVICE_NAME: "session-service"
+      SCENARIO: "connection_leak"
+    ports:
+      - "8008:8008"
+
+  mock-slow-start:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-slow-start
+    environment:
+      PORT: "8009"
+      SERVICE_NAME: "new-service"
+      SCENARIO: "slow_start"
+    ports:
+      - "8009:8009"
+
+  mock-database-issue:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-database-issue
+    environment:
+      PORT: "8010"
+      SERVICE_NAME: "user-service"
+      SCENARIO: "database_issue"
+    ports:
+      - "8010:8010"
+
+  mock-network-jitter:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-network-jitter
+    environment:
+      PORT: "8011"
+      SERVICE_NAME: "api-gateway"
+      SCENARIO: "network_jitter"
+    ports:
+      - "8011:8011"
+
+  mock-resource-starved:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-resource-starved
+    environment:
+      PORT: "8012"
+      SERVICE_NAME: "worker-service"
+      SCENARIO: "resource_starved"
+    ports:
+      - "8012:8012"
+
+  mock-circuit-breaker:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-circuit-breaker
+    environment:
+      PORT: "8013"
+      SERVICE_NAME: "payment-service"
+      SCENARIO: "circuit_breaker"
+    ports:
+      - "8013:8013"
+
+  mock-random-crash:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-random-crash
+    environment:
+      PORT: "8014"
+      SERVICE_NAME: "legacy-service"
+      SCENARIO: "random_crash"
+    ports:
+      - "8014:8014"
+
+  mock-load-spike:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-load-spike
+    environment:
+      PORT: "8015"
+      SERVICE_NAME: "frontend-api"
+      SCENARIO: "load_spike"
+    ports:
+      - "8015:8015"
+
+  mock-dependency-issue:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-dependency-issue
+    environment:
+      PORT: "8016"
+      SERVICE_NAME: "notification-service"
+      SCENARIO: "dependency_issue"
+    ports:
+      - "8016:8016"
+
+  mock-error-burst:
+    build:
+      context: ./mock-service
+    container_name: nanonet-mock-error-burst
+    environment:
+      PORT: "8017"
+      SERVICE_NAME: "analytics-service"
+      SCENARIO: "error_burst"
+    ports:
+      - "8017:8017"
+
 volumes:
   postgres_data:
   go_mod_cache:
