@@ -322,7 +322,7 @@ fn build_service_command(input: &str, config: &Config) -> Result<String, String>
                docker inspect --format 'image={{{{.Config.Image}}}}  state={{{{.State.Status}}}}  pid={{{{.State.Pid}}}}  started={{{{.State.StartedAt}}}}' \"$CID\" 2>/dev/null; \
              else \
                echo 'host process bulunamadı, docker container da tespit edilemedi'; \
-               echo 'not: servis uzak host veya farklı network namespace'\''inde çalışıyor olabilir'; \
+               echo 'not: servis uzak host veya farkli network namespace icerisinde calisiyor olabilir'; \
              fi"
         ),
 
@@ -381,7 +381,7 @@ fn build_service_command(input: &str, config: &Config) -> Result<String, String>
 
         "netstat" => format!(
             "echo '--- Port {port} Dinleme Durumu ---'; \
-             ss -tlnp 2>/dev/null | grep ':{port}' || echo '(host namespace'\''inde dinlenmiyor — muhtemelen container)'; \
+             ss -tlnp 2>/dev/null | grep ':{port}' || echo '(host namespace icerisinde dinlenmiyor - muhtemelen container)'; \
              echo; \
              echo '--- Aktif Bağlantılar ---'; \
              ss -tn 2>/dev/null | grep ':{port}' | head -20 || echo '(bağlantı yok)'; \
