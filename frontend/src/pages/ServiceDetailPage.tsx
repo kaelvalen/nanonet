@@ -1565,14 +1565,6 @@ export function ServiceDetailPage() {
 						<MaintenanceTab serviceId={serviceId ?? ""} />
 					</TabsContent>
 
-					{/* Logs Tab — always mounted so stream starts immediately */}
-					<TabsContent value="logs" className="h-150" forceMount hidden={activeTab !== "logs"}>
-						<LogViewer
-							serviceId={serviceId ?? ""}
-							serviceName={service?.name}
-						/>
-					</TabsContent>
-
 					{/* Exec Confirm Dialog */}
 					<Dialog open={execConfirmOpen} onOpenChange={setExecConfirmOpen}>
 						<DialogContent
@@ -1814,9 +1806,19 @@ export function ServiceDetailPage() {
 						</Card>
 					</TabsContent>
 				</Tabs>
-			</motion.div>
+			{/* Logs — always mounted outside Tabs so WS stream is not torn down on tab switch */}
+			<div
+				style={{ display: activeTab === "logs" ? "block" : "none" }}
+				className="h-130"
+			>
+				<LogViewer
+					serviceId={serviceId ?? ""}
+					serviceName={service?.name}
+				/>
+			</div>
+		</motion.div>
 
-			{/* Agent Setup Wizard */}
+		{/* Agent Setup Wizard */}
 			<AgentSetupWizard
 				open={agentWizardOpen}
 				onClose={() => setAgentWizardOpen(false)}

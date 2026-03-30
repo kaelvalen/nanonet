@@ -140,6 +140,7 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 	const [levelFilter, setLevelFilter] = useState<string>("all");
 	const [autoScroll, setAutoScroll] = useState(true);
 	const [paused, setPaused] = useState(false);
+	const [unreadCount, setUnreadCount] = useState(0);
 
 	const wsRef = useRef<WebSocket | null>(null);
 	const pollTimerRef = useRef<ReturnType<typeof setInterval>>();
@@ -151,6 +152,7 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 
 	const addLog = useCallback((entry: LogEntry) => {
 		if (pausedRef.current) return;
+		setUnreadCount((n) => (autoScrollRef.current ? 0 : n + 1));
 		setLogs((prev) => {
 			const next = [...prev, entry];
 			return next.length > maxLines ? next.slice(-maxLines) : next;
@@ -239,9 +241,13 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 		};
 	}, [serviceId, serviceName, addLog]);
 
+	const autoScrollRef = useRef(autoScroll);
+	autoScrollRef.current = autoScroll;
+
 	useEffect(() => {
 		if (autoScroll && !paused) {
 			bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+			setUnreadCount(0);
 		}
 	}, [logs, autoScroll, paused]);
 
@@ -250,6 +256,13 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 		if (!el) return;
 		const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
 		setAutoScroll(atBottom);
+		if (atBottom) setUnreadCount(0);
+	};
+
+	const scrollToBottom = () => {
+		setAutoScroll(true);
+		setUnreadCount(0);
+		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 	};
 
 	const filtered = useMemo(() => {
@@ -417,58 +430,74 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 			</div>
 
 			{/* Log lines */}
-			<div
-				ref={containerRef}
-				onScroll={handleScroll}
-				className="flex-1 overflow-y-auto text-xs leading-relaxed"
-				style={{
-					background: "var(--bg-primary)",
-					minHeight: 0,
-				}}
-			>
-				{filtered.length === 0 && (
-					<div className="flex flex-col items-center justify-center h-32 gap-2">
-						{connected ? (
-							<>
-								<Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
+			<div className="relative flex-1 min-h-0">
+				<div
+					ref={containerRef}
+					onScroll={handleScroll}
+					className="h-full overflow-y-auto text-xs leading-relaxed"
+					style={{
+						background: "var(--bg-primary)",
+					}}
+				>
+					{filtered.length === 0 && (
+						<div className="flex flex-col items-center justify-center h-32 gap-2">
+							{connected ? (
+								<>
+									<Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
+									<p className="text-xs" style={{ color: "var(--text-faint)" }}>
+										Log bekleniyor...
+									</p>
+								</>
+							) : (
 								<p className="text-xs" style={{ color: "var(--text-faint)" }}>
-									Log bekleniyor...
+									{error ?? "Bağlantı kurulmadı"}
 								</p>
-							</>
-						) : (
-							<p className="text-xs" style={{ color: "var(--text-faint)" }}>
-								{error ?? "Bağlantı kurulmadı"}
-							</p>
-						)}
-					</div>
-				)}
+							)}
+						</div>
+					)}
 
-				{filtered.map((log) => (
-					<div
-						key={log.id}
-						className="flex items-start gap-2 px-4 py-0.5 hover:opacity-90 transition-colors"
-						style={{ background: LEVEL_BG[log.level] ?? "transparent" }}
+					{filtered.map((log) => (
+						<div
+							key={log.id}
+							className="flex items-start gap-2 px-4 py-0.5 hover:opacity-90 transition-colors"
+							style={{ background: LEVEL_BG[log.level] ?? "transparent" }}
+						>
+							<span
+								className="shrink-0 text-xs tabular-nums pt-px"
+								style={{ color: "var(--text-faint)", minWidth: "60px" }}
+							>
+								{formatTimestamp(log.timestamp)}
+							</span>
+							<LevelBadge level={log.level} />
+							<span
+								className="shrink-0 text-xs"
+								style={{ color: "var(--text-faint)", minWidth: "52px" }}
+							>
+								[{log.source}]
+							</span>
+							<span style={{ color: "var(--text-primary)", wordBreak: "break-all" }}>
+								{log.message}
+							</span>
+						</div>
+					))}
+
+					<div ref={bottomRef} />
+				</div>
+				{!autoScroll && (
+					<button
+						type="button"
+						onClick={scrollToBottom}
+						className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shadow-lg transition-all hover:opacity-90"
+						style={{
+							background: "var(--color-blue)",
+							color: "white",
+							zIndex: 10,
+						}}
 					>
-						<span
-							className="shrink-0 text-xs tabular-nums pt-px"
-							style={{ color: "var(--text-faint)", minWidth: "60px" }}
-						>
-							{formatTimestamp(log.timestamp)}
-						</span>
-						<LevelBadge level={log.level} />
-						<span
-							className="shrink-0 text-xs"
-							style={{ color: "var(--text-faint)", minWidth: "52px" }}
-						>
-							[{log.source}]
-						</span>
-						<span style={{ color: "var(--text-primary)", wordBreak: "break-all" }}>
-							{log.message}
-						</span>
-					</div>
-				))}
-
-				<div ref={bottomRef} />
+						<ChevronDown className="w-3 h-3" />
+						{unreadCount > 0 ? `${unreadCount} yeni log` : "En alta in"}
+					</button>
+				)}
 			</div>
 
 			{/* Footer */}

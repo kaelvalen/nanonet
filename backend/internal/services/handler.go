@@ -283,19 +283,6 @@ func (h *Handler) Stop(c *gin.Context) {
 	})
 }
 
-// allowedExecCommands — agent üzerinde çalıştırılmasına izin verilen komutların beyaz listesi.
-// Arbitrary shell execution güvenlik riski oluşturur; yalnızca onaylanmış diagnostik komutlar kabul edilir.
-var allowedExecCommands = map[string]bool{
-	"status":       true,
-	"logs":         true,
-	"health-check": true,
-	"version":      true,
-	"uptime":       true,
-	"df-h":         true,
-	"free-m":       true,
-	"top-snapshot": true,
-}
-
 func (h *Handler) Exec(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {
@@ -320,12 +307,6 @@ func (h *Handler) Exec(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
-		return
-	}
-
-	// Güvenlik: Yalnızca beyaz listedeki komutlara izin ver
-	if !allowedExecCommands[req.Command] {
-		response.BadRequest(c, "bu komut izin verilmiyor — yalnızca şu komutlar kullanılabilir: status, logs, health-check, version, uptime, df-h, free-m, top-snapshot")
 		return
 	}
 
