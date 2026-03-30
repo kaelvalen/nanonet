@@ -257,7 +257,10 @@ export function useWebSocket() {
 									);
 								}
 							} catch {
-								// Refresh başarısız olursa mevcut token ile devam et
+								// Refresh başarısız — oturumu temizle ve login'e yönlendir
+								authState.clearAuth();
+								window.location.href = "/login";
+								return;
 							}
 						}
 

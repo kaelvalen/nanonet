@@ -12,6 +12,7 @@ import {
 	WifiOff,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { metricsApi } from "@/api/metrics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/components/ui/utils";
@@ -128,9 +129,12 @@ function LevelBadge({ level }: { level: string }) {
 	);
 }
 
+const HTTP_POLL_INTERVAL_MS = 10_000;
+
 export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerProps) {
 	const [logs, setLogs] = useState<LogEntry[]>([]);
 	const [connected, setConnected] = useState(false);
+	const [pollingFallback, setPollingFallback] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [search, setSearch] = useState("");
 	const [levelFilter, setLevelFilter] = useState<string>("all");
@@ -138,6 +142,8 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 	const [paused, setPaused] = useState(false);
 
 	const wsRef = useRef<WebSocket | null>(null);
+	const pollTimerRef = useRef<ReturnType<typeof setInterval>>();
+	const seenTimestamps = useRef<Set<string>>(new Set());
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const pausedRef = useRef(paused);
@@ -195,13 +201,41 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 		ws.onclose = (ev) => {
 			setConnected(false);
 			if (ev.code !== 1000) {
-				setError(`Bağlantı kapandı (${ev.code})`);
+				setError(`Bağlantı kapandı (${ev.code}) — HTTP polling aktif`);
+				// Start HTTP polling fallback
+				setPollingFallback(true);
+				const poll = async () => {
+					if (pausedRef.current) return;
+					try {
+						const metrics = await metricsApi.getHistory(serviceId, "15m", 20);
+						for (const m of metrics) {
+							if (seenTimestamps.current.has(m.time)) continue;
+							seenTimestamps.current.add(m.time);
+							addLog({
+								id: `poll-${m.time}`,
+								timestamp: m.time,
+								level: m.status === "down" ? "error" : m.status === "degraded" ? "warn" : "info",
+								source: "poll",
+								message: `cpu=${m.cpu_percent?.toFixed(1) ?? "?"}% mem=${m.memory_used_mb?.toFixed(0) ?? "?"}MB latency=${m.latency_ms?.toFixed(0) ?? "?"}ms status=${m.status ?? "?"}`,
+							});
+						}
+					} catch {
+						// silently ignore polling errors
+					}
+				};
+				poll();
+				pollTimerRef.current = setInterval(poll, HTTP_POLL_INTERVAL_MS);
 			}
 		};
 
 		return () => {
 			ws.onclose = null;
 			ws.close(1000, "unmount");
+			if (pollTimerRef.current) {
+				clearInterval(pollTimerRef.current);
+				pollTimerRef.current = undefined;
+				setPollingFallback(false);
+			}
 		};
 	}, [serviceId, serviceName, addLog]);
 
@@ -283,6 +317,11 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 						<>
 							<Circle className="w-2 h-2 fill-current animate-pulse" style={{ color: "var(--status-up)" }} />
 							<span className="text-xs" style={{ color: "var(--status-up)" }}>Canlı</span>
+						</>
+					) : pollingFallback ? (
+						<>
+							<Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--status-warn)" }} />
+							<span className="text-xs" style={{ color: "var(--status-warn)" }}>HTTP Polling</span>
 						</>
 					) : (
 						<>

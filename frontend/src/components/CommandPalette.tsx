@@ -16,7 +16,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { servicesApi } from "@/api/services";
@@ -56,12 +56,31 @@ export function CommandPalette() {
 	const navigate = useNavigate();
 	const { services } = useServiceStore();
 
+	const gPressedRef = useRef(false);
+	const gTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
 	useEffect(() => {
+		const VIM_NAV: Record<string, string> = {
+			d: "/",
+			s: "/services",
+			a: "/alerts",
+			i: "/ai-insights",
+			m: "/service-map",
+			k: "/kubernetes",
+		};
+
 		const down = (e: KeyboardEvent) => {
+			// Ignore when typing in an input / textarea / contenteditable
+			const tag = (e.target as HTMLElement)?.tagName;
+			const isEditable =
+				tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
+
 			if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
 				e.preventDefault();
 				setOpen((prev) => !prev);
+				return;
 			}
+
 			if (open && e.metaKey) {
 				const num = parseInt(e.key, 10);
 				if (num >= 1 && num <= 5) {
@@ -72,11 +91,33 @@ export function CommandPalette() {
 						setOpen(false);
 					}
 				}
+				return;
+			}
+
+			// Vim-style g+key navigation (only when not in an input and palette is closed)
+			if (!open && !isEditable && !e.metaKey && !e.ctrlKey && !e.altKey) {
+				if (e.key === "g") {
+					gPressedRef.current = true;
+					clearTimeout(gTimerRef.current);
+					gTimerRef.current = setTimeout(() => {
+						gPressedRef.current = false;
+					}, 800);
+					return;
+				}
+				if (gPressedRef.current && e.key in VIM_NAV) {
+					e.preventDefault();
+					gPressedRef.current = false;
+					clearTimeout(gTimerRef.current);
+					navigate(VIM_NAV[e.key]);
+				}
 			}
 		};
 
 		document.addEventListener("keydown", down);
-		return () => document.removeEventListener("keydown", down);
+		return () => {
+			document.removeEventListener("keydown", down);
+			clearTimeout(gTimerRef.current);
+		};
 	}, [open, navigate]);
 
 	const handleNavigate = useCallback(
@@ -114,13 +155,13 @@ export function CommandPalette() {
 			try {
 				if (action === "start") {
 					await servicesApi.start(serviceId);
-					toast.success(`${serviceName}: start komutu gönderildi`);
+					toast.success(`${serviceName}: başlatma komutu gönderildi`);
 				} else if (action === "restart") {
 					await servicesApi.restart(serviceId);
-					toast.success(`${serviceName}: restart komutu gönderildi`);
+					toast.success(`${serviceName}: yeniden başlatma komutu gönderildi`);
 				} else if (action === "stop") {
 					await servicesApi.stop(serviceId);
-					toast.success(`${serviceName}: stop komutu gönderildi`);
+					toast.success(`${serviceName}: durdurma komutu gönderildi`);
 				}
 			} catch {
 				toast.error(`${serviceName}: komut gönderilemedi`);
@@ -169,7 +210,7 @@ export function CommandPalette() {
 											className="text-xs tracking-wide"
 											style={{ color: "var(--text-muted)" }}
 										>
-											NanoNet Command
+											NanoNet Komut
 										</span>
 									</div>
 									<div className="flex-1" />
@@ -189,13 +230,13 @@ export function CommandPalette() {
 											className="text-[10px]"
 											style={{ color: "var(--text-faint)" }}
 										>
-											to close
+											kapatmak için
 										</span>
 									</div>
 								</div>
 
 								<CommandInput
-									placeholder="Type a command or search..."
+									placeholder="Komut yaz veya ara..."
 									style={{ color: "var(--text-secondary)" }}
 								/>
 
@@ -346,7 +387,7 @@ export function CommandPalette() {
 														{
 															key: `${service.id}-start`,
 															icon: Play,
-															label: `Start  ${service.name}`,
+															label: `Başlat  ${service.name}`,
 															colorVar: "var(--status-up-text)",
 															action: () =>
 																handleServiceAction(
@@ -358,7 +399,7 @@ export function CommandPalette() {
 														{
 															key: `${service.id}-restart`,
 															icon: RefreshCw,
-															label: `Restart  ${service.name}`,
+															label: `Yeniden Başlat  ${service.name}`,
 															colorVar: "var(--color-teal)",
 															action: () =>
 																handleServiceAction(
@@ -370,7 +411,7 @@ export function CommandPalette() {
 														{
 															key: `${service.id}-stop`,
 															icon: Power,
-															label: `Stop  ${service.name}`,
+															label: `Durdur  ${service.name}`,
 															colorVar: "var(--status-warn-text)",
 															action: () =>
 																handleServiceAction(
@@ -482,6 +523,19 @@ export function CommandPalette() {
 											⌘K
 										</kbd>
 										toggle
+									</span>
+									<span className="flex items-center gap-1 ml-2" style={{ color: "var(--color-teal)", opacity: 0.7 }}>
+										<kbd
+											className="px-1 py-0.5 rounded"
+											style={{
+												background: "var(--surface-sunken)",
+												border: "2px solid var(--border-default)",
+												boxShadow: "1px 1px 0px var(--border-default)",
+											}}
+										>
+											g+d/s/a/i
+										</kbd>
+										quick nav
 									</span>
 								</div>
 							</Command>

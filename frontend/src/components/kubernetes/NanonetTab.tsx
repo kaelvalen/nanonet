@@ -437,7 +437,7 @@ export function NanonetTab({
 																	},
 																}))
 															}
-															aria-label="Decrease replicas"
+															aria-label="Replica azalt"
 															className="w-7 h-7 rounded-lg flex items-center justify-center"
 															style={{
 																border: "1px solid var(--color-teal-border)",
@@ -470,7 +470,7 @@ export function NanonetTab({
 																	},
 																}))
 															}
-															aria-label="Increase replicas"
+															aria-label="Replica artır"
 															className="w-7 h-7 rounded-lg flex items-center justify-center"
 															style={{
 																border: "1px solid var(--color-teal-border)",

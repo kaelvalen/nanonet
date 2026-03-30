@@ -55,3 +55,29 @@ func (r *Repository) GetByServiceID(ctx context.Context, serviceID uuid.UUID, li
 
 	return insights, total, err
 }
+
+// GetByUserID returns the most recent insights across all services owned by userID.
+func (r *Repository) GetByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]AIInsight, int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var insights []AIInsight
+	var total int64
+
+	query := r.db.WithContext(ctx).
+		Joins("JOIN alerts ON alerts.id = ai_insights.alert_id").
+		Joins("JOIN services ON services.id = alerts.service_id").
+		Where("services.user_id = ?", userID)
+
+	if err := query.Model(&AIInsight{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.
+		Order("ai_insights.created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&insights).Error
+
+	return insights, total, err
+}

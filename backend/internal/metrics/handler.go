@@ -304,6 +304,64 @@ func (h *Handler) GetUptime(c *gin.Context) {
 	})
 }
 
+// GetGlobalSummary — GET /api/v1/metrics/summary?duration=24h
+// Kullanıcının tüm servislerinin son 24 saatlik ortalama metriklerini döndürür.
+func (h *Handler) GetGlobalSummary(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	durationStr := c.DefaultQuery("duration", "24h")
+	duration, parseErr := time.ParseDuration(durationStr)
+	if parseErr != nil {
+		duration = 24 * time.Hour
+	}
+
+	type summaryRow struct {
+		AvgLatency      *float64 `gorm:"column:avg_latency"`
+		P95Latency      *float64 `gorm:"column:p95_latency"`
+		AvgCPU          *float64 `gorm:"column:avg_cpu"`
+		AvgErrorRate    *float64 `gorm:"column:avg_error_rate"`
+		AvgMemoryUsedMB *float64 `gorm:"column:avg_memory_used_mb"`
+	}
+
+	var result summaryRow
+	err = h.db.WithContext(c.Request.Context()).Raw(`
+		SELECT
+			AVG(m.latency_ms)                                          AS avg_latency,
+			PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY m.latency_ms) AS p95_latency,
+			AVG(m.cpu_percent)                                         AS avg_cpu,
+			AVG(m.error_rate)                                          AS avg_error_rate,
+			AVG(m.memory_used_mb)                                      AS avg_memory_used_mb
+		FROM metrics m
+		JOIN services s ON s.id = m.service_id
+		WHERE s.user_id = ?
+		  AND m.time > NOW() - make_interval(secs => ?)
+	`, userID, duration.Seconds()).Scan(&result).Error
+	if err != nil {
+		response.InternalError(c, "metrik özeti alınamadı")
+		return
+	}
+
+	toFloat := func(p *float64) float64 {
+		if p == nil {
+			return 0
+		}
+		return *p
+	}
+
+	response.Success(c, gin.H{
+		"avg_latency_ms":     toFloat(result.AvgLatency),
+		"p95_latency_ms":     toFloat(result.P95Latency),
+		"avg_cpu_percent":    toFloat(result.AvgCPU),
+		"avg_error_rate":     toFloat(result.AvgErrorRate),
+		"avg_memory_used_mb": toFloat(result.AvgMemoryUsedMB),
+		"duration":           durationStr,
+	})
+}
+
 // GetBulkUptime — GET /api/v1/services/uptime/summary?duration=24h
 // Kullanıcının tüm servisleri için tek sorguda uptime özeti döndürür.
 // N+1 sorununu önler.

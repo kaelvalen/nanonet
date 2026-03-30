@@ -82,7 +82,7 @@ export function EventsTab({
 										}
 							}
 						>
-							{t === "" ? "Tümü" : t}
+							{t === "" ? "Tümü" : t === "Warning" ? "Uyarı" : "Normal"}
 						</button>
 					))}
 				</div>
@@ -128,7 +128,7 @@ export function EventsTab({
 				className="text-[10px] uppercase tracking-wider"
 				style={{ color: "var(--text-muted)" }}
 			>
-				{filteredEvents.length} event
+				{filteredEvents.length} olay
 				{warningCount > 0 && (
 					<span className="ml-2" style={{ color: "var(--status-warn-text)" }}>
 						⚠ {warningCount} uyarı
@@ -142,7 +142,7 @@ export function EventsTab({
 					style={{ color: "var(--text-faint)" }}
 				>
 					<Loader2 className="w-4 h-4 animate-spin" />
-					<span className="text-xs">Event'ler yükleniyor...</span>
+					<span className="text-xs">Olaylar yükleniyor...</span>
 				</div>
 			) : filteredEvents.length === 0 ? (
 				<Card
@@ -158,7 +158,7 @@ export function EventsTab({
 						style={{ color: "var(--text-faint)" }}
 					/>
 					<p className="text-xs" style={{ color: "var(--text-muted)" }}>
-						Event bulunamadı
+						Olay bulunamadı
 					</p>
 				</Card>
 			) : (

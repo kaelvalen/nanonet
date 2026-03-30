@@ -5,6 +5,7 @@ import {
 	ArrowRight,
 	Bell,
 	BellOff,
+	BellRing,
 	CheckCircle2,
 	Clock,
 	Cpu,
@@ -17,10 +18,11 @@ import {
 	Save,
 	Settings2,
 	Shield,
+	Timer,
 	XOctagon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { type AlertRules, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
@@ -423,6 +425,9 @@ export function AlertsPage() {
 		return counts;
 	}, [alerts]);
 
+	const [snoozeOpenId, setSnoozeOpenId] = useState<string | null>(null);
+	const snoozeRef = useRef<HTMLDivElement>(null);
+
 	const handleResolve = async (alertId: string) => {
 		try {
 			await metricsApi.resolveAlert(alertId);
@@ -432,6 +437,26 @@ export function AlertsPage() {
 			toast.error("Alert çözülemedi");
 		}
 	};
+
+	const handleSnooze = async (alertId: string, minutes: number) => {
+		setSnoozeOpenId(null);
+		try {
+			await metricsApi.snoozeAlert(alertId, minutes);
+			const label = minutes < 60 ? `${minutes}dk` : `${minutes / 60}sa`;
+			toast.success(`Alert ${label} süreyle ertelendi`);
+			refetch();
+		} catch {
+			toast.error("Alert ertelenemedi");
+		}
+	};
+
+	const SNOOZE_OPTIONS = [
+		{ label: "5 dakika", minutes: 5 },
+		{ label: "15 dakika", minutes: 15 },
+		{ label: "30 dakika", minutes: 30 },
+		{ label: "1 saat", minutes: 60 },
+		{ label: "4 saat", minutes: 240 },
+	];
 
 	const severityConfig = (severity: string) => {
 		switch (severity) {
@@ -923,18 +948,73 @@ export function AlertsPage() {
 																</div>
 															</div>
 															{!alert.resolved_at && (
-																<Button
-																	variant="outline"
-																	size="sm"
-																	onClick={() => handleResolve(alert.id)}
-																	className="text-[10px] rounded h-7 px-2.5 shrink-0"
-																	style={{
-																		borderColor: "var(--status-up-border)",
-																		color: "var(--status-up-text)",
-																	}}
-																>
-																	<CheckCircle2 className="w-3 h-3 mr-1" /> Çöz
-																</Button>
+																<div className="flex items-center gap-1 shrink-0">
+																	{/* Snooze dropdown */}
+																	<div className="relative" ref={snoozeOpenId === alert.id ? snoozeRef : undefined}>
+																		<Button
+																			variant="outline"
+																			size="sm"
+																			onClick={() => setSnoozeOpenId(snoozeOpenId === alert.id ? null : alert.id)}
+																			className="text-[10px] rounded h-7 px-2 shrink-0"
+																			style={{
+																				borderColor: "var(--color-blue-border)",
+																				color: "var(--color-blue-text)",
+																			}}
+																			title="Ertele"
+																		>
+																			<Timer className="w-3 h-3" />
+																		</Button>
+																		<AnimatePresence>
+																			{snoozeOpenId === alert.id && (
+																				<motion.div
+																					initial={{ opacity: 0, y: -4, scale: 0.97 }}
+																					animate={{ opacity: 1, y: 0, scale: 1 }}
+																					exit={{ opacity: 0, y: -4, scale: 0.97 }}
+																					transition={{ duration: 0.15 }}
+																					className="absolute right-0 top-8 z-20 min-w-32 rounded overflow-hidden"
+																					style={{
+																						background: "var(--surface-card)",
+																						border: "2px solid var(--color-blue-border)",
+																						boxShadow: "var(--panel-shadow)",
+																					}}
+																				>
+																					<div
+																						className="flex items-center gap-1.5 px-3 py-2 border-b"
+																						style={{ borderColor: "var(--border-subtle)", color: "var(--text-faint)" }}
+																					>
+																						<BellRing className="w-3 h-3" />
+																						<span className="text-[10px] uppercase tracking-wider">Ertele</span>
+																					</div>
+																					{SNOOZE_OPTIONS.map((opt) => (
+																						<button
+																							type="button"
+																							key={opt.minutes}
+																							onClick={() => handleSnooze(alert.id, opt.minutes)}
+																							className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:opacity-80"
+																							style={{ color: "var(--text-secondary)", background: "transparent" }}
+																						>
+																							<Clock className="w-3 h-3" style={{ color: "var(--color-blue)" }} />
+																							{opt.label}
+																						</button>
+																					))}
+																				</motion.div>
+																			)}
+																		</AnimatePresence>
+																	</div>
+																	{/* Resolve button */}
+																	<Button
+																		variant="outline"
+																		size="sm"
+																		onClick={() => handleResolve(alert.id)}
+																		className="text-[10px] rounded h-7 px-2.5 shrink-0"
+																		style={{
+																			borderColor: "var(--status-up-border)",
+																			color: "var(--status-up-text)",
+																		}}
+																	>
+																		<CheckCircle2 className="w-3 h-3 mr-1" /> Çöz
+																	</Button>
+																</div>
 															)}
 														</div>
 													</Card>

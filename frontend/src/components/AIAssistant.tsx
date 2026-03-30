@@ -1,6 +1,7 @@
 import { Maximize2, Minimize2, Send, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useLocation, useParams } from "react-router";
 import { type ChatMessage, aiChatApi } from "@/api/metrics";
 import { useServiceStore } from "@/store/serviceStore";
 import { Button } from "./ui/button";
@@ -23,7 +24,22 @@ export function AIAssistant() {
 	]);
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
 	const { services } = useServiceStore();
-	const contextServiceId = services[0]?.id;
+	const { id: urlServiceId } = useParams<{ id: string }>();
+	const { pathname } = useLocation();
+
+	// Prefer the service in the current URL; fall back to "global"
+	const contextServiceId = useMemo(() => {
+		if (urlServiceId) return urlServiceId;
+		// /services/:id pattern without useParams (e.g. nested routes)
+		const match = pathname.match(/\/services\/([^/]+)/);
+		if (match?.[1]) return match[1];
+		return undefined;
+	}, [urlServiceId, pathname]);
+
+	const contextServiceName = useMemo(
+		() => services.find((s) => s.id === contextServiceId)?.name,
+		[services, contextServiceId],
+	);
 
 	const suggestions = [
 		"Sistem durumu nedir?",
@@ -152,13 +168,17 @@ export function AIAssistant() {
 											className="text-sm font-semibold"
 											style={{ color: "var(--color-ai)" }}
 										>
-											AI Assistant
+											AI Asistan
 										</h3>
 										<p
 											className="text-xs"
 											style={{ color: "var(--text-muted)" }}
 										>
-											{isAnalyzing ? "Analyzing..." : "Online"}
+											{isAnalyzing
+												? "Analiz ediliyor..."
+												: contextServiceName
+													? `Bağlam: ${contextServiceName}`
+													: "Tüm servisler"}
 										</p>
 									</div>
 								</div>
@@ -171,8 +191,8 @@ export function AIAssistant() {
 										onClick={() => setIsMinimized(!isMinimized)}
 										aria-label={
 											isMinimized
-												? "Expand AI assistant"
-												: "Minimize AI assistant"
+												? "AI asistanı genişlet"
+												: "AI asistanı küçült"
 										}
 									>
 										{isMinimized ? (
@@ -187,7 +207,7 @@ export function AIAssistant() {
 										className="h-8 w-8"
 										style={{ color: "var(--text-muted)" }}
 										onClick={() => setIsOpen(false)}
-										aria-label="Close AI assistant"
+										aria-label="AI asistanı kapat"
 									>
 										<X className="w-4 h-4" />
 									</Button>
@@ -309,7 +329,7 @@ export function AIAssistant() {
 												}}
 												onClick={handleSend}
 												disabled={isAnalyzing}
-												aria-label="Send message"
+												aria-label="Mesaj gönder"
 											>
 												<Send className="w-4 h-4" />
 											</Button>

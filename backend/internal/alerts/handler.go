@@ -85,6 +85,39 @@ func (h *Handler) Resolve(c *gin.Context) {
 	response.Success(c, gin.H{"message": "alert çözümlendi"})
 }
 
+// Snooze — POST /api/v1/alerts/:alertId/snooze
+// Body: { "minutes": 15 }
+func (h *Handler) Snooze(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	alertID, err := uuid.Parse(c.Param("alertId"))
+	if err != nil {
+		response.BadRequest(c, "geçersiz alert ID")
+		return
+	}
+
+	var req struct {
+		Minutes int `json:"minutes"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Minutes <= 0 {
+		req.Minutes = 15
+	}
+	if req.Minutes > 1440 {
+		req.Minutes = 1440
+	}
+
+	if err := h.service.SnoozeAlert(c.Request.Context(), alertID, userID, req.Minutes); err != nil {
+		response.NotFound(c, "alert bulunamadı veya yetki yok")
+		return
+	}
+
+	response.Success(c, gin.H{"message": "alert ertelendi", "minutes": req.Minutes})
+}
+
 func (h *Handler) GetActive(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {

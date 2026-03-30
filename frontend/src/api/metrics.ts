@@ -117,6 +117,10 @@ export const metricsApi = {
 		await apiClient.post(`/alerts/${alertId}/resolve`);
 	},
 
+	snoozeAlert: async (alertId: string, minutes: number): Promise<void> => {
+		await apiClient.post(`/alerts/${alertId}/snooze`, { minutes });
+	},
+
 	getActiveAlerts: async (): Promise<Alert[]> => {
 		const response = await apiClient.get("/alerts");
 		return response.data.data || [];
@@ -181,6 +185,46 @@ export const metricsApi = {
 			params: { duration },
 		});
 		return response.data.data?.uptime ?? {};
+	},
+
+	getGlobalSummary: async (): Promise<{
+		avg_latency_ms: number | null;
+		p95_latency_ms: number | null;
+		avg_error_rate: number | null;
+		avg_cpu_percent: number | null;
+		avg_memory_used_mb: number | null;
+	}> => {
+		try {
+			const response = await apiClient.get("/metrics/summary");
+			return response.data.data ?? {
+				avg_latency_ms: null,
+				p95_latency_ms: null,
+				avg_error_rate: null,
+				avg_cpu_percent: null,
+				avg_memory_used_mb: null,
+			};
+		} catch {
+			return {
+				avg_latency_ms: null,
+				p95_latency_ms: null,
+				avg_error_rate: null,
+				avg_cpu_percent: null,
+				avg_memory_used_mb: null,
+			};
+		}
+	},
+
+	getAllInsights: async (
+		limit: number = 3,
+	): Promise<{ insights: AIInsight[]; total: number }> => {
+		try {
+			const response = await apiClient.get("/insights", {
+				params: { limit, page: 1 },
+			});
+			return response.data.data || { insights: [], total: 0 };
+		} catch {
+			return { insights: [], total: 0 };
+		}
 	},
 };
 

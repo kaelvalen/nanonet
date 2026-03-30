@@ -376,7 +376,7 @@ export function LoadBalancingTab({
 												onClick={() =>
 													setK8sReplicas(Math.max(0, k8sReplicas - 1))
 												}
-												aria-label="Decrease Kubernetes replicas"
+												aria-label="Kubernetes replica azalt"
 												className="w-7 h-7 rounded flex items-center justify-center"
 												style={{
 													border: "2px solid var(--color-blue-border)",
@@ -396,7 +396,7 @@ export function LoadBalancingTab({
 												onClick={() =>
 													setK8sReplicas(Math.min(32, k8sReplicas + 1))
 												}
-												aria-label="Increase Kubernetes replicas"
+												aria-label="Kubernetes replica artır"
 												className="w-7 h-7 rounded flex items-center justify-center"
 												style={{
 													border: "2px solid var(--color-blue-border)",
@@ -658,7 +658,7 @@ export function LoadBalancingTab({
 												<button
 													type="button"
 													onClick={() => setHpaMin(Math.max(1, hpaMin - 1))}
-													aria-label="Decrease minimum replicas"
+													aria-label="Minimum replica azalt"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
 														border: "2px solid var(--color-lavender-border)",
@@ -676,7 +676,7 @@ export function LoadBalancingTab({
 												<button
 													type="button"
 													onClick={() => setHpaMin(hpaMin + 1)}
-													aria-label="Increase minimum replicas"
+													aria-label="Minimum replica artır"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
 														border: "2px solid var(--color-lavender-border)",
@@ -700,7 +700,7 @@ export function LoadBalancingTab({
 													onClick={() =>
 														setHpaMax(Math.max(hpaMin, hpaMax - 1))
 													}
-													aria-label="Decrease maximum replicas"
+													aria-label="Maksimum replica azalt"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
 														border: "2px solid var(--color-lavender-border)",
@@ -718,7 +718,7 @@ export function LoadBalancingTab({
 												<button
 													type="button"
 													onClick={() => setHpaMax(hpaMax + 1)}
-													aria-label="Increase maximum replicas"
+													aria-label="Maksimum replica artır"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
 														border: "2px solid var(--color-lavender-border)",
@@ -827,7 +827,7 @@ export function LoadBalancingTab({
 									onClick={() =>
 										setScaleInstances(Math.max(0, scaleInstances - 1))
 									}
-									aria-label="Decrease instance count"
+									aria-label="Instance sayısı azalt"
 									className="w-8 h-8 rounded flex items-center justify-center transition-all"
 									style={{
 										border: "2px solid var(--status-up-border)",
@@ -847,7 +847,7 @@ export function LoadBalancingTab({
 									onClick={() =>
 										setScaleInstances(Math.min(32, scaleInstances + 1))
 									}
-									aria-label="Increase instance count"
+									aria-label="Instance sayısı artır"
 									className="w-8 h-8 rounded flex items-center justify-center transition-all"
 									style={{
 										border: "2px solid var(--status-up-border)",

@@ -154,7 +154,7 @@ export function AIInsightsPage() {
 					className="text-2xl font-bold bg-clip-text text-transparent"
 					style={{ backgroundImage: "var(--gradient-heading)" }}
 				>
-					AI Insights
+					AI İçgörüler
 				</h1>
 				<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
 					Yapay zeka destekli anomali tespiti ve öneriler

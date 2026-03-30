@@ -86,4 +86,23 @@ export const servicesApi = {
 		});
 		return response.data.data;
 	},
+
+	saveMap: async (payload: {
+		nodes: { id: string; type: string; position: { x: number; y: number } }[];
+		edges: { id: string; source: string; target: string; label?: string }[];
+	}): Promise<void> => {
+		await apiClient.put("/services/map", payload);
+	},
+
+	loadMap: async (): Promise<{
+		nodes: { id: string; type: string; position: { x: number; y: number } }[];
+		edges: { id: string; source: string; target: string; label?: string }[];
+	} | null> => {
+		try {
+			const response = await apiClient.get("/services/map");
+			return response.data.data ?? null;
+		} catch {
+			return null;
+		}
+	},
 };

@@ -204,6 +204,13 @@ func (s *Service) ResolveAlert(ctx context.Context, alertID, userID uuid.UUID) e
 	return s.repo.ResolveByUser(ctx, alertID, userID)
 }
 
+func (s *Service) SnoozeAlert(ctx context.Context, alertID, userID uuid.UUID, minutes int) error {
+	if minutes <= 0 {
+		minutes = 15
+	}
+	return s.repo.SnoozeByUser(ctx, alertID, userID, time.Duration(minutes)*time.Minute)
+}
+
 func (s *Service) GetActiveAlerts(ctx context.Context, userID uuid.UUID) ([]Alert, error) {
 	return s.repo.GetActiveAlerts(ctx, userID)
 }

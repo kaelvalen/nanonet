@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"time"
 
 	"nanonet-backend/internal/commands"
@@ -16,6 +17,7 @@ type Handler struct {
 	service    *ServiceLayer
 	hub        *ws.Hub
 	cmdService *commands.Service
+	db         *gorm.DB
 }
 
 func NewHandler(db *gorm.DB, hub *ws.Hub) *Handler {
@@ -23,6 +25,7 @@ func NewHandler(db *gorm.DB, hub *ws.Hub) *Handler {
 		service:    NewServiceLayer(db),
 		hub:        hub,
 		cmdService: commands.NewService(db),
+		db:         db,
 	}
 }
 
@@ -521,4 +524,57 @@ func (h *Handler) Ping(c *gin.Context) {
 		"service_reachable": serviceReachable,
 		"latency_ms":        latencyMs,
 	})
+}
+
+// GetMap — GET /api/v1/services/map
+// Returns the saved service map layout (nodes + edges) for the authenticated user.
+func (h *Handler) GetMap(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	var row struct {
+		ServiceMap *json.RawMessage `gorm:"column:service_map"`
+	}
+	err = h.db.WithContext(c.Request.Context()).
+		Raw("SELECT service_map FROM user_settings WHERE user_id = ?", userID).
+		Scan(&row).Error
+	if err != nil || row.ServiceMap == nil {
+		response.Success(c, nil)
+		return
+	}
+
+	response.Success(c, row.ServiceMap)
+}
+
+// SaveMap — PUT /api/v1/services/map
+// Persists the service map layout (nodes + edges) for the authenticated user.
+func (h *Handler) SaveMap(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	var payload json.RawMessage
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		response.BadRequest(c, "geçersiz istek gövdesi")
+		return
+	}
+
+	err = h.db.WithContext(c.Request.Context()).Exec(`
+		INSERT INTO user_settings (user_id, service_map, updated_at)
+		VALUES (?, ?, NOW())
+		ON CONFLICT (user_id) DO UPDATE SET
+			service_map = EXCLUDED.service_map,
+			updated_at  = NOW()
+	`, userID, payload).Error
+	if err != nil {
+		response.InternalError(c, "harita kaydedilemedi")
+		return
+	}
+
+	response.Success(c, gin.H{"message": "harita kaydedildi"})
 }

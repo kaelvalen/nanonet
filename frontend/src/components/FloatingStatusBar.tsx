@@ -26,18 +26,18 @@ import {
 type Crumb = { label: string; path: string };
 
 function buildBreadcrumbs(pathname: string): Crumb[] {
-	const crumbs: Crumb[] = [{ label: "Home", path: "/" }];
+	const crumbs: Crumb[] = [{ label: "Ana Sayfa", path: "/" }];
 	if (pathname.startsWith("/services/") && pathname.length > 10) {
-		crumbs.push({ label: "Services", path: "/services" });
-		crumbs.push({ label: "Detail", path: pathname });
+		crumbs.push({ label: "Servisler", path: "/services" });
+		crumbs.push({ label: "Detay", path: pathname });
 	} else if (pathname === "/services") {
-		crumbs.push({ label: "Services", path: "/services" });
+		crumbs.push({ label: "Servisler", path: "/services" });
 	} else if (pathname === "/alerts") {
-		crumbs.push({ label: "Alerts", path: "/alerts" });
+		crumbs.push({ label: "Alertler", path: "/alerts" });
 	} else if (pathname === "/ai-insights") {
-		crumbs.push({ label: "AI Insights", path: "/ai-insights" });
+		crumbs.push({ label: "AI İçgörüler", path: "/ai-insights" });
 	} else if (pathname === "/settings") {
-		crumbs.push({ label: "Settings", path: "/settings" });
+		crumbs.push({ label: "Ayarlar", path: "/settings" });
 	} else if (pathname === "/kubernetes") {
 		crumbs.push({ label: "Kubernetes", path: "/kubernetes" });
 	}
@@ -193,7 +193,7 @@ export function FloatingStatusBar({
 									: "var(--status-down-text)",
 							}}
 						>
-							{isConnected ? "LIVE" : "OFF"}
+							{isConnected ? "CANLI" : "KESİK"}
 						</span>
 					</div>
 
@@ -270,7 +270,7 @@ export function FloatingStatusBar({
 								className="text-xs"
 								style={{ color: "var(--text-secondary)" }}
 							>
-								{user?.email || "My Account"}
+								{user?.email || "Hesabım"}
 							</DropdownMenuLabel>
 							<DropdownMenuSeparator
 								style={{ backgroundColor: "var(--border-subtle)" }}
@@ -427,9 +427,9 @@ export function FloatingStatusBar({
 					{isHome && (
 						<nav className="hidden lg:flex items-center gap-1">
 							{[
-								{ path: "/services", label: "Services", icon: Server },
-								{ path: "/alerts", label: "Alerts", icon: AlertCircle },
-								{ path: "/settings", label: "Settings", icon: Settings },
+								{ path: "/services", label: "Servisler", icon: Server },
+								{ path: "/alerts", label: "Uyarılar", icon: AlertCircle },
+								{ path: "/settings", label: "Ayarlar", icon: Settings },
 							].map(({ path, label, icon: Icon }) => (
 								<Link
 									key={path}
@@ -457,7 +457,7 @@ export function FloatingStatusBar({
 						}}
 					>
 						<Search className="w-3.5 h-3.5" />
-						<span className="text-xs">Search...</span>
+						<span className="text-xs">Ara...</span>
 						<kbd
 							className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded ml-3"
 							style={{
@@ -510,7 +510,7 @@ export function FloatingStatusBar({
 									: "var(--status-down-text)",
 							}}
 						>
-							{isConnected ? "LIVE" : "OFF"}
+							{isConnected ? "CANLI" : "KESİK"}
 						</span>
 					</div>
 
@@ -604,7 +604,7 @@ export function FloatingStatusBar({
 								className="text-xs"
 								style={{ color: "var(--text-secondary)" }}
 							>
-								{user?.email || "My Account"}
+								{user?.email || "Hesabım"}
 							</DropdownMenuLabel>
 							<DropdownMenuSeparator
 								style={{ backgroundColor: "var(--border-subtle)" }}
@@ -614,7 +614,7 @@ export function FloatingStatusBar({
 								style={{ color: "var(--text-secondary)" }}
 								onClick={() => navigate("/settings")}
 							>
-								Settings
+								Ayarlar
 							</DropdownMenuItem>
 							<DropdownMenuSeparator
 								style={{ backgroundColor: "var(--border-subtle)" }}
@@ -624,7 +624,7 @@ export function FloatingStatusBar({
 								style={{ color: "var(--text-danger)" }}
 								onClick={() => logout()}
 							>
-								Logout
+								Çıkış Yap
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>

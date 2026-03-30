@@ -1115,7 +1115,7 @@ export function KubernetesPage() {
 																className="text-[9px]"
 																style={{ color: "var(--text-faint)" }}
 															>
-																ready
+																hazır
 															</p>
 														</div>
 													</Card>
@@ -1157,7 +1157,7 @@ export function KubernetesPage() {
 										className="text-[10px] uppercase tracking-wider"
 										style={{ color: "var(--text-muted)" }}
 									>
-										{deployments.length} deployment
+										{deployments.length} dağıtım
 									</p>
 									<button
 										type="button"
@@ -1203,7 +1203,7 @@ export function KubernetesPage() {
 											className="text-xs"
 											style={{ color: "var(--text-faint)" }}
 										>
-											Deployment bulunamadı
+											Dağıtım bulunamadı
 										</p>
 									</Card>
 								) : (
@@ -1260,12 +1260,12 @@ export function KubernetesPage() {
 																onClick={() => {
 																	if (
 																		confirm(
-																			`"${dep.name}" deployment'ı yeniden başlatılsın mı? (rolling restart)`,
+																			`"${dep.name}" dağıtımı yeniden başlatılsın mı? (rolling restart)`,
 																		)
 																	)
 																		rolloutRestartMutation.mutate(dep.name);
 																}}
-																title="Rollout Restart"
+																title="Yeniden Başlat (Rolling)"
 																disabled={
 																	rolloutRestartMutation.isPending &&
 																	rolloutRestartMutation.variables === dep.name
@@ -1301,7 +1301,7 @@ export function KubernetesPage() {
 																	className="text-[9px]"
 																	style={{ color: "var(--text-faint)" }}
 																>
-																	ready
+																	hazır
 																</p>
 															</div>
 														</div>
@@ -1312,8 +1312,8 @@ export function KubernetesPage() {
 																className="flex justify-between text-[9px] mb-1"
 																style={{ color: "var(--text-faint)" }}
 															>
-																<span>Available: {dep.available_replicas}</span>
-																<span>Updated: {dep.updated_replicas}</span>
+																<span>Kullanılabilir: {dep.available_replicas}</span>
+																<span>Güncellenen: {dep.updated_replicas}</span>
 															</div>
 															<div
 																className="h-1.5 rounded-full overflow-hidden"
@@ -1346,7 +1346,7 @@ export function KubernetesPage() {
 																className="text-[9px] uppercase tracking-wider mb-2.5"
 																style={{ color: "var(--text-faint)" }}
 															>
-																Scale
+																Ölçekle
 															</p>
 															<div className="flex items-center gap-2">
 																<button
@@ -1360,7 +1360,7 @@ export function KubernetesPage() {
 																			),
 																		}))
 																	}
-																	aria-label="Decrease replicas"
+																	aria-label="Replica azalt"
 																	className="w-7 h-7 rounded-lg flex items-center justify-center"
 																	style={{
 																		border: "1px solid var(--color-lavender-border)",
@@ -1386,7 +1386,7 @@ export function KubernetesPage() {
 																			),
 																		}))
 																	}
-																	aria-label="Increase replicas"
+																	aria-label="Replica artır"
 																	className="w-7 h-7 rounded-lg flex items-center justify-center"
 																	style={{
 																		border: "1px solid var(--color-lavender-border)",
@@ -1545,7 +1545,7 @@ export function KubernetesPage() {
 																setHpaCpu(hpa.cpu_target_percent ?? 70);
 															}}
 															title="Düzenle"
-															aria-label="Configure HPA settings"
+															aria-label="HPA ayarlarını yapılandır"
 															className="w-7 h-7 rounded-lg flex items-center justify-center"
 															style={{
 																background: "var(--color-pink-subtle)",
@@ -1565,7 +1565,7 @@ export function KubernetesPage() {
 															}}
 															disabled={deleteHPAMutation.isPending}
 															title="Sil"
-															aria-label="Delete HPA"
+															aria-label="HPA sil"
 															className="w-7 h-7 rounded-lg flex items-center justify-center"
 															style={{
 																background:

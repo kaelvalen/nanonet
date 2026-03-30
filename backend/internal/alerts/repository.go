@@ -145,6 +145,27 @@ func (r *Repository) IsServiceOwner(ctx context.Context, serviceID, userID uuid.
 	return count > 0
 }
 
+// SnoozeByUser sets resolved_at = now + duration for the alert, effectively hiding it until the snooze expires.
+func (r *Repository) SnoozeByUser(ctx context.Context, alertID, userID uuid.UUID, d time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	until := time.Now().Add(d)
+	result := r.db.WithContext(ctx).
+		Exec(`UPDATE alerts SET resolved_at = ?
+			WHERE id = ? AND resolved_at IS NULL
+			AND service_id IN (SELECT id FROM services WHERE user_id = ?)`,
+			until, alertID, userID)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (r *Repository) ResolveByUser(ctx context.Context, alertID, userID uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

@@ -124,3 +124,35 @@ func (h *Handler) GetInsights(c *gin.Context) {
 		"page":     page,
 	})
 }
+
+// GetAllInsights — GET /api/v1/insights?limit=20&page=1
+// Returns recent AI insights across all services owned by the authenticated user.
+func (h *Handler) GetAllInsights(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+
+	insights, total, err := h.service.GetAllInsights(c.Request.Context(), userID, limit, offset)
+	if err != nil {
+		response.InternalError(c, "insight'lar alınamadı")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"insights": insights,
+		"total":    total,
+		"page":     page,
+	})
+}

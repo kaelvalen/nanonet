@@ -171,9 +171,9 @@ export function ServiceDetailPage() {
 		setStartLoading(true);
 		try {
 			await servicesApi.start(serviceId);
-			toast.success("Start komutu gönderildi");
+			toast.success("Başlatma komutu gönderildi");
 		} catch {
-			toast.error("Start komutu gönderilemedi");
+			toast.error("Başlatma komutu gönderilemedi");
 		} finally {
 			setStartLoading(false);
 		}
@@ -184,9 +184,9 @@ export function ServiceDetailPage() {
 		setScaleLoading(true);
 		try {
 			await servicesApi.scale(serviceId, scaleInstances, scaleStrategy);
-			toast.success(`Scale komutu gönderildi: ${scaleInstances} instance`);
+			toast.success(`Ölçekleme komutu gönderildi: ${scaleInstances} örnek`);
 		} catch {
-			toast.error("Scale komutu gönderilemedi");
+			toast.error("Ölçekleme komutu gönderilemedi");
 		} finally {
 			setScaleLoading(false);
 		}
@@ -395,7 +395,7 @@ export function ServiceDetailPage() {
 							) : (
 								<Play className="w-3 h-3 sm:mr-1" />
 							)}
-							<span className="hidden sm:inline">Start</span>
+							<span className="hidden sm:inline">Başlat</span>
 						</Button>
 						<Button
 							variant="outline"
@@ -408,7 +408,7 @@ export function ServiceDetailPage() {
 							}}
 						>
 							<RefreshCw className="w-3 h-3 sm:mr-1" />
-							<span className="hidden sm:inline">Restart</span>
+							<span className="hidden sm:inline">Yeniden Başlat</span>
 						</Button>
 						<Button
 							variant="outline"
@@ -421,7 +421,7 @@ export function ServiceDetailPage() {
 							}}
 						>
 							<Power className="w-3 h-3 sm:mr-1" />
-							<span className="hidden sm:inline">Stop</span>
+							<span className="hidden sm:inline">Durdur</span>
 						</Button>
 						<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
 							<DialogTrigger asChild>
@@ -429,7 +429,7 @@ export function ServiceDetailPage() {
 									variant="outline"
 									size="sm"
 									className="rounded text-xs h-8"
-									aria-label="Delete service"
+									aria-label="Servisi sil"
 									style={{
 										borderColor: "var(--status-down-border)",
 										color: "var(--status-down-text)",
@@ -519,10 +519,10 @@ export function ServiceDetailPage() {
 									}}
 								>
 									{(latestMetric.cpu_percent ?? 0) > 80
-										? "High"
+										? "Yüksek"
 										: (latestMetric.cpu_percent ?? 0) > 60
-											? "Mod"
-											: "OK"}
+											? "Orta"
+											: "İyi"}
 								</span>
 							)}
 						</div>
@@ -576,7 +576,7 @@ export function ServiceDetailPage() {
 									className="text-[10px] uppercase tracking-wider"
 									style={{ color: "var(--text-muted)" }}
 								>
-									Memory
+									Bellek
 								</span>
 							</div>
 						</div>
@@ -624,7 +624,7 @@ export function ServiceDetailPage() {
 									className="text-[10px] uppercase tracking-wider"
 									style={{ color: "var(--text-muted)" }}
 								>
-									Latency
+									Gecikme
 								</span>
 							</div>
 							{latestMetric && (
@@ -640,10 +640,10 @@ export function ServiceDetailPage() {
 									}}
 								>
 									{(latestMetric.latency_ms ?? 0) > 500
-										? "Slow"
+										? "Yavaş"
 										: (latestMetric.latency_ms ?? 0) > 200
-											? "Mod"
-											: "Fast"}
+											? "Orta"
+											: "Hızlı"}
 								</span>
 							)}
 						</div>
@@ -697,7 +697,7 @@ export function ServiceDetailPage() {
 									className="text-[10px] uppercase tracking-wider"
 									style={{ color: "var(--text-muted)" }}
 								>
-									Uptime
+									Çalışma Süresi
 								</span>
 							</div>
 						</div>
@@ -747,32 +747,32 @@ export function ServiceDetailPage() {
 							}}
 						>
 							<TabsTrigger value="metrics" className="rounded text-xs">
-								<TrendingUp className="w-3 h-3 mr-1" /> Metrics
+								<TrendingUp className="w-3 h-3 mr-1" /> Metrikler
 							</TabsTrigger>
 							<TabsTrigger value="alerts" className="rounded text-xs">
-								<AlertCircle className="w-3 h-3 mr-1" /> Alerts ({alerts.length}
+								<AlertCircle className="w-3 h-3 mr-1" /> Uyarılar ({alerts.length}
 								)
 							</TabsTrigger>
 							<TabsTrigger value="ai" className="rounded text-xs">
-								<Sparkles className="w-3 h-3 mr-1" /> AI Analysis
+								<Sparkles className="w-3 h-3 mr-1" /> AI Analiz
 							</TabsTrigger>
 							<TabsTrigger value="terminal" className="rounded text-xs">
 								<Terminal className="w-3 h-3 mr-1" /> Terminal
 							</TabsTrigger>
 							<TabsTrigger value="scale" className="rounded text-xs">
-								<Layers className="w-3 h-3 mr-1" /> Orchestration
+								<Layers className="w-3 h-3 mr-1" /> Orkestrasyon
 							</TabsTrigger>
 							<TabsTrigger value="history" className="rounded text-xs">
-								<History className="w-3 h-3 mr-1" /> History
+								<History className="w-3 h-3 mr-1" /> Geçmiş
 							</TabsTrigger>
 							<TabsTrigger value="alert-rules" className="rounded text-xs">
-								<Bell className="w-3 h-3 mr-1" /> Alert Rules
+								<Bell className="w-3 h-3 mr-1" /> Uyarı Kuralları
 							</TabsTrigger>
 							<TabsTrigger value="maintenance" className="rounded text-xs">
-								<CalendarClock className="w-3 h-3 mr-1" /> Maintenance
+								<CalendarClock className="w-3 h-3 mr-1" /> Bakım
 							</TabsTrigger>
 							<TabsTrigger value="logs" className="rounded text-xs">
-								<Terminal className="w-3 h-3 mr-1" /> Logs
+								<Terminal className="w-3 h-3 mr-1" /> Günlükler
 							</TabsTrigger>
 						</TabsList>
 
@@ -853,7 +853,7 @@ export function ServiceDetailPage() {
 											className="w-3 h-3"
 											style={{ color: "var(--color-teal)" }}
 										/>{" "}
-										CPU Usage (%)
+										CPU Kullanımı (%)
 									</h3>
 									<ResponsiveContainer width="100%" height={200}>
 										<AreaChart data={chartData}>
@@ -923,7 +923,7 @@ export function ServiceDetailPage() {
 											className="w-3 h-3"
 											style={{ color: "var(--color-blue)" }}
 										/>{" "}
-										Memory (MB)
+										Bellek (MB)
 									</h3>
 									<ResponsiveContainer width="100%" height={200}>
 										<AreaChart data={chartData}>
@@ -989,7 +989,7 @@ export function ServiceDetailPage() {
 											className="w-3 h-3"
 											style={{ color: "var(--color-lavender)" }}
 										/>{" "}
-										Latency (ms)
+										Gecikme (ms)
 									</h3>
 									<ResponsiveContainer width="100%" height={200}>
 										<AreaChart data={chartData}>
@@ -1055,7 +1055,7 @@ export function ServiceDetailPage() {
 											className="w-3 h-3"
 											style={{ color: "var(--status-down)" }}
 										/>{" "}
-										Error Rate (%)
+										Hata Oranı (%)
 									</h3>
 									<ResponsiveContainer width="100%" height={200}>
 										<AreaChart data={chartData}>
@@ -1126,7 +1126,7 @@ export function ServiceDetailPage() {
 									style={{ color: "var(--status-up)" }}
 								/>
 								<p className="text-sm" style={{ color: "var(--text-muted)" }}>
-									Aktif alert yok — tüm sistemler çalışıyor
+									Aktif uyarı yok — tüm sistemler çalışıyor
 								</p>
 							</Card>
 						) : (
@@ -1276,7 +1276,7 @@ export function ServiceDetailPage() {
 											onClick={() => setExecHistory([])}
 											className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
 										>
-											clear
+											temizle
 										</button>
 									)}
 								</div>
@@ -1290,7 +1290,7 @@ export function ServiceDetailPage() {
 											style={{ color: "#1e3a4a" }}
 										/>
 										<p className="text-[11px]" style={{ color: "#334155" }}>
-											Komut girin ve Enter'a basın
+											Komut girin ve Enter tuşuna basın
 										</p>
 										<div className="flex flex-wrap gap-2 mt-1 justify-center">
 											{["uptime", "ps aux", "df -h", "free -m"].map((s) => (
@@ -1356,7 +1356,7 @@ export function ServiceDetailPage() {
 																className="text-[10px]"
 																style={{ color: "#34d399" }}
 															>
-																success
+																başarılı
 															</span>
 														</>
 													) : (
@@ -1692,7 +1692,7 @@ export function ServiceDetailPage() {
 										style={{ color: "var(--color-lavender-subtle)" }}
 									/>
 									<p className="text-xs" style={{ color: "var(--text-muted)" }}>
-										AI-powered analiz için "Analiz Başlat" butonuna tıklayın
+										AI destekli analiz için "Analiz Başlat" butonuna tıklayın
 									</p>
 								</div>
 							)}

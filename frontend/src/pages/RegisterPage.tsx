@@ -339,7 +339,7 @@ export function RegisterPage() {
 					className="text-center mt-5"
 				>
 					<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
-						NanoNet v2.0 · Powered by AI
+						NanoNet v2.0 · Signal over noise
 					</p>
 				</motion.div>
 			</motion.div>

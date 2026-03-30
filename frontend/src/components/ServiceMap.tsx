@@ -39,6 +39,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { metricsApi, type AnalysisResult } from "@/api/metrics";
+import { servicesApi } from "@/api/services";
 import { useServices } from "@/hooks/useServices";
 import { useServiceStore } from "@/store/serviceStore";
 import type { Service } from "@/types/service";
@@ -782,41 +783,55 @@ function ServiceMapInner() {
 	// ── Initialization ──
 	useEffect(() => {
 		if (services.length === 0 || initialized) return;
-		const saved = loadMap();
-		const serviceIds = new Set(services.map((s) => s.id));
 
-		if (saved) {
-			const validSaved = saved.nodes.filter((n) => serviceIds.has(n.id));
-			const validNodes: Node[] = validSaved.map((n) => {
-				const svc = services.find((s) => s.id === n.id)!;
-				return { id: n.id, type: n.type, position: n.position, data: buildNodeData(svc) };
+		const applyMap = (saved: SerializedMap | null) => {
+			const serviceIds = new Set(services.map((s) => s.id));
+			if (saved) {
+				const validSaved = saved.nodes.filter((n) => serviceIds.has(n.id));
+				const validNodes: Node[] = validSaved.map((n) => {
+					const svc = services.find((s) => s.id === n.id)!;
+					return { id: n.id, type: n.type, position: n.position, data: buildNodeData(svc) };
+				});
+				const presentIds = new Set(validNodes.map((n) => n.id));
+				const newServices = services.filter((s) => !presentIds.has(s.id));
+				const newNodes: Node[] = newServices.map((svc, i) => ({
+					id: svc.id,
+					type: "serviceNode" as const,
+					position: {
+						x: ((validNodes.length + i) * 260) % 1040 + 60,
+						y: Math.floor((validNodes.length + i) / 4) * 170 + 60,
+					},
+					data: buildNodeData(svc),
+				}));
+				setNodes([...validNodes, ...newNodes]);
+				setEdges(
+					saved.edges
+						.filter((e) => serviceIds.has(e.source) && serviceIds.has(e.target))
+						.map((e) => enrichEdge(e, services)),
+				);
+			} else {
+				setNodes(
+					buildDefaultLayout(services).map((n) => ({
+						...n,
+						data: buildNodeData(services.find((s) => s.id === n.id)!),
+					})),
+				);
+			}
+			setInitialized(true);
+		};
+
+		// Try backend first, fall back to localStorage
+		servicesApi.loadMap()
+			.then((backendMap) => {
+				if (backendMap) {
+					applyMap(backendMap as SerializedMap);
+				} else {
+					applyMap(loadMap());
+				}
+			})
+			.catch(() => {
+				applyMap(loadMap());
 			});
-			const presentIds = new Set(validNodes.map((n) => n.id));
-			const newServices = services.filter((s) => !presentIds.has(s.id));
-			const newNodes: Node[] = newServices.map((svc, i) => ({
-				id: svc.id,
-				type: "serviceNode" as const,
-				position: {
-					x: ((validNodes.length + i) * 260) % 1040 + 60,
-					y: Math.floor((validNodes.length + i) / 4) * 170 + 60,
-				},
-				data: buildNodeData(svc),
-			}));
-			setNodes([...validNodes, ...newNodes]);
-			setEdges(
-				saved.edges
-					.filter((e) => serviceIds.has(e.source) && serviceIds.has(e.target))
-					.map((e) => enrichEdge(e, services)),
-			);
-		} else {
-			setNodes(
-				buildDefaultLayout(services).map((n) => ({
-					...n,
-					data: buildNodeData(services.find((s) => s.id === n.id)!),
-				})),
-			);
-		}
-		setInitialized(true);
 	}, [services, initialized, setNodes, setEdges, buildNodeData]);
 
 	// ── Update node data when services/selections/metrics change ──
@@ -905,7 +920,21 @@ function ServiceMapInner() {
 
 	const handleSave = () => {
 		saveMap(nodes, edges);
-		toast.success("Harita kaydedildi");
+		const serializedNodes = nodes.map((n) => ({
+			id: n.id,
+			type: n.type ?? "serviceNode",
+			position: n.position,
+		}));
+		const serializedEdges = edges.map((e) => ({
+			id: e.id,
+			source: e.source,
+			target: e.target,
+			label: typeof e.label === "string" ? e.label : undefined,
+		}));
+		servicesApi
+			.saveMap({ nodes: serializedNodes, edges: serializedEdges })
+			.then(() => toast.success("Harita kaydedildi"))
+			.catch(() => toast.success("Harita kaydedildi (yerel)"));
 	};
 
 	const handleReset = () => {

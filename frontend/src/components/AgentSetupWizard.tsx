@@ -68,7 +68,7 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 					border: "1.5px solid var(--border-default)",
 					color: copied ? "var(--status-up-text)" : "var(--text-muted)",
 				}}
-				title="Kopyala"
+				title="Kopya"
 			>
 				{copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
 			</button>
@@ -295,7 +295,7 @@ export function AgentSetupWizard({
 								boxShadow: "var(--btn-shadow)",
 							}}
 						>
-							Devam <ChevronRight className="w-3.5 h-3.5 ml-1" />
+							Devam Et <ChevronRight className="w-3.5 h-3.5 ml-1" />
 						</Button>
 					</div>
 				)}
@@ -327,7 +327,7 @@ export function AgentSetupWizard({
 										color: "var(--text-faint)",
 									}}
 								>
-									veya Docker ile
+									ya da Docker ile
 								</span>
 							</div>
 						</div>
@@ -343,7 +343,7 @@ export function AgentSetupWizard({
 							}}
 						>
 							Agent başarıyla bağlandığında bu servisin durumu{" "}
-							<strong>UP</strong> olarak güncellenecektir.
+							<strong>AKTİF</strong> olarak güncellenecektir.
 						</div>
 
 						<Button

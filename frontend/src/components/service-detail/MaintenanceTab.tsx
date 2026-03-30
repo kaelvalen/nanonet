@@ -252,7 +252,7 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 						description={
 							filter === "all"
 								? "Henüz bakım penceresi tanımlanmamış. Yukarıdan yeni bir pencere oluşturabilirsiniz."
-								: `Bu filtrede (${filter}) bakım penceresi bulunmuyor.`
+								: `Bu filtrede (${filter === "active" ? "aktif" : filter === "upcoming" ? "bekleyen" : "geçmiş"}) bakım penceresi bulunmuyor.`
 						}
 					/>
 				) : (

@@ -237,6 +237,7 @@ func main() {
 		{
 			alertsGroup.GET("", alertHandler.GetActive)
 			alertsGroup.POST("/:alertId/resolve", alertHandler.Resolve)
+			alertsGroup.POST("/:alertId/snooze", alertHandler.Snooze)
 		}
 
 		settingsGroup := v1.Group("/settings", authMiddleware.Required())
@@ -252,6 +253,16 @@ func main() {
 
 		// Tek istekle tüm servislerin uptime özetini döndürür (N+1 önleme)
 		v1.GET("/services/uptime/summary", authMiddleware.Required(), metricsHandler.GetBulkUptime)
+
+		// Servis haritası persist (node/edge layout)
+		v1.GET("/services/map", authMiddleware.Required(), serviceHandler.GetMap)
+		v1.PUT("/services/map", authMiddleware.Required(), serviceHandler.SaveMap)
+
+		// Global metrik özeti — tüm servislerin ort. latency, p95, error rate, CPU
+		v1.GET("/metrics/summary", authMiddleware.Required(), metricsHandler.GetGlobalSummary)
+
+		// Tüm servislerin AI insight'ları
+		v1.GET("/insights", authMiddleware.Required(), aiHandler.GetAllInsights)
 
 		k8sGroup := v1.Group("/k8s", authMiddleware.Required())
 		{

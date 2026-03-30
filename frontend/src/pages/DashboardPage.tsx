@@ -9,7 +9,9 @@ import {
 	CheckCircle2,
 	Clock,
 	Cloud,
+	Cpu,
 	Eye,
+	Gauge,
 	GitFork,
 	Heart,
 	Lightbulb,
@@ -102,6 +104,7 @@ function AnimatedCounter({
 
 	useEffect(() => {
 		if (!inView) return;
+		setDisplay(0);
 		let start = 0;
 		const steps = 20;
 		const inc = value / steps;
@@ -171,16 +174,66 @@ export function DashboardPage() {
 		staleTime: 15_000,
 	});
 
-	const firstServiceId = services[0]?.id ?? "";
 	const { data: insightsData } = useQuery({
-		queryKey: ["dashInsights", firstServiceId],
-		queryFn: () => metricsApi.getInsights(firstServiceId, 1),
-		enabled: !!firstServiceId,
+		queryKey: ["dashInsightsAll"],
+		queryFn: () => metricsApi.getAllInsights(3),
+		enabled: services.length > 0,
 		staleTime: 60_000,
+	});
+
+	const { data: globalSummary } = useQuery({
+		queryKey: ["dashGlobalSummary"],
+		queryFn: () => metricsApi.getGlobalSummary(),
+		enabled: services.length > 0,
+		refetchInterval: 60_000,
+		staleTime: 30_000,
 	});
 
 	const recentAlerts = (activeAlerts ?? []).slice(0, 5);
 	const recentInsights = (insightsData?.insights ?? []).slice(0, 3);
+
+	const globalMetrics = [
+		{
+			label: "Ort. Latency",
+			value: globalSummary?.avg_latency_ms != null
+				? `${globalSummary.avg_latency_ms.toFixed(0)}ms`
+				: "—",
+			icon: Gauge,
+			colorVar: "var(--status-warn)",
+			borderVar: "var(--status-warn-border)",
+			bgVar: "var(--status-warn-subtle)",
+		},
+		{
+			label: "P95 Latency",
+			value: globalSummary?.p95_latency_ms != null
+				? `${globalSummary.p95_latency_ms.toFixed(0)}ms`
+				: "—",
+			icon: Activity,
+			colorVar: "var(--color-lavender)",
+			borderVar: "var(--color-lavender-border)",
+			bgVar: "var(--color-lavender-subtle)",
+		},
+		{
+			label: "Hata Oranı",
+			value: globalSummary?.avg_error_rate != null
+				? `${(globalSummary.avg_error_rate * 100).toFixed(1)}%`
+				: "—",
+			icon: AlertCircle,
+			colorVar: "var(--status-down-text)",
+			borderVar: "var(--status-down-border)",
+			bgVar: "var(--status-down-subtle)",
+		},
+		{
+			label: "Ort. CPU",
+			value: globalSummary?.avg_cpu_percent != null
+				? `${globalSummary.avg_cpu_percent.toFixed(1)}%`
+				: "—",
+			icon: Cpu,
+			colorVar: "var(--color-teal)",
+			borderVar: "var(--color-teal-border)",
+			bgVar: "var(--color-teal-subtle)",
+		},
+	];
 
 	const totalServices = services.length;
 	const activeServices = services.filter((s) => s.status === "up").length;
@@ -460,6 +513,58 @@ export function DashboardPage() {
 					</motion.div>
 				))}
 			</motion.div>
+
+			{/* Global Metrics Summary */}
+			{services.length > 0 && (
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.6, delay: 0.15 }}
+					className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+				>
+					{globalMetrics.map((m, i) => (
+						<motion.div
+							key={m.label}
+							initial={{ opacity: 0, y: 12 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.35, delay: 0.15 + i * 0.06 }}
+						>
+							<Card
+								className="p-3 rounded"
+								style={{
+									background: "var(--surface-card)",
+									border: `2px solid ${m.borderVar}`,
+									boxShadow: "var(--card-shadow)",
+								}}
+							>
+								<div className="flex items-center justify-between mb-1.5">
+									<div
+										className="w-7 h-7 rounded flex items-center justify-center"
+										style={{
+											backgroundColor: m.bgVar,
+											border: `1.5px solid ${m.borderVar}`,
+										}}
+									>
+										<m.icon className="w-3.5 h-3.5" style={{ color: m.colorVar }} />
+									</div>
+									<p
+										className="text-[10px] uppercase tracking-wider"
+										style={{ color: "var(--text-muted)" }}
+									>
+										{m.label}
+									</p>
+								</div>
+								<span
+									className="text-xl tabular-nums font-(--font-mono)"
+									style={{ color: m.colorVar, fontWeight: 700 }}
+								>
+									{m.value}
+								</span>
+							</Card>
+						</motion.div>
+					))}
+				</motion.div>
+			)}
 
 			{/* Navigation Cards Grid */}
 			<motion.div
@@ -818,13 +923,19 @@ export function DashboardPage() {
 						</div>
 
 						{recentAlerts.length === 0 ? (
-							<div className="py-8 text-center">
-								<CheckCircle2
-									className="w-8 h-8 mx-auto mb-2 opacity-20"
-									style={{ color: "var(--status-up)" }}
-								/>
-								<p className="text-xs" style={{ color: "var(--text-muted)" }}>
-									Aktif alert yok
+							<div className="py-6 text-center space-y-2">
+								<div
+									className="w-10 h-10 rounded flex items-center justify-center mx-auto"
+									style={{ backgroundColor: "var(--status-up-subtle)", border: "2px solid var(--status-up-border)" }}
+								>
+									<CheckCircle2 className="w-5 h-5" style={{ color: "var(--status-up)" }} />
+								</div>
+								<p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+									Tüm sistemler sağlıklı
+								</p>
+								<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+									Eşik değerlerini ayarlamak için
+									<button type="button" onClick={() => navigate("/alerts")} className="underline ml-1" style={{ color: "var(--color-teal)" }}>Uyarılar</button> sayfasını ziyaret edin
 								</p>
 							</div>
 						) : (
@@ -930,24 +1041,29 @@ export function DashboardPage() {
 						</div>
 
 						{recentInsights.length === 0 ? (
-							<div className="py-8 text-center">
-								<Sparkles
-									className="w-8 h-8 mx-auto mb-2 opacity-20"
-									style={{ color: "var(--color-lavender)" }}
-								/>
-								<p className="text-xs" style={{ color: "var(--text-muted)" }}>
+							<div className="py-6 text-center space-y-2">
+								<div
+									className="w-10 h-10 rounded flex items-center justify-center mx-auto"
+									style={{ backgroundColor: "var(--color-lavender-subtle)", border: "2px solid var(--color-lavender-border)" }}
+								>
+									<Sparkles className="w-5 h-5" style={{ color: "var(--color-lavender)" }} />
+								</div>
+								<p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
 									Henüz AI analizi yok
+								</p>
+								<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+									Servis detayında &ldquo;Analiz Et&rdquo; butonuna basın
 								</p>
 								<Button
 									size="sm"
 									onClick={() => navigate("/ai-insights")}
-									className="mt-3 rounded text-xs h-7 text-white"
+									className="mt-1 rounded text-xs h-7 text-white"
 									style={{
 										background: "var(--gradient-btn-primary)",
 										boxShadow: "var(--btn-shadow)",
 									}}
 								>
-									<Zap className="w-3 h-3 mr-1" /> Analiz Başlat
+									<Zap className="w-3 h-3 mr-1" /> AI Insights
 								</Button>
 							</div>
 						) : (

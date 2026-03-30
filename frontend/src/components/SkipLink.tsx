@@ -3,9 +3,9 @@ export function SkipLink() {
 		<a
 			href="#main-content"
 			className="skip-to-content focus:outline-none"
-			aria-label="Skip to main content"
+			aria-label="Ana içeriğe geç"
 		>
-			Skip to main content
+			Ana içeriğe geç
 		</a>
 	);
 }

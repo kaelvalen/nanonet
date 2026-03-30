@@ -204,7 +204,7 @@ export function PodsTab({
 												deletePodMutation.mutate(pod.name);
 										}}
 										title="Pod'u Sil (Yeniden Başlat)"
-										aria-label="Delete pod"
+										aria-label="Pod'u sil"
 										disabled={
 											deletePodMutation.isPending &&
 											deletePodMutation.variables === pod.name

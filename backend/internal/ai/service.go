@@ -378,6 +378,13 @@ func (s *Service) GetInsights(ctx context.Context, serviceID uuid.UUID, limit, o
 	return s.repo.GetByServiceID(ctx, serviceID, limit, offset)
 }
 
+func (s *Service) GetAllInsights(ctx context.Context, userID uuid.UUID, limit, offset int) ([]AIInsight, int64, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	return s.repo.GetByUserID(ctx, userID, limit, offset)
+}
+
 // IsServiceOwner servisin belirtilen kullanıcıya ait olup olmadığını kontrol eder.
 func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
 	var count int64

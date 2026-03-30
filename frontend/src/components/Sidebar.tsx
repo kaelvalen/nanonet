@@ -45,7 +45,7 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 	const navItems: NavItem[] = [
 		{
 			to: "/",
-			label: "Dashboard",
+			label: "Kontrol Paneli",
 			icon: LayoutDashboard,
 		},
 		{
