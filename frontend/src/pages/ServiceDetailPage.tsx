@@ -100,6 +100,9 @@ export function ServiceDetailPage() {
 	const [activeTab, setActiveTab] = useState("metrics");
 	const [execConfirmOpen, setExecConfirmOpen] = useState(false);
 	const [pendingCommand, setPendingCommand] = useState("");
+	const [execSessionConfirmed, setExecSessionConfirmed] = useState(
+		() => sessionStorage.getItem("exec_session_confirmed") === "1"
+	);
 	const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
 	const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
@@ -198,16 +201,18 @@ export function ServiceDetailPage() {
 	};
 
 	const handleExecRequest = () => {
-		if (!execCommand.trim()) return;
-		setPendingCommand(execCommand.trim());
-		setExecConfirmOpen(true);
+		const cmd = execCommand.trim();
+		if (!cmd) return;
+		if (execSessionConfirmed) {
+			void handleExecDirect(cmd);
+		} else {
+			setPendingCommand(cmd);
+			setExecConfirmOpen(true);
+		}
 	};
 
-	const handleExec = async () => {
-		const cmd = pendingCommand;
+	const handleExecDirect = async (cmd: string) => {
 		if (!serviceId || !cmd) return;
-		setExecConfirmOpen(false);
-		setPendingCommand("");
 		setExecLoading(true);
 		setExecCommand("");
 		try {
@@ -1573,29 +1578,30 @@ export function ServiceDetailPage() {
 						<MaintenanceTab serviceId={serviceId ?? ""} />
 					</TabsContent>
 
-					{/* Exec Confirm Dialog */}
-					<Dialog open={execConfirmOpen} onOpenChange={setExecConfirmOpen}>
+					{/* Exec Confirm Dialog — oturum başında yalnızca bir kez gösterilir */}
+					<Dialog open={execConfirmOpen} onOpenChange={(open) => { if (!open) { setExecConfirmOpen(false); setPendingCommand(""); } }}>
 						<DialogContent
 							className="rounded max-w-sm"
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--color-blue-border)",
+								border: "2px solid var(--status-warn-border)",
 								boxShadow: "var(--panel-shadow)",
 							}}
 						>
 							<DialogHeader>
-								<DialogTitle style={{ color: "var(--color-blue)" }}>
-									Komut Çalıştır
+								<DialogTitle style={{ color: "var(--status-warn-text)" }}>
+									Terminal Erişimi
 								</DialogTitle>
-								<DialogDescription style={{ color: "var(--text-muted)" }}>
-									Aşağıdaki komut <strong style={{ color: "var(--text-secondary)" }}>{service?.name}</strong> üzerinde çalıştırılacak:
-									<code
-										className="block mt-2 px-3 py-2 rounded font-mono text-xs break-all"
-										style={{ background: "var(--surface-sunken)", color: "var(--color-teal)", border: "1px solid var(--border-default)" }}
-									>
-										$ {pendingCommand}
-									</code>
-									<span className="block mt-2 text-xs" style={{ color: "var(--status-warn-text)" }}>Bu işlem servisi etkileyebilir. Devam etmek istiyor musunuz?</span>
+								<DialogDescription asChild>
+									<div className="space-y-3 text-xs" style={{ color: "var(--text-muted)" }}>
+										<p>Bu terminal, <strong style={{ color: "var(--text-secondary)" }}>{service?.name}</strong> servisinin çalıştığı sunucuda doğrudan komut çalıştırır.</p>
+										<ul className="space-y-1 pl-3" style={{ borderLeft: "2px solid var(--status-warn-border)" }}>
+											<li>Yalnızca <code className="font-mono" style={{ color: "var(--color-teal)" }}>status</code>, <code className="font-mono" style={{ color: "var(--color-teal)" }}>mem</code>, <code className="font-mono" style={{ color: "var(--color-teal)" }}>cpu</code>, <code className="font-mono" style={{ color: "var(--color-teal)" }}>ps</code> gibi salt-okunur komutlar güvenlidir</li>
+											<li>Pipe (<code className="font-mono">|</code>), zincirleme (<code className="font-mono">&amp;&amp;</code>, <code className="font-mono">;</code>) ve yönlendirme (<code className="font-mono">&gt;</code>) operatörleri engellenir</li>
+											<li>Servis sürecini etkileyen komutlar sorumluluğunuzdadır</li>
+										</ul>
+										<p style={{ color: "var(--text-faint)" }}>Onayladıktan sonra bu oturumda bir daha sorulmayacak.</p>
+									</div>
 								</DialogDescription>
 							</DialogHeader>
 							<DialogFooter>
@@ -1603,11 +1609,17 @@ export function ServiceDetailPage() {
 									İptal
 								</Button>
 								<Button
-									onClick={handleExec}
+									onClick={() => {
+										sessionStorage.setItem("exec_session_confirmed", "1");
+										setExecSessionConfirmed(true);
+										setExecConfirmOpen(false);
+										void handleExecDirect(pendingCommand);
+										setPendingCommand("");
+									}}
 									className="rounded text-xs"
-									style={{ background: "var(--color-blue)", color: "white" }}
+									style={{ background: "var(--status-warn)", color: "white" }}
 								>
-									<Send className="w-3 h-3 mr-1" /> Çalıştır
+									<Terminal className="w-3 h-3 mr-1" /> Anladım, Devam Et
 								</Button>
 							</DialogFooter>
 						</DialogContent>
