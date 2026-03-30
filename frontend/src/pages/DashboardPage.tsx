@@ -216,7 +216,7 @@ export function DashboardPage() {
 		{
 			label: "Hata Oranı",
 			value: globalSummary?.avg_error_rate != null
-				? `${(globalSummary.avg_error_rate * 100).toFixed(1)}%`
+				? `${(Math.min(globalSummary.avg_error_rate, 1) * 100).toFixed(1)}%`
 				: "—",
 			icon: AlertCircle,
 			colorVar: "var(--status-down-text)",

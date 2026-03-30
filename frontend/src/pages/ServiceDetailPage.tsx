@@ -97,6 +97,11 @@ export function ServiceDetailPage() {
 	const [scaleLoading, setScaleLoading] = useState(false);
 	const terminalEndRef = useRef<HTMLDivElement>(null);
 	const [agentWizardOpen, setAgentWizardOpen] = useState(false);
+	const [activeTab, setActiveTab] = useState("metrics");
+	const [execConfirmOpen, setExecConfirmOpen] = useState(false);
+	const [pendingCommand, setPendingCommand] = useState("");
+	const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
+	const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
 	const { data: service, isLoading: serviceLoading } = useQuery({
 		queryKey: ["service", serviceId],
@@ -159,11 +164,11 @@ export function ServiceDetailPage() {
 	}, []);
 
 	const handleRestart = () => {
-		if (serviceId) restartService(serviceId);
+		if (serviceId) { restartService(serviceId); setRestartConfirmOpen(false); }
 	};
 
 	const handleStop = () => {
-		if (serviceId) stopService(serviceId);
+		if (serviceId) { stopService(serviceId); setStopConfirmOpen(false); }
 	};
 
 	const handleStart = async () => {
@@ -192,9 +197,17 @@ export function ServiceDetailPage() {
 		}
 	};
 
+	const handleExecRequest = () => {
+		if (!execCommand.trim()) return;
+		setPendingCommand(execCommand.trim());
+		setExecConfirmOpen(true);
+	};
+
 	const handleExec = async () => {
-		if (!serviceId || !execCommand.trim()) return;
-		const cmd = execCommand.trim();
+		const cmd = pendingCommand;
+		if (!serviceId || !cmd) return;
+		setExecConfirmOpen(false);
+		setPendingCommand("");
 		setExecLoading(true);
 		setExecCommand("");
 		try {
@@ -400,7 +413,7 @@ export function ServiceDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={handleRestart}
+							onClick={() => setRestartConfirmOpen(true)}
 							className="rounded text-xs h-8"
 							style={{
 								borderColor: "var(--color-teal-border)",
@@ -413,7 +426,7 @@ export function ServiceDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={handleStop}
+							onClick={() => setStopConfirmOpen(true)}
 							className="rounded text-xs h-8"
 							style={{
 								borderColor: "var(--status-warn-border)",
@@ -469,6 +482,70 @@ export function ServiceDetailPage() {
 										style={{ background: "var(--status-down-text)" }}
 									>
 										Sil
+									</Button>
+								</DialogFooter>
+							</DialogContent>
+						</Dialog>
+
+						<Dialog open={restartConfirmOpen} onOpenChange={setRestartConfirmOpen}>
+							<DialogContent
+								className="rounded max-w-sm"
+								style={{
+									background: "var(--surface-card)",
+									border: "2px solid var(--color-teal-border)",
+									boxShadow: "var(--panel-shadow)",
+								}}
+							>
+								<DialogHeader>
+									<DialogTitle style={{ color: "var(--color-teal)" }}>
+										Yeniden Başlat
+									</DialogTitle>
+									<DialogDescription style={{ color: "var(--text-muted)" }}>
+										<strong style={{ color: "var(--text-secondary)" }}>{service?.name}</strong> servisi yeniden başlatılacak. Aktif bağlantılar kesilecektir. Devam etmek istiyor musunuz?
+									</DialogDescription>
+								</DialogHeader>
+								<DialogFooter>
+									<Button variant="outline" onClick={() => setRestartConfirmOpen(false)} className="rounded text-xs">
+										İptal
+									</Button>
+									<Button
+										onClick={handleRestart}
+										className="rounded text-xs"
+										style={{ background: "var(--color-teal)", color: "white" }}
+									>
+										<RefreshCw className="w-3 h-3 mr-1" /> Yeniden Başlat
+									</Button>
+								</DialogFooter>
+							</DialogContent>
+						</Dialog>
+
+						<Dialog open={stopConfirmOpen} onOpenChange={setStopConfirmOpen}>
+							<DialogContent
+								className="rounded max-w-sm"
+								style={{
+									background: "var(--surface-card)",
+									border: "2px solid var(--status-warn-border)",
+									boxShadow: "var(--panel-shadow)",
+								}}
+							>
+								<DialogHeader>
+									<DialogTitle style={{ color: "var(--status-warn-text)" }}>
+										Servisi Durdur
+									</DialogTitle>
+									<DialogDescription style={{ color: "var(--text-muted)" }}>
+										<strong style={{ color: "var(--text-secondary)" }}>{service?.name}</strong> durdurulacak. Servis yanıt vermez hale gelecektir. Devam etmek istiyor musunuz?
+									</DialogDescription>
+								</DialogHeader>
+								<DialogFooter>
+									<Button variant="outline" onClick={() => setStopConfirmOpen(false)} className="rounded text-xs">
+										İptal
+									</Button>
+									<Button
+										onClick={handleStop}
+										className="rounded text-xs"
+										style={{ background: "var(--status-warn)", color: "white" }}
+									>
+										<Power className="w-3 h-3 mr-1" /> Durdur
 									</Button>
 								</DialogFooter>
 							</DialogContent>
@@ -737,7 +814,7 @@ export function ServiceDetailPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.2 }}
 			>
-				<Tabs defaultValue="metrics" className="space-y-4">
+				<Tabs defaultValue="metrics" className="space-y-4" onValueChange={setActiveTab}>
 					<div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
 						<TabsList
 							className="rounded p-1 overflow-x-auto w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap"
@@ -1234,39 +1311,40 @@ export function ServiceDetailPage() {
 
 					{/* Terminal Tab */}
 					<TabsContent value="terminal" className="space-y-3">
+						{/* Agent gereksinimi uyarısı */}
+						{!service?.agent_id && (
+							<div
+								className="flex items-start gap-3 px-4 py-3 rounded text-xs"
+								style={{ background: "var(--status-warn-subtle)", border: "2px solid var(--status-warn-border)" }}
+							>
+								<AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--status-warn)" }} />
+								<div>
+									<p className="font-medium mb-0.5" style={{ color: "var(--status-warn-text)" }}>Agent bağlı değil</p>
+									<p style={{ color: "var(--text-muted)" }}>Terminal, servis üzerinde komut çalıştırmak için NanoNet Agent gerektirir. “Agent Kur” butonuyla kurulum talimatlarını alabilirsiniz.</p>
+								</div>
+							</div>
+						)}
 						<Card
 							className="rounded overflow-hidden"
 							style={{
-								background: "var(--terminal-bg, #0a0f1a)",
-								border: "2px solid var(--terminal-border, #1e293b)",
+								background: "var(--terminal-bg, var(--surface-sunken))",
+								border: "2px solid var(--terminal-border, var(--border-strong))",
 							}}
 						>
 							{/* Title bar */}
 							<div
 								className="flex items-center gap-2 px-4 py-2.5"
 								style={{
-									borderBottom: "2px solid var(--terminal-border, #1e293b)",
-									background: "var(--terminal-header, #0d1525)",
+									borderBottom: "2px solid var(--terminal-border, var(--border-strong))",
+									background: "var(--terminal-header, var(--surface-overlay))",
 								}}
 							>
 								<div className="flex gap-1.5">
-									<div
-										className="w-2.5 h-2.5 rounded-full"
-										style={{ backgroundColor: "#ff5f57" }}
-									/>
-									<div
-										className="w-2.5 h-2.5 rounded-full"
-										style={{ backgroundColor: "#febc2e" }}
-									/>
-									<div
-										className="w-2.5 h-2.5 rounded-full"
-										style={{ backgroundColor: "#28c840" }}
-									/>
+									<div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
+									<div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#febc2e" }} />
+									<div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#28c840" }} />
 								</div>
-								<span
-									className="text-[10px] font-mono ml-2"
-									style={{ color: "#475569" }}
-								>
+								<span className="text-[10px] font-mono ml-2" style={{ color: "var(--text-faint)" }}>
 									{service?.name ?? "terminal"} — exec
 								</span>
 								<div className="ml-auto flex items-center gap-2">
@@ -1274,7 +1352,8 @@ export function ServiceDetailPage() {
 										<button
 											type="button"
 											onClick={() => setExecHistory([])}
-											className="text-[10px] text-[#475569] hover:text-[#94a3b8] transition-colors"
+											className="text-[10px] transition-colors hover:opacity-80"
+											style={{ color: "var(--text-faint)" }}
 										>
 											temizle
 										</button>
@@ -1285,11 +1364,8 @@ export function ServiceDetailPage() {
 							<div className="p-4 h-80 overflow-y-auto space-y-3 font-mono text-xs">
 								{execHistory.length === 0 ? (
 									<div className="flex flex-col items-center justify-center h-full gap-3 select-none">
-										<Terminal
-											className="w-10 h-10"
-											style={{ color: "#1e3a4a" }}
-										/>
-										<p className="text-[11px]" style={{ color: "#334155" }}>
+										<Terminal className="w-10 h-10" style={{ color: "var(--border-strong)" }} />
+										<p className="text-[11px]" style={{ color: "var(--text-faint)" }}>
 											Komut girin ve Enter tuşuna basın
 										</p>
 										<div className="flex flex-wrap gap-2 mt-1 justify-center">
@@ -1298,8 +1374,8 @@ export function ServiceDetailPage() {
 													type="button"
 													key={s}
 													onClick={() => setExecCommand(s)}
-													className="px-2 py-1 rounded text-[10px] transition-colors"
-													style={{ background: "#1e293b", color: "#38bdf8" }}
+													className="px-2 py-1 rounded text-[10px] transition-colors hover:opacity-80"
+													style={{ background: "var(--surface-overlay)", color: "var(--color-teal)" }}
 												>
 													{s}
 												</button>
@@ -1314,16 +1390,16 @@ export function ServiceDetailPage() {
 												<div className="flex items-center gap-1.5">
 													<span
 														className="shrink-0"
-														style={{ color: "#22d3ee" }}
+														style={{ color: "var(--color-teal)" }}
 													>
 														$
 													</span>
-													<span style={{ color: "#e2e8f0" }}>
+													<span style={{ color: "var(--text-secondary)" }}>
 														{entry.command}
 													</span>
 													<span
 														className="ml-auto text-[10px]"
-														style={{ color: "#334155" }}
+														style={{ color: "var(--text-faint)" }}
 													>
 														{new Date(entry.queued_at).toLocaleTimeString(
 															"tr-TR",
@@ -1337,11 +1413,11 @@ export function ServiceDetailPage() {
 														<>
 															<Loader2
 																className="w-3 h-3 animate-spin"
-																style={{ color: "#fbbf24" }}
+																style={{ color: "var(--status-warn)" }}
 															/>
 															<span
 																className="text-[10px]"
-																style={{ color: "#fbbf24" }}
+																style={{ color: "var(--status-warn-text)" }}
 															>
 																{entry.status}...
 															</span>
@@ -1350,11 +1426,11 @@ export function ServiceDetailPage() {
 														<>
 															<CheckCircle2
 																className="w-3 h-3"
-																style={{ color: "#34d399" }}
+																style={{ color: "var(--status-up)" }}
 															/>
 															<span
 																className="text-[10px]"
-																style={{ color: "#34d399" }}
+																style={{ color: "var(--status-up-text)" }}
 															>
 																başarılı
 															</span>
@@ -1363,11 +1439,11 @@ export function ServiceDetailPage() {
 														<>
 															<XCircle
 																className="w-3 h-3"
-																style={{ color: "#fb7185" }}
+																style={{ color: "var(--status-down)" }}
 															/>
 															<span
 																className="text-[10px]"
-																style={{ color: "#fb7185" }}
+																style={{ color: "var(--status-down-text)" }}
 															>
 																{entry.status}
 															</span>
@@ -1376,7 +1452,7 @@ export function ServiceDetailPage() {
 													{entry.duration_ms !== undefined && (
 														<span
 															className="text-[10px] ml-auto"
-															style={{ color: "#475569" }}
+															style={{ color: "var(--text-faint)" }}
 														>
 															{entry.duration_ms}ms
 														</span>
@@ -1387,9 +1463,9 @@ export function ServiceDetailPage() {
 													<pre
 														className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded p-2"
 														style={{
-															color: "#94a3b8",
-															background: "#0f172a",
-															border: "2px solid #1e293b",
+															color: "var(--text-muted)",
+															background: "var(--surface-sunken)",
+															border: "2px solid var(--border-default)",
 														}}
 													>
 														{entry.output}
@@ -1400,9 +1476,9 @@ export function ServiceDetailPage() {
 													<pre
 														className="pl-3 text-[11px] leading-relaxed whitespace-pre-wrap break-all rounded p-2"
 														style={{
-															color: "#fb7185",
-															background: "#1f0a0e",
-															border: "2px solid rgba(251,113,133,0.6)",
+															color: "var(--status-down-text)",
+															background: "var(--status-down-subtle)",
+															border: "2px solid var(--status-down-border)",
 														}}
 													>
 														{entry.error}
@@ -1418,13 +1494,13 @@ export function ServiceDetailPage() {
 							<div
 								className="flex items-center gap-2 px-4 py-3"
 								style={{
-									borderTop: "2px solid #1e293b",
-									background: "#0d1525",
+									borderTop: "2px solid var(--terminal-border, var(--border-strong))",
+									background: "var(--terminal-header, var(--surface-overlay))",
 								}}
 							>
 								<span
 									className="font-mono text-xs shrink-0"
-									style={{ color: "#22d3ee" }}
+									style={{ color: "var(--color-teal)" }}
 								>
 									❯
 								</span>
@@ -1432,22 +1508,21 @@ export function ServiceDetailPage() {
 									value={execCommand}
 									onChange={(e) => setExecCommand(e.target.value)}
 									onKeyDown={(e) => {
-										if (e.key === "Enter" && !execLoading) handleExec();
+										if (e.key === "Enter" && !execLoading) handleExecRequest();
 									}}
 									placeholder="komut girin..."
 									disabled={execLoading}
 									className="bg-transparent border-none font-mono text-xs h-7 px-0 focus-visible:ring-0"
-									style={{ color: "#e2e8f0" }}
+									style={{ color: "var(--text-secondary)" }}
 								/>
 								<Button
 									size="sm"
-									onClick={handleExec}
+									onClick={handleExecRequest}
 									disabled={execLoading || !execCommand.trim()}
 									className="h-7 px-3 rounded shrink-0"
 									style={{
-										background: "rgba(56,189,248,0.1)",
-										color: "#38bdf8",
-										border: "2px solid rgba(56,189,248,0.4)",
+										borderColor: "var(--color-teal-border)",
+										color: "var(--color-teal)",
 									}}
 									variant="outline"
 								>
@@ -1490,13 +1565,53 @@ export function ServiceDetailPage() {
 						<MaintenanceTab serviceId={serviceId ?? ""} />
 					</TabsContent>
 
-					{/* Logs Tab */}
-					<TabsContent value="logs" className="h-150">
+					{/* Logs Tab — always mounted so stream starts immediately */}
+					<TabsContent value="logs" className="h-150" forceMount hidden={activeTab !== "logs"}>
 						<LogViewer
 							serviceId={serviceId ?? ""}
 							serviceName={service?.name}
 						/>
 					</TabsContent>
+
+					{/* Exec Confirm Dialog */}
+					<Dialog open={execConfirmOpen} onOpenChange={setExecConfirmOpen}>
+						<DialogContent
+							className="rounded max-w-sm"
+							style={{
+								background: "var(--surface-card)",
+								border: "2px solid var(--color-blue-border)",
+								boxShadow: "var(--panel-shadow)",
+							}}
+						>
+							<DialogHeader>
+								<DialogTitle style={{ color: "var(--color-blue)" }}>
+									Komut Çalıştır
+								</DialogTitle>
+								<DialogDescription style={{ color: "var(--text-muted)" }}>
+									Aşağıdaki komut <strong style={{ color: "var(--text-secondary)" }}>{service?.name}</strong> üzerinde çalıştırılacak:
+									<code
+										className="block mt-2 px-3 py-2 rounded font-mono text-xs break-all"
+										style={{ background: "var(--surface-sunken)", color: "var(--color-teal)", border: "1px solid var(--border-default)" }}
+									>
+										$ {pendingCommand}
+									</code>
+									<span className="block mt-2 text-xs" style={{ color: "var(--status-warn-text)" }}>Bu işlem servisi etkileyebilir. Devam etmek istiyor musunuz?</span>
+								</DialogDescription>
+							</DialogHeader>
+							<DialogFooter>
+								<Button variant="outline" onClick={() => { setExecConfirmOpen(false); setPendingCommand(""); }} className="rounded text-xs">
+									İptal
+								</Button>
+								<Button
+									onClick={handleExec}
+									className="rounded text-xs"
+									style={{ background: "var(--color-blue)", color: "white" }}
+								>
+									<Send className="w-3 h-3 mr-1" /> Çalıştır
+								</Button>
+							</DialogFooter>
+						</DialogContent>
+					</Dialog>
 
 					{/* AI Tab */}
 					<TabsContent value="ai" className="space-y-4">
