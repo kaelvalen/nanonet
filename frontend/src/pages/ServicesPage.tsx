@@ -596,7 +596,10 @@ export function ServicesPage() {
 									whileHover={{ y: -2 }}
 									layout
 								>
-									<Link to={`/services/${service.id}`} className="block group">
+									<Link
+										to={`/app/services/${service.id}`}
+										className="block group"
+									>
 										<Card
 											className="relative rounded p-5 transition-all duration-200 overflow-hidden"
 											style={{
@@ -734,7 +737,10 @@ export function ServicesPage() {
 									transition={{ duration: 0.2, delay: index * 0.03 }}
 									layout
 								>
-									<Link to={`/services/${service.id}`} className="block group">
+									<Link
+										to={`/app/services/${service.id}`}
+										className="block group"
+									>
 										<Card
 											className="rounded px-4 py-3 transition-all duration-200"
 											style={{

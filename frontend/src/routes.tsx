@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, useParams } from "react-router";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AIInsightsPage } from "@/pages/AIInsightsPage";
 import { AlertsPage } from "@/pages/AlertsPage";
@@ -56,22 +56,12 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
 }
 
 function LandingRoute() {
-	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-	const isInitializing = useAuthStore((s) => s.isInitializing);
-
-	if (isInitializing) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-			</div>
-		);
-	}
-
-	if (isAuthenticated) {
-		return <Navigate to="/app" replace />;
-	}
-
 	return <LandingPage />;
+}
+
+function ServicesRedirect() {
+	const { serviceId } = useParams();
+	return <Navigate to={`/app/services/${serviceId}`} replace />;
 }
 
 export const router = createBrowserRouter([
@@ -115,6 +105,38 @@ export const router = createBrowserRouter([
 			</GuestGuard>
 		),
 		errorElement: <ErrorPage />,
+	},
+	{
+		path: "/dashboard",
+		element: <Navigate to="/app" replace />,
+	},
+	{
+		path: "/services",
+		element: <Navigate to="/app/services" replace />,
+	},
+	{
+		path: "/services/:serviceId",
+		element: <ServicesRedirect />,
+	},
+	{
+		path: "/alerts",
+		element: <Navigate to="/app/alerts" replace />,
+	},
+	{
+		path: "/ai-insights",
+		element: <Navigate to="/app/ai-insights" replace />,
+	},
+	{
+		path: "/service-map",
+		element: <Navigate to="/app/service-map" replace />,
+	},
+	{
+		path: "/settings",
+		element: <Navigate to="/app/settings" replace />,
+	},
+	{
+		path: "/kubernetes",
+		element: <Navigate to="/app/kubernetes" replace />,
 	},
 	{
 		path: "/app",

@@ -63,15 +63,6 @@ const navCards = [
 		pulse: false,
 	},
 	{
-		to: "/app/settings",
-		label: "Ayarlar",
-		description: "Platform yapılandırması ve tercihler",
-		icon: Settings,
-		colorVar: "var(--color-blue)",
-		borderVar: "var(--color-blue-border)",
-		pulse: false,
-	},
-	{
 		to: "/app/service-map",
 		label: "Servis Haritası",
 		description: "Servis bağımlılıklarını görsel olarak keşfet ve yönet",
@@ -87,6 +78,15 @@ const navCards = [
 		icon: Cloud,
 		colorVar: "var(--status-up)",
 		borderVar: "var(--status-up-border)",
+		pulse: false,
+	},
+	{
+		to: "/app/settings",
+		label: "Ayarlar",
+		description: "Platform yapılandırması ve tercihler",
+		icon: Settings,
+		colorVar: "var(--color-blue)",
+		borderVar: "var(--color-blue-border)",
 		pulse: false,
 	},
 ];

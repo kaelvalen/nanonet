@@ -1,7 +1,9 @@
 import { Maximize2, Minimize2, Send, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useLocation, useParams } from "react-router";
+import remarkGfm from "remark-gfm";
 import { aiChatApi, type ChatMessage } from "@/api/metrics";
 import { useServiceStore } from "@/store/serviceStore";
 import { Button } from "./ui/button";
@@ -250,12 +252,14 @@ export function AIAssistant() {
 																	}
 														}
 													>
-														<p
-															className="text-sm"
+														<div
+															className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-800 prose-headings:font-bold prose-headings:text-indigo-600 dark:prose-headings:text-indigo-400"
 															style={{ color: "var(--text-secondary)" }}
 														>
-															{msg.text}
-														</p>
+															<ReactMarkdown remarkPlugins={[remarkGfm]}>
+																{msg.text}
+															</ReactMarkdown>
+														</div>
 													</div>
 													<p
 														className="text-xs mt-1"

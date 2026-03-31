@@ -41,8 +41,8 @@ const navigationItems = [
 		path: "/app/ai-insights",
 		shortcut: "⌘4",
 	},
-	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘5" },
-	{ label: "Kubernetes", icon: Cloud, path: "/app/kubernetes", shortcut: "⌘6" },
+	{ label: "Kubernetes", icon: Cloud, path: "/app/kubernetes", shortcut: "⌘5" },
+	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘6" },
 ];
 
 const actionItems = [
