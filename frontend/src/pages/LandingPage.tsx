@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
-import landingVideo from "@/assets/video/landing.mp4";
 import logo from "@/assets/logo.png";
+import landingVideo from "@/assets/video/landing.mp4";
+import { Button } from "@/components/ui/button";
 
 const headline: React.CSSProperties = {
 	fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -102,7 +102,11 @@ export function LandingPage() {
 			>
 				<div className="flex justify-between items-center max-w-[1440px] mx-auto px-10 py-4">
 					<div className="flex items-center gap-2.5">
-						<img src={logo} alt="NanoNet" className="w-12 h-12 object-contain" />
+						<img
+							src={logo}
+							alt="NanoNet"
+							className="w-12 h-12 object-contain"
+						/>
 						<span
 							className="text-2xl font-bold tracking-tighter"
 							style={{ ...headline, color: "var(--primary)" }}
@@ -111,26 +115,34 @@ export function LandingPage() {
 						</span>
 					</div>
 					<div className="hidden md:flex gap-10">
-						{["Platform", "Observability", "Solutions", "Developers", "Pricing"].map(
-							(item, i) => (
-								<a
-									key={item}
-									href="#"
-									className="text-sm font-medium transition-colors"
-									style={{
-										...headline,
-										color: i === 0 ? "var(--primary)" : "var(--text-muted)",
-										borderBottom: i === 0 ? "2px solid var(--primary)" : "none",
-									}}
-								>
-									{item}
-								</a>
-							),
-						)}
+						{[
+							"Platform",
+							"Observability",
+							"Solutions",
+							"Developers",
+							"Pricing",
+						].map((item, i) => (
+							<a
+								key={item}
+								href="/"
+								className="text-sm font-medium transition-colors"
+								style={{
+									...headline,
+									color: i === 0 ? "var(--primary)" : "var(--text-muted)",
+									borderBottom: i === 0 ? "2px solid var(--primary)" : "none",
+								}}
+							>
+								{item}
+							</a>
+						))}
 					</div>
 					<Link to="/login">
 						<Button
-							style={{ background: "color-mix(in srgb, var(--primary) 15%, transparent)", color: "var(--primary)" }}
+							style={{
+								background:
+									"color-mix(in srgb, var(--primary) 15%, transparent)",
+								color: "var(--primary)",
+							}}
 						>
 							Get Started
 						</Button>
@@ -143,17 +155,26 @@ export function LandingPage() {
 				<motion.div
 					initial={{ opacity: 0, y: 32 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, type: "spring", stiffness: 180, damping: 22 }}
+					transition={{
+						duration: 0.6,
+						type: "spring",
+						stiffness: 180,
+						damping: 22,
+					}}
 					className="space-y-8"
 				>
 					<div
 						className="inline-block px-3 py-1 rounded-sm"
 						style={{
-							background: "color-mix(in srgb, var(--brand-secondary) 15%, transparent)",
+							background:
+								"color-mix(in srgb, var(--brand-secondary) 15%, transparent)",
 							color: "var(--brand-secondary-hover)",
 						}}
 					>
-						<span className="text-[0.6875rem] font-bold tracking-widest uppercase" style={headline}>
+						<span
+							className="text-[0.6875rem] font-bold tracking-widest uppercase"
+							style={headline}
+						>
 							System Protocol v2.0
 						</span>
 					</div>
@@ -164,12 +185,18 @@ export function LandingPage() {
 					>
 						See the noise.
 						<br />
-						<span style={{ color: "var(--brand-secondary)" }}>Find the signal.</span>
+						<span style={{ color: "var(--brand-secondary)" }}>
+							Find the signal.
+						</span>
 					</h1>
 
-					<p className="text-xl max-w-lg leading-relaxed" style={{ color: "var(--text-muted)" }}>
-						NanoNet provides surgical precision for distributed systems. Identify
-						micro-latency spikes and ghost outages before your users do.
+					<p
+						className="text-xl max-w-lg leading-relaxed"
+						style={{ color: "var(--text-muted)" }}
+					>
+						NanoNet provides surgical precision for distributed systems.
+						Identify micro-latency spikes and ghost outages before your users
+						do.
 					</p>
 
 					<div className="flex gap-4 pt-4">
@@ -179,7 +206,8 @@ export function LandingPage() {
 								className="font-bold text-base px-8 py-4 shadow-lg"
 								style={{
 									...headline,
-									background: "linear-gradient(135deg, var(--brand-secondary) 0%, var(--primary) 100%)",
+									background:
+										"linear-gradient(135deg, var(--brand-secondary) 0%, var(--primary) 100%)",
 									color: "white",
 								}}
 							>
@@ -216,24 +244,57 @@ export function LandingPage() {
 					}}
 				>
 					<div className="absolute inset-0 p-12 grid grid-cols-3 grid-rows-3 gap-6 opacity-90">
-						<NodeCard col="col-start-1" row="row-start-2" icon={<Network className="w-4 h-4" />} label="API_GATEWAY" accent="var(--primary)" />
-						<NodeCard col="col-start-2" row="row-start-1" icon={<Database className="w-4 h-4" />} label="AUTH_DB" accent="var(--brand-secondary)" />
-						<NodeCard col="col-start-2" row="row-start-3" icon={<Cpu className="w-4 h-4" />} label="CACHE_LAYER" accent="var(--primary)" />
-						<NodeCard col="col-start-3" row="row-start-2" icon={<AlertTriangle className="w-4 h-4" />} label="CHECKOUT_SVC" accent="var(--destructive)" />
+						<NodeCard
+							col="col-start-1"
+							row="row-start-2"
+							icon={<Network className="w-4 h-4" />}
+							label="API_GATEWAY"
+							accent="var(--primary)"
+						/>
+						<NodeCard
+							col="col-start-2"
+							row="row-start-1"
+							icon={<Database className="w-4 h-4" />}
+							label="AUTH_DB"
+							accent="var(--brand-secondary)"
+						/>
+						<NodeCard
+							col="col-start-2"
+							row="row-start-3"
+							icon={<Cpu className="w-4 h-4" />}
+							label="CACHE_LAYER"
+							accent="var(--primary)"
+						/>
+						<NodeCard
+							col="col-start-3"
+							row="row-start-2"
+							icon={<AlertTriangle className="w-4 h-4" />}
+							label="CHECKOUT_SVC"
+							accent="var(--destructive)"
+						/>
 					</div>
 				</motion.div>
 			</header>
 
 			{/* Problem Bar */}
-			<section style={{ background: "var(--surface-sunken)" }} className="py-12">
+			<section
+				style={{ background: "var(--surface-sunken)" }}
+				className="py-12"
+			>
 				<div className="max-w-[1440px] mx-auto px-10 flex flex-col md:flex-row justify-between items-center gap-8">
-					<p className="font-bold text-xl" style={{ ...headline, color: "var(--text-muted)" }}>
+					<p
+						className="font-bold text-xl"
+						style={{ ...headline, color: "var(--text-muted)" }}
+					>
 						Are you learning about outages from your end-users?
 					</p>
 					<div className="flex gap-12">
 						{[
 							{ icon: <Gauge className="w-5 h-5" />, label: "Latency Spikes" },
-							{ icon: <TrendingDown className="w-5 h-5" />, label: "Data Drift" },
+							{
+								icon: <TrendingDown className="w-5 h-5" />,
+								label: "Data Drift",
+							},
 							{ icon: <EyeOff className="w-5 h-5" />, label: "Ghost Outages" },
 						].map(({ icon, label }) => (
 							<div
@@ -241,7 +302,10 @@ export function LandingPage() {
 								className="flex items-center gap-3 opacity-60 hover:opacity-100 transition-all"
 							>
 								<span style={{ color: "var(--primary)" }}>{icon}</span>
-								<span className="text-sm font-bold tracking-tight" style={headline}>
+								<span
+									className="text-sm font-bold tracking-tight"
+									style={headline}
+								>
 									{label}
 								</span>
 							</div>
@@ -256,7 +320,10 @@ export function LandingPage() {
 					<h2 className="text-4xl font-bold" style={headline}>
 						Clinical Suite
 					</h2>
-					<div className="h-[2px] flex-grow" style={{ background: "var(--border-default)" }} />
+					<div
+						className="h-[2px] flex-grow"
+						style={{ background: "var(--border-default)" }}
+					/>
 					<span
 						className="text-sm font-bold"
 						style={{ ...headline, color: "var(--primary)" }}
@@ -296,7 +363,10 @@ export function LandingPage() {
 							<h3 className="font-bold text-xl mb-3" style={headline}>
 								{f.title}
 							</h3>
-							<p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+							<p
+								className="text-sm leading-relaxed"
+								style={{ color: "var(--text-muted)" }}
+							>
 								{f.desc}
 							</p>
 						</motion.div>
@@ -305,7 +375,10 @@ export function LandingPage() {
 			</section>
 
 			{/* Install Strip */}
-			<section className="py-24 text-white overflow-hidden" style={{ background: "#0f172a" }}>
+			<section
+				className="py-24 text-white overflow-hidden"
+				style={{ background: "#0f172a" }}
+			>
 				<div className="max-w-[1440px] mx-auto px-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
 					<div className="space-y-12">
 						<h2 className="text-4xl font-bold" style={headline}>
@@ -372,7 +445,13 @@ export function LandingPage() {
 								style={{ border: "1px solid var(--border-default)" }}
 							>
 								<motion.div
-									animate={{ boxShadow: ["0 0 24px rgba(239,68,68,0.3)", "0 0 48px rgba(239,68,68,0.6)", "0 0 24px rgba(239,68,68,0.3)"] }}
+									animate={{
+										boxShadow: [
+											"0 0 24px rgba(239,68,68,0.3)",
+											"0 0 48px rgba(239,68,68,0.6)",
+											"0 0 24px rgba(239,68,68,0.3)",
+										],
+									}}
 									transition={{ duration: 2, repeat: Infinity }}
 									className="relative w-16 h-16 rounded-full flex items-center justify-center"
 									style={{ background: "var(--destructive)" }}
@@ -394,11 +473,18 @@ export function LandingPage() {
 										>
 											CRITICAL SYSTEM EVENT
 										</span>
-										<p className="font-bold text-sm mb-1" style={{ color: "var(--foreground)" }}>
+										<p
+											className="font-bold text-sm mb-1"
+											style={{ color: "var(--foreground)" }}
+										>
 											Anomaly Detected
 										</p>
-										<p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-											Root cause: Latency spike in Service B via neural baseline drift.
+										<p
+											className="text-xs leading-relaxed"
+											style={{ color: "var(--text-muted)" }}
+										>
+											Root cause: Latency spike in Service B via neural baseline
+											drift.
 										</p>
 									</div>
 								</motion.div>
@@ -407,20 +493,23 @@ export function LandingPage() {
 					</div>
 
 					<div className="space-y-8">
-						<Bot className="w-14 h-14" style={{ color: "var(--brand-secondary)" }} />
-						<h2
-							className="text-5xl font-bold leading-tight"
-							style={headline}
-						>
+						<Bot
+							className="w-14 h-14"
+							style={{ color: "var(--brand-secondary)" }}
+						/>
+						<h2 className="text-5xl font-bold leading-tight" style={headline}>
 							Zero-Config
 							<br />
 							<span style={{ color: "var(--primary)" }}>Intelligence</span>
 						</h2>
-						<p className="text-lg leading-relaxed" style={{ color: "var(--text-muted)" }}>
-							Our proprietary AI doesn't wait for thresholds. It learns the "heartbeat" of
-							your architecture. When a node turns red, NanoNet has already traced the
-							lineage back to the offending deployment, configuration change, or underlying
-							infrastructure failure.
+						<p
+							className="text-lg leading-relaxed"
+							style={{ color: "var(--text-muted)" }}
+						>
+							Our proprietary AI doesn't wait for thresholds. It learns the
+							"heartbeat" of your architecture. When a node turns red, NanoNet
+							has already traced the lineage back to the offending deployment,
+							configuration change, or underlying infrastructure failure.
 						</p>
 						<Link
 							to="/app/ai-insights"
@@ -435,27 +524,38 @@ export function LandingPage() {
 
 			{/* Terminal CTA */}
 			<section className="pb-32 px-10 max-w-[1440px] mx-auto">
-				<div className="rounded-xl p-10 relative overflow-hidden" style={{ background: "#020617" }}>
+				<div
+					className="rounded-xl p-10 relative overflow-hidden"
+					style={{ background: "#020617" }}
+				>
 					<div
 						className="absolute top-0 right-0 w-64 h-64 pointer-events-none"
 						style={{
-							background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)",
+							background:
+								"radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)",
 						}}
 					/>
 					<div className="relative z-10">
 						<div className="flex gap-2 mb-8">
 							{[0, 1, 2].map((i) => (
-								<div key={i} className="w-3 h-3 rounded-full" style={{ background: "#1e293b" }} />
+								<div
+									key={i}
+									className="w-3 h-3 rounded-full"
+									style={{ background: "#1e293b" }}
+								/>
 							))}
 						</div>
 						<div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
 							<div>
-								<h3 className="text-white text-3xl font-bold mb-4" style={headline}>
+								<h3
+									className="text-white text-3xl font-bold mb-4"
+									style={headline}
+								>
 									Initialize the Nerve Center
 								</h3>
 								<p className="text-slate-400 max-w-md">
-									Deploy the global controller to your management cluster with a single
-									authenticated command.
+									Deploy the global controller to your management cluster with a
+									single authenticated command.
 								</p>
 							</div>
 							<div
@@ -467,6 +567,7 @@ export function LandingPage() {
 									curl -sSL https://get.nanonet.dev | bash
 								</code>
 								<button
+									type="button"
 									className="ml-4 text-slate-500 hover:text-white transition-colors"
 									onClick={() =>
 										navigator.clipboard.writeText(
@@ -490,14 +591,23 @@ export function LandingPage() {
 			>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 max-w-[1440px] mx-auto px-10 py-16 text-sm">
 					<div className="space-y-6">
-						<span className="text-xl font-black" style={{ color: "var(--foreground)" }}>
+						<span
+							className="text-xl font-black"
+							style={{ color: "var(--foreground)" }}
+						>
 							NanoNet
 						</span>
-						<p className="leading-relaxed" style={{ color: "var(--text-muted)" }}>
-							Precision monitoring for systems that cannot fail. Built for the modern
-							distributed enterprise.
+						<p
+							className="leading-relaxed"
+							style={{ color: "var(--text-muted)" }}
+						>
+							Precision monitoring for systems that cannot fail. Built for the
+							modern distributed enterprise.
 						</p>
-						<p className="font-bold tracking-tight" style={{ ...headline, color: "var(--primary)" }}>
+						<p
+							className="font-bold tracking-tight"
+							style={{ ...headline, color: "var(--primary)" }}
+						>
 							NanoNet v2.0 · The grid never rests
 						</p>
 					</div>
@@ -508,11 +618,21 @@ export function LandingPage() {
 						},
 						{
 							heading: "Resources",
-							links: ["Documentation", "API Reference", "Community", "Security"],
+							links: [
+								"Documentation",
+								"API Reference",
+								"Community",
+								"Security",
+							],
 						},
 						{
 							heading: "Company",
-							links: ["About Us", "Privacy Policy", "Terms of Service", "Contact"],
+							links: [
+								"About Us",
+								"Privacy Policy",
+								"Terms of Service",
+								"Contact",
+							],
 						},
 					].map((col) => (
 						<div key={col.heading}>
@@ -526,7 +646,7 @@ export function LandingPage() {
 								{col.links.map((link) => (
 									<li key={link}>
 										<a
-											href="#"
+											href="/"
 											className="hover:underline transition-opacity"
 											style={{ color: "var(--text-muted)" }}
 										>
@@ -540,7 +660,10 @@ export function LandingPage() {
 				</div>
 				<div
 					className="max-w-[1440px] mx-auto px-10 py-8 border-t flex justify-between items-center text-[10px] uppercase tracking-widest font-bold"
-					style={{ borderColor: "var(--border-subtle)", color: "var(--text-faint)" }}
+					style={{
+						borderColor: "var(--border-subtle)",
+						color: "var(--text-faint)",
+					}}
 				>
 					<span>© 2024 NanoNet Systems. All rights reserved.</span>
 					<div className="flex gap-6">
@@ -580,7 +703,10 @@ function NodeCard({
 			}}
 		>
 			<span style={{ color: accent }}>{icon}</span>
-			<span className="text-xs font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+			<span
+				className="text-xs font-bold"
+				style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+			>
 				{label}
 			</span>
 		</div>

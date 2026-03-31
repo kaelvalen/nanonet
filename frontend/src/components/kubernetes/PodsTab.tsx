@@ -28,14 +28,18 @@ function DeletePodButton({
 	};
 }) {
 	const [asking, setAsking] = useState(false);
-	const isPending = deletePodMutation.isPending && deletePodMutation.variables === podName;
+	const isPending =
+		deletePodMutation.isPending && deletePodMutation.variables === podName;
 
 	if (asking) {
 		return (
 			<div className="flex items-center gap-1">
 				<button
 					type="button"
-					onClick={() => { setAsking(false); deletePodMutation.mutate(podName); }}
+					onClick={() => {
+						setAsking(false);
+						deletePodMutation.mutate(podName);
+					}}
 					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
 					style={{
 						background: "var(--status-down-subtle)",

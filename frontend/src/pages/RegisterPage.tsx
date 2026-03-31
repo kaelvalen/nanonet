@@ -1,8 +1,8 @@
 import { Eye, EyeOff, Sparkles } from "lucide-react";
-import logo from "@/assets/logo.png";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Link } from "react-router";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

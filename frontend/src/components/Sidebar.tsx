@@ -9,9 +9,9 @@ import {
 	Settings,
 	Sparkles,
 } from "lucide-react";
-import logo from "@/assets/logo.png";
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router";
+import logo from "@/assets/logo.png";
 import { useServices } from "@/hooks/useServices";
 import { useWSStore } from "@/store/wsStore";
 

@@ -50,11 +50,9 @@ export interface NanonetTabProps {
 }
 
 function UndeployButton({
-	svcName,
 	isUndeploying,
 	onUndeploy,
 }: {
-	svcName: string;
 	isUndeploying: boolean;
 	onUndeploy: () => void;
 }) {
@@ -64,7 +62,10 @@ function UndeployButton({
 			<div className="flex items-center gap-1 shrink-0">
 				<button
 					type="button"
-					onClick={() => { setAsking(false); onUndeploy(); }}
+					onClick={() => {
+						setAsking(false);
+						onUndeploy();
+					}}
 					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
 					style={{
 						background: "var(--status-down-subtle)",
@@ -333,7 +334,6 @@ export function NanonetTab({
 										{/* Action buttons */}
 										{isDeployed ? (
 											<UndeployButton
-												svcName={svc.name}
 												isUndeploying={isUndeploying}
 												onUndeploy={() => undeployMutation.mutate(svc.name)}
 											/>

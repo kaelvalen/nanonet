@@ -390,7 +390,8 @@ function ConfirmButton({
 						color: "var(--status-down-text)",
 					}}
 				>
-					<Check className="w-3 h-3" />{confirmLabel}
+					<Check className="w-3 h-3" />
+					{confirmLabel}
 				</button>
 				<button
 					type="button"
@@ -1320,7 +1321,9 @@ export function KubernetesPage() {
 																</p>
 															</div>
 															<ConfirmButton
-																onConfirm={() => rolloutRestartMutation.mutate(dep.name)}
+																onConfirm={() =>
+																	rolloutRestartMutation.mutate(dep.name)
+																}
 																confirmLabel="Başlat"
 																disabled={
 																	rolloutRestartMutation.isPending &&
@@ -1617,7 +1620,11 @@ export function KubernetesPage() {
 															<Settings2 className="w-3.5 h-3.5" />
 														</button>
 														<ConfirmButton
-															onConfirm={() => deleteHPAMutation.mutate(hpa.deployment_name ?? hpa.name)}
+															onConfirm={() =>
+																deleteHPAMutation.mutate(
+																	hpa.deployment_name ?? hpa.name,
+																)
+															}
 															confirmLabel="Sil"
 															disabled={deleteHPAMutation.isPending}
 															className="w-7 h-7 rounded-lg flex items-center justify-center"

@@ -1,10 +1,10 @@
 import { AlertCircle, ArrowLeft, CheckCircle, Eye, EyeOff } from "lucide-react";
-import logo from "@/assets/logo.png";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { authApi } from "@/api/auth";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

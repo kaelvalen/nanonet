@@ -202,7 +202,7 @@ export function SettingsPage() {
 	// API Key display
 	const [showApiKey, setShowApiKey] = useState(false);
 	const [apiKeyCopied, setApiKeyCopied] = useState(false);
-	const apiKey = "nanonet_" + (user?.id?.replace(/-/g, "").slice(0, 24) ?? "••••••••••••••••••••••••");
+	const apiKey = `nanonet_${user?.id?.replace(/-/g, "").slice(0, 24) ?? "••••••••••••••••••••••••"}`;
 
 	const handleCopyApiKey = () => {
 		navigator.clipboard.writeText(apiKey).then(() => {
@@ -309,7 +309,6 @@ export function SettingsPage() {
 		}
 		passwordMutation.mutate();
 	};
-
 
 	const filteredAuditLogs = (auditData?.logs ?? []).filter((log) => {
 		if (!auditSearch) return true;
@@ -1271,8 +1270,12 @@ export function SettingsPage() {
 				<Card className="rounded p-5" style={cardStyle}>
 					<SectionHeader icon={Key} label="API Anahtarı" />
 					<Separator className="mb-4" style={dividerStyle} />
-					<p className="text-[10px] mb-3" style={{ color: "var(--text-faint)" }}>
-						Agent ve dış entegrasyonlar için kullanılır. Anahtarınızı kimseyle paylaşmayın.
+					<p
+						className="text-[10px] mb-3"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Agent ve dış entegrasyonlar için kullanılır. Anahtarınızı kimseyle
+						paylaşmayın.
 					</p>
 					<div className="flex items-center gap-2">
 						<div
@@ -1280,11 +1283,13 @@ export function SettingsPage() {
 							style={{
 								background: "var(--surface-sunken)",
 								border: "2px solid var(--border-default)",
-								color: showApiKey ? "var(--text-secondary)" : "var(--text-faint)",
+								color: showApiKey
+									? "var(--text-secondary)"
+									: "var(--text-faint)",
 							}}
 						>
 							<span className="truncate">
-								{showApiKey ? apiKey : "nanonet_" + "•".repeat(24)}
+								{showApiKey ? apiKey : `nanonet_${"•".repeat(24)}`}
 							</span>
 						</div>
 						<button
@@ -1298,7 +1303,11 @@ export function SettingsPage() {
 								color: "var(--text-muted)",
 							}}
 						>
-							{showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+							{showApiKey ? (
+								<EyeOff className="w-3.5 h-3.5" />
+							) : (
+								<Eye className="w-3.5 h-3.5" />
+							)}
 						</button>
 						<button
 							type="button"
@@ -1306,12 +1315,20 @@ export function SettingsPage() {
 							title="Kopyala"
 							className="w-9 h-9 rounded flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
 							style={{
-								background: apiKeyCopied ? "var(--status-up-subtle)" : "var(--surface-sunken)",
+								background: apiKeyCopied
+									? "var(--status-up-subtle)"
+									: "var(--surface-sunken)",
 								border: `2px solid ${apiKeyCopied ? "var(--status-up-border)" : "var(--border-default)"}`,
-								color: apiKeyCopied ? "var(--status-up-text)" : "var(--text-muted)",
+								color: apiKeyCopied
+									? "var(--status-up-text)"
+									: "var(--text-muted)",
 							}}
 						>
-							{apiKeyCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+							{apiKeyCopied ? (
+								<Check className="w-3.5 h-3.5" />
+							) : (
+								<Copy className="w-3.5 h-3.5" />
+							)}
 						</button>
 					</div>
 				</Card>
@@ -1331,14 +1348,24 @@ export function SettingsPage() {
 					}}
 				>
 					<SectionHeader icon={AlertTriangle} label="Tehlikeli Bölge" />
-					<Separator className="mb-4" style={{ backgroundColor: "var(--status-down-border)" }} />
+					<Separator
+						className="mb-4"
+						style={{ backgroundColor: "var(--status-down-border)" }}
+					/>
 					<div className="flex items-center justify-between gap-4">
 						<div className="min-w-0">
-							<p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+							<p
+								className="text-xs font-medium"
+								style={{ color: "var(--text-secondary)" }}
+							>
 								Tüm Oturumları Kapat
 							</p>
-							<p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>
-								Tüm cihazlardaki aktif oturumlarınızı sonlandırır ve yeniden giriş yapmanızı gerektirir.
+							<p
+								className="text-[10px] mt-0.5"
+								style={{ color: "var(--text-faint)" }}
+							>
+								Tüm cihazlardaki aktif oturumlarınızı sonlandırır ve yeniden
+								giriş yapmanızı gerektirir.
 							</p>
 						</div>
 						{dangerAsking ? (
@@ -1376,7 +1403,8 @@ export function SettingsPage() {
 								onClick={() => setDangerAsking(true)}
 								className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2 shrink-0 transition-opacity hover:opacity-80"
 								style={{
-									background: "color-mix(in srgb, var(--status-down) 8%, transparent)",
+									background:
+										"color-mix(in srgb, var(--status-down) 8%, transparent)",
 									borderColor: "var(--status-down-border)",
 									color: "var(--status-down-text)",
 								}}

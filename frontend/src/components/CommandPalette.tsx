@@ -35,7 +35,12 @@ const navigationItems = [
 	{ label: "Ana Sayfa", icon: Home, path: "/app", shortcut: "⌘1" },
 	{ label: "Servisler", icon: Server, path: "/app/services", shortcut: "⌘2" },
 	{ label: "Uyarılar", icon: AlertCircle, path: "/app/alerts", shortcut: "⌘3" },
-	{ label: "AI Analiz", icon: Sparkles, path: "/app/ai-insights", shortcut: "⌘4" },
+	{
+		label: "AI Analiz",
+		icon: Sparkles,
+		path: "/app/ai-insights",
+		shortcut: "⌘4",
+	},
 	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘5" },
 	{ label: "Kubernetes", icon: Cloud, path: "/app/kubernetes", shortcut: "⌘6" },
 ];

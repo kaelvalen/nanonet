@@ -8,8 +8,8 @@ import {
 	Settings,
 	Sparkles,
 } from "lucide-react";
-import logo from "@/assets/logo.png";
 import { Link, useLocation, useNavigate } from "react-router";
+import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useServices } from "@/hooks/useServices";
 import { useAuthStore } from "@/store/authStore";

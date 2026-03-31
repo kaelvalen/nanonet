@@ -834,7 +834,10 @@ function ServiceMapInner() {
 	useEffect(() => {
 		if (!addMode) return;
 		const handler = (e: MouseEvent) => {
-			if (addMenuRef.current && !addMenuRef.current.contains(e.target as unknown as globalThis.Node)) {
+			if (
+				addMenuRef.current &&
+				!addMenuRef.current.contains(e.target as unknown as globalThis.Node)
+			) {
 				setAddMode(false);
 			}
 		};
@@ -1131,11 +1134,13 @@ function ServiceMapInner() {
 				>
 					{/* Status counts */}
 					<div className="flex items-center gap-2 mr-1">
-						{([
-							{ status: "up", label: "Çalışıyor" },
-							{ status: "degraded", label: "Yavaş" },
-							{ status: "down", label: "Çökmüş" },
-						] as const).map(({ status, label }) => (
+						{(
+							[
+								{ status: "up", label: "Çalışıyor" },
+								{ status: "degraded", label: "Yavaş" },
+								{ status: "down", label: "Çökmüş" },
+							] as const
+						).map(({ status, label }) => (
 							<div
 								key={status}
 								className="flex items-center gap-1 px-2 py-0.5 rounded"
