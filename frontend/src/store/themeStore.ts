@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ThemeName = "cinnamiku" | "pro";
+export type ThemeName = "pro";
 export type ThemeMode = "light" | "dark";
 
 interface ThemeStore {
@@ -26,7 +26,7 @@ function applyThemeToDom(name: ThemeName, mode: ThemeMode) {
 export const useThemeStore = create<ThemeStore>()(
 	persist(
 		(set, get) => ({
-			themeName: "cinnamiku",
+			themeName: "pro",
 			themeMode: window.matchMedia("(prefers-color-scheme: dark)").matches
 				? "dark"
 				: "light",

@@ -18,7 +18,6 @@ import {
 	Loader2,
 	Lock,
 	Monitor,
-	Moon,
 	Palette,
 	RefreshCw,
 	Save,
@@ -27,7 +26,6 @@ import {
 	Send,
 	Shield,
 	Sparkles,
-	Sun,
 	Webhook,
 	X,
 	Zap,
@@ -129,22 +127,6 @@ const THEME_OPTIONS: {
 	icon: React.ElementType;
 	preview: string;
 }[] = [
-	{
-		name: "cinnamiku",
-		mode: "light",
-		label: "CinnaMiku",
-		sublabel: "Kawaii Light",
-		icon: Sun,
-		preview: "linear-gradient(110deg, #c8d4e8 0%, #dce4f0 50%, #f0e8f4 100%)",
-	},
-	{
-		name: "cinnamiku",
-		mode: "dark",
-		label: "CinnaMiku",
-		sublabel: "Miku Dark",
-		icon: Moon,
-		preview: "linear-gradient(110deg, #0e1625 0%, #162035 60%, #1e2c42 100%)",
-	},
 	{
 		name: "pro",
 		mode: "light",
@@ -1420,7 +1402,7 @@ export function SettingsPage() {
 							{ label: "Platform", value: "NanoNet v2.0" },
 							{
 								label: "Tema",
-								value: themeName === "cinnamiku" ? "CinnaMiku" : "Pro",
+								value: "Pro",
 							},
 							{ label: "Stack", value: "React + Go + Rust" },
 							{
