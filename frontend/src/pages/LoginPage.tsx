@@ -1,4 +1,5 @@
 import { Eye, EyeOff, Sparkles } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -54,16 +55,11 @@ export function LoginPage() {
 						}}
 						className="inline-block mb-4"
 					>
-						<div
-							className="w-16 h-16 rounded flex items-center justify-center mx-auto"
-							style={{
-								background: "var(--gradient-logo)",
-								border: "2px solid var(--border-default)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							<span className="text-white text-2xl">✦</span>
-						</div>
+						<img
+							src={logo}
+							alt="NanoNet"
+							className="w-24 h-24 rounded object-contain mx-auto"
+						/>
 					</motion.div>
 					<motion.h1
 						initial={{ opacity: 0, y: 8 }}

@@ -1,5 +1,4 @@
 import {
-	Activity,
 	AlertCircle,
 	ChevronLeft,
 	ChevronRight,
@@ -10,6 +9,7 @@ import {
 	Settings,
 	Sparkles,
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router";
 import { useServices } from "@/hooks/useServices";
@@ -44,12 +44,12 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 
 	const navItems: NavItem[] = [
 		{
-			to: "/",
+			to: "/app",
 			label: "Kontrol Paneli",
 			icon: LayoutDashboard,
 		},
 		{
-			to: "/services",
+			to: "/app/services",
 			label: "Servisler",
 			icon: Server,
 			badge: () =>
@@ -67,7 +67,7 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 				) : null,
 		},
 		{
-			to: "/alerts",
+			to: "/app/alerts",
 			label: "Uyarılar",
 			icon: AlertCircle,
 			badge: () =>
@@ -85,29 +85,29 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 				) : null,
 		},
 		{
-			to: "/ai-insights",
+			to: "/app/ai-insights",
 			label: "AI Analiz",
 			icon: Sparkles,
 		},
 		{
-			to: "/service-map",
+			to: "/app/service-map",
 			label: "Servis Haritası",
 			icon: GitFork,
 		},
 		{
-			to: "/kubernetes",
+			to: "/app/kubernetes",
 			label: "Kubernetes",
 			icon: Cloud,
 		},
 		{
-			to: "/settings",
+			to: "/app/settings",
 			label: "Ayarlar",
 			icon: Settings,
 		},
 	];
 
 	const isActive = (to: string) => {
-		if (to === "/") return location.pathname === "/";
+		if (to === "/app") return location.pathname === "/app";
 		return location.pathname.startsWith(to);
 	};
 
@@ -126,19 +126,11 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 				className="flex items-center gap-2.5 px-3 py-4 shrink-0"
 				style={{ borderBottom: "2px solid var(--border-default)" }}
 			>
-				<div
-					className="w-7 h-7 rounded flex items-center justify-center shrink-0"
-					style={{
-						background: "var(--primary)",
-						border: "2px solid var(--border-default)",
-						boxShadow: "var(--btn-shadow)",
-					}}
-				>
-					<Activity
-						className="w-3.5 h-3.5"
-						style={{ color: "var(--primary-foreground)" }}
-					/>
-				</div>
+				<img
+					src={logo}
+					alt="NanoNet"
+					className="w-10 h-10 rounded object-contain shrink-0"
+				/>
 				{!collapsed && (
 					<span
 						className="font-bold text-sm tracking-wide truncate"
@@ -157,7 +149,7 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 						<NavLink
 							key={item.to}
 							to={item.to}
-							end={item.to === "/"}
+							end={item.to === "/app"}
 							className="flex items-center gap-2.5 px-2 py-2 rounded text-xs font-medium transition-colors duration-100 group"
 							style={{
 								background: active ? "var(--sidebar-accent)" : "transparent",

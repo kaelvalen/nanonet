@@ -32,12 +32,12 @@ import {
 } from "./ui/command";
 
 const navigationItems = [
-	{ label: "Ana Sayfa", icon: Home, path: "/", shortcut: "⌘1" },
-	{ label: "Servisler", icon: Server, path: "/services", shortcut: "⌘2" },
-	{ label: "Uyarılar", icon: AlertCircle, path: "/alerts", shortcut: "⌘3" },
-	{ label: "AI Analiz", icon: Sparkles, path: "/ai-insights", shortcut: "⌘4" },
-	{ label: "Ayarlar", icon: Settings, path: "/settings", shortcut: "⌘5" },
-	{ label: "Kubernetes", icon: Cloud, path: "/kubernetes", shortcut: "⌘6" },
+	{ label: "Ana Sayfa", icon: Home, path: "/app", shortcut: "⌘1" },
+	{ label: "Servisler", icon: Server, path: "/app/services", shortcut: "⌘2" },
+	{ label: "Uyarılar", icon: AlertCircle, path: "/app/alerts", shortcut: "⌘3" },
+	{ label: "AI Analiz", icon: Sparkles, path: "/app/ai-insights", shortcut: "⌘4" },
+	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘5" },
+	{ label: "Kubernetes", icon: Cloud, path: "/app/kubernetes", shortcut: "⌘6" },
 ];
 
 const actionItems = [
@@ -61,12 +61,12 @@ export function CommandPalette() {
 
 	useEffect(() => {
 		const VIM_NAV: Record<string, string> = {
-			d: "/",
-			s: "/services",
-			a: "/alerts",
-			i: "/ai-insights",
-			m: "/service-map",
-			k: "/kubernetes",
+			d: "/app",
+			s: "/app/services",
+			a: "/app/alerts",
+			i: "/app/ai-insights",
+			m: "/app/service-map",
+			k: "/app/kubernetes",
 		};
 
 		const down = (e: KeyboardEvent) => {
@@ -134,10 +134,10 @@ export function CommandPalette() {
 		(action: string) => {
 			switch (action) {
 				case "add-service":
-					navigate("/services");
+					navigate("/app/services");
 					break;
 				case "analyze":
-					navigate("/ai-insights");
+					navigate("/app/ai-insights");
 					break;
 				default:
 					break;
@@ -313,7 +313,7 @@ export function CommandPalette() {
 													<CommandItem
 														key={service.id}
 														onSelect={() =>
-															handleNavigate(`/services/${service.id}`)
+															handleNavigate(`/app/services/${service.id}`)
 														}
 														className="flex items-center gap-3 px-3 py-2.5 rounded cursor-pointer"
 														style={{ color: "var(--text-secondary)" }}

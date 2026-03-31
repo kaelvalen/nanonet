@@ -136,7 +136,7 @@ export function ServiceDetailPage() {
 		if (serviceId) {
 			deleteService(serviceId);
 			setDeleteDialogOpen(false);
-			navigate("/services");
+			navigate("/app/services");
 		}
 	};
 
@@ -321,7 +321,7 @@ export function ServiceDetailPage() {
 					Servis bulunamadı
 				</h2>
 				<Link
-					to="/services"
+					to="/app/services"
 					className="text-sm hover:underline mt-2 inline-block"
 					style={{ color: "var(--color-teal)" }}
 				>
@@ -361,7 +361,7 @@ export function ServiceDetailPage() {
 				<div className="flex items-center gap-3 mb-4">
 					<button
 						type="button"
-						onClick={() => navigate("/services")}
+						onClick={() => navigate("/app/services")}
 						className="p-2 rounded transition-all"
 						style={{ color: "var(--text-muted)" }}
 					>

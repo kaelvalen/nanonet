@@ -9,11 +9,11 @@ import { NavLink, useLocation } from "react-router";
 import { useServices } from "@/hooks/useServices";
 
 const navItems = [
-	{ to: "/", label: "Ana Sayfa", icon: LayoutDashboard },
-	{ to: "/services", label: "Servisler", icon: Server },
-	{ to: "/alerts", label: "Uyarılar", icon: AlertCircle },
-	{ to: "/ai-insights", label: "AI", icon: Sparkles },
-	{ to: "/settings", label: "Ayarlar", icon: Settings },
+	{ to: "/app", label: "Ana Sayfa", icon: LayoutDashboard },
+	{ to: "/app/services", label: "Servisler", icon: Server },
+	{ to: "/app/alerts", label: "Uyarılar", icon: AlertCircle },
+	{ to: "/app/ai-insights", label: "AI", icon: Sparkles },
+	{ to: "/app/settings", label: "Ayarlar", icon: Settings },
 ];
 
 export function MobileNav() {
@@ -24,7 +24,7 @@ export function MobileNav() {
 	).length;
 
 	const isActive = (to: string) => {
-		if (to === "/") return location.pathname === "/";
+		if (to === "/app") return location.pathname === "/app";
 		return location.pathname.startsWith(to);
 	};
 
@@ -40,12 +40,12 @@ export function MobileNav() {
 		>
 			{navItems.map((item) => {
 				const active = isActive(item.to);
-				const showBadge = item.to === "/alerts" && downCount > 0;
+				const showBadge = item.to === "/app/alerts" && downCount > 0;
 				return (
 					<NavLink
 						key={item.to}
 						to={item.to}
-						end={item.to === "/"}
+						end={item.to === "/app"}
 						className="relative flex flex-col items-center justify-center flex-1 py-2 gap-0.5 transition-all"
 						style={{
 							color: active

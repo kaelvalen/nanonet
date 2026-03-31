@@ -8,6 +8,7 @@ import {
 	Settings,
 	Sparkles,
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useServices } from "@/hooks/useServices";
@@ -26,20 +27,20 @@ import {
 type Crumb = { label: string; path: string };
 
 function buildBreadcrumbs(pathname: string): Crumb[] {
-	const crumbs: Crumb[] = [{ label: "Ana Sayfa", path: "/" }];
-	if (pathname.startsWith("/services/") && pathname.length > 10) {
-		crumbs.push({ label: "Servisler", path: "/services" });
+	const crumbs: Crumb[] = [{ label: "Ana Sayfa", path: "/app" }];
+	if (pathname.startsWith("/app/services/") && pathname.length > 14) {
+		crumbs.push({ label: "Servisler", path: "/app/services" });
 		crumbs.push({ label: "Detay", path: pathname });
-	} else if (pathname === "/services") {
-		crumbs.push({ label: "Servisler", path: "/services" });
-	} else if (pathname === "/alerts") {
-		crumbs.push({ label: "Alertler", path: "/alerts" });
-	} else if (pathname === "/ai-insights") {
-		crumbs.push({ label: "AI İçgörüler", path: "/ai-insights" });
-	} else if (pathname === "/settings") {
-		crumbs.push({ label: "Ayarlar", path: "/settings" });
-	} else if (pathname === "/kubernetes") {
-		crumbs.push({ label: "Kubernetes", path: "/kubernetes" });
+	} else if (pathname === "/app/services") {
+		crumbs.push({ label: "Servisler", path: "/app/services" });
+	} else if (pathname === "/app/alerts") {
+		crumbs.push({ label: "Alertler", path: "/app/alerts" });
+	} else if (pathname === "/app/ai-insights") {
+		crumbs.push({ label: "AI İçgörüler", path: "/app/ai-insights" });
+	} else if (pathname === "/app/settings") {
+		crumbs.push({ label: "Ayarlar", path: "/app/settings" });
+	} else if (pathname === "/app/kubernetes") {
+		crumbs.push({ label: "Kubernetes", path: "/app/kubernetes" });
 	}
 	return crumbs;
 }
@@ -117,7 +118,7 @@ export function FloatingStatusBar({
 					{downCount > 0 && (
 						<button
 							type="button"
-							onClick={() => navigate("/alerts")}
+							onClick={() => navigate("/app/alerts")}
 							className="hidden sm:flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold animate-pulse"
 							style={{
 								background: "var(--status-down-subtle)",
@@ -278,7 +279,7 @@ export function FloatingStatusBar({
 							<DropdownMenuItem
 								className="text-xs cursor-pointer"
 								style={{ color: "var(--text-secondary)" }}
-								onClick={() => navigate("/settings")}
+								onClick={() => navigate("/app/settings")}
 							>
 								Ayarlar
 							</DropdownMenuItem>
@@ -314,18 +315,14 @@ export function FloatingStatusBar({
 					{/* Logo */}
 					<button
 						type="button"
-						onClick={() => navigate("/")}
+						onClick={() => navigate("/app")}
 						className="flex items-center gap-2 group cursor-pointer shrink-0"
 					>
-						<div
-							className="w-7 h-7 rounded flex items-center justify-center transition-all"
-							style={{
-								background: "var(--gradient-logo)",
-								border: "2px solid var(--border-default)",
-							}}
-						>
-							<span className="text-white text-xs">✦</span>
-						</div>
+						<img
+							src={logo}
+							alt="NanoNet"
+							className="w-10 h-10 rounded object-contain transition-all"
+						/>
 						<span
 							className="font-(--font-quicksand) text-sm hidden sm:inline"
 							style={{ color: "var(--text-primary)", fontWeight: 600 }}
@@ -427,9 +424,9 @@ export function FloatingStatusBar({
 					{isHome && (
 						<nav className="hidden lg:flex items-center gap-1">
 							{[
-								{ path: "/services", label: "Servisler", icon: Server },
-								{ path: "/alerts", label: "Uyarılar", icon: AlertCircle },
-								{ path: "/settings", label: "Ayarlar", icon: Settings },
+								{ path: "/app/services", label: "Servisler", icon: Server },
+								{ path: "/app/alerts", label: "Uyarılar", icon: AlertCircle },
+								{ path: "/app/settings", label: "Ayarlar", icon: Settings },
 							].map(({ path, label, icon: Icon }) => (
 								<Link
 									key={path}
@@ -612,7 +609,7 @@ export function FloatingStatusBar({
 							<DropdownMenuItem
 								className="text-xs cursor-pointer"
 								style={{ color: "var(--text-secondary)" }}
-								onClick={() => navigate("/settings")}
+								onClick={() => navigate("/app/settings")}
 							>
 								Ayarlar
 							</DropdownMenuItem>

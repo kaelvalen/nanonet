@@ -36,7 +36,7 @@ import { useServices } from "@/hooks/useServices";
 
 const navCards = [
 	{
-		to: "/services",
+		to: "/app/services",
 		label: "Servisler",
 		description: "Tüm mikroservisleri izle ve yönet",
 		icon: Server,
@@ -45,7 +45,7 @@ const navCards = [
 		pulse: false,
 	},
 	{
-		to: "/alerts",
+		to: "/app/alerts",
 		label: "Uyarılar",
 		description: "Gerçek zamanlı olay bildirimleri",
 		icon: AlertCircle,
@@ -54,7 +54,7 @@ const navCards = [
 		pulse: true,
 	},
 	{
-		to: "/ai-insights",
+		to: "/app/ai-insights",
 		label: "AI Analiz",
 		description: "Yapay zeka destekli anomali tespiti ve öneriler",
 		icon: Sparkles,
@@ -63,7 +63,7 @@ const navCards = [
 		pulse: false,
 	},
 	{
-		to: "/settings",
+		to: "/app/settings",
 		label: "Ayarlar",
 		description: "Platform yapılandırması ve tercihler",
 		icon: Settings,
@@ -72,7 +72,7 @@ const navCards = [
 		pulse: false,
 	},
 	{
-		to: "/service-map",
+		to: "/app/service-map",
 		label: "Servis Haritası",
 		description: "Servis bağımlılıklarını görsel olarak keşfet ve yönet",
 		icon: GitFork,
@@ -81,7 +81,7 @@ const navCards = [
 		pulse: false,
 	},
 	{
-		to: "/kubernetes",
+		to: "/app/kubernetes",
 		label: "Kubernetes",
 		description: "Cluster yönetimi, pod izleme ve auto-scaling",
 		icon: Cloud,
@@ -703,7 +703,7 @@ export function DashboardPage() {
 						<div className="flex items-center gap-2">
 							<AddServiceDialog />
 							<Link
-								to="/services"
+								to="/app/services"
 								className="text-xs transition-colors flex items-center gap-1"
 								style={{ color: "var(--text-muted)" }}
 							>
@@ -791,7 +791,7 @@ export function DashboardPage() {
 										whileHover={{ y: -2 }}
 									>
 										<Link
-											to={`/services/${service.id}`}
+											to={`/app/services/${service.id}`}
 											className="block group"
 										>
 											<Card
@@ -925,7 +925,7 @@ export function DashboardPage() {
 								)}
 							</div>
 							<Link
-								to="/alerts"
+								to="/app/alerts"
 								className="text-[10px] flex items-center gap-1 transition-colors"
 								style={{ color: "var(--text-faint)" }}
 							>
@@ -960,7 +960,7 @@ export function DashboardPage() {
 									Eşik değerlerini ayarlamak için
 									<button
 										type="button"
-										onClick={() => navigate("/alerts")}
+										onClick={() => navigate("/app/alerts")}
 										className="underline ml-1"
 										style={{ color: "var(--color-teal)" }}
 									>
@@ -1063,7 +1063,7 @@ export function DashboardPage() {
 								</h3>
 							</div>
 							<Link
-								to="/ai-insights"
+								to="/app/ai-insights"
 								className="text-[10px] flex items-center gap-1 transition-colors"
 								style={{ color: "var(--text-faint)" }}
 							>
@@ -1099,7 +1099,7 @@ export function DashboardPage() {
 								</p>
 								<Button
 									size="sm"
-									onClick={() => navigate("/ai-insights")}
+									onClick={() => navigate("/app/ai-insights")}
 									className="mt-1 rounded text-xs h-7 text-white"
 									style={{
 										background: "var(--gradient-btn-primary)",

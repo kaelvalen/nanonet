@@ -6,6 +6,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { KubernetesPage } from "@/pages/KubernetesPage";
+import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { RegisterPage } from "@/pages/RegisterPage";
@@ -20,7 +21,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 	const isInitializing = useAuthStore((s) => s.isInitializing);
 
-	// While initializing, show loading state instead of null to prevent routing issues
 	if (isInitializing) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -40,7 +40,6 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 	const isInitializing = useAuthStore((s) => s.isInitializing);
 
-	// While initializing, wait before deciding to redirect authenticated users
 	if (isInitializing) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -50,13 +49,37 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
 	}
 
 	if (isAuthenticated) {
-		return <Navigate to="/" replace />;
+		return <Navigate to="/app" replace />;
 	}
 
 	return <>{children}</>;
 }
 
+function LandingRoute() {
+	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+	const isInitializing = useAuthStore((s) => s.isInitializing);
+
+	if (isInitializing) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+			</div>
+		);
+	}
+
+	if (isAuthenticated) {
+		return <Navigate to="/app" replace />;
+	}
+
+	return <LandingPage />;
+}
+
 export const router = createBrowserRouter([
+	{
+		path: "/",
+		element: <LandingRoute />,
+		errorElement: <ErrorPage />,
+	},
 	{
 		path: "/login",
 		element: (
@@ -94,7 +117,7 @@ export const router = createBrowserRouter([
 		errorElement: <ErrorPage />,
 	},
 	{
-		path: "/",
+		path: "/app",
 		element: (
 			<AuthGuard>
 				<DashboardLayout />
