@@ -86,7 +86,10 @@ export function NotFoundPage() {
 							size="sm"
 							onClick={() => navigate("/", { replace: true })}
 							className="text-white rounded text-xs h-9 px-4 border-0 hover:opacity-90"
-							style={{ background: "var(--gradient-btn-primary)", boxShadow: "var(--btn-shadow)" }}
+							style={{
+								background: "var(--gradient-btn-primary)",
+								boxShadow: "var(--btn-shadow)",
+							}}
 						>
 							<Home className="w-3.5 h-3.5 mr-1.5" /> Ana Sayfaya Git
 						</Button>

@@ -1,7 +1,5 @@
 import {
 	AlertCircle,
-	Cloud,
-	GitFork,
 	LayoutDashboard,
 	Server,
 	Settings,
@@ -50,7 +48,9 @@ export function MobileNav() {
 						end={item.to === "/"}
 						className="relative flex flex-col items-center justify-center flex-1 py-2 gap-0.5 transition-all"
 						style={{
-							color: active ? "var(--sidebar-primary)" : "var(--sidebar-foreground)",
+							color: active
+								? "var(--sidebar-primary)"
+								: "var(--sidebar-foreground)",
 							opacity: active ? 1 : 0.6,
 						}}
 					>

@@ -195,9 +195,10 @@ export function DashboardPage() {
 	const globalMetrics = [
 		{
 			label: "Ort. Latency",
-			value: globalSummary?.avg_latency_ms != null
-				? `${globalSummary.avg_latency_ms.toFixed(0)}ms`
-				: "—",
+			value:
+				globalSummary?.avg_latency_ms != null
+					? `${globalSummary.avg_latency_ms.toFixed(0)}ms`
+					: "—",
 			icon: Gauge,
 			colorVar: "var(--status-warn)",
 			borderVar: "var(--status-warn-border)",
@@ -205,9 +206,10 @@ export function DashboardPage() {
 		},
 		{
 			label: "P95 Latency",
-			value: globalSummary?.p95_latency_ms != null
-				? `${globalSummary.p95_latency_ms.toFixed(0)}ms`
-				: "—",
+			value:
+				globalSummary?.p95_latency_ms != null
+					? `${globalSummary.p95_latency_ms.toFixed(0)}ms`
+					: "—",
 			icon: Activity,
 			colorVar: "var(--color-lavender)",
 			borderVar: "var(--color-lavender-border)",
@@ -215,9 +217,10 @@ export function DashboardPage() {
 		},
 		{
 			label: "Hata Oranı",
-			value: globalSummary?.avg_error_rate != null
-				? `${(Math.min(globalSummary.avg_error_rate, 1) * 100).toFixed(1)}%`
-				: "—",
+			value:
+				globalSummary?.avg_error_rate != null
+					? `${(Math.min(globalSummary.avg_error_rate, 1) * 100).toFixed(1)}%`
+					: "—",
 			icon: AlertCircle,
 			colorVar: "var(--status-down-text)",
 			borderVar: "var(--status-down-border)",
@@ -225,9 +228,10 @@ export function DashboardPage() {
 		},
 		{
 			label: "Ort. CPU",
-			value: globalSummary?.avg_cpu_percent != null
-				? `${globalSummary.avg_cpu_percent.toFixed(1)}%`
-				: "—",
+			value:
+				globalSummary?.avg_cpu_percent != null
+					? `${globalSummary.avg_cpu_percent.toFixed(1)}%`
+					: "—",
 			icon: Cpu,
 			colorVar: "var(--color-teal)",
 			borderVar: "var(--color-teal-border)",
@@ -545,7 +549,10 @@ export function DashboardPage() {
 											border: `1.5px solid ${m.borderVar}`,
 										}}
 									>
-										<m.icon className="w-3.5 h-3.5" style={{ color: m.colorVar }} />
+										<m.icon
+											className="w-3.5 h-3.5"
+											style={{ color: m.colorVar }}
+										/>
 									</div>
 									<p
 										className="text-[10px] uppercase tracking-wider"
@@ -926,16 +933,36 @@ export function DashboardPage() {
 							<div className="py-6 text-center space-y-2">
 								<div
 									className="w-10 h-10 rounded flex items-center justify-center mx-auto"
-									style={{ backgroundColor: "var(--status-up-subtle)", border: "2px solid var(--status-up-border)" }}
+									style={{
+										backgroundColor: "var(--status-up-subtle)",
+										border: "2px solid var(--status-up-border)",
+									}}
 								>
-									<CheckCircle2 className="w-5 h-5" style={{ color: "var(--status-up)" }} />
+									<CheckCircle2
+										className="w-5 h-5"
+										style={{ color: "var(--status-up)" }}
+									/>
 								</div>
-								<p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+								<p
+									className="text-xs font-medium"
+									style={{ color: "var(--text-secondary)" }}
+								>
 									Tüm sistemler sağlıklı
 								</p>
-								<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+								<p
+									className="text-[10px]"
+									style={{ color: "var(--text-faint)" }}
+								>
 									Eşik değerlerini ayarlamak için
-									<button type="button" onClick={() => navigate("/alerts")} className="underline ml-1" style={{ color: "var(--color-teal)" }}>Uyarılar</button> sayfasını ziyaret edin
+									<button
+										type="button"
+										onClick={() => navigate("/alerts")}
+										className="underline ml-1"
+										style={{ color: "var(--color-teal)" }}
+									>
+										Uyarılar
+									</button>{" "}
+									sayfasını ziyaret edin
 								</p>
 							</div>
 						) : (
@@ -1044,14 +1071,26 @@ export function DashboardPage() {
 							<div className="py-6 text-center space-y-2">
 								<div
 									className="w-10 h-10 rounded flex items-center justify-center mx-auto"
-									style={{ backgroundColor: "var(--color-lavender-subtle)", border: "2px solid var(--color-lavender-border)" }}
+									style={{
+										backgroundColor: "var(--color-lavender-subtle)",
+										border: "2px solid var(--color-lavender-border)",
+									}}
 								>
-									<Sparkles className="w-5 h-5" style={{ color: "var(--color-lavender)" }} />
+									<Sparkles
+										className="w-5 h-5"
+										style={{ color: "var(--color-lavender)" }}
+									/>
 								</div>
-								<p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+								<p
+									className="text-xs font-medium"
+									style={{ color: "var(--text-secondary)" }}
+								>
 									Henüz AI analizi yok
 								</p>
-								<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+								<p
+									className="text-[10px]"
+									style={{ color: "var(--text-faint)" }}
+								>
 									Servis detayında &ldquo;Analiz Et&rdquo; butonuna basın
 								</p>
 								<Button

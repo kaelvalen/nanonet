@@ -195,7 +195,9 @@ function Sidebar({
 				>
 					<SheetHeader className="sr-only">
 						<SheetTitle>Kenar Çubuğu</SheetTitle>
-						<SheetDescription>Mobil kenar çubuğunu görüntüler.</SheetDescription>
+						<SheetDescription>
+							Mobil kenar çubuğunu görüntüler.
+						</SheetDescription>
 					</SheetHeader>
 					<div className="flex h-full w-full flex-col">{children}</div>
 				</SheetContent>

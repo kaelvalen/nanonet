@@ -196,13 +196,15 @@ export const metricsApi = {
 	}> => {
 		try {
 			const response = await apiClient.get("/metrics/summary");
-			return response.data.data ?? {
-				avg_latency_ms: null,
-				p95_latency_ms: null,
-				avg_error_rate: null,
-				avg_cpu_percent: null,
-				avg_memory_used_mb: null,
-			};
+			return (
+				response.data.data ?? {
+					avg_latency_ms: null,
+					p95_latency_ms: null,
+					avg_error_rate: null,
+					avg_cpu_percent: null,
+					avg_memory_used_mb: null,
+				}
+			);
 		} catch {
 			return {
 				avg_latency_ms: null,

@@ -1274,7 +1274,8 @@ export function KubernetesPage() {
 																style={{
 																	background:
 																		"color-mix(in srgb, var(--color-lavender) 12%, transparent)",
-																	border: "1px solid var(--color-lavender-border)",
+																	border:
+																		"1px solid var(--color-lavender-border)",
 																	color: "var(--color-lavender)",
 																}}
 															>
@@ -1312,7 +1313,9 @@ export function KubernetesPage() {
 																className="flex justify-between text-[9px] mb-1"
 																style={{ color: "var(--text-faint)" }}
 															>
-																<span>Kullanılabilir: {dep.available_replicas}</span>
+																<span>
+																	Kullanılabilir: {dep.available_replicas}
+																</span>
 																<span>Güncellenen: {dep.updated_replicas}</span>
 															</div>
 															<div
@@ -1363,7 +1366,8 @@ export function KubernetesPage() {
 																	aria-label="Replica azalt"
 																	className="w-7 h-7 rounded-lg flex items-center justify-center"
 																	style={{
-																		border: "1px solid var(--color-lavender-border)",
+																		border:
+																			"1px solid var(--color-lavender-border)",
 																		color: "var(--color-lavender)",
 																	}}
 																>
@@ -1389,7 +1393,8 @@ export function KubernetesPage() {
 																	aria-label="Replica artır"
 																	className="w-7 h-7 rounded-lg flex items-center justify-center"
 																	style={{
-																		border: "1px solid var(--color-lavender-border)",
+																		border:
+																			"1px solid var(--color-lavender-border)",
 																		color: "var(--color-lavender)",
 																	}}
 																>

@@ -22,16 +22,16 @@ type ChatMessage struct {
 
 // ChatRequest is the payload from the frontend.
 type ChatRequest struct {
-	Message  string        `json:"message" binding:"required,min=1,max=2000"`
-	History  []ChatMessage `json:"history"`
-	Context  string        `json:"context"` // "global" or a service ID
+	Message string        `json:"message" binding:"required,min=1,max=2000"`
+	History []ChatMessage `json:"history"`
+	Context string        `json:"context"` // "global" or a service ID
 }
 
 // ChatResponse returned to the frontend.
 type ChatResponse struct {
-	Reply     string `json:"reply"`
-	Model     string `json:"model"`
-	TokensUsed int   `json:"tokens_used,omitempty"`
+	Reply      string `json:"reply"`
+	Model      string `json:"model"`
+	TokensUsed int    `json:"tokens_used,omitempty"`
 }
 
 type ChatService struct {
@@ -164,7 +164,7 @@ Kısa, net ve teknik cevaplar ver. Gereksiz açıklama yapma. Türkçe veya İng
 	if len(services) > 0 {
 		sb.WriteString("## Kullanıcının Mevcut Servisleri\n")
 		for _, svc := range services {
-			sb.WriteString(fmt.Sprintf("- %s (%s:%d) — durum: %s\n", svc.Name, svc.Host, svc.Port, svc.Status))
+			fmt.Fprintf(&sb, "- %s (%s:%d) — durum: %s\n", svc.Name, svc.Host, svc.Port, svc.Status)
 		}
 		sb.WriteString("\n")
 	}
@@ -185,7 +185,7 @@ Kısa, net ve teknik cevaplar ver. Gereksiz açıklama yapma. Türkçe veya İng
 		if len(recentAlerts) > 0 {
 			sb.WriteString("## Aktif Alertler (bağlam servisi)\n")
 			for _, a := range recentAlerts {
-				sb.WriteString(fmt.Sprintf("- [%s] %s: %s\n", a.Severity, a.Type, a.Message))
+				fmt.Fprintf(&sb, "- [%s] %s: %s\n", a.Severity, a.Type, a.Message)
 			}
 			sb.WriteString("\n")
 		}

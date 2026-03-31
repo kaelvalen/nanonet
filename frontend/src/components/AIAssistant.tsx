@@ -2,7 +2,7 @@ import { Maximize2, Minimize2, Send, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router";
-import { type ChatMessage, aiChatApi } from "@/api/metrics";
+import { aiChatApi, type ChatMessage } from "@/api/metrics";
 import { useServiceStore } from "@/store/serviceStore";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -15,7 +15,6 @@ export function AIAssistant() {
 	const [chatMessages, setChatMessages] = useState<
 		{ role: "ai" | "user"; text: string; time: string }[]
 	>([
-
 		{
 			role: "ai",
 			text: "Merhaba! Sistem analizi yapmak, anomali tespit etmek veya servisleriniz hakkında bilgi almak için bana soru sorabilirsiniz.",
@@ -62,12 +61,10 @@ export function AIAssistant() {
 
 		setIsAnalyzing(true);
 		try {
-			const history: ChatMessage[] = chatMessages
-				.slice(-10)
-				.map((m) => ({
-					role: m.role === "user" ? "user" : "assistant",
-					content: m.text,
-				}));
+			const history: ChatMessage[] = chatMessages.slice(-10).map((m) => ({
+				role: m.role === "user" ? "user" : "assistant",
+				content: m.text,
+			}));
 
 			const result = await aiChatApi.chat(
 				userMsg,

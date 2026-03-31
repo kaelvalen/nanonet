@@ -4,7 +4,6 @@ import {
 	ChevronDown,
 	Circle,
 	Download,
-	Filter,
 	Loader2,
 	Search,
 	Terminal,
@@ -57,7 +56,12 @@ function parseAgentMessage(raw: string, serviceId: string): LogEntry | null {
 			return {
 				id: `${Date.now()}-${Math.random()}`,
 				timestamp: msg.timestamp ?? new Date().toISOString(),
-				level: svc.status === "down" ? "error" : svc.status === "degraded" ? "warn" : "info",
+				level:
+					svc.status === "down"
+						? "error"
+						: svc.status === "degraded"
+							? "warn"
+							: "info",
 				source: "agent",
 				message: `cpu=${sys.cpu_percent?.toFixed(1) ?? "?"}% mem=${sys.memory_used_mb?.toFixed(0) ?? "?"}MB latency=${svc.latency_ms?.toFixed(0) ?? "?"}ms status=${svc.status ?? "?"}`,
 				raw,
@@ -93,14 +97,18 @@ function parseAgentMessage(raw: string, serviceId: string): LogEntry | null {
 			return {
 				id: `${Date.now()}-${Math.random()}`,
 				timestamp: d.time ?? new Date().toISOString(),
-				level: d.status === "down" ? "error" : d.status === "degraded" ? "warn" : "info",
+				level:
+					d.status === "down"
+						? "error"
+						: d.status === "degraded"
+							? "warn"
+							: "info",
 				source: "metric",
 				message: `cpu=${d.cpu_percent?.toFixed(1) ?? "?"}% mem=${d.memory_used_mb?.toFixed(0) ?? "?"}MB latency=${d.latency_ms?.toFixed(0) ?? "?"}ms status=${d.status ?? "?"}`,
 				raw,
 			};
 		}
-	} catch {
-	}
+	} catch {}
 	return null;
 }
 
@@ -131,7 +139,11 @@ function LevelBadge({ level }: { level: string }) {
 
 const HTTP_POLL_INTERVAL_MS = 10_000;
 
-export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerProps) {
+export function LogViewer({
+	serviceId,
+	serviceName,
+	maxLines = 500,
+}: LogViewerProps) {
 	const [logs, setLogs] = useState<LogEntry[]>([]);
 	const [connected, setConnected] = useState(false);
 	const [pollingFallback, setPollingFallback] = useState(false);
@@ -150,14 +162,17 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 	const pausedRef = useRef(paused);
 	pausedRef.current = paused;
 
-	const addLog = useCallback((entry: LogEntry) => {
-		if (pausedRef.current) return;
-		setUnreadCount((n) => (autoScrollRef.current ? 0 : n + 1));
-		setLogs((prev) => {
-			const next = [...prev, entry];
-			return next.length > maxLines ? next.slice(-maxLines) : next;
-		});
-	}, [maxLines]);
+	const addLog = useCallback(
+		(entry: LogEntry) => {
+			if (pausedRef.current) return;
+			setUnreadCount((n) => (autoScrollRef.current ? 0 : n + 1));
+			setLogs((prev) => {
+				const next = [...prev, entry];
+				return next.length > maxLines ? next.slice(-maxLines) : next;
+			});
+		},
+		[maxLines],
+	);
 
 	useEffect(() => {
 		const wsUrl = import.meta.env.VITE_WS_URL as string;
@@ -216,7 +231,12 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 							addLog({
 								id: `poll-${m.time}`,
 								timestamp: m.time,
-								level: m.status === "down" ? "error" : m.status === "degraded" ? "warn" : "info",
+								level:
+									m.status === "down"
+										? "error"
+										: m.status === "degraded"
+											? "warn"
+											: "info",
 								source: "poll",
 								message: `cpu=${m.cpu_percent?.toFixed(1) ?? "?"}% mem=${m.memory_used_mb?.toFixed(0) ?? "?"}MB latency=${m.latency_ms?.toFixed(0) ?? "?"}ms status=${m.status ?? "?"}`,
 							});
@@ -249,7 +269,7 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 			bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 			setUnreadCount(0);
 		}
-	}, [logs, autoScroll, paused]);
+	}, [autoScroll, paused]);
 
 	const handleScroll = () => {
 		const el = containerRef.current;
@@ -278,7 +298,10 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 
 	const downloadLogs = () => {
 		const text = filtered
-			.map((l) => `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.source}] ${l.message}`)
+			.map(
+				(l) =>
+					`[${l.timestamp}] [${l.level.toUpperCase()}] [${l.source}] ${l.message}`,
+			)
 			.join("\n");
 		const blob = new Blob([text], { type: "text/plain" });
 		const url = URL.createObjectURL(blob);
@@ -314,8 +337,14 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 				style={{ borderColor: "var(--border-subtle)" }}
 			>
 				<div className="flex items-center gap-2">
-					<Terminal className="w-4 h-4" style={{ color: "var(--color-blue)" }} />
-					<span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+					<Terminal
+						className="w-4 h-4"
+						style={{ color: "var(--color-blue)" }}
+					/>
+					<span
+						className="text-sm font-semibold"
+						style={{ color: "var(--text-primary)" }}
+					>
 						Log Akışı
 					</span>
 					{serviceName && (
@@ -328,17 +357,30 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 				<div className="flex items-center gap-1.5">
 					{connected ? (
 						<>
-							<Circle className="w-2 h-2 fill-current animate-pulse" style={{ color: "var(--status-up)" }} />
-							<span className="text-xs" style={{ color: "var(--status-up)" }}>Canlı</span>
+							<Circle
+								className="w-2 h-2 fill-current animate-pulse"
+								style={{ color: "var(--status-up)" }}
+							/>
+							<span className="text-xs" style={{ color: "var(--status-up)" }}>
+								Canlı
+							</span>
 						</>
 					) : pollingFallback ? (
 						<>
-							<Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--status-warn)" }} />
-							<span className="text-xs" style={{ color: "var(--status-warn)" }}>HTTP Polling</span>
+							<Loader2
+								className="w-3 h-3 animate-spin"
+								style={{ color: "var(--status-warn)" }}
+							/>
+							<span className="text-xs" style={{ color: "var(--status-warn)" }}>
+								HTTP Polling
+							</span>
 						</>
 					) : (
 						<>
-							<WifiOff className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+							<WifiOff
+								className="w-3 h-3"
+								style={{ color: "var(--text-faint)" }}
+							/>
 							<span className="text-xs" style={{ color: "var(--text-faint)" }}>
 								{error ?? "Bağlantı kesik"}
 							</span>
@@ -363,7 +405,10 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 
 				<div className="flex items-center gap-2">
 					<div className="relative">
-						<Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: "var(--text-faint)" }} />
+						<Search
+							className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3"
+							style={{ color: "var(--text-faint)" }}
+						/>
 						<Input
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
@@ -381,11 +426,17 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 								onClick={() => setLevelFilter(lvl)}
 								className={cn(
 									"text-xs px-1.5 py-0.5 rounded transition-all",
-									levelFilter === lvl ? "font-bold" : "opacity-50 hover:opacity-80",
+									levelFilter === lvl
+										? "font-bold"
+										: "opacity-50 hover:opacity-80",
 								)}
 								style={{
-									color: lvl === "all" ? "var(--text-secondary)" : LEVEL_COLORS[lvl],
-									background: levelFilter === lvl ? LEVEL_BG[lvl] ?? "var(--bg-elevated)" : "transparent",
+									color:
+										lvl === "all" ? "var(--text-secondary)" : LEVEL_COLORS[lvl],
+									background:
+										levelFilter === lvl
+											? (LEVEL_BG[lvl] ?? "var(--bg-elevated)")
+											: "transparent",
 								}}
 							>
 								{lvl === "all" ? "Tümü" : lvl.toUpperCase()}
@@ -401,9 +452,15 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 						title={paused ? "Devam et" : "Duraklat"}
 					>
 						{paused ? (
-							<CheckCircle2 className="w-3.5 h-3.5" style={{ color: "var(--status-up)" }} />
+							<CheckCircle2
+								className="w-3.5 h-3.5"
+								style={{ color: "var(--status-up)" }}
+							/>
 						) : (
-							<AlertCircle className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+							<AlertCircle
+								className="w-3.5 h-3.5"
+								style={{ color: "var(--text-faint)" }}
+							/>
 						)}
 					</Button>
 
@@ -414,7 +471,10 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 						onClick={downloadLogs}
 						title="İndir"
 					>
-						<Download className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+						<Download
+							className="w-3.5 h-3.5"
+							style={{ color: "var(--text-faint)" }}
+						/>
 					</Button>
 
 					<Button
@@ -424,7 +484,10 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 						onClick={() => setLogs([])}
 						title="Temizle"
 					>
-						<Trash2 className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+						<Trash2
+							className="w-3.5 h-3.5"
+							style={{ color: "var(--text-faint)" }}
+						/>
 					</Button>
 				</div>
 			</div>
@@ -443,7 +506,10 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 						<div className="flex flex-col items-center justify-center h-32 gap-2">
 							{connected ? (
 								<>
-									<Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
+									<Loader2
+										className="w-4 h-4 animate-spin"
+										style={{ color: "var(--text-faint)" }}
+									/>
 									<p className="text-xs" style={{ color: "var(--text-faint)" }}>
 										Log bekleniyor...
 									</p>
@@ -475,7 +541,9 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 							>
 								[{log.source}]
 							</span>
-							<span style={{ color: "var(--text-primary)", wordBreak: "break-all" }}>
+							<span
+								style={{ color: "var(--text-primary)", wordBreak: "break-all" }}
+							>
 								{log.message}
 							</span>
 						</div>
@@ -508,7 +576,9 @@ export function LogViewer({ serviceId, serviceName, maxLines = 500 }: LogViewerP
 					color: "var(--text-faint)",
 				}}
 			>
-				<span>{filtered.length} / {logs.length} satır</span>
+				<span>
+					{filtered.length} / {logs.length} satır
+				</span>
 				{!autoScroll && (
 					<button
 						type="button"

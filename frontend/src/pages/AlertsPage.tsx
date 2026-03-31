@@ -950,11 +950,24 @@ export function AlertsPage() {
 															{!alert.resolved_at && (
 																<div className="flex items-center gap-1 shrink-0">
 																	{/* Snooze dropdown */}
-																	<div className="relative" ref={snoozeOpenId === alert.id ? snoozeRef : undefined}>
+																	<div
+																		className="relative"
+																		ref={
+																			snoozeOpenId === alert.id
+																				? snoozeRef
+																				: undefined
+																		}
+																	>
 																		<Button
 																			variant="outline"
 																			size="sm"
-																			onClick={() => setSnoozeOpenId(snoozeOpenId === alert.id ? null : alert.id)}
+																			onClick={() =>
+																				setSnoozeOpenId(
+																					snoozeOpenId === alert.id
+																						? null
+																						: alert.id,
+																				)
+																			}
 																			className="text-[10px] rounded h-7 px-2 shrink-0"
 																			style={{
 																				borderColor: "var(--color-blue-border)",
@@ -967,33 +980,65 @@ export function AlertsPage() {
 																		<AnimatePresence>
 																			{snoozeOpenId === alert.id && (
 																				<motion.div
-																					initial={{ opacity: 0, y: -4, scale: 0.97 }}
-																					animate={{ opacity: 1, y: 0, scale: 1 }}
-																					exit={{ opacity: 0, y: -4, scale: 0.97 }}
+																					initial={{
+																						opacity: 0,
+																						y: -4,
+																						scale: 0.97,
+																					}}
+																					animate={{
+																						opacity: 1,
+																						y: 0,
+																						scale: 1,
+																					}}
+																					exit={{
+																						opacity: 0,
+																						y: -4,
+																						scale: 0.97,
+																					}}
 																					transition={{ duration: 0.15 }}
 																					className="absolute right-0 top-8 z-20 min-w-32 rounded overflow-hidden"
 																					style={{
 																						background: "var(--surface-card)",
-																						border: "2px solid var(--color-blue-border)",
+																						border:
+																							"2px solid var(--color-blue-border)",
 																						boxShadow: "var(--panel-shadow)",
 																					}}
 																				>
 																					<div
 																						className="flex items-center gap-1.5 px-3 py-2 border-b"
-																						style={{ borderColor: "var(--border-subtle)", color: "var(--text-faint)" }}
+																						style={{
+																							borderColor:
+																								"var(--border-subtle)",
+																							color: "var(--text-faint)",
+																						}}
 																					>
 																						<BellRing className="w-3 h-3" />
-																						<span className="text-[10px] uppercase tracking-wider">Ertele</span>
+																						<span className="text-[10px] uppercase tracking-wider">
+																							Ertele
+																						</span>
 																					</div>
 																					{SNOOZE_OPTIONS.map((opt) => (
 																						<button
 																							type="button"
 																							key={opt.minutes}
-																							onClick={() => handleSnooze(alert.id, opt.minutes)}
+																							onClick={() =>
+																								handleSnooze(
+																									alert.id,
+																									opt.minutes,
+																								)
+																							}
 																							className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:opacity-80"
-																							style={{ color: "var(--text-secondary)", background: "transparent" }}
+																							style={{
+																								color: "var(--text-secondary)",
+																								background: "transparent",
+																							}}
 																						>
-																							<Clock className="w-3 h-3" style={{ color: "var(--color-blue)" }} />
+																							<Clock
+																								className="w-3 h-3"
+																								style={{
+																									color: "var(--color-blue)",
+																								}}
+																							/>
 																							{opt.label}
 																						</button>
 																					))}
@@ -1012,7 +1057,8 @@ export function AlertsPage() {
 																			color: "var(--status-up-text)",
 																		}}
 																	>
-																		<CheckCircle2 className="w-3 h-3 mr-1" /> Çöz
+																		<CheckCircle2 className="w-3 h-3 mr-1" />{" "}
+																		Çöz
 																	</Button>
 																</div>
 															)}

@@ -160,7 +160,10 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
 
             tracing::info!(
                 "[{}] exec çalıştırılıyor: '{}' → `{}` (timeout: {}s)",
-                cmd.command_id, raw, shell_cmd, timeout
+                cmd.command_id,
+                raw,
+                shell_cmd,
+                timeout
             );
             run_shell(&shell_cmd, timeout).await
         }
@@ -231,11 +234,7 @@ fn build_service_command(input: &str, config: &Config) -> Result<String, String>
     let host = &config.host;
     let port = config.port;
     let health_url = config.health_url();
-    let metrics_url = config
-        .metrics_endpoint
-        .as_deref()
-        .unwrap_or("")
-        .to_string();
+    let metrics_url = config.metrics_endpoint.as_deref().unwrap_or("").to_string();
 
     // Servisin portunu dinleyen PID'i bul — yalnızca host process'leri için geçerli.
     // Container'da çalışan servisler için PID boş döner; komutlar buna göre fallback uygular.
@@ -250,8 +249,7 @@ fn build_service_command(input: &str, config: &Config) -> Result<String, String>
 
     let cmd = match keyword.as_str() {
         "help" => {
-            return Ok(format!(
-                "echo 'Kullanılabilir komutlar:\n\
+            return Ok("echo 'Kullanılabilir komutlar:\n\
                    status      — health endpoint durumu\n\
                    health      — health endpoint yanıtı\n\
                    metrics     — /metrics çıktısı\n\
@@ -265,8 +263,7 @@ fn build_service_command(input: &str, config: &Config) -> Result<String, String>
                    uptime      — host uptime + port yanıt süresi\n\
                    disk        — disk kullanımı\n\
                    netstat     — port ağ durumu\n\
-                   help        — bu liste'"
-            ));
+                   help        — bu liste'".to_string());
         }
 
         "status" => format!(
@@ -432,13 +429,11 @@ fn build_service_command(input: &str, config: &Config) -> Result<String, String>
              else echo '(bağlantı kurulamadı)'; fi"
         ),
 
-        "disk" => format!(
-            "echo '--- Disk Kullanımı ---'; \
+        "disk" => "echo '--- Disk Kullanımı ---'; \
              df -h / 2>/dev/null; \
              echo; \
              echo '--- Inode Kullanımı ---'; \
-             df -i / 2>/dev/null | head -3"
-        ),
+             df -i / 2>/dev/null | head -3".to_string(),
 
         _ => {
             return Err(format!(

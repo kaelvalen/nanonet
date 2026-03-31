@@ -31,6 +31,19 @@ export function useWebSocket() {
 	const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
 	const mountedRef = useRef(true);
 
+	const startHeartbeat = useCallback((ws: WebSocket) => {
+		if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+		heartbeatRef.current = setInterval(() => {
+			if (ws.readyState === WebSocket.OPEN) {
+				try {
+					ws.send(JSON.stringify({ type: "ping" }));
+				} catch {
+					// Connection might be closing
+				}
+			}
+		}, HEARTBEAT_INTERVAL);
+	}, []);
+
 	const handleMessage = useCallback(
 		(event: MessageEvent) => {
 			try {
@@ -142,21 +155,17 @@ export function useWebSocket() {
 				console.error("WebSocket mesaj parse hatası:", error);
 			}
 		},
-		[updateServiceStatus, setLastMessageTime, queryClient],
+		[
+			updateServiceStatus,
+			setLastMessageTime,
+			queryClient,
+			setWS,
+			startHeartbeat,
+			setLastError,
+			setConnected,
+			resetReconnect,
+		],
 	);
-
-	const startHeartbeat = useCallback((ws: WebSocket) => {
-		if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-		heartbeatRef.current = setInterval(() => {
-			if (ws.readyState === WebSocket.OPEN) {
-				try {
-					ws.send(JSON.stringify({ type: "ping" }));
-				} catch {
-					// Connection might be closing
-				}
-			}
-		}, HEARTBEAT_INTERVAL);
-	}, []);
 
 	const stopHeartbeat = useCallback(() => {
 		if (heartbeatRef.current) {
@@ -292,9 +301,7 @@ export function useWebSocket() {
 		setConnected,
 		setWS,
 		handleMessage,
-		startHeartbeat,
 		stopHeartbeat,
-		resetReconnect,
 		incrementReconnect,
 		setLastError,
 	]);

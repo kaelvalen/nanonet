@@ -1,19 +1,19 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+	addEdge,
 	Background,
 	Controls,
 	type Edge,
 	EdgeLabelRenderer,
+	type EdgeProps,
+	getBezierPath,
 	Handle,
 	type Node,
 	Position,
 	ReactFlow,
 	ReactFlowProvider,
-	addEdge,
 	useEdgesState,
 	useNodesState,
-	getBezierPath,
-	type EdgeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
@@ -38,7 +38,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { metricsApi, type AnalysisResult } from "@/api/metrics";
+import { type AnalysisResult, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { useServices } from "@/hooks/useServices";
 import { useServiceStore } from "@/store/serviceStore";
@@ -123,9 +123,10 @@ interface SerializedMap {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function edgeColorForStatuses(srcStatus: string, tgtStatus: string): string {
+function _edgeColorForStatuses(srcStatus: string, tgtStatus: string): string {
 	if (srcStatus === "down" || tgtStatus === "down") return "var(--status-down)";
-	if (srcStatus === "degraded" || tgtStatus === "degraded") return "var(--status-warn)";
+	if (srcStatus === "degraded" || tgtStatus === "degraded")
+		return "var(--status-warn)";
 	return "var(--status-up)";
 }
 
@@ -158,7 +159,10 @@ function saveMap(nodes: Node[], edges: Edge[]) {
 		type: n.type ?? "serviceNode",
 		position: n.position,
 	}));
-	localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes: serialized, edges }));
+	localStorage.setItem(
+		STORAGE_KEY,
+		JSON.stringify({ nodes: serialized, edges }),
+	);
 }
 
 function buildDefaultLayout(services: Service[]): Node[] {
@@ -176,10 +180,18 @@ function buildDefaultLayout(services: Service[]): Node[] {
 
 // ─── Status Icon ─────────────────────────────────────────────────────────────
 
-function StatusIcon({ status, size = "w-3.5 h-3.5" }: { status: string; size?: string }) {
+function StatusIcon({
+	status,
+	size = "w-3.5 h-3.5",
+}: {
+	status: string;
+	size?: string;
+}) {
 	const color = STATUS_COLOR[status] ?? STATUS_COLOR.unknown;
-	if (status === "up") return <CheckCircle2 className={size} style={{ color }} />;
-	if (status === "degraded") return <AlertTriangle className={size} style={{ color }} />;
+	if (status === "up")
+		return <CheckCircle2 className={size} style={{ color }} />;
+	if (status === "degraded")
+		return <AlertTriangle className={size} style={{ color }} />;
 	if (status === "down") return <XCircle className={size} style={{ color }} />;
 	return <HelpCircle className={size} style={{ color }} />;
 }
@@ -197,7 +209,15 @@ function StatusEdge({
 	data,
 	markerEnd,
 	selected,
-}: EdgeProps & { data?: { srcStatus?: string; tgtStatus?: string; latency?: number; srcAlerts?: number; tgtAlerts?: number } }) {
+}: EdgeProps & {
+	data?: {
+		srcStatus?: string;
+		tgtStatus?: string;
+		latency?: number;
+		srcAlerts?: number;
+		tgtAlerts?: number;
+	};
+}) {
 	const [edgePath, labelX, labelY] = getBezierPath({
 		sourceX,
 		sourceY,
@@ -214,7 +234,12 @@ function StatusEdge({
 	const srcColor = edgeColorForSide(srcStatus, srcAlerts);
 	const tgtColor = edgeColorForSide(tgtStatus, tgtAlerts);
 	const isDown = srcStatus === "down" || tgtStatus === "down";
-	const isDegraded = !isDown && (srcStatus === "degraded" || tgtStatus === "degraded" || srcAlerts > 0 || tgtAlerts > 0);
+	const isDegraded =
+		!isDown &&
+		(srcStatus === "degraded" ||
+			tgtStatus === "degraded" ||
+			srcAlerts > 0 ||
+			tgtAlerts > 0);
 	const latency = data?.latency;
 	const gradientId = `edge-grad-${id}`;
 	const useGradient = srcColor !== tgtColor;
@@ -252,7 +277,9 @@ function StatusEdge({
 					stroke: strokePaint,
 					strokeWidth: selected ? 3 : isDown ? 2.5 : isDegraded ? 2 : 1.5,
 					strokeDasharray: isDown ? "6 3" : undefined,
-					filter: selected ? "drop-shadow(0 0 3px rgba(255,60,60,0.5))" : undefined,
+					filter: selected
+						? "drop-shadow(0 0 3px rgba(255,60,60,0.5))"
+						: undefined,
 				}}
 			/>
 			<EdgeLabelRenderer>
@@ -269,7 +296,9 @@ function StatusEdge({
 							type="button"
 							onClick={(e) => {
 								e.stopPropagation();
-								const event = new CustomEvent("delete-edge", { detail: { id } });
+								const event = new CustomEvent("delete-edge", {
+									detail: { id },
+								});
 								document.dispatchEvent(event);
 							}}
 							className="w-5 h-5 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
@@ -303,7 +332,12 @@ function StatusEdge({
 
 // ─── Service Node ─────────────────────────────────────────────────────────────
 
-const STATUS_SEVERITY: Record<string, number> = { up: 0, unknown: 1, degraded: 2, down: 3 };
+const STATUS_SEVERITY: Record<string, number> = {
+	up: 0,
+	unknown: 1,
+	degraded: 2,
+	down: 3,
+};
 
 function ServiceNode({ data }: { data: ServiceNodeData }) {
 	const { service, onDelete, onSelect, selected, extra } = data;
@@ -312,13 +346,18 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 	const border = STATUS_BORDER[service.status] ?? STATUS_BORDER.unknown;
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: div contains nested interactive elements (Handle, delete button), cannot use <button>
 		<div
+			role="button"
+			tabIndex={0}
 			className="rounded group relative cursor-pointer"
 			style={{
 				width: 200,
 				background: "var(--surface-card)",
 				border: selected ? `2px solid ${color}` : `2px solid ${border}`,
-				boxShadow: selected ? `0 0 0 3px color-mix(in srgb, ${color} 25%, transparent), var(--card-shadow)` : "var(--card-shadow)",
+				boxShadow: selected
+					? `0 0 0 3px color-mix(in srgb, ${color} 25%, transparent), var(--card-shadow)`
+					: "var(--card-shadow)",
 				transition: "box-shadow 0.15s, border-color 0.15s",
 			}}
 			onClick={() => onSelect(service.id)}
@@ -327,18 +366,31 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 			<Handle
 				type="target"
 				position={Position.Left}
-				style={{ background: color, width: 9, height: 9, border: `2px solid var(--surface-card)` }}
+				style={{
+					background: color,
+					width: 9,
+					height: 9,
+					border: `2px solid var(--surface-card)`,
+				}}
 			/>
 			<Handle
 				type="source"
 				position={Position.Right}
-				style={{ background: color, width: 9, height: 9, border: `2px solid var(--surface-card)` }}
+				style={{
+					background: color,
+					width: 9,
+					height: 9,
+					border: `2px solid var(--surface-card)`,
+				}}
 			/>
 
 			{/* Delete button */}
 			<button
 				type="button"
-				onClick={(e) => { e.stopPropagation(); onDelete(service.id); }}
+				onClick={(e) => {
+					e.stopPropagation();
+					onDelete(service.id);
+				}}
 				className="absolute -top-2 -right-2 w-5 h-5 rounded-full items-center justify-center hidden group-hover:flex z-10"
 				style={{ background: "var(--status-down)", color: "white" }}
 			>
@@ -503,10 +555,19 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 					<Server className="w-3.5 h-3.5" style={{ color }} />
 				</div>
 				<div className="flex-1 min-w-0">
-					<p className="text-xs font-semibold truncate" style={{ color: "var(--text-secondary)" }}>
+					<p
+						className="text-xs font-semibold truncate"
+						style={{ color: "var(--text-secondary)" }}
+					>
 						{service.name}
 					</p>
-					<p className="text-[10px] truncate" style={{ color: "var(--text-faint)", fontFamily: "var(--font-mono)" }}>
+					<p
+						className="text-[10px] truncate"
+						style={{
+							color: "var(--text-faint)",
+							fontFamily: "var(--font-mono)",
+						}}
+					>
 						{service.host}:{service.port}
 					</p>
 				</div>
@@ -533,7 +594,10 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 					<span className="text-xs font-semibold" style={{ color }}>
 						{STATUS_LABEL[service.status] ?? service.status}
 					</span>
-					<span className="text-[10px] ml-auto" style={{ color: "var(--text-faint)" }}>
+					<span
+						className="text-[10px] ml-auto"
+						style={{ color: "var(--text-faint)" }}
+					>
 						{service.poll_interval_sec}s polling
 					</span>
 				</div>
@@ -551,22 +615,34 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 							{[
 								{
 									label: "CPU",
-									value: latestMetric.cpu_percent != null ? `${latestMetric.cpu_percent.toFixed(1)}%` : "—",
+									value:
+										latestMetric.cpu_percent != null
+											? `${latestMetric.cpu_percent.toFixed(1)}%`
+											: "—",
 									icon: Zap,
 								},
 								{
 									label: "Bellek",
-									value: latestMetric.memory_used_mb != null ? `${latestMetric.memory_used_mb.toFixed(0)} MB` : "—",
+									value:
+										latestMetric.memory_used_mb != null
+											? `${latestMetric.memory_used_mb.toFixed(0)} MB`
+											: "—",
 									icon: Server,
 								},
 								{
 									label: "Gecikme",
-									value: latestMetric.latency_ms != null ? `${latestMetric.latency_ms.toFixed(0)} ms` : "—",
+									value:
+										latestMetric.latency_ms != null
+											? `${latestMetric.latency_ms.toFixed(0)} ms`
+											: "—",
 									icon: Clock,
 								},
 								{
 									label: "Hata Oranı",
-									value: latestMetric.error_rate != null ? `${(latestMetric.error_rate * 100).toFixed(1)}%` : "—",
+									value:
+										latestMetric.error_rate != null
+											? `${(latestMetric.error_rate * 100).toFixed(1)}%`
+											: "—",
 									icon: AlertTriangle,
 								},
 							].map(({ label, value, icon: Icon }) => (
@@ -579,12 +655,21 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 									}}
 								>
 									<div className="flex items-center gap-1 mb-0.5">
-										<Icon className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
-										<p className="text-[9px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
+										<Icon
+											className="w-3 h-3"
+											style={{ color: "var(--text-faint)" }}
+										/>
+										<p
+											className="text-[9px] uppercase tracking-wider"
+											style={{ color: "var(--text-faint)" }}
+										>
 											{label}
 										</p>
 									</div>
-									<p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-secondary)" }}>
+									<p
+										className="text-sm font-bold tabular-nums"
+										style={{ color: "var(--text-secondary)" }}
+									>
 										{value}
 									</p>
 								</div>
@@ -600,7 +685,10 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 							className="text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1"
 							style={{ color: "var(--text-muted)" }}
 						>
-							<AlertTriangle className="w-3 h-3" style={{ color: "var(--status-down)" }} />
+							<AlertTriangle
+								className="w-3 h-3"
+								style={{ color: "var(--status-down)" }}
+							/>
 							Aktif Uyarılar ({alerts.length})
 						</p>
 						<div className="space-y-1.5">
@@ -609,11 +697,19 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 									key={alert.id}
 									className="px-2.5 py-2 rounded"
 									style={{
-										background: alert.severity === "crit" ? "var(--status-down-subtle)" : alert.severity === "warn" ? "var(--status-warn-subtle)" : "var(--color-blue-subtle)",
+										background:
+											alert.severity === "crit"
+												? "var(--status-down-subtle)"
+												: alert.severity === "warn"
+													? "var(--status-warn-subtle)"
+													: "var(--color-blue-subtle)",
 										border: `2px solid ${alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)"}`,
 									}}
 								>
-									<p className="text-[10px] font-medium line-clamp-2" style={{ color: "var(--text-secondary)" }}>
+									<p
+										className="text-[10px] font-medium line-clamp-2"
+										style={{ color: "var(--text-secondary)" }}
+									>
 										{alert.message}
 									</p>
 								</div>
@@ -631,8 +727,14 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 					}}
 				>
 					<div className="flex items-center gap-2 mb-2">
-						<Brain className="w-3.5 h-3.5" style={{ color: "var(--color-lavender)" }} />
-						<p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--color-lavender)" }}>
+						<Brain
+							className="w-3.5 h-3.5"
+							style={{ color: "var(--color-lavender)" }}
+						/>
+						<p
+							className="text-[10px] font-semibold uppercase tracking-wider"
+							style={{ color: "var(--color-lavender)" }}
+						>
 							AI Analizi
 						</p>
 					</div>
@@ -648,9 +750,14 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 						}}
 					>
 						{analyzeMutation.isPending ? (
-							<><RefreshCw className="w-3 h-3 animate-spin" /> Analiz ediliyor...</>
+							<>
+								<RefreshCw className="w-3 h-3 animate-spin" /> Analiz
+								ediliyor...
+							</>
 						) : (
-							<><Sparkles className="w-3 h-3" /> Bu servisi analiz et</>
+							<>
+								<Sparkles className="w-3 h-3" /> Bu servisi analiz et
+							</>
 						)}
 					</button>
 
@@ -666,25 +773,33 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 							>
 								<div
 									className="pt-2"
-									style={{ borderTop: "2px solid var(--color-lavender-border)" }}
+									style={{
+										borderTop: "2px solid var(--color-lavender-border)",
+									}}
 								>
-									<p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--color-lavender)" }}>
+									<p
+										className="text-[10px] uppercase tracking-wider mb-1"
+										style={{ color: "var(--color-lavender)" }}
+									>
 										Özet
 									</p>
-									<p className="text-[10px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+									<p
+										className="text-[10px] leading-relaxed"
+										style={{ color: "var(--text-secondary)" }}
+									>
 										{analysisResult.summary}
 									</p>
 								</div>
-								{analysisResult.recommendations?.slice(0, 3).map((rec, i) => (
-									<div
-										key={`rec-${i}`}
-										className="flex items-start gap-1.5"
-									>
+								{analysisResult.recommendations?.slice(0, 3).map((rec) => (
+									<div key={rec.action} className="flex items-start gap-1.5">
 										<TrendingUp
 											className="w-3 h-3 mt-0.5 shrink-0"
 											style={{ color: "var(--color-lavender)" }}
 										/>
-										<p className="text-[10px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+										<p
+											className="text-[10px] leading-relaxed"
+											style={{ color: "var(--text-secondary)" }}
+										>
 											{rec.action}
 										</p>
 									</div>
@@ -708,7 +823,9 @@ function ServiceMapInner() {
 	const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 	const [addMode, setAddMode] = useState(false);
 	const [initialized, setInitialized] = useState(false);
-	const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+	const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
+		null,
+	);
 	const addMenuRef = useRef<HTMLDivElement>(null);
 
 	// ── Extra metrics (latency, uptime, alert counts) ──
@@ -788,9 +905,15 @@ function ServiceMapInner() {
 			const serviceIds = new Set(services.map((s) => s.id));
 			if (saved) {
 				const validSaved = saved.nodes.filter((n) => serviceIds.has(n.id));
+				const serviceMap = new Map(services.map((s) => [s.id, s]));
 				const validNodes: Node[] = validSaved.map((n) => {
-					const svc = services.find((s) => s.id === n.id)!;
-					return { id: n.id, type: n.type, position: n.position, data: buildNodeData(svc) };
+					const svc = serviceMap.get(n.id) as Service;
+					return {
+						id: n.id,
+						type: n.type,
+						position: n.position,
+						data: buildNodeData(svc),
+					};
 				});
 				const presentIds = new Set(validNodes.map((n) => n.id));
 				const newServices = services.filter((s) => !presentIds.has(s.id));
@@ -798,7 +921,7 @@ function ServiceMapInner() {
 					id: svc.id,
 					type: "serviceNode" as const,
 					position: {
-						x: ((validNodes.length + i) * 260) % 1040 + 60,
+						x: (((validNodes.length + i) * 260) % 1040) + 60,
 						y: Math.floor((validNodes.length + i) / 4) * 170 + 60,
 					},
 					data: buildNodeData(svc),
@@ -810,10 +933,11 @@ function ServiceMapInner() {
 						.map((e) => enrichEdge(e, services)),
 				);
 			} else {
+				const svcMap = new Map(services.map((s) => [s.id, s]));
 				setNodes(
 					buildDefaultLayout(services).map((n) => ({
 						...n,
-						data: buildNodeData(services.find((s) => s.id === n.id)!),
+						data: buildNodeData(svcMap.get(n.id) as Service),
 					})),
 				);
 			}
@@ -821,7 +945,8 @@ function ServiceMapInner() {
 		};
 
 		// Try backend first, fall back to localStorage
-		servicesApi.loadMap()
+		servicesApi
+			.loadMap()
 			.then((backendMap) => {
 				if (backendMap) {
 					applyMap(backendMap as SerializedMap);
@@ -849,7 +974,9 @@ function ServiceMapInner() {
 	// ── Update edge colors when services/alerts change ──
 	useEffect(() => {
 		if (!initialized) return;
-		setEdges((es: Edge[]) => es.map((e) => enrichEdge(e, services, alertCountMap)));
+		setEdges((es: Edge[]) =>
+			es.map((e) => enrichEdge(e, services, alertCountMap)),
+		);
 	}, [services, alertCountMap, initialized, setEdges]);
 
 	// ── Compute worstConnectedStatus per node from current edges ──
@@ -865,10 +992,14 @@ function ServiceMapInner() {
 			// target node sees source's status, source node sees target's status
 			const prevForTgt = worstMap[edge.target] ?? "up";
 			const prevForSrc = worstMap[edge.source] ?? "up";
-			if ((STATUS_SEVERITY[srcStatus] ?? 0) > (STATUS_SEVERITY[prevForTgt] ?? 0)) {
+			if (
+				(STATUS_SEVERITY[srcStatus] ?? 0) > (STATUS_SEVERITY[prevForTgt] ?? 0)
+			) {
 				worstMap[edge.target] = srcStatus;
 			}
-			if ((STATUS_SEVERITY[tgtStatus] ?? 0) > (STATUS_SEVERITY[prevForSrc] ?? 0)) {
+			if (
+				(STATUS_SEVERITY[tgtStatus] ?? 0) > (STATUS_SEVERITY[prevForSrc] ?? 0)
+			) {
 				worstMap[edge.source] = tgtStatus;
 			}
 		}
@@ -963,7 +1094,10 @@ function ServiceMapInner() {
 	};
 
 	return (
-		<div className="flex" style={{ background: "var(--bg-primary)", flex: 1, minHeight: 0 }}>
+		<div
+			className="flex"
+			style={{ background: "var(--bg-primary)", flex: 1, minHeight: 0 }}
+		>
 			{/* Canvas area */}
 			<div className="flex flex-col" style={{ flex: 1, minWidth: 0 }}>
 				{/* Toolbar */}
@@ -983,11 +1117,26 @@ function ServiceMapInner() {
 									className="w-2.5 h-2.5 rounded-full"
 									style={{ background: STATUS_COLOR[status] }}
 								/>
-								<span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{label}</span>
+								<span
+									className="text-[10px]"
+									style={{ color: "var(--text-faint)" }}
+								>
+									{label}
+								</span>
 							</div>
 						))}
-						<span className="text-[10px]" style={{ color: "var(--text-faint)" }}>·</span>
-						<span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{edges.length} bağlantı</span>
+						<span
+							className="text-[10px]"
+							style={{ color: "var(--text-faint)" }}
+						>
+							·
+						</span>
+						<span
+							className="text-[10px]"
+							style={{ color: "var(--text-faint)" }}
+						>
+							{edges.length} bağlantı
+						</span>
 					</div>
 
 					<div className="flex-1" />
@@ -999,8 +1148,12 @@ function ServiceMapInner() {
 								onClick={() => setAddMode((v) => !v)}
 								className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border-2 transition-all"
 								style={{
-									background: addMode ? "var(--color-teal-subtle)" : "transparent",
-									borderColor: addMode ? "var(--color-teal-border)" : "var(--border-default)",
+									background: addMode
+										? "var(--color-teal-subtle)"
+										: "transparent",
+									borderColor: addMode
+										? "var(--color-teal-border)"
+										: "var(--border-default)",
 									color: addMode ? "var(--color-teal)" : "var(--text-muted)",
 								}}
 							>
@@ -1026,12 +1179,18 @@ function ServiceMapInner() {
 										>
 											<div
 												className="w-2 h-2 rounded-full shrink-0"
-												style={{ background: STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown }}
+												style={{
+													background:
+														STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown,
+												}}
 											/>
 											<span className="truncate">{svc.name}</span>
 											<span
 												className="text-[9px] ml-auto shrink-0"
-												style={{ color: STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown }}
+												style={{
+													color:
+														STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown,
+												}}
 											>
 												{STATUS_LABEL[svc.status]}
 											</span>
@@ -1079,7 +1238,11 @@ function ServiceMapInner() {
 						edgeTypes={edgeTypes}
 						fitView
 						fitViewOptions={{ padding: 0.25 }}
-						style={{ width: "100%", height: "100%", background: "var(--bg-primary)" }}
+						style={{
+							width: "100%",
+							height: "100%",
+							background: "var(--bg-primary)",
+						}}
 						deleteKeyCode="Delete"
 						onPaneClick={() => setSelectedServiceId(null)}
 					>
@@ -1096,8 +1259,13 @@ function ServiceMapInner() {
 					{isLoading && services.length === 0 && (
 						<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
 							<div className="flex items-center gap-2">
-								<Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
-								<p className="text-sm" style={{ color: "var(--text-faint)" }}>Servisler yükleniyor...</p>
+								<Loader2
+									className="w-4 h-4 animate-spin"
+									style={{ color: "var(--text-faint)" }}
+								/>
+								<p className="text-sm" style={{ color: "var(--text-faint)" }}>
+									Servisler yükleniyor...
+								</p>
 							</div>
 						</div>
 					)}
@@ -1126,7 +1294,11 @@ function ServiceMapInner() {
 
 // ─── Edge enrichment helper ───────────────────────────────────────────────────
 
-function enrichEdge(edge: Edge, services: Service[], alertCountMap: Record<string, number> = {}): Edge {
+function enrichEdge(
+	edge: Edge,
+	services: Service[],
+	alertCountMap: Record<string, number> = {},
+): Edge {
 	const src = services.find((s) => s.id === edge.source);
 	const tgt = services.find((s) => s.id === edge.target);
 	const srcStatus = src?.status ?? "unknown";
@@ -1149,7 +1321,15 @@ function enrichEdge(edge: Edge, services: Service[], alertCountMap: Record<strin
 export function ServiceMap() {
 	return (
 		<ReactFlowProvider>
-			<div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%" }}>
+			<div
+				style={{
+					display: "flex",
+					flexDirection: "column",
+					flex: 1,
+					minHeight: 0,
+					height: "100%",
+				}}
+			>
 				<ServiceMapInner />
 			</div>
 		</ReactFlowProvider>

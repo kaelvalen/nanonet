@@ -73,7 +73,9 @@ export function CommandPalette() {
 			// Ignore when typing in an input / textarea / contenteditable
 			const tag = (e.target as HTMLElement)?.tagName;
 			const isEditable =
-				tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
+				tag === "INPUT" ||
+				tag === "TEXTAREA" ||
+				(e.target as HTMLElement)?.isContentEditable;
 
 			if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
 				e.preventDefault();
@@ -524,7 +526,10 @@ export function CommandPalette() {
 										</kbd>
 										toggle
 									</span>
-									<span className="flex items-center gap-1 ml-2" style={{ color: "var(--color-teal)", opacity: 0.7 }}>
+									<span
+										className="flex items-center gap-1 ml-2"
+										style={{ color: "var(--color-teal)", opacity: 0.7 }}
+									>
 										<kbd
 											className="px-1 py-0.5 rounded"
 											style={{
