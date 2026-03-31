@@ -17,68 +17,88 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import logo from "@/assets/logo.png";
 import landingVideo from "@/assets/video/landing.mp4";
 import dashboardImage from "@/assets/image.png";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
+import { useServices } from "@/hooks/useServices";
 
 export function LandingPage() {
+	const { t } = useTranslation();
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+	const { services } = useServices({ enabled: isAuthenticated });
+
+	const activeServicesCount = services.filter((s) => s.status === "up")
+		.length;
 
 	return (
 		<div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-indigo-500/30 font-sans">
-			{/* TopNavBar */}
-			<nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 transition-all duration-200">
-				<div className="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
-					<div className="flex items-center gap-8">
-						<div className="flex items-center gap-2.5">
-							<img src={logo} alt="NanoNet Logo" className="w-8 h-8" />
-							<span className="text-xl font-bold bg-gradient-to-br from-indigo-600 to-cyan-500 bg-clip-text text-transparent">
-								NanoNet
-							</span>
+			{/* Floating TopNavBar */}
+			<div className="fixed top-6 inset-x-6 z-50 pointer-events-none">
+				<nav
+					className="max-w-7xl mx-auto pointer-events-auto bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] transition-all duration-300"
+					style={{
+						boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.07)",
+					}}
+				>
+					<div className="flex justify-between items-center w-full px-6 py-3">
+						<div className="flex items-center gap-10">
+							<div className="flex items-center gap-2.5 shrink-0">
+								<img src={logo} alt="NanoNet Logo" className="w-8 h-8" />
+								<span className="text-xl font-black bg-gradient-to-br from-indigo-600 to-cyan-500 bg-clip-text text-transparent tracking-tighter">
+									NanoNet
+								</span>
+							</div>
+							<div className="hidden lg:flex gap-8 items-center pt-0.5">
+								<a
+									className="text-indigo-600 dark:text-cyan-400 font-bold text-xs uppercase tracking-widest border-b-2 border-indigo-600 dark:border-cyan-400 pb-1"
+									href="/"
+								>
+									{t("navigation.platform")}
+								</a>
+								{["Observability", "Solutions", "Developers", "Pricing"].map(
+									(item) => (
+										<a
+											key={item}
+											className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors text-xs font-bold uppercase tracking-widest"
+											href="/"
+										>
+											{item}
+										</a>
+									),
+								)}
+							</div>
 						</div>
-						<div className="hidden md:flex gap-6 items-center">
-							<a
-								className="text-indigo-600 dark:text-cyan-400 font-semibold border-b-2 border-indigo-600 dark:border-cyan-400 pb-1 text-sm tracking-tight"
-								href="/"
-							>
-								Platform
-							</a>
-							{["Observability", "Solutions", "Developers", "Pricing"].map(
-								(item) => (
-									<a
-										key={item}
-										className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-sm font-medium tracking-tight"
-										href="/"
+						<div className="flex items-center gap-4">
+							{isAuthenticated ? (
+								<div key="auth-cta">
+									<Link to="/app">
+										<Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 h-10 font-bold text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+											{t("landing.hero.cta.launch")}
+										</Button>
+									</Link>
+								</div>
+							) : (
+								<div key="guest-cta" className="flex items-center gap-4">
+									<Link
+										to="/login"
+										className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors px-2"
 									>
-										{item}
-									</a>
-								),
+										{t("auth.login")}
+									</Link>
+									<Link to="/register">
+										<Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 h-10 font-bold text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+											{t("auth.register")}
+										</Button>
+									</Link>
+								</div>
 							)}
 						</div>
 					</div>
-					<div className="flex items-center gap-4">
-						{isAuthenticated ? (
-							<div key="auth-cta">
-								<Link to="/app">
-									<Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-5 py-2 font-medium text-sm transition-all active:scale-95">
-										Go to Dashboard
-									</Button>
-								</Link>
-							</div>
-						) : (
-							<div key="guest-cta">
-								<Link to="/login">
-									<Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-5 py-2 font-medium text-sm transition-all active:scale-95">
-										Get Started
-									</Button>
-								</Link>
-							</div>
-						)}
-					</div>
-				</div>
-			</nav>
+				</nav>
+			</div>
 
 			{/* Hero Section */}
 			<section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
@@ -101,28 +121,41 @@ export function LandingPage() {
 						initial={{ opacity: 0, x: -30 }}
 						animate={{ opacity: 1, x: 0 }}
 						transition={{ duration: 0.8, ease: "easeOut" }}
-						className="space-y-8"
+						className="flex flex-col justify-center"
 					>
-						<div>
-							<h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white mb-4">
-								NanoNet
-							</h1>
-							<p className="text-2xl md:text-3xl font-medium text-slate-300 tracking-tight">
-								See the noise.{" "}
-								<span className="text-cyan-400">Find the signal.</span>
-							</p>
+						<div className="mb-6">
+							{isAuthenticated ? (
+								<motion.div
+									initial={{ opacity: 0, y: -10 }}
+									animate={{ opacity: 1, y: 0 }}
+									className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full"
+								>
+									<div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+									<span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
+										{activeServicesCount} {t("status.active")} Services
+									</span>
+								</motion.div>
+							) : (
+								<span className="text-sm font-bold uppercase tracking-[0.3em] text-indigo-500">
+									{t("landing.hero.badge")}
+								</span>
+							)}
 						</div>
-						<p className="text-lg text-slate-400 max-w-md leading-relaxed">
-							The next generation of industrial-grade observability. Stop
-							guessing and start knowing with sub-second precision and AI-driven
-							root cause analysis.
+						<h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white mb-4">
+							{t("landing.hero.title")}
+						</h1>
+						<p className="text-2xl md:text-3xl font-medium text-slate-300 tracking-tight leading-snug">
+							{t("landing.hero.subtitle")}
+						</p>
+						<p className="text-lg text-slate-400 mt-8 mb-10 leading-relaxed max-w-lg">
+							{t("landing.hero.description")}
 						</p>
 						<div className="flex flex-wrap gap-4" key="landing-cta-group">
 							{isAuthenticated ? (
 								<div key="auth-launch">
 									<Link to="/app">
 										<Button className="h-auto px-8 py-4 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:scale-105 transition-transform">
-											Launch Console
+											{t("landing.hero.cta.launch")}
 										</Button>
 									</Link>
 								</div>
@@ -130,20 +163,23 @@ export function LandingPage() {
 								<div key="guest-demo">
 									<Link to="/login">
 										<Button className="h-auto px-8 py-4 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:scale-105 transition-transform">
-											Start Demo
+											{t("landing.hero.cta.start")}
 										</Button>
 									</Link>
 								</div>
 							)}
-							<Button
-								variant="outline"
-								className="h-auto px-8 py-4 rounded-lg border border-slate-700 text-slate-200 font-bold text-lg hover:bg-slate-800 transition-colors flex items-center gap-2 bg-transparent"
-								onClick={() =>
-									window.open("https://github.com/kaelvalen/nanonet", "_blank")
-								}
+							<a
+								href="https://github.com/kaelvalen/nanonet"
+								target="_blank"
+								rel="noreferrer"
 							>
-								<Terminal className="w-5 h-5" /> GitHub
-							</Button>
+								<Button
+									variant="outline"
+									className="h-auto px-8 py-4 rounded-lg border-2 border-slate-800 text-slate-300 font-bold text-lg hover:bg-slate-800 transition-colors"
+								>
+									{t("landing.hero.cta.more")}
+								</Button>
+							</a>
 						</div>
 					</motion.div>
 
@@ -213,13 +249,13 @@ export function LandingPage() {
 			<section className="bg-slate-50 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800">
 				<div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-8">
 					<h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
-						Are your users discovering critical failures before you do?
+						{t("landing.problem.question")}
 					</h3>
 					<div className="flex flex-wrap justify-center items-center gap-10">
 						{[
-							{ icon: Gauge, label: "Latency Spikes" },
-							{ icon: TrendingDown, label: "Data Drift" },
-							{ icon: AlertTriangle, label: "Ghost Outages" },
+							{ icon: Gauge, label: t("landing.problem.latency") },
+							{ icon: TrendingDown, label: t("landing.problem.drift") },
+							{ icon: AlertTriangle, label: t("landing.problem.outages") },
 						].map((item) => (
 							<div key={item.label} className="flex items-center gap-3">
 								<item.icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -237,43 +273,43 @@ export function LandingPage() {
 				<div className="max-w-7xl mx-auto px-6">
 					<div className="mb-16">
 						<span className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">
-							Engineered for Scale
+							{t("landing.features.badge")}
 						</span>
 						<h2 className="text-4xl font-bold mt-2 tracking-tight">
-							Precision Monitoring Tools
+							{t("landing.features.title")}
 						</h2>
 					</div>
 					<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 						{[
 							{
 								icon: Activity,
-								title: "Health Monitoring",
-								desc: "Continuous verification of system vitality with custom threshold triggers.",
+								title: t("landing.features.health.title"),
+								desc: t("landing.features.health.desc"),
 							},
 							{
 								icon: Brain,
-								title: "AI Anomaly Detection",
-								desc: "Neural patterns identify deviation before they impact customer experience.",
+								title: t("landing.features.ai.title"),
+								desc: t("landing.features.ai.desc"),
 							},
 							{
 								icon: GitFork,
-								title: "Service Dependency Map",
-								desc: "Visualize the complex graph of your microservices in real-time.",
+								title: t("landing.features.serviceMap.title"),
+								desc: t("landing.features.serviceMap.desc"),
 							},
 							{
 								icon: LayoutGrid,
-								title: "Kubernetes Integration",
-								desc: "Native support for clusters with auto-discovery and pod-level metrics.",
+								title: t("landing.features.k8s.title"),
+								desc: t("landing.features.k8s.desc"),
 							},
 							{
 								icon: Bell,
-								title: "Real-time Alerts",
-								desc: "Low-latency delivery via Slack, PagerDuty, or custom Webhooks.",
+								title: t("landing.features.alerts.title"),
+								desc: t("landing.features.alerts.desc"),
 							},
 							{
 								icon: Terminal,
-								title: "Log Viewer",
-								desc: "High-performance log indexing with powerful regex-based searching.",
+								title: t("landing.features.logs.title"),
+								desc: t("landing.features.logs.desc"),
 							},
 						].map((f, i) => (
 							<motion.div
@@ -302,24 +338,24 @@ export function LandingPage() {
 				<div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
 					<div className="space-y-10">
 						<h2 className="text-4xl font-bold text-white mb-8 tracking-tight">
-							Setup in 30 seconds
+							{t("landing.setup.title")}
 						</h2>
 						<div className="space-y-8">
 							{[
 								{
 									n: 1,
-									title: "Create an account",
-									desc: "Sign up for our free tier and get your instance key.",
+									title: t("landing.setup.step1.title"),
+									desc: t("landing.setup.step1.desc"),
 								},
 								{
 									n: 2,
-									title: "Install the Agent",
-									desc: "One command deployment across your entire fleet.",
+									title: t("landing.setup.step2.title"),
+									desc: t("landing.setup.step2.desc"),
 								},
 								{
 									n: 3,
-									title: "Visualize Everything",
-									desc: "Your dashboard starts populating metrics instantly.",
+									title: t("landing.setup.step3.title"),
+									desc: t("landing.setup.step3.desc"),
 								},
 							].map((step) => (
 								<div key={step.n} className="flex gap-6">
@@ -359,12 +395,11 @@ export function LandingPage() {
 					<div className="mb-12 inline-flex items-center gap-2 bg-indigo-100 dark:bg-indigo-500/10 px-4 py-2 rounded-full border border-indigo-200 dark:border-indigo-500/20">
 						<Zap className="w-3.5 h-3.5 text-indigo-600" />
 						<span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-							NanoNet AI Engine
+							{t("landing.ai.badge")}
 						</span>
 					</div>
 					<h2 className="text-5xl font-black text-slate-900 dark:text-white mb-8 tracking-tighter leading-tight">
-						Root Cause Analysis in <br />
-						<span className="text-indigo-600">Seconds</span>, Not Hours.
+						{t("landing.ai.title")}
 					</h2>
 					<motion.div
 						whileHover={{ y: -5 }}
@@ -377,7 +412,7 @@ export function LandingPage() {
 							<div className="space-y-4 flex-1">
 								<div className="flex items-center gap-3">
 									<span className="text-sm font-bold text-red-600 uppercase tracking-wide">
-										Anomaly Detected
+										{t("landing.ai.alert.title")}
 									</span>
 									<div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
 									<span className="text-xs font-mono text-slate-500">
@@ -385,17 +420,13 @@ export function LandingPage() {
 									</span>
 								</div>
 								<h4 className="text-xl font-bold">
-									Unexpected traffic spike in 'Auth-v2' service
+									{t("landing.ai.alert.desc")}
 								</h4>
 								<div className="flex items-center gap-4 py-4">
 									<div className="bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20 px-4 py-3 rounded-lg flex-1 flex items-center gap-3">
 										<ArrowRight className="w-4 h-4 text-indigo-600 shrink-0" />
 										<p className="text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-											AI Insight: Spike correlated with{" "}
-											<span className="text-indigo-600 font-bold">
-												Deployment #882
-											</span>
-											. Database connection pool exhaustion likely.
+											{t("landing.ai.alert.insight")}
 										</p>
 									</div>
 								</div>
@@ -412,17 +443,16 @@ export function LandingPage() {
 					<div className="grid lg:grid-cols-2 gap-16 items-center">
 						<div className="space-y-8">
 							<h2 className="text-4xl font-bold tracking-tight">
-								Built for Developers
+								{t("landing.devs.title")}
 							</h2>
 							<p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
-								Our agent is a single, static binary that consumes less than 1%
-								CPU. No complex sidecars, no bloated dependencies.
+								{t("landing.devs.desc")}
 							</p>
 							<ul className="space-y-5">
 								{[
-									"eBPF-powered instrumentation",
-									"OpenTelemetry native export",
-									"Automatic service tagging",
+									t("landing.devs.feature1"),
+									t("landing.devs.feature2"),
+									t("landing.devs.feature3"),
 								].map((item) => (
 									<li key={item} className="flex items-center gap-3">
 										<CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -443,7 +473,7 @@ export function LandingPage() {
 								</span>
 							</div>
 							<div className="font-mono text-sm space-y-3">
-								<p className="text-slate-500"># Fast installation script</p>
+								<p className="text-slate-500"># {t("landing.devs.install.comment")}</p>
 								<div className="flex items-center gap-3 bg-slate-950 p-4 rounded border border-slate-800 group relative">
 									<span className="text-indigo-500 font-bold">$</span>
 									<code className="text-slate-200">
@@ -464,13 +494,13 @@ export function LandingPage() {
 								</div>
 								<div className="pt-4 space-y-1 text-xs">
 									<p className="text-slate-500">
-										&gt;&gt; Authenticating node...
+										&gt;&gt; {t("landing.devs.install.step1")}
 									</p>
 									<p className="text-slate-500">
-										&gt;&gt; Installing binaries...
+										&gt;&gt; {t("landing.devs.install.step2")}
 									</p>
 									<p className="text-cyan-500 font-bold">
-										&gt;&gt; SUCCESS: NanoNet Agent is active.
+										&gt;&gt; {t("landing.devs.install.success")}
 									</p>
 								</div>
 							</div>
@@ -494,18 +524,22 @@ export function LandingPage() {
 							</span>
 						</div>
 						<span className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
-							NanoNet v2.0 · The grid never rests
+							NanoNet v2.0 · {t("footer.tagline")}
 						</span>
 					</div>
-					<div className="flex flex-wrap justify-center gap-8">
-						{["Privacy", "Terms", "Security", "Status"].map((item) => (
-							<a
-								key={item}
-								className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-indigo-500 transition-colors"
-								href="/"
+					<div className="flex flex-wrap items-center gap-8">
+						{[
+							{ key: "navigation.dashboard", path: "/app" },
+							{ key: "navigation.services", path: "/app/services" },
+							{ key: "navigation.alerts", path: "/app/alerts" },
+						].map((link) => (
+							<Link
+								key={link.key}
+								to={link.path}
+								className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors"
 							>
-								{item}
-							</a>
+								{t(link.key)}
+							</Link>
 						))}
 					</div>
 				</div>

@@ -7,7 +7,7 @@ import type {
 	UpdateServiceRequest,
 } from "../types/service";
 
-export function useServices() {
+export function useServices(options: { enabled?: boolean } = {}) {
 	const queryClient = useQueryClient();
 	const { setServices, addService, updateService, removeService } =
 		useServiceStore();
@@ -20,6 +20,7 @@ export function useServices() {
 			return data;
 		},
 		staleTime: 30000,
+		enabled: options.enabled ?? true,
 	});
 
 	const createMutation = useMutation({

@@ -7,6 +7,7 @@
 		"settings": "Settings",
 		"kubernetes": "Kubernetes",
 		"k8sPublish": "K8s Publish",
+		"platform": "Platform",
 		"skipToContent": "Skip to main content"
 	},
 	"auth": {
@@ -263,5 +264,92 @@
 		"year": "year",
 		"years": "years",
 		"ago": "ago"
+	},
+	"landing": {
+		"hero": {
+			"title": "NanoNet",
+			"badge": "Next-Gen Observability",
+			"subtitle": "See the noise. Find the signal.",
+			"description": "The next generation of industrial-grade observability. Stop guessing and start knowing with sub-second precision and AI-driven root cause analysis.",
+			"cta": {
+				"start": "Start Demo",
+				"launch": "Launch Console",
+				"more": "GitHub"
+			}
+		},
+		"problem": {
+			"question": "Are your users discovering critical failures before you do?",
+			"latency": "Latency Spikes",
+			"drift": "Data Drift",
+			"outages": "Ghost Outages"
+		},
+		"features": {
+			"title": "Precision Monitoring Tools",
+			"badge": "Engineered for Scale",
+			"health": {
+				"title": "Health Monitoring",
+				"desc": "Continuous verification of system vitality with custom threshold triggers."
+			},
+			"serviceMap": {
+				"title": "Live Service Map",
+				"desc": "Visualize your complex microservices ecosystem in real-time."
+			},
+			"ai": {
+				"title": "AI Forecasting",
+				"desc": "Identify anomalies weeks before they become outages."
+			},
+			"k8s": {
+				"title": "Kubernetes Native",
+				"desc": "Cluster, pod, and resource monitoring, now in one panel."
+			},
+			"alerts": {
+				"title": "Real-time Alerts",
+				"desc": "Low-latency delivery via Slack, PagerDuty, or custom Webhooks."
+			},
+			"logs": {
+				"title": "Log Viewer",
+				"desc": "High-performance log indexing with powerful regex-based searching."
+			}
+		},
+		"setup": {
+			"title": "Setup in 30 seconds",
+			"step1": {
+				"title": "Create an account",
+				"desc": "Sign up for our free tier and get your instance key."
+			},
+			"step2": {
+				"title": "Install the Agent",
+				"desc": "One command deployment across your entire fleet."
+			},
+			"step3": {
+				"title": "Visualize Everything",
+				"desc": "Your dashboard starts populating metrics instantly."
+			}
+		},
+		"ai": {
+			"badge": "NanoNet AI Engine",
+			"title": "Root Cause Analysis in Seconds.",
+			"alert": {
+				"title": "Anomaly Detected",
+				"desc": "Unexpected traffic spike in 'Auth-v2' service",
+				"insight": "AI Insight: Spike correlated with Deployment #882. Database connection pool exhaustion likely."
+			}
+		},
+		"devs": {
+			"title": "Built for Developers",
+			"desc": "Our agent is a single, static binary that consumes less than 1% CPU. No complex sidecars.",
+			"feature1": "eBPF-powered instrumentation",
+			"feature2": "OpenTelemetry native export",
+			"feature3": "Automatic service tagging",
+			"install": {
+				"comment": "Fast installation script",
+				"step1": "Authenticating node...",
+				"step2": "Installing binaries...",
+				"success": "SUCCESS: NanoNet Agent is active."
+			}
+		}
+	},
+	"footer": {
+		"tagline": "The grid never rests"
 	}
 }

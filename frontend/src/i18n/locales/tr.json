@@ -7,6 +7,7 @@
 		"settings": "Ayarlar",
 		"kubernetes": "Kubernetes",
 		"k8sPublish": "K8s Yayınla",
+		"platform": "Platform",
 		"skipToContent": "Ana içeriğe atla"
 	},
 	"auth": {
@@ -263,5 +264,89 @@
 		"year": "yıl",
 		"years": "yıl",
 		"ago": "önce"
+	},
+	"landing": {
+		"hero": {
+			"title": "NanoNet",
+			"badge": "Yeni Nesil Gözlemlenebilirlik",
+			"subtitle": "Gürültüyü görün. Sinyali bulun.",
+			"description": "Yeni nesil endüstriyel düzeyde gözlemlenebilirlik. Alt-saniye hassasiyeti ve AI destekli kök neden analizi ile tahmin etmeyi bırakın, bilmeye başlayın.",
+			"cta": {
+				"start": "Demoyu Başlat",
+				"launch": "Konsolu Aç",
+				"more": "GitHub"
+			}
+		},
+		"problem": {
+			"question": "Kullanıcılarınız kritik hataları sizden önce mi fark ediyor?",
+			"latency": "Gecikme Artışları",
+			"drift": "Veri Kayması",
+			"outages": "Hayalet Kesintiler"
+		},
+		"features": {
+			"title": "Hassas İzleme Araçları",
+			"badge": "Ölçeklenebilir Mimari",
+			"health": {
+				"title": "Sağlık İzleme",
+				"desc": "Özel eşik tetikleyicileri ile sistem canlılığının sürekli doğrulanması."
+			},
+			"serviceMap": {
+				"title": "Canlı Servis Haritası",
+				"desc": "Karmaşık mikroservis ekosisteminizi gerçek zamanlı olarak görselleştirin."
+			},
+			"ai": {
+				"title": "AI Tahminleme",
+				"desc": "Anomalileri kesinti oluşmadan haftalar önce tespit edin."
+			},
+			"k8s": {
+				"title": "Kubernetes Yerel",
+				"desc": "Cluster, pod ve kaynak izleme artık tek panelde."
+			},
+			"alerts": {
+				"title": "Gerçek Zamanlı Uyarılar",
+				"desc": "Slack, PagerDuty veya özel Webhook'lar aracılığıyla düşük gecikmeli teslimat."
+			},
+			"logs": {
+				"title": "Log İzleyici",
+				"desc": "Güçlü regex tabanlı arama ile yüksek performanslı log indeksleme."
+			}
+		},
+		"setup": {
+			"title": "30 Saniyede Kurulum",
+			"step1": {
+				"title": "Hesap Oluşturun",
+				"desc": "Ücretsiz planımıza kaydolun ve anahtarınızı alın."
+			},
+			"step2": {
+				"title": "Agent'ı Kurun",
+				"desc": "Tüm filonuzda tek komutla kurulum yapın."
+			},
+			"step3": {
+				"title": "Her Şeyi Görselleştirin",
+				"desc": "Panonuz metriklerle anında dolmaya başlar."
+			}
+		},
+		"ai": {
+			"badge": "NanoNet AI Motoru",
+			"title": "Saniyeler İçinde Kök Neden Analizi.",
+			"alert": {
+				"title": "Anomali Tespit Edildi",
+				"desc": "'Auth-v2' servisinde beklenmedik trafik artışı",
+				"insight": "AI İçgörüsü: Artış Dağıtım #882 ile ilişkili. Veritabanı bağlantı havuzu tükenmesi muhtemel."
+			}
+		},
+		"devs": {
+			"title": "Geliştiriciler İçin Üretildi",
+			"desc": "Agent'ımız %1'den daha az CPU tüketen tek bir statik binary'dir. Karmaşık sidecar'lar yok.",
+			"feature1": "eBPF tabanlı ölçümleme",
+			"feature2": "OpenTelemetry yerel aktarım",
+			"feature3": "Otomatik servis etiketleme",
+			"install": {
+				"comment": "Hızlı kurulum betiği",
+				"step1": "Düğüm doğrulanıyor...",
+				"step2": "Binary dosyaları kuruluyor...",
+				"success": "BAŞARILI: NanoNet Agent aktif."
+			}
+		}
 	}
 }
