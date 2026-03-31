@@ -16,22 +16,21 @@ import {
 	Zap,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import dashboardImage from "@/assets/image.png";
 import logo from "@/assets/logo.png";
 import landingVideo from "@/assets/video/landing.mp4";
-import dashboardImage from "@/assets/image.png";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/store/authStore";
 import { useServices } from "@/hooks/useServices";
+import { useAuthStore } from "@/store/authStore";
 
 export function LandingPage() {
 	const { t } = useTranslation();
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 	const { services } = useServices({ enabled: isAuthenticated });
 
-	const activeServicesCount = services.filter((s) => s.status === "up")
-		.length;
+	const activeServicesCount = services.filter((s) => s.status === "up").length;
 
 	return (
 		<div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-indigo-500/30 font-sans">
@@ -473,7 +472,9 @@ export function LandingPage() {
 								</span>
 							</div>
 							<div className="font-mono text-sm space-y-3">
-								<p className="text-slate-500"># {t("landing.devs.install.comment")}</p>
+								<p className="text-slate-500">
+									# {t("landing.devs.install.comment")}
+								</p>
 								<div className="flex items-center gap-3 bg-slate-950 p-4 rounded border border-slate-800 group relative">
 									<span className="text-indigo-500 font-bold">$</span>
 									<code className="text-slate-200">

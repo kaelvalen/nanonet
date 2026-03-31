@@ -1,17 +1,23 @@
-import { Eye, EyeOff, Check, X } from "lucide-react";
+import { Check, Eye, EyeOff, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
-import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { AuthNetworkPanel } from "@/components/auth/AuthNetworkPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { AuthNetworkPanel } from "@/components/auth/AuthNetworkPanel";
 
 function PasswordStrength({ password }: { password: string }) {
 	const s =
-		password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
+		password.length === 0
+			? 0
+			: password.length < 6
+				? 1
+				: password.length < 10
+					? 2
+					: 3;
 	const colors = ["", "#f43f5e", "#f59e0b", "#34d399"];
 	const labels = ["", "Weak", "Fair", "Strong"];
 	if (!password) return null;
@@ -19,7 +25,10 @@ function PasswordStrength({ password }: { password: string }) {
 		<div className="flex items-center gap-3 pt-1">
 			<div className="flex gap-1 flex-1">
 				{[1, 2, 3].map((l) => (
-					<div key={l} className="h-0.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
+					<div
+						key={l}
+						className="h-0.5 flex-1 rounded-full bg-slate-100 overflow-hidden"
+					>
 						<motion.div
 							animate={{ width: s >= l ? "100%" : "0%" }}
 							transition={{ duration: 0.3 }}
@@ -29,7 +38,10 @@ function PasswordStrength({ password }: { password: string }) {
 					</div>
 				))}
 			</div>
-			<span className="text-[10px] font-bold tabular-nums" style={{ color: colors[s] }}>
+			<span
+				className="text-[10px] font-bold tabular-nums"
+				style={{ color: colors[s] }}
+			>
 				{labels[s]}
 			</span>
 		</div>
@@ -50,8 +62,10 @@ export function RegisterPage() {
 		register({ email, password });
 	};
 
-	const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
-	const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+	const passwordsMatch =
+		confirmPassword.length > 0 && password === confirmPassword;
+	const passwordMismatch =
+		confirmPassword.length > 0 && password !== confirmPassword;
 
 	return (
 		<div className="h-screen w-full flex overflow-hidden bg-white">
@@ -70,7 +84,9 @@ export function RegisterPage() {
 				<div className="w-full max-w-sm">
 					{/* Mobile-only logo */}
 					<div className="flex items-center gap-2 mb-10 lg:hidden">
-						<span className="text-slate-900 font-black text-sm tracking-tight">NanoNet</span>
+						<span className="text-slate-900 font-black text-sm tracking-tight">
+							NanoNet
+						</span>
 					</div>
 
 					<div className="mb-8">
@@ -78,7 +94,10 @@ export function RegisterPage() {
 							Create account
 						</h1>
 						<p className="text-sm text-slate-400 font-medium leading-relaxed">
-							{t("auth.register_subtitle", "Start monitoring in under 30 seconds.")}
+							{t(
+								"auth.register_subtitle",
+								"Start monitoring in under 30 seconds.",
+							)}
 						</p>
 					</div>
 
@@ -128,7 +147,11 @@ export function RegisterPage() {
 									className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
 									tabIndex={-1}
 								>
-									{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+									{showPassword ? (
+										<EyeOff className="w-4 h-4" />
+									) : (
+										<Eye className="w-4 h-4" />
+									)}
 								</button>
 							</div>
 							<PasswordStrength password={password} />
@@ -174,7 +197,11 @@ export function RegisterPage() {
 						<Button
 							type="submit"
 							disabled={
-								isRegistering || passwordMismatch || !email || !password || !confirmPassword
+								isRegistering ||
+								passwordMismatch ||
+								!email ||
+								!password ||
+								!confirmPassword
 							}
 							className="w-full h-11 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-sm font-black tracking-wide transition-all duration-200 active:scale-[0.99] disabled:opacity-40 mt-1 shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
 						>

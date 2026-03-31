@@ -1,13 +1,13 @@
 import { Eye, EyeOff } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
-import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { AuthNetworkPanel } from "@/components/auth/AuthNetworkPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { AuthNetworkPanel } from "@/components/auth/AuthNetworkPanel";
 
 export function LoginPage() {
 	const { t } = useTranslation();
@@ -38,7 +38,9 @@ export function LoginPage() {
 				<div className="w-full max-w-sm">
 					{/* Mobile-only logo */}
 					<div className="flex items-center gap-2 mb-10 lg:hidden">
-						<span className="text-slate-900 font-black text-sm tracking-tight">NanoNet</span>
+						<span className="text-slate-900 font-black text-sm tracking-tight">
+							NanoNet
+						</span>
 					</div>
 
 					<div className="mb-10">
