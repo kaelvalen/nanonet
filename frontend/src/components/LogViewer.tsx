@@ -174,6 +174,42 @@ export function LogViewer({
 		[maxLines],
 	);
 
+	// Pre-load recent metric history so the log is not blank before WS connects
+	useEffect(() => {
+		let cancelled = false;
+		metricsApi
+			.getHistory(serviceId, "15m", 50)
+			.then((metrics) => {
+				if (cancelled) return;
+				const entries: LogEntry[] = [];
+				for (const m of metrics) {
+					if (seenTimestamps.current.has(m.time)) continue;
+					seenTimestamps.current.add(m.time);
+					entries.push({
+						id: `hist-${m.time}`,
+						timestamp: m.time,
+						level:
+							m.status === "down"
+								? "error"
+								: m.status === "degraded"
+									? "warn"
+									: "info",
+						source: "metric",
+						message: `cpu=${m.cpu_percent?.toFixed(1) ?? "?"}% mem=${m.memory_used_mb?.toFixed(0) ?? "?"}MB latency=${m.latency_ms?.toFixed(0) ?? "?"}ms status=${m.status ?? "?"}`,
+					});
+				}
+				if (entries.length > 0) {
+					setLogs(entries.slice(-maxLines));
+				}
+			})
+			.catch(() => {
+				/* silently ignore — WS will still connect */
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [serviceId, maxLines]);
+
 	useEffect(() => {
 		const wsUrl = import.meta.env.VITE_WS_URL as string;
 		const token = useAuthStore.getState().accessToken;

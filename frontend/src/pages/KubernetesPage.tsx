@@ -3,6 +3,7 @@ import {
 	Activity,
 	Bell,
 	Box,
+	Check,
 	ChevronDown,
 	ChevronRight,
 	Cloud,
@@ -24,6 +25,7 @@ import {
 	Share2,
 	Terminal,
 	Trash2,
+	X,
 	Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -352,6 +354,68 @@ function PodLogModal({
 				</div>
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+// ─── Inline Confirm Button ────────────────────────────────────────────────────
+function ConfirmButton({
+	onConfirm,
+	disabled,
+	children,
+	confirmLabel = "Onayla",
+	className,
+	style,
+}: {
+	onConfirm: () => void;
+	disabled?: boolean;
+	children: React.ReactNode;
+	confirmLabel?: string;
+	className?: string;
+	style?: React.CSSProperties;
+}) {
+	const [asking, setAsking] = useState(false);
+	if (asking) {
+		return (
+			<div className="flex items-center gap-1">
+				<button
+					type="button"
+					onClick={() => {
+						setAsking(false);
+						onConfirm();
+					}}
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
+					style={{
+						background: "var(--status-down-subtle)",
+						borderColor: "var(--status-down-border)",
+						color: "var(--status-down-text)",
+					}}
+				>
+					<Check className="w-3 h-3" />{confirmLabel}
+				</button>
+				<button
+					type="button"
+					onClick={() => setAsking(false)}
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] border-2"
+					style={{
+						borderColor: "var(--border-subtle)",
+						color: "var(--text-muted)",
+					}}
+				>
+					<X className="w-3 h-3" />
+				</button>
+			</div>
+		);
+	}
+	return (
+		<button
+			type="button"
+			onClick={() => setAsking(true)}
+			disabled={disabled}
+			className={className}
+			style={style}
+		>
+			{children}
+		</button>
 	);
 }
 
@@ -1255,17 +1319,9 @@ export function KubernetesPage() {
 																	{dep.strategy || "RollingUpdate"}
 																</p>
 															</div>
-															<button
-																type="button"
-																onClick={() => {
-																	if (
-																		confirm(
-																			`"${dep.name}" dağıtımı yeniden başlatılsın mı? (rolling restart)`,
-																		)
-																	)
-																		rolloutRestartMutation.mutate(dep.name);
-																}}
-																title="Yeniden Başlat (Rolling)"
+															<ConfirmButton
+																onConfirm={() => rolloutRestartMutation.mutate(dep.name)}
+																confirmLabel="Başlat"
 																disabled={
 																	rolloutRestartMutation.isPending &&
 																	rolloutRestartMutation.variables === dep.name
@@ -1286,7 +1342,7 @@ export function KubernetesPage() {
 																) : (
 																	<RotateCcw className="w-3.5 h-3.5" />
 																)}
-															</button>
+															</ConfirmButton>
 															<div className="text-right shrink-0">
 																<p
 																	className="text-lg font-bold"
@@ -1550,7 +1606,7 @@ export function KubernetesPage() {
 																setHpaCpu(hpa.cpu_target_percent ?? 70);
 															}}
 															title="Düzenle"
-															aria-label="HPA ayarlarını yapılandır"
+															aria-label="HPA ayarlarını forma yükle"
 															className="w-7 h-7 rounded-lg flex items-center justify-center"
 															style={{
 																background: "var(--color-pink-subtle)",
@@ -1560,17 +1616,10 @@ export function KubernetesPage() {
 														>
 															<Settings2 className="w-3.5 h-3.5" />
 														</button>
-														<button
-															type="button"
-															onClick={() => {
-																if (confirm(`"${hpa.name}" HPA silinsin mi?`))
-																	deleteHPAMutation.mutate(
-																		hpa.deployment_name ?? hpa.name,
-																	);
-															}}
+														<ConfirmButton
+															onConfirm={() => deleteHPAMutation.mutate(hpa.deployment_name ?? hpa.name)}
+															confirmLabel="Sil"
 															disabled={deleteHPAMutation.isPending}
-															title="Sil"
-															aria-label="HPA sil"
 															className="w-7 h-7 rounded-lg flex items-center justify-center"
 															style={{
 																background:
@@ -1584,7 +1633,7 @@ export function KubernetesPage() {
 															) : (
 																<Trash2 className="w-3.5 h-3.5" />
 															)}
-														</button>
+														</ConfirmButton>
 													</div>
 												</div>
 												<div className="grid grid-cols-4 gap-2 mb-3">

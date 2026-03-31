@@ -196,7 +196,8 @@ export function DashboardPage() {
 		{
 			label: "Ort. Latency",
 			value:
-				globalSummary?.avg_latency_ms != null
+				globalSummary?.avg_latency_ms != null &&
+				globalSummary.avg_latency_ms > 0
 					? `${globalSummary.avg_latency_ms.toFixed(0)}ms`
 					: "—",
 			icon: Gauge,
@@ -207,7 +208,8 @@ export function DashboardPage() {
 		{
 			label: "P95 Latency",
 			value:
-				globalSummary?.p95_latency_ms != null
+				globalSummary?.p95_latency_ms != null &&
+				globalSummary.p95_latency_ms > 0
 					? `${globalSummary.p95_latency_ms.toFixed(0)}ms`
 					: "—",
 			icon: Activity,
@@ -218,8 +220,9 @@ export function DashboardPage() {
 		{
 			label: "Hata Oranı",
 			value:
-				globalSummary?.avg_error_rate != null
-					? `${(Math.min(globalSummary.avg_error_rate, 1) * 100).toFixed(1)}%`
+				globalSummary?.avg_error_rate != null &&
+				globalSummary.avg_error_rate > 0
+					? `${Math.min(globalSummary.avg_error_rate, 100).toFixed(1)}%`
 					: "—",
 			icon: AlertCircle,
 			colorVar: "var(--status-down-text)",
@@ -229,7 +232,8 @@ export function DashboardPage() {
 		{
 			label: "Ort. CPU",
 			value:
-				globalSummary?.avg_cpu_percent != null
+				globalSummary?.avg_cpu_percent != null &&
+				globalSummary.avg_cpu_percent > 0
 					? `${globalSummary.avg_cpu_percent.toFixed(1)}%`
 					: "—",
 			icon: Cpu,
@@ -294,7 +298,7 @@ export function DashboardPage() {
 	];
 
 	return (
-		<div className="space-y-8">
+		<div className="space-y-6">
 			{/* Hero Section */}
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
@@ -468,23 +472,23 @@ export function DashboardPage() {
 						className="group relative"
 					>
 						<Card
-							className="p-4 rounded overflow-hidden"
+							className="p-3 rounded overflow-hidden"
 							style={{
 								background: "var(--surface-card)",
 								border: `2px solid ${stat.borderVar}`,
 								boxShadow: "var(--card-shadow)",
 							}}
 						>
-							<div className="flex items-center justify-between mb-3">
+							<div className="flex items-center justify-between mb-1.5">
 								<div
-									className="w-8 h-8 rounded flex items-center justify-center"
+									className="w-7 h-7 rounded flex items-center justify-center"
 									style={{
 										backgroundColor: stat.bgVar,
 										border: `2px solid ${stat.borderVar}`,
 									}}
 								>
 									<stat.icon
-										className="w-4 h-4"
+										className="w-3.5 h-3.5"
 										style={{ color: stat.iconVar }}
 									/>
 								</div>
@@ -496,7 +500,7 @@ export function DashboardPage() {
 								</p>
 							</div>
 							<span
-								className="text-3xl font-bold tabular-nums block mb-3"
+								className="text-2xl font-bold tabular-nums block mb-2"
 								style={{ color: stat.iconVar }}
 							>
 								<AnimatedCounter value={stat.value} />
@@ -613,7 +617,7 @@ export function DashboardPage() {
 						>
 							<Link to={card.to} className="block group">
 								<Card
-									className="relative rounded p-5 transition-all duration-200 overflow-hidden"
+									className="relative rounded p-4 transition-all duration-200 overflow-hidden"
 									style={{
 										background: "var(--surface-card)",
 										border: `2px solid ${card.borderVar}`,
@@ -627,16 +631,16 @@ export function DashboardPage() {
 										}}
 									/>
 
-									<div className="relative z-10 flex items-center gap-4">
+									<div className="relative z-10 flex items-center gap-3">
 										<div
-											className="w-11 h-11 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105 shrink-0"
+											className="w-9 h-9 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105 shrink-0"
 											style={{
 												backgroundColor: `color-mix(in srgb, ${card.colorVar} 15%, transparent)`,
 												border: `2px solid ${card.colorVar}`,
 											}}
 										>
 											<card.icon
-												className="w-5 h-5"
+												className="w-4 h-4"
 												style={{ color: card.colorVar }}
 											/>
 										</div>

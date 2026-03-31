@@ -327,8 +327,8 @@ export function FloatingStatusBar({
 							<span className="text-white text-xs">✦</span>
 						</div>
 						<span
-							className="font-(--font-quicksand) text-sm bg-clip-text text-transparent hidden sm:inline"
-							style={{ backgroundImage: "var(--gradient-text)" }}
+							className="font-(--font-quicksand) text-sm hidden sm:inline"
+							style={{ color: "var(--text-primary)", fontWeight: 600 }}
 						>
 							NanoNet
 						</span>

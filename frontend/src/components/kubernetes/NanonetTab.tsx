@@ -1,5 +1,6 @@
 import {
 	AlertTriangle,
+	Check,
 	Loader2,
 	Minus,
 	Package2,
@@ -7,9 +8,11 @@ import {
 	PackageX,
 	Plus,
 	RefreshCw,
+	X,
 } from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
+import { useState } from "react";
 import type { DeploymentInfo } from "@/api/k8s";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +47,67 @@ export interface NanonetTabProps {
 	refetchNanonetServices: () => void;
 	refetchDeployments: () => void;
 	slugifyForK8s: (name: string) => string;
+}
+
+function UndeployButton({
+	svcName,
+	isUndeploying,
+	onUndeploy,
+}: {
+	svcName: string;
+	isUndeploying: boolean;
+	onUndeploy: () => void;
+}) {
+	const [asking, setAsking] = useState(false);
+	if (asking) {
+		return (
+			<div className="flex items-center gap-1 shrink-0">
+				<button
+					type="button"
+					onClick={() => { setAsking(false); onUndeploy(); }}
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
+					style={{
+						background: "var(--status-down-subtle)",
+						borderColor: "var(--status-down-border)",
+						color: "var(--status-down-text)",
+					}}
+				>
+					<Check className="w-3 h-3" /> Evet, Kaldır
+				</button>
+				<button
+					type="button"
+					onClick={() => setAsking(false)}
+					className="w-7 h-7 rounded-lg flex items-center justify-center border-2"
+					style={{
+						borderColor: "var(--border-subtle)",
+						color: "var(--text-muted)",
+					}}
+				>
+					<X className="w-3 h-3" />
+				</button>
+			</div>
+		);
+	}
+	return (
+		<button
+			type="button"
+			onClick={() => setAsking(true)}
+			disabled={isUndeploying}
+			className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border-2 shrink-0 transition-opacity hover:opacity-80"
+			style={{
+				background: "color-mix(in srgb, var(--status-down) 10%, transparent)",
+				borderColor: "var(--status-down-border)",
+				color: "var(--status-down-text)",
+			}}
+		>
+			{isUndeploying ? (
+				<Loader2 className="w-3 h-3 animate-spin" />
+			) : (
+				<PackageX className="w-3 h-3" />
+			)}
+			K8s'ten Çıkar
+		</button>
+	);
 }
 
 function StatusDot({
@@ -268,32 +332,11 @@ export function NanonetTab({
 
 										{/* Action buttons */}
 										{isDeployed ? (
-											<button
-												type="button"
-												onClick={() => {
-													if (
-														confirm(
-															`"${svc.name}" K8s'ten kaldırılsın mı? (Deployment + Service + HPA silinir)`,
-														)
-													)
-														undeployMutation.mutate(svc.name);
-												}}
-												disabled={isUndeploying}
-												className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border-2 shrink-0 transition-opacity hover:opacity-80"
-												style={{
-													background:
-														"color-mix(in srgb, var(--status-down) 10%, transparent)",
-													borderColor: "var(--status-down-border)",
-													color: "var(--status-down-text)",
-												}}
-											>
-												{isUndeploying ? (
-													<Loader2 className="w-3 h-3 animate-spin" />
-												) : (
-													<PackageX className="w-3 h-3" />
-												)}
-												K8s'ten Çıkar
-											</button>
+											<UndeployButton
+												svcName={svc.name}
+												isUndeploying={isUndeploying}
+												onUndeploy={() => undeployMutation.mutate(svc.name)}
+											/>
 										) : (
 											<button
 												type="button"

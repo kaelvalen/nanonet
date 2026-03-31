@@ -20,12 +20,14 @@ import {
 	Activity,
 	AlertTriangle,
 	Brain,
+	Check,
 	CheckCircle2,
 	Clock,
 	HelpCircle,
 	Loader2,
 	Plus,
 	RefreshCw,
+	RotateCcw,
 	Save,
 	Server,
 	Sparkles,
@@ -827,6 +829,18 @@ function ServiceMapInner() {
 		null,
 	);
 	const addMenuRef = useRef<HTMLDivElement>(null);
+	const [resetAsking, setResetAsking] = useState(false);
+
+	useEffect(() => {
+		if (!addMode) return;
+		const handler = (e: MouseEvent) => {
+			if (addMenuRef.current && !addMenuRef.current.contains(e.target as unknown as globalThis.Node)) {
+				setAddMode(false);
+			}
+		};
+		document.addEventListener("mousedown", handler);
+		return () => document.removeEventListener("mousedown", handler);
+	}, [addMode]);
 
 	// ── Extra metrics (latency, uptime, alert counts) ──
 	const { data: uptimeMap = {} } = useQuery({
@@ -1074,8 +1088,18 @@ function ServiceMapInner() {
 		setSelectedServiceId(null);
 		setNodes([]);
 		setEdges([]);
+		setResetAsking(false);
 		toast.info("Harita sıfırlandı");
 	};
+
+	const statusCounts = useMemo(() => {
+		const counts = { up: 0, degraded: 0, down: 0, unknown: 0 };
+		for (const svc of services) {
+			const s = svc.status as keyof typeof counts;
+			counts[s] = (counts[s] ?? 0) + 1;
+		}
+		return counts;
+	}, [services]);
 
 	const addableServices = useMemo(
 		() => services.filter((s) => !nodes.find((n: Node) => n.id === s.id)),
@@ -1102,44 +1126,73 @@ function ServiceMapInner() {
 			<div className="flex flex-col" style={{ flex: 1, minWidth: 0 }}>
 				{/* Toolbar */}
 				<div
-					className="flex items-center gap-2 px-4 py-2 shrink-0"
+					className="flex items-center gap-2 px-4 py-2 shrink-0 flex-wrap"
 					style={{ borderBottom: "2px solid var(--border-default)" }}
 				>
-					{/* Legend */}
-					<div className="flex items-center gap-3 mr-2">
-						{[
+					{/* Status counts */}
+					<div className="flex items-center gap-2 mr-1">
+						{([
 							{ status: "up", label: "Çalışıyor" },
 							{ status: "degraded", label: "Yavaş" },
 							{ status: "down", label: "Çökmüş" },
-						].map(({ status, label }) => (
-							<div key={status} className="flex items-center gap-1">
+						] as const).map(({ status, label }) => (
+							<div
+								key={status}
+								className="flex items-center gap-1 px-2 py-0.5 rounded"
+								style={{
+									background: STATUS_BG[status],
+									border: `1.5px solid ${STATUS_BORDER[status]}`,
+								}}
+							>
 								<div
-									className="w-2.5 h-2.5 rounded-full"
+									className="w-1.5 h-1.5 rounded-full"
 									style={{ background: STATUS_COLOR[status] }}
 								/>
 								<span
-									className="text-[10px]"
+									className="text-[10px] font-semibold tabular-nums"
+									style={{ color: STATUS_COLOR[status] }}
+								>
+									{statusCounts[status]}
+								</span>
+								<span
+									className="text-[10px] hidden sm:inline"
 									style={{ color: "var(--text-faint)" }}
 								>
 									{label}
 								</span>
 							</div>
 						))}
-						<span
-							className="text-[10px]"
-							style={{ color: "var(--text-faint)" }}
-						>
-							·
-						</span>
-						<span
-							className="text-[10px]"
-							style={{ color: "var(--text-faint)" }}
-						>
-							{edges.length} bağlantı
-						</span>
 					</div>
 
+					<span
+						className="text-[10px] px-2 py-0.5 rounded"
+						style={{
+							background: "var(--surface-sunken)",
+							border: "1.5px solid var(--border-subtle)",
+							color: "var(--text-faint)",
+						}}
+					>
+						{edges.length} bağlantı
+					</span>
+
 					<div className="flex-1" />
+
+					{/* Keyboard hint */}
+					<span
+						className="hidden md:flex items-center gap-1 text-[10px]"
+						style={{ color: "var(--text-faint)" }}
+					>
+						<kbd
+							className="px-1 py-0.5 rounded text-[9px]"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "1px solid var(--border-subtle)",
+							}}
+						>
+							Del
+						</kbd>
+						seçili öğeyi sil
+					</span>
 
 					{addableServices.length > 0 && (
 						<div className="relative" ref={addMenuRef}>
@@ -1158,17 +1211,26 @@ function ServiceMapInner() {
 								}}
 							>
 								<Plus className="w-3 h-3" />
-								Servis Ekle
+								Servis Ekle ({addableServices.length})
 							</button>
 							{addMode && (
 								<div
-									className="absolute top-9 right-0 z-20 rounded p-2 min-w-48 space-y-1"
+									className="absolute top-9 right-0 z-20 rounded p-2 min-w-52 max-h-72 overflow-y-auto space-y-0.5"
 									style={{
 										background: "var(--surface-card)",
 										border: "2px solid var(--border-default)",
 										boxShadow: "var(--card-shadow)",
 									}}
 								>
+									<p
+										className="text-[10px] uppercase tracking-wider px-2 pb-1.5 mb-1"
+										style={{
+											color: "var(--text-faint)",
+											borderBottom: "1px solid var(--border-subtle)",
+										}}
+									>
+										Haritaya ekle
+									</p>
 									{addableServices.map((svc) => (
 										<button
 											type="button"
@@ -1184,9 +1246,9 @@ function ServiceMapInner() {
 														STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown,
 												}}
 											/>
-											<span className="truncate">{svc.name}</span>
+											<span className="truncate flex-1">{svc.name}</span>
 											<span
-												className="text-[9px] ml-auto shrink-0"
+												className="text-[9px] shrink-0"
 												style={{
 													color:
 														STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown,
@@ -1213,17 +1275,48 @@ function ServiceMapInner() {
 						<Save className="w-3 h-3" />
 						Kaydet
 					</button>
-					<button
-						type="button"
-						onClick={handleReset}
-						className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border-2 transition-all"
-						style={{
-							borderColor: "var(--border-default)",
-							color: "var(--text-muted)",
-						}}
-					>
-						Sıfırla
-					</button>
+
+					{/* Reset with inline confirm */}
+					{resetAsking ? (
+						<div className="flex items-center gap-1">
+							<button
+								type="button"
+								onClick={handleReset}
+								className="flex items-center gap-1 px-2 h-7 rounded text-[10px] font-semibold border-2"
+								style={{
+									background: "var(--status-down-subtle)",
+									borderColor: "var(--status-down-border)",
+									color: "var(--status-down-text)",
+								}}
+							>
+								<Check className="w-3 h-3" /> Sıfırla
+							</button>
+							<button
+								type="button"
+								onClick={() => setResetAsking(false)}
+								className="w-7 h-7 rounded flex items-center justify-center border-2"
+								style={{
+									borderColor: "var(--border-subtle)",
+									color: "var(--text-muted)",
+								}}
+							>
+								<X className="w-3 h-3" />
+							</button>
+						</div>
+					) : (
+						<button
+							type="button"
+							onClick={() => setResetAsking(true)}
+							className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border-2 transition-all"
+							style={{
+								borderColor: "var(--border-default)",
+								color: "var(--text-muted)",
+							}}
+						>
+							<RotateCcw className="w-3 h-3" />
+							Sıfırla
+						</button>
+					)}
 				</div>
 
 				{/* Canvas */}

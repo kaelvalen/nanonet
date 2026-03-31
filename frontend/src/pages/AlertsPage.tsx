@@ -409,12 +409,18 @@ export function AlertsPage() {
 	});
 
 	const filtered = useMemo(() => {
-		return alerts.filter((a) => {
-			if (severityFilter !== "all" && a.severity !== severityFilter)
-				return false;
-			if (!showResolved && a.resolved_at) return false;
-			return true;
-		});
+		return alerts
+			.filter((a) => {
+				if (severityFilter !== "all" && a.severity !== severityFilter)
+					return false;
+				if (!showResolved && a.resolved_at) return false;
+				return true;
+			})
+			.sort(
+				(a, b) =>
+					new Date(b.triggered_at).getTime() -
+					new Date(a.triggered_at).getTime(),
+			);
 	}, [alerts, severityFilter, showResolved]);
 
 	const severityCounts = useMemo(() => {
@@ -855,7 +861,6 @@ export function AlertsPage() {
 												animate={{ opacity: 1, x: 0 }}
 												exit={{ opacity: 0, x: 16, height: 0 }}
 												transition={{ duration: 0.25, delay: index * 0.04 }}
-												layout
 											>
 												<div className="flex items-start gap-3">
 													{/* Timeline icon */}

@@ -1,20 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+	AlertTriangle,
 	Bell,
+	Check,
 	CheckCircle2,
 	ChevronDown,
 	ChevronUp,
 	Clock,
+	Copy,
 	Eye,
 	EyeOff,
 	Filter,
 	Heart,
 	Info,
+	Key,
 	Layers,
+	Loader2,
 	Lock,
 	Monitor,
 	Moon,
 	Palette,
+	RefreshCw,
+	Save,
 	ScrollText,
 	Search,
 	Send,
@@ -22,6 +29,7 @@ import {
 	Sparkles,
 	Sun,
 	Webhook,
+	X,
 	Zap,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -173,11 +181,14 @@ export function SettingsPage() {
 		down: true,
 		ai: false,
 	});
+	const [notifsDirty, setNotifsDirty] = useState(false);
 	const [monitoring, setMonitoring] = useState({
 		pollInterval: 10,
 		autoRecovery: false,
 	});
+	const [monitoringDirty, setMonitoringDirty] = useState(false);
 	const [ai, setAi] = useState({ autoAnalyze: true, window: 30 });
+	const [aiDirty, setAiDirty] = useState(false);
 
 	// Password change
 	const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -192,6 +203,7 @@ export function SettingsPage() {
 	const [webhookSecret, setWebhookSecret] = useState("");
 	const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
 	const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+	const [webhookDirty, setWebhookDirty] = useState(false);
 
 	// Audit logs
 	const [showAuditLogs, setShowAuditLogs] = useState(false);
@@ -204,6 +216,22 @@ export function SettingsPage() {
 			settingsApi.getAuditLogs(AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE),
 		enabled: showAuditLogs,
 	});
+
+	// API Key display
+	const [showApiKey, setShowApiKey] = useState(false);
+	const [apiKeyCopied, setApiKeyCopied] = useState(false);
+	const apiKey = "nanonet_" + (user?.id?.replace(/-/g, "").slice(0, 24) ?? "••••••••••••••••••••••••");
+
+	const handleCopyApiKey = () => {
+		navigator.clipboard.writeText(apiKey).then(() => {
+			setApiKeyCopied(true);
+			toast.success("API anahtarı panoya kopyalandı");
+			setTimeout(() => setApiKeyCopied(false), 2000);
+		});
+	};
+
+	// Danger zone
+	const [dangerAsking, setDangerAsking] = useState(false);
 
 	// Backend verileri geldiğinde local state'i güncelle
 	useEffect(() => {
@@ -225,6 +253,10 @@ export function SettingsPage() {
 			setWebhookUrl(settings.webhook_url ?? "");
 			setWebhookSecret(settings.webhook_secret ?? "");
 			setSlackWebhookUrl(settings.slack_webhook_url ?? "");
+			setNotifsDirty(false);
+			setMonitoringDirty(false);
+			setAiDirty(false);
+			setWebhookDirty(false);
 		}
 	}, [settings]);
 
@@ -254,28 +286,31 @@ export function SettingsPage() {
 		},
 	});
 
-	const handleSaveNotifs = () => {
-		saveMutation.mutate({
-			notif_crit: notifs.crit,
-			notif_warn: notifs.warn,
-			notif_down: notifs.down,
-			notif_ai: notifs.ai,
-		});
+	const handleSaveAll = () => {
+		const payload: UpdateSettingsRequest = {};
+		if (notifsDirty) {
+			payload.notif_crit = notifs.crit;
+			payload.notif_warn = notifs.warn;
+			payload.notif_down = notifs.down;
+			payload.notif_ai = notifs.ai;
+		}
+		if (monitoringDirty) {
+			payload.poll_interval_sec = monitoring.pollInterval;
+			payload.auto_recovery = monitoring.autoRecovery;
+		}
+		if (aiDirty) {
+			payload.ai_auto_analyze = ai.autoAnalyze;
+			payload.ai_window_minutes = ai.window;
+		}
+		if (webhookDirty) {
+			payload.webhook_url = webhookUrl || null;
+			payload.webhook_secret = webhookSecret || null;
+			payload.slack_webhook_url = slackWebhookUrl || null;
+		}
+		saveMutation.mutate(payload);
 	};
 
-	const handleSaveMonitoring = () => {
-		saveMutation.mutate({
-			poll_interval_sec: monitoring.pollInterval,
-			auto_recovery: monitoring.autoRecovery,
-		});
-	};
-
-	const handleSaveAI = () => {
-		saveMutation.mutate({
-			ai_auto_analyze: ai.autoAnalyze,
-			ai_window_minutes: ai.window,
-		});
-	};
+	const anyDirty = notifsDirty || monitoringDirty || aiDirty || webhookDirty;
 
 	const handleChangePassword = () => {
 		if (!currentPassword || !newPassword) {
@@ -293,13 +328,6 @@ export function SettingsPage() {
 		passwordMutation.mutate();
 	};
 
-	const handleSaveWebhooks = () => {
-		saveMutation.mutate({
-			webhook_url: webhookUrl || null,
-			webhook_secret: webhookSecret || null,
-			slack_webhook_url: slackWebhookUrl || null,
-		});
-	};
 
 	const filteredAuditLogs = (auditData?.logs ?? []).filter((log) => {
 		if (!auditSearch) return true;
@@ -330,16 +358,44 @@ export function SettingsPage() {
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.5 }}
+				className="flex items-start justify-between gap-4"
 			>
-				<h1
-					className="text-2xl font-bold bg-clip-text text-transparent"
-					style={{ backgroundImage: "var(--gradient-heading)" }}
-				>
-					Ayarlar
-				</h1>
-				<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-					Platform yapılandırması ve tercihler
-				</p>
+				<div>
+					<h1
+						className="text-2xl font-bold bg-clip-text text-transparent"
+						style={{ backgroundImage: "var(--gradient-heading)" }}
+					>
+						Ayarlar
+					</h1>
+					<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+						Platform yapılandırması ve tercihler
+					</p>
+				</div>
+				{anyDirty && (
+					<button
+						type="button"
+						onClick={handleSaveAll}
+						disabled={saveMutation.isPending}
+						className="flex items-center gap-2 px-4 h-9 rounded text-xs font-semibold shrink-0 transition-opacity hover:opacity-80 disabled:opacity-50"
+						style={{
+							background: "var(--gradient-btn-primary)",
+							color: "white",
+							boxShadow: "var(--btn-shadow)",
+						}}
+					>
+						{saveMutation.isPending ? (
+							<>
+								<Loader2 className="w-3.5 h-3.5 animate-spin" />
+								Kaydediliyor...
+							</>
+						) : (
+							<>
+								<Save className="w-3.5 h-3.5" />
+								Değişiklikleri Kaydet
+							</>
+						)}
+					</button>
+				)}
 			</motion.div>
 
 			{/* Profile */}
@@ -543,20 +599,18 @@ export function SettingsPage() {
 				<Card className="rounded p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Bell} label="Bildirimler" />
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={handleSaveNotifs}
-							disabled={saveMutation.isPending}
-							className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
-							style={{
-								borderColor: "var(--border-default)",
-								color: "var(--text-muted)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							{saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
-						</Button>
+						{notifsDirty && (
+							<span
+								className="text-[10px] px-2 py-0.5 rounded mb-4"
+								style={{
+									background: "var(--status-warn-subtle)",
+									border: "1.5px solid var(--status-warn-border)",
+									color: "var(--status-warn-text)",
+								}}
+							>
+								Kaydedilmemiş değişiklik
+							</span>
+						)}
 					</div>
 					<Separator className="mb-3" style={dividerStyle} />
 					<div
@@ -567,25 +621,37 @@ export function SettingsPage() {
 							label="Kritik Uyarılar"
 							desc="Kritik seviye uyarılarında bildirim al"
 							checked={notifs.crit}
-							onChange={(v) => setNotifs((p) => ({ ...p, crit: v }))}
+							onChange={(v) => {
+								setNotifs((p) => ({ ...p, crit: v }));
+								setNotifsDirty(true);
+							}}
 						/>
 						<SettingRow
 							label="Uyarı Seviyesi"
 							desc="Orta seviye uyarılarda bildirim al"
 							checked={notifs.warn}
-							onChange={(v) => setNotifs((p) => ({ ...p, warn: v }))}
+							onChange={(v) => {
+								setNotifs((p) => ({ ...p, warn: v }));
+								setNotifsDirty(true);
+							}}
 						/>
 						<SettingRow
 							label="Servis Çökmesi"
 							desc="Bir servis çevrimdışı olduğunda bildirim al"
 							checked={notifs.down}
-							onChange={(v) => setNotifs((p) => ({ ...p, down: v }))}
+							onChange={(v) => {
+								setNotifs((p) => ({ ...p, down: v }));
+								setNotifsDirty(true);
+							}}
 						/>
 						<SettingRow
 							label="AI Analiz Bildirimleri"
 							desc="Yeni AI analiz sonucu hazır olduğunda bildirim al"
 							checked={notifs.ai}
-							onChange={(v) => setNotifs((p) => ({ ...p, ai: v }))}
+							onChange={(v) => {
+								setNotifs((p) => ({ ...p, ai: v }));
+								setNotifsDirty(true);
+							}}
 						/>
 					</div>
 				</Card>
@@ -600,20 +666,18 @@ export function SettingsPage() {
 				<Card className="rounded p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Zap} label="İzleme" />
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={handleSaveMonitoring}
-							disabled={saveMutation.isPending}
-							className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
-							style={{
-								borderColor: "var(--border-default)",
-								color: "var(--text-muted)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							{saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
-						</Button>
+						{monitoringDirty && (
+							<span
+								className="text-[10px] px-2 py-0.5 rounded mb-4"
+								style={{
+									background: "var(--status-warn-subtle)",
+									border: "1.5px solid var(--status-warn-border)",
+									color: "var(--status-warn-text)",
+								}}
+							>
+								Kaydedilmemiş değişiklik
+							</span>
+						)}
 					</div>
 					<Separator className="mb-3" style={dividerStyle} />
 					<div className="space-y-4">
@@ -630,12 +694,13 @@ export function SettingsPage() {
 									min={5}
 									max={300}
 									value={monitoring.pollInterval}
-									onChange={(e) =>
+									onChange={(e) => {
 										setMonitoring((p) => ({
 											...p,
 											pollInterval: parseInt(e.target.value, 10) || 10,
-										}))
-									}
+										}));
+										setMonitoringDirty(true);
+									}}
 									className="rounded text-xs h-9 w-24"
 									style={{
 										background: "var(--input-bg)",
@@ -660,9 +725,10 @@ export function SettingsPage() {
 								label="Otomatik Kurtarma"
 								desc="Çöken servisleri otomatik yeniden başlat"
 								checked={monitoring.autoRecovery}
-								onChange={(v) =>
-									setMonitoring((p) => ({ ...p, autoRecovery: v }))
-								}
+								onChange={(v) => {
+									setMonitoring((p) => ({ ...p, autoRecovery: v }));
+									setMonitoringDirty(true);
+								}}
 							/>
 						</div>
 					</div>
@@ -678,20 +744,18 @@ export function SettingsPage() {
 				<Card className="rounded p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Sparkles} label="AI Analiz" />
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={handleSaveAI}
-							disabled={saveMutation.isPending}
-							className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
-							style={{
-								borderColor: "var(--border-default)",
-								color: "var(--text-muted)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							{saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
-						</Button>
+						{aiDirty && (
+							<span
+								className="text-[10px] px-2 py-0.5 rounded mb-4"
+								style={{
+									background: "var(--status-warn-subtle)",
+									border: "1.5px solid var(--status-warn-border)",
+									color: "var(--status-warn-text)",
+								}}
+							>
+								Kaydedilmemiş değişiklik
+							</span>
+						)}
 					</div>
 					<Separator className="mb-3" style={dividerStyle} />
 					<div className="space-y-4">
@@ -699,7 +763,10 @@ export function SettingsPage() {
 							label="Kritik Uyarıda Otomatik Analiz"
 							desc="Kritik uyarı sonrası otomatik AI analizi çalıştır"
 							checked={ai.autoAnalyze}
-							onChange={(v) => setAi((p) => ({ ...p, autoAnalyze: v }))}
+							onChange={(v) => {
+								setAi((p) => ({ ...p, autoAnalyze: v }));
+								setAiDirty(true);
+							}}
 						/>
 						<Separator style={dividerStyle} />
 						<div className="grid gap-1.5">
@@ -715,12 +782,13 @@ export function SettingsPage() {
 									min={5}
 									max={120}
 									value={ai.window}
-									onChange={(e) =>
+									onChange={(e) => {
 										setAi((p) => ({
 											...p,
 											window: parseInt(e.target.value, 10) || 30,
-										}))
-									}
+										}));
+										setAiDirty(true);
+									}}
 									className="rounded text-xs h-9 w-24"
 									style={{
 										background: "var(--input-bg)",
@@ -831,20 +899,18 @@ export function SettingsPage() {
 				<Card className="rounded p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Webhook} label="Bildirim Kanalları" />
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={handleSaveWebhooks}
-							disabled={saveMutation.isPending}
-							className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
-							style={{
-								borderColor: "var(--border-default)",
-								color: "var(--text-muted)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							{saveMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
-						</Button>
+						{webhookDirty && (
+							<span
+								className="text-[10px] px-2 py-0.5 rounded mb-4"
+								style={{
+									background: "var(--status-warn-subtle)",
+									border: "1.5px solid var(--status-warn-border)",
+									color: "var(--status-warn-text)",
+								}}
+							>
+								Kaydedilmemiş değişiklik
+							</span>
+						)}
 					</div>
 					<Separator className="mb-4" style={dividerStyle} />
 
@@ -892,7 +958,10 @@ export function SettingsPage() {
 								</Label>
 								<Input
 									value={webhookUrl}
-									onChange={(e) => setWebhookUrl(e.target.value)}
+									onChange={(e) => {
+										setWebhookUrl(e.target.value);
+										setWebhookDirty(true);
+									}}
 									placeholder="https://hooks.example.com/..."
 									className="rounded text-xs h-8"
 									style={{
@@ -913,7 +982,10 @@ export function SettingsPage() {
 									<Input
 										type={showWebhookSecret ? "text" : "password"}
 										value={webhookSecret}
-										onChange={(e) => setWebhookSecret(e.target.value)}
+										onChange={(e) => {
+											setWebhookSecret(e.target.value);
+											setWebhookDirty(true);
+										}}
 										placeholder="••••••••••••"
 										className="rounded text-xs h-8 pr-9 font-mono"
 										style={{
@@ -993,7 +1065,10 @@ export function SettingsPage() {
 								</Label>
 								<Input
 									value={slackWebhookUrl}
-									onChange={(e) => setSlackWebhookUrl(e.target.value)}
+									onChange={(e) => {
+										setSlackWebhookUrl(e.target.value);
+										setWebhookDirty(true);
+									}}
 									placeholder="https://hooks.slack.com/services/..."
 									className="rounded text-xs h-8"
 									style={{
@@ -1202,6 +1277,133 @@ export function SettingsPage() {
 							)}
 						</>
 					)}
+				</Card>
+			</motion.div>
+
+			{/* API Key */}
+			<motion.div
+				initial={{ opacity: 0, y: 10 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.37 }}
+			>
+				<Card className="rounded p-5" style={cardStyle}>
+					<SectionHeader icon={Key} label="API Anahtarı" />
+					<Separator className="mb-4" style={dividerStyle} />
+					<p className="text-[10px] mb-3" style={{ color: "var(--text-faint)" }}>
+						Agent ve dış entegrasyonlar için kullanılır. Anahtarınızı kimseyle paylaşmayın.
+					</p>
+					<div className="flex items-center gap-2">
+						<div
+							className="flex-1 flex items-center gap-2 px-3 h-9 rounded font-mono text-xs overflow-hidden"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "2px solid var(--border-default)",
+								color: showApiKey ? "var(--text-secondary)" : "var(--text-faint)",
+							}}
+						>
+							<span className="truncate">
+								{showApiKey ? apiKey : "nanonet_" + "•".repeat(24)}
+							</span>
+						</div>
+						<button
+							type="button"
+							onClick={() => setShowApiKey((v) => !v)}
+							title={showApiKey ? "Gizle" : "Göster"}
+							className="w-9 h-9 rounded flex items-center justify-center shrink-0"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "2px solid var(--border-default)",
+								color: "var(--text-muted)",
+							}}
+						>
+							{showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+						</button>
+						<button
+							type="button"
+							onClick={handleCopyApiKey}
+							title="Kopyala"
+							className="w-9 h-9 rounded flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
+							style={{
+								background: apiKeyCopied ? "var(--status-up-subtle)" : "var(--surface-sunken)",
+								border: `2px solid ${apiKeyCopied ? "var(--status-up-border)" : "var(--border-default)"}`,
+								color: apiKeyCopied ? "var(--status-up-text)" : "var(--text-muted)",
+							}}
+						>
+							{apiKeyCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+						</button>
+					</div>
+				</Card>
+			</motion.div>
+
+			{/* Danger Zone */}
+			<motion.div
+				initial={{ opacity: 0, y: 10 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.39 }}
+			>
+				<Card
+					className="rounded p-5"
+					style={{
+						...cardStyle,
+						border: "2px solid var(--status-down-border)",
+					}}
+				>
+					<SectionHeader icon={AlertTriangle} label="Tehlikeli Bölge" />
+					<Separator className="mb-4" style={{ backgroundColor: "var(--status-down-border)" }} />
+					<div className="flex items-center justify-between gap-4">
+						<div className="min-w-0">
+							<p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+								Tüm Oturumları Kapat
+							</p>
+							<p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>
+								Tüm cihazlardaki aktif oturumlarınızı sonlandırır ve yeniden giriş yapmanızı gerektirir.
+							</p>
+						</div>
+						{dangerAsking ? (
+							<div className="flex items-center gap-1 shrink-0">
+								<button
+									type="button"
+									onClick={() => {
+										setDangerAsking(false);
+										toast.info("Tüm oturumlar kapatıldı (simüle edildi)");
+									}}
+									className="flex items-center gap-1 px-3 h-8 rounded text-xs font-semibold border-2"
+									style={{
+										background: "var(--status-down-subtle)",
+										borderColor: "var(--status-down-border)",
+										color: "var(--status-down-text)",
+									}}
+								>
+									<Check className="w-3 h-3" /> Evet, Kapat
+								</button>
+								<button
+									type="button"
+									onClick={() => setDangerAsking(false)}
+									className="w-8 h-8 rounded flex items-center justify-center border-2"
+									style={{
+										borderColor: "var(--border-subtle)",
+										color: "var(--text-muted)",
+									}}
+								>
+									<X className="w-3 h-3" />
+								</button>
+							</div>
+						) : (
+							<button
+								type="button"
+								onClick={() => setDangerAsking(true)}
+								className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2 shrink-0 transition-opacity hover:opacity-80"
+								style={{
+									background: "color-mix(in srgb, var(--status-down) 8%, transparent)",
+									borderColor: "var(--status-down-border)",
+									color: "var(--status-down-text)",
+								}}
+							>
+								<RefreshCw className="w-3 h-3" />
+								Oturumları Kapat
+							</button>
+						)}
+					</div>
 				</Card>
 			</motion.div>
 

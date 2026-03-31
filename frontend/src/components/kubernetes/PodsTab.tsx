@@ -1,17 +1,86 @@
 import {
 	AlertTriangle,
 	Box,
+	Check,
 	Loader2,
 	RefreshCw,
 	Search,
 	Terminal,
 	Trash2,
+	X,
 } from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
+import { useState } from "react";
 import type { PodInfo } from "@/api/k8s";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+
+function DeletePodButton({
+	podName,
+	deletePodMutation,
+}: {
+	podName: string;
+	deletePodMutation: {
+		mutate: (args: unknown) => void;
+		isPending: boolean;
+		variables?: string;
+	};
+}) {
+	const [asking, setAsking] = useState(false);
+	const isPending = deletePodMutation.isPending && deletePodMutation.variables === podName;
+
+	if (asking) {
+		return (
+			<div className="flex items-center gap-1">
+				<button
+					type="button"
+					onClick={() => { setAsking(false); deletePodMutation.mutate(podName); }}
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
+					style={{
+						background: "var(--status-down-subtle)",
+						borderColor: "var(--status-down-border)",
+						color: "var(--status-down-text)",
+					}}
+				>
+					<Check className="w-3 h-3" /> Sil
+				</button>
+				<button
+					type="button"
+					onClick={() => setAsking(false)}
+					className="w-7 h-7 rounded-lg flex items-center justify-center border-2"
+					style={{
+						borderColor: "var(--border-subtle)",
+						color: "var(--text-muted)",
+					}}
+				>
+					<X className="w-3 h-3" />
+				</button>
+			</div>
+		);
+	}
+	return (
+		<button
+			type="button"
+			onClick={() => setAsking(true)}
+			title="Pod'u Sil (Yeniden Başlat)"
+			aria-label="Pod'u sil"
+			disabled={isPending}
+			className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
+			style={{
+				background: "color-mix(in srgb, var(--status-down) 10%, transparent)",
+				border: "1px solid var(--status-down-border)",
+				color: "var(--status-down-text)",
+			}}
+		>
+			{isPending ? (
+				<Loader2 className="w-3.5 h-3.5 animate-spin" />
+			) : (
+				<Trash2 className="w-3.5 h-3.5" />
+			)}
+		</button>
+	);
+}
 
 export interface PodsTabProps {
 	podFilter: string;
@@ -193,37 +262,10 @@ export function PodsTab({
 									>
 										<Terminal className="w-3.5 h-3.5" />
 									</button>
-									<button
-										type="button"
-										onClick={() => {
-											if (
-												confirm(
-													`"${pod.name}" pod'ı silinsin mi? Kubernetes otomatik olarak yeniden başlatacak.`,
-												)
-											)
-												deletePodMutation.mutate(pod.name);
-										}}
-										title="Pod'u Sil (Yeniden Başlat)"
-										aria-label="Pod'u sil"
-										disabled={
-											deletePodMutation.isPending &&
-											deletePodMutation.variables === pod.name
-										}
-										className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
-										style={{
-											background:
-												"color-mix(in srgb, var(--status-down) 10%, transparent)",
-											border: "1px solid var(--status-down-border)",
-											color: "var(--status-down-text)",
-										}}
-									>
-										{deletePodMutation.isPending &&
-										deletePodMutation.variables === pod.name ? (
-											<Loader2 className="w-3.5 h-3.5 animate-spin" />
-										) : (
-											<Trash2 className="w-3.5 h-3.5" />
-										)}
-									</button>
+									<DeletePodButton
+										podName={pod.name}
+										deletePodMutation={deletePodMutation}
+									/>
 								</div>
 							</Card>
 						</motion.div>

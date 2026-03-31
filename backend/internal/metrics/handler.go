@@ -333,7 +333,7 @@ func (h *Handler) GetGlobalSummary(c *gin.Context) {
 			AVG(m.latency_ms)                                          AS avg_latency,
 			PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY m.latency_ms) AS p95_latency,
 			AVG(m.cpu_percent)                                         AS avg_cpu,
-			LEAST(AVG(m.error_rate), 1.0)                              AS avg_error_rate,
+			LEAST(AVG(m.error_rate), 100.0)                             AS avg_error_rate,
 			AVG(m.memory_used_mb)                                      AS avg_memory_used_mb
 		FROM metrics m
 		JOIN services s ON s.id = m.service_id
