@@ -10,6 +10,7 @@
 #   restart [service_id|all] Agent'ı yeniden başlat
 #   logs    [service_id]     Agent log çıktısını takip et
 #   add-service              Mevcut token ile yeni servis ekle
+#   remove-service [id|all]  Agent'ı durdur ve yerel dosyaları sil
 #   refresh-token            Sadece token'ı yenile
 #   validate                 .env dosyasını doğrula
 #   update                   Binary'yi güncelle
@@ -1126,6 +1127,143 @@ cmd_add_service() {
   done
 }
 
+cmd_remove_service() {
+  check_and_install curl curl
+  check_and_install jq jq
+
+  # Token al
+  local access_tok
+  access_tok=$(grep "^ACCESS_TOKEN=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d "\"'" || true)
+  if [[ -z "$access_tok" || "$(token_valid "$access_tok")" != "1" ]]; then
+    warn "Geçerli token bulunamadı. Yeniden giriş gerekiyor."
+    ACCESS_TOKEN=""; AGENT_TOKEN=""
+    do_auth
+    access_tok="$ACCESS_TOKEN"
+  fi
+
+  # Backend'den servis listesini al
+  local svc_resp
+  svc_resp=$(fetch_services "$access_tok")
+  local svc_count; svc_count=$(echo "$svc_resp" | jq '.data | length')
+
+  if [[ "$svc_count" -eq 0 ]]; then
+    info "Silinecek servis bulunamadı."
+    return
+  fi
+
+  # Servis id/name dizileri
+  local all_ids=() all_names=()
+  while IFS=$'\t' read -r sid sname; do
+    all_ids+=("$sid")
+    all_names+=("$sname")
+  done < <(echo "$svc_resp" | jq -r '.data[] | [.id, .name] | @tsv')
+
+  local target="${SUBCOMMAND_ARG:-}"
+  local sids_to_remove=() names_to_remove=()
+
+  if [[ "$target" == "all" ]]; then
+    sids_to_remove=("${all_ids[@]}")
+    names_to_remove=("${all_names[@]}")
+  elif [[ -n "$target" ]]; then
+    # UUID ile doğrudan belirtilmiş
+    sids_to_remove=("$target")
+    local nm; nm=$(echo "$svc_resp" | jq -r --arg id "$target" '.data[] | select(.id==$id) | .name')
+    names_to_remove=("${nm:-$target}")
+  else
+    # İnteraktif seçim
+    step "Silinecek servisi seçin (birden fazla için: 1,3 veya 'a' tümü):"
+    echo ""
+    local i=0
+    for i in "${!all_ids[@]}"; do
+      local sid="${all_ids[$i]}" sname="${all_names[$i]}"
+      local sstatus; sstatus=$(echo "$svc_resp" | jq -r --arg id "$sid" '.data[] | select(.id==$id) | .status')
+      local status_icon
+      case "$sstatus" in
+        up)       status_icon="${GREEN}●${NC}" ;;
+        down)     status_icon="${RED}●${NC}" ;;
+        degraded) status_icon="${YELLOW}●${NC}" ;;
+        *)        status_icon="${DIM}●${NC}" ;;
+      esac
+      printf "  %s %2d) %-30s ${DIM}%s${NC}\n" \
+        "$(echo -e "$status_icon")" "$((i+1))" "$sname" "${sid:0:8}…"
+    done
+    echo ""
+
+    local choice
+    if [[ "$OPT_YES" == true ]]; then
+      choice="a"
+    else
+      read -rp "  Seçim [1-${#all_ids[@]}, a=tümü]: " choice
+    fi
+    echo ""
+
+    if [[ "$choice" == "a" || "$choice" == "A" ]]; then
+      sids_to_remove=("${all_ids[@]}")
+      names_to_remove=("${all_names[@]}")
+    else
+      IFS=',' read -ra choices <<< "$choice"
+      for c in "${choices[@]}"; do
+        c="${c// /}"
+        if [[ "$c" =~ ^[0-9]+$ ]] && (( c >= 1 && c <= ${#all_ids[@]} )); then
+          local idx=$(( c - 1 ))
+          sids_to_remove+=("${all_ids[$idx]}")
+          names_to_remove+=("${all_names[$idx]}")
+        else
+          warn "Geçersiz seçim atlandı: $c"
+        fi
+      done
+    fi
+  fi
+
+  [[ ${#sids_to_remove[@]} -eq 0 ]] && { info "Hiç servis seçilmedi."; return; }
+
+  # Onay
+  if [[ "$OPT_YES" == false && "$OPT_DRY_RUN" == false ]]; then
+    warn "Silinecek servisler:"
+    for i in "${!sids_to_remove[@]}"; do
+      echo -e "  ${RED}✖${NC} ${names_to_remove[$i]}  ${DIM}(${sids_to_remove[$i]:0:8}…)${NC}"
+    done
+    echo -n "Devam edilsin mi? [e/H]: "
+    local confirm; read -r confirm
+    [[ "$confirm" =~ ^[eEyY]$ ]] || { info "İptal edildi."; return; }
+  fi
+
+  # Sil
+  for i in "${!sids_to_remove[@]}"; do
+    local sid="${sids_to_remove[$i]}" sname="${names_to_remove[$i]}"
+    step "Siliniyor: $sname"
+
+    # Çalışan yerel agent varsa durdur
+    if agent_running "$sid"; then
+      stop_agent "$sid"
+    else
+      remove_agent_pid "$sid"
+    fi
+
+    # Yerel env/log dosyalarını temizle
+    if [[ "$OPT_DRY_RUN" == false ]]; then
+      rm -f "$(env_file_for "$sid")" "$(log_file "$sid")"
+    else
+      info "[dry-run] Yerel dosyalar silinmeyecek: $sid"
+    fi
+
+    # Backend'den sil
+    if [[ "$OPT_DRY_RUN" == false ]]; then
+      local http_code
+      http_code=$(curl -sf -o /dev/null -w "%{http_code}" -X DELETE \
+        -H "Authorization: Bearer $access_tok" \
+        "$BACKEND_URL/api/v1/services/$sid" 2>/dev/null) || http_code="000"
+      if [[ "$http_code" == "200" || "$http_code" == "204" ]]; then
+        success "Silindi: $sname"
+      else
+        warn "Backend hatası (HTTP $http_code) — yerel temizlik tamamlandı: $sname"
+      fi
+    else
+      info "[dry-run] Backend'den silinmeyecek: $sid"
+    fi
+  done
+}
+
 cmd_refresh_token() {
   step "Token yenileniyor..."
   local refresh_tok
@@ -1291,7 +1429,7 @@ cmd_install_service() {
 # İlk pozisyonel argüman subcommand olabilir
 if [[ $# -gt 0 ]]; then
   case "$1" in
-    status|stop|restart|logs|add-service|refresh-token|validate|update|install-service)
+    status|stop|restart|logs|add-service|remove-service|refresh-token|validate|update|install-service)
       SUBCOMMAND="$1"
       shift
       # subcommand'in opsiyonel argümanı
@@ -1339,6 +1477,7 @@ if [[ -n "$SUBCOMMAND" ]]; then
     restart)         cmd_restart ;;
     logs)            cmd_logs ;;
     add-service)     cmd_add_service ;;
+    remove-service)  cmd_remove_service ;;
     refresh-token)   cmd_refresh_token ;;
     validate)        cmd_validate ;;
     update)          cmd_update ;;
@@ -1522,6 +1661,7 @@ if [[ ! "$RUN_NOW" =~ ^[Hh]$ ]]; then
     echo -e "  Log takibi       : ${CYAN}$0 logs${NC}"
     echo -e "  Token yenile     : ${CYAN}$0 refresh-token${NC}"
     echo -e "  Servis ekle      : ${CYAN}$0 add-service${NC}"
+    echo -e "  Servis sil       : ${CYAN}$0 remove-service${NC}"
     echo -e "  Sistem servisi   : ${CYAN}$0 install-service${NC}"
     echo ""
   fi
