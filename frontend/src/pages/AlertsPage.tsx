@@ -525,20 +525,34 @@ export function AlertsPage() {
 				className="flex items-center justify-between"
 			>
 				<p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-						Gerçek zamanlı olay bildirimleri
-					</p>
+					Gerçek zamanlı olay bildirimleri
+				</p>
 				<div
 					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
 					style={
 						activeCount > 0
-							? { background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }
-							: { background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)", color: "var(--status-up-text)" }
+							? {
+									background: "var(--status-down-subtle)",
+									border: "1px solid var(--status-down-border)",
+									color: "var(--status-down-text)",
+								}
+							: {
+									background: "var(--status-up-subtle)",
+									border: "1px solid var(--status-up-border)",
+									color: "var(--status-up-text)",
+								}
 					}
 				>
 					{activeCount > 0 ? (
-						<><Bell className="w-3.5 h-3.5 animate-pulse" />{activeCount} Aktif</>
+						<>
+							<Bell className="w-3.5 h-3.5 animate-pulse" />
+							{activeCount} Aktif
+						</>
 					) : (
-						<><BellOff className="w-3.5 h-3.5" />Sorun Yok</>
+						<>
+							<BellOff className="w-3.5 h-3.5" />
+							Sorun Yok
+						</>
 					)}
 				</div>
 			</motion.div>
@@ -546,7 +560,10 @@ export function AlertsPage() {
 			{/* Tabs */}
 			<div
 				className="flex items-center gap-0.5 p-0.5 w-fit rounded-lg"
-				style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}
+				style={{
+					background: "var(--surface-sunken)",
+					border: "1px solid var(--border-subtle)",
+				}}
 			>
 				{[
 					{ key: "alerts" as const, label: "Uyarılar", icon: Bell },
@@ -559,7 +576,11 @@ export function AlertsPage() {
 						className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
 						style={
 							activeTab === tab.key
-								? { background: "var(--surface-raised)", color: "var(--text-primary)", boxShadow: "var(--btn-shadow)" }
+								? {
+										background: "var(--surface-raised)",
+										color: "var(--text-primary)",
+										boxShadow: "var(--btn-shadow)",
+									}
 								: { color: "var(--text-muted)" }
 						}
 					>

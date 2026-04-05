@@ -49,7 +49,7 @@ export function AIAssistant() {
 		if (isOpen && !isMinimized) {
 			messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 		}
-	}, [chatMessages, isOpen, isMinimized]);
+	}, [isOpen, isMinimized]);
 
 	const now = () =>
 		new Date().toLocaleTimeString("tr-TR", {
@@ -61,7 +61,10 @@ export function AIAssistant() {
 		if (!message.trim() || isAnalyzing) return;
 		const userMsg = message;
 		setMessage("");
-		setChatMessages((prev) => [...prev, { role: "user", text: userMsg, time: now() }]);
+		setChatMessages((prev) => [
+			...prev,
+			{ role: "user", text: userMsg, time: now() },
+		]);
 		setIsAnalyzing(true);
 		try {
 			const history: ChatMessage[] = chatMessages.slice(-10).map((m) => ({
@@ -150,7 +153,10 @@ export function AIAssistant() {
 								>
 									AI Asistan
 								</p>
-								<p className="text-xs truncate" style={{ color: "var(--text-faint)" }}>
+								<p
+									className="text-xs truncate"
+									style={{ color: "var(--text-faint)" }}
+								>
 									{isAnalyzing
 										? "Analiz ediliyor..."
 										: contextServiceName
@@ -201,7 +207,11 @@ export function AIAssistant() {
 													<Sparkles className="w-3 h-3 text-white" />
 												</div>
 											)}
-											<div className={msg.role === "user" ? "max-w-[80%]" : "flex-1 min-w-0"}>
+											<div
+												className={
+													msg.role === "user" ? "max-w-[80%]" : "flex-1 min-w-0"
+												}
+											>
 												<div
 													className="rounded-xl px-3 py-2.5 text-sm"
 													style={

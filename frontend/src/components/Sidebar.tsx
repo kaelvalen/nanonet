@@ -4,11 +4,11 @@ import {
 	GitFork,
 	LayoutDashboard,
 	LogOut,
+	PanelLeft,
+	PanelLeftClose,
 	Server,
 	Settings,
 	Sparkles,
-	PanelLeftClose,
-	PanelLeft,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
@@ -49,7 +49,12 @@ const navSections: NavSection[] = [
 				icon: LayoutDashboard,
 				end: true,
 			},
-			{ to: "/app/services", label: "Servisler", icon: Server, badge: "services" },
+			{
+				to: "/app/services",
+				label: "Servisler",
+				icon: Server,
+				badge: "services",
+			},
 			{
 				to: "/app/alerts",
 				label: "Uyarılar",

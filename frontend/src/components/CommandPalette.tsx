@@ -33,7 +33,12 @@ const navigationItems = [
 	{ label: "Ana Sayfa", icon: Home, path: "/app", shortcut: "⌘1" },
 	{ label: "Servisler", icon: Server, path: "/app/services", shortcut: "⌘2" },
 	{ label: "Uyarılar", icon: AlertCircle, path: "/app/alerts", shortcut: "⌘3" },
-	{ label: "AI İçgörüler", icon: Sparkles, path: "/app/ai-insights", shortcut: "⌘4" },
+	{
+		label: "AI İçgörüler",
+		icon: Sparkles,
+		path: "/app/ai-insights",
+		shortcut: "⌘4",
+	},
 	{ label: "Kubernetes", icon: Cloud, path: "/app/kubernetes", shortcut: "⌘5" },
 	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘6" },
 ];
@@ -41,7 +46,11 @@ const navigationItems = [
 const actionItems = [
 	{ label: "Yeni Servis Ekle", icon: Plus, action: "add-service" },
 	{ label: "Tam Analiz Çalıştır", icon: Sparkles, action: "analyze" },
-	{ label: "Tüm Servisleri Yeniden Başlat", icon: RotateCw, action: "restart-all" },
+	{
+		label: "Tüm Servisleri Yeniden Başlat",
+		icon: RotateCw,
+		action: "restart-all",
+	},
 	{ label: "Sistem Sağlık Kontrolü", icon: Activity, action: "health-check" },
 ];
 
@@ -98,7 +107,10 @@ export function CommandPalette() {
 				if (num >= 1 && num <= 5) {
 					e.preventDefault();
 					const item = navigationItems[num - 1];
-					if (item) { navigate(item.path); setOpen(false); }
+					if (item) {
+						navigate(item.path);
+						setOpen(false);
+					}
 				}
 				return;
 			}
@@ -107,7 +119,9 @@ export function CommandPalette() {
 				if (e.key === "g") {
 					gPressedRef.current = true;
 					clearTimeout(gTimerRef.current);
-					gTimerRef.current = setTimeout(() => { gPressedRef.current = false; }, 800);
+					gTimerRef.current = setTimeout(() => {
+						gPressedRef.current = false;
+					}, 800);
 					return;
 				}
 				if (gPressedRef.current && e.key in VIM_NAV) {
@@ -126,19 +140,29 @@ export function CommandPalette() {
 		};
 	}, [open, navigate]);
 
-	const handleNavigate = useCallback((path: string) => {
-		navigate(path);
-		setOpen(false);
-	}, [navigate]);
+	const handleNavigate = useCallback(
+		(path: string) => {
+			navigate(path);
+			setOpen(false);
+		},
+		[navigate],
+	);
 
-	const handleAction = useCallback((action: string) => {
-		if (action === "add-service") navigate("/app/services");
-		else if (action === "analyze") navigate("/app/ai-insights");
-		setOpen(false);
-	}, [navigate]);
+	const handleAction = useCallback(
+		(action: string) => {
+			if (action === "add-service") navigate("/app/services");
+			else if (action === "analyze") navigate("/app/ai-insights");
+			setOpen(false);
+		},
+		[navigate],
+	);
 
 	const handleServiceAction = useCallback(
-		async (serviceId: string, serviceName: string, action: "start" | "restart" | "stop") => {
+		async (
+			serviceId: string,
+			serviceName: string,
+			action: "start" | "restart" | "stop",
+		) => {
 			setOpen(false);
 			try {
 				if (action === "start") await servicesApi.start(serviceId);
@@ -162,7 +186,10 @@ export function CommandPalette() {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						className="fixed inset-0 z-50"
-						style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(2px)" }}
+						style={{
+							backgroundColor: "rgba(0,0,0,0.4)",
+							backdropFilter: "blur(2px)",
+						}}
 						onClick={() => setOpen(false)}
 					/>
 				)}
@@ -217,8 +244,14 @@ export function CommandPalette() {
 
 							<CommandList className="max-h-96 px-1.5 pb-1.5">
 								<CommandEmpty>
-									<div className="flex flex-col items-center gap-2 py-8 text-sm" style={{ color: "var(--text-muted)" }}>
-										<Search className="w-7 h-7" style={{ color: "var(--text-faint)" }} />
+									<div
+										className="flex flex-col items-center gap-2 py-8 text-sm"
+										style={{ color: "var(--text-muted)" }}
+									>
+										<Search
+											className="w-7 h-7"
+											style={{ color: "var(--text-faint)" }}
+										/>
 										Sonuç bulunamadı
 									</div>
 								</CommandEmpty>
@@ -232,7 +265,10 @@ export function CommandPalette() {
 											className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
 											style={{ color: "var(--text-secondary)" }}
 										>
-											<item.icon className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+											<item.icon
+												className="w-4 h-4 shrink-0"
+												style={{ color: "var(--text-muted)" }}
+											/>
 											<span className="flex-1 text-sm">{item.label}</span>
 											<kbd
 												className="text-[10px] px-1.5 py-0.5 rounded"
@@ -250,25 +286,37 @@ export function CommandPalette() {
 
 								{services.length > 0 && (
 									<>
-										<CommandSeparator className="my-1" style={{ backgroundColor: "var(--border-subtle)" }} />
+										<CommandSeparator
+											className="my-1"
+											style={{ backgroundColor: "var(--border-subtle)" }}
+										/>
 
 										{/* Services */}
 										<CommandGroup heading="Servisler">
 											{services.map((service) => (
 												<CommandItem
 													key={service.id}
-													onSelect={() => handleNavigate(`/app/services/${service.id}`)}
+													onSelect={() =>
+														handleNavigate(`/app/services/${service.id}`)
+													}
 													className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
 													style={{ color: "var(--text-secondary)" }}
 												>
 													<div className="relative shrink-0">
-														<Server className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+														<Server
+															className="w-4 h-4"
+															style={{ color: "var(--text-muted)" }}
+														/>
 														<span
 															className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
-															style={{ background: statusColor(service.status) }}
+															style={{
+																background: statusColor(service.status),
+															}}
 														/>
 													</div>
-													<span className="flex-1 text-sm font-mono">{service.name}</span>
+													<span className="flex-1 text-sm font-mono">
+														{service.name}
+													</span>
 													<span
 														className="text-[10px] px-1.5 py-0.5 rounded-md"
 														style={{
@@ -276,52 +324,83 @@ export function CommandPalette() {
 															color: statusText(service.status),
 														}}
 													>
-														{service.status === "up" ? "Aktif" : service.status === "degraded" ? "Bozuk" : "Kapalı"}
+														{service.status === "up"
+															? "Aktif"
+															: service.status === "degraded"
+																? "Bozuk"
+																: "Kapalı"}
 													</span>
 												</CommandItem>
 											))}
 										</CommandGroup>
 
-										<CommandSeparator className="my-1" style={{ backgroundColor: "var(--border-subtle)" }} />
+										<CommandSeparator
+											className="my-1"
+											style={{ backgroundColor: "var(--border-subtle)" }}
+										/>
 
 										{/* Service controls (first 3 services only) */}
 										<CommandGroup heading="Servis Kontrolleri">
-											{services.slice(0, 3).flatMap((service) => [
-												{
-													key: `${service.id}-start`,
-													icon: Play,
-													label: `Başlat — ${service.name}`,
-													color: "var(--status-up-text)",
-													action: () => handleServiceAction(service.id, service.name, "start"),
-												},
-												{
-													key: `${service.id}-restart`,
-													icon: RefreshCw,
-													label: `Yeniden Başlat — ${service.name}`,
-													color: "var(--color-teal)",
-													action: () => handleServiceAction(service.id, service.name, "restart"),
-												},
-												{
-													key: `${service.id}-stop`,
-													icon: Power,
-													label: `Durdur — ${service.name}`,
-													color: "var(--status-warn-text)",
-													action: () => handleServiceAction(service.id, service.name, "stop"),
-												},
-											]).map((item) => (
-												<CommandItem
-													key={item.key}
-													onSelect={item.action}
-													className="flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer"
-													style={{ color: "var(--text-secondary)" }}
-												>
-													<item.icon className="w-3.5 h-3.5 shrink-0" style={{ color: item.color }} />
-													<span className="flex-1 text-sm">{item.label}</span>
-												</CommandItem>
-											))}
+											{services
+												.slice(0, 3)
+												.flatMap((service) => [
+													{
+														key: `${service.id}-start`,
+														icon: Play,
+														label: `Başlat — ${service.name}`,
+														color: "var(--status-up-text)",
+														action: () =>
+															handleServiceAction(
+																service.id,
+																service.name,
+																"start",
+															),
+													},
+													{
+														key: `${service.id}-restart`,
+														icon: RefreshCw,
+														label: `Yeniden Başlat — ${service.name}`,
+														color: "var(--color-teal)",
+														action: () =>
+															handleServiceAction(
+																service.id,
+																service.name,
+																"restart",
+															),
+													},
+													{
+														key: `${service.id}-stop`,
+														icon: Power,
+														label: `Durdur — ${service.name}`,
+														color: "var(--status-warn-text)",
+														action: () =>
+															handleServiceAction(
+																service.id,
+																service.name,
+																"stop",
+															),
+													},
+												])
+												.map((item) => (
+													<CommandItem
+														key={item.key}
+														onSelect={item.action}
+														className="flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer"
+														style={{ color: "var(--text-secondary)" }}
+													>
+														<item.icon
+															className="w-3.5 h-3.5 shrink-0"
+															style={{ color: item.color }}
+														/>
+														<span className="flex-1 text-sm">{item.label}</span>
+													</CommandItem>
+												))}
 										</CommandGroup>
 
-										<CommandSeparator className="my-1" style={{ backgroundColor: "var(--border-subtle)" }} />
+										<CommandSeparator
+											className="my-1"
+											style={{ backgroundColor: "var(--border-subtle)" }}
+										/>
 									</>
 								)}
 
@@ -334,7 +413,10 @@ export function CommandPalette() {
 											className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
 											style={{ color: "var(--text-secondary)" }}
 										>
-											<action.icon className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+											<action.icon
+												className="w-4 h-4 shrink-0"
+												style={{ color: "var(--text-muted)" }}
+											/>
 											<span className="flex-1 text-sm">{action.label}</span>
 										</CommandItem>
 									))}

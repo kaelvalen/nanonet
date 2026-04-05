@@ -37,15 +37,18 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 		const e: Record<string, string> = {};
 		if (!name.trim()) e.name = "Zorunlu";
 		else if (name.length < 2) e.name = "En az 2 karakter";
-		else if (!/^[a-zA-Z0-9_-]+$/.test(name)) e.name = "Harf, rakam, tire ve alt çizgi kullanılabilir";
+		else if (!/^[a-zA-Z0-9_-]+$/.test(name))
+			e.name = "Harf, rakam, tire ve alt çizgi kullanılabilir";
 
 		if (!host.trim()) e.host = "Zorunlu";
-		else if (!/^[a-zA-Z0-9._-]+$/.test(host)) e.host = "Geçerli hostname veya IP girin";
+		else if (!/^[a-zA-Z0-9._-]+$/.test(host))
+			e.host = "Geçerli hostname veya IP girin";
 
 		if (!port || port < 1 || port > 65535) e.port = "1–65535 arası";
 
 		if (!healthEndpoint.trim()) e.healthEndpoint = "Zorunlu";
-		else if (!healthEndpoint.startsWith("/")) e.healthEndpoint = "/ ile başlamalı";
+		else if (!healthEndpoint.startsWith("/"))
+			e.healthEndpoint = "/ ile başlamalı";
 
 		if (pollInterval < 5 || pollInterval > 300) e.pollInterval = "5–300 saniye";
 
@@ -77,9 +80,14 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 		setOpen(false);
 		setTimeout(() => {
 			setStep("form");
-			setName(""); setHost(""); setPort(8080);
-			setHealthEndpoint("/health"); setPollInterval(10);
-			setErrors({}); setCreatedServiceId(""); setCopied(false);
+			setName("");
+			setHost("");
+			setPort(8080);
+			setHealthEndpoint("/health");
+			setPollInterval(10);
+			setErrors({});
+			setCreatedServiceId("");
+			setCopied(false);
 		}, 200);
 	};
 
@@ -96,7 +104,10 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : handleClose())}>
+		<Dialog
+			open={open}
+			onOpenChange={(v) => (v ? setOpen(true) : handleClose())}
+		>
 			<DialogTrigger asChild>
 				{trigger ?? (
 					<Button
@@ -140,20 +151,35 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 									id="svc-name"
 									placeholder="payment-service"
 									value={name}
-									onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: "" })); }}
+									onChange={(e) => {
+										setName(e.target.value);
+										setErrors((p) => ({ ...p, name: "" }));
+									}}
 									aria-invalid={!!errors.name}
-									style={{ borderColor: errors.name ? "var(--status-down)" : undefined }}
+									style={{
+										borderColor: errors.name ? "var(--status-down)" : undefined,
+									}}
 								/>
 							</Field>
 
-							<Field id="svc-host" label="Host / IP" error={errors.host} required>
+							<Field
+								id="svc-host"
+								label="Host / IP"
+								error={errors.host}
+								required
+							>
 								<Input
 									id="svc-host"
 									placeholder="192.168.1.42"
 									value={host}
-									onChange={(e) => { setHost(e.target.value); setErrors((p) => ({ ...p, host: "" })); }}
+									onChange={(e) => {
+										setHost(e.target.value);
+										setErrors((p) => ({ ...p, host: "" }));
+									}}
 									aria-invalid={!!errors.host}
-									style={{ borderColor: errors.host ? "var(--status-down)" : undefined }}
+									style={{
+										borderColor: errors.host ? "var(--status-down)" : undefined,
+									}}
 								/>
 							</Field>
 
@@ -163,37 +189,72 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 										id="svc-port"
 										type="number"
 										placeholder="8080"
-										min={1} max={65535}
+										min={1}
+										max={65535}
 										value={port}
-										onChange={(e) => { setPort(parseInt(e.target.value, 10) || 0); setErrors((p) => ({ ...p, port: "" })); }}
+										onChange={(e) => {
+											setPort(parseInt(e.target.value, 10) || 0);
+											setErrors((p) => ({ ...p, port: "" }));
+										}}
 										aria-invalid={!!errors.port}
-										style={{ borderColor: errors.port ? "var(--status-down)" : undefined }}
+										style={{
+											borderColor: errors.port
+												? "var(--status-down)"
+												: undefined,
+										}}
 									/>
 								</Field>
-								<Field id="svc-endpoint" label="Health Endpoint" error={errors.healthEndpoint} required>
+								<Field
+									id="svc-endpoint"
+									label="Health Endpoint"
+									error={errors.healthEndpoint}
+									required
+								>
 									<Input
 										id="svc-endpoint"
 										placeholder="/health"
 										value={healthEndpoint}
-										onChange={(e) => { setHealthEndpoint(e.target.value); setErrors((p) => ({ ...p, healthEndpoint: "" })); }}
+										onChange={(e) => {
+											setHealthEndpoint(e.target.value);
+											setErrors((p) => ({ ...p, healthEndpoint: "" }));
+										}}
 										aria-invalid={!!errors.healthEndpoint}
-										style={{ borderColor: errors.healthEndpoint ? "var(--status-down)" : undefined }}
+										style={{
+											borderColor: errors.healthEndpoint
+												? "var(--status-down)"
+												: undefined,
+										}}
 									/>
 								</Field>
 							</div>
 
-							<Field id="svc-poll" label="Poll Interval (saniye)" error={errors.pollInterval}>
+							<Field
+								id="svc-poll"
+								label="Poll Interval (saniye)"
+								error={errors.pollInterval}
+							>
 								<div className="flex items-center gap-2">
 									<Input
 										id="svc-poll"
 										type="number"
-										min={5} max={300}
+										min={5}
+										max={300}
 										value={pollInterval}
-										onChange={(e) => { setPollInterval(parseInt(e.target.value, 10) || 10); setErrors((p) => ({ ...p, pollInterval: "" })); }}
+										onChange={(e) => {
+											setPollInterval(parseInt(e.target.value, 10) || 10);
+											setErrors((p) => ({ ...p, pollInterval: "" }));
+										}}
 										className="w-24"
-										style={{ borderColor: errors.pollInterval ? "var(--status-down)" : undefined }}
+										style={{
+											borderColor: errors.pollInterval
+												? "var(--status-down)"
+												: undefined,
+										}}
 									/>
-									<span className="text-xs" style={{ color: "var(--text-faint)" }}>
+									<span
+										className="text-xs"
+										style={{ color: "var(--text-faint)" }}
+									>
 										5–300 saniye
 									</span>
 								</div>
@@ -201,7 +262,11 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 						</div>
 
 						<DialogFooter>
-							<Button variant="outline" onClick={handleClose} style={{ color: "var(--text-muted)" }}>
+							<Button
+								variant="outline"
+								onClick={handleClose}
+								style={{ color: "var(--text-muted)" }}
+							>
 								İptal
 							</Button>
 							<Button
@@ -238,8 +303,14 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 										borderBottom: "1px solid var(--border-subtle)",
 									}}
 								>
-									<Terminal className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
-									<span className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>
+									<Terminal
+										className="w-3.5 h-3.5"
+										style={{ color: "var(--text-faint)" }}
+									/>
+									<span
+										className="text-xs font-mono"
+										style={{ color: "var(--text-faint)" }}
+									>
 										bash
 									</span>
 								</div>
@@ -279,9 +350,13 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 									border: "1px solid var(--status-warn-border)",
 								}}
 							>
-								<p className="text-xs" style={{ color: "var(--status-warn-text)" }}>
-									<strong>Önemli:</strong> Agent token'ınızı Ayarlar → Agent Token
-									bölümünden alın ve &lt;YOUR_AGENT_TOKEN&gt; kısmını değiştirin.
+								<p
+									className="text-xs"
+									style={{ color: "var(--status-warn-text)" }}
+								>
+									<strong>Önemli:</strong> Agent token'ınızı Ayarlar → Agent
+									Token bölümünden alın ve &lt;YOUR_AGENT_TOKEN&gt; kısmını
+									değiştirin.
 								</p>
 							</div>
 						</div>
@@ -323,9 +398,7 @@ function Field({
 				style={{ color: "var(--text-secondary)" }}
 			>
 				{label}
-				{required && (
-					<span style={{ color: "var(--status-down)" }}>*</span>
-				)}
+				{required && <span style={{ color: "var(--status-down)" }}>*</span>}
 			</Label>
 			{children}
 			{error && (

@@ -71,7 +71,9 @@ export function MobileNav() {
 						</div>
 						<span
 							className="text-[9px] font-medium tracking-tight"
-							style={{ color: active ? "var(--sidebar-primary)" : "var(--text-faint)" }}
+							style={{
+								color: active ? "var(--sidebar-primary)" : "var(--text-faint)",
+							}}
 						>
 							{item.label}
 						</span>

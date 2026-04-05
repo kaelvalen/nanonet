@@ -4,7 +4,6 @@ import {
 	ArrowUpRight,
 	CheckCircle2,
 	Clock,
-	Filter,
 	Globe,
 	HelpCircle,
 	LayoutGrid,
@@ -69,9 +68,13 @@ function statusStyles(status: string) {
 function StatusIcon({ status }: { status: string }) {
 	const cls = "w-3.5 h-3.5";
 	if (status === "up")
-		return <CheckCircle2 className={cls} style={{ color: "var(--status-up)" }} />;
+		return (
+			<CheckCircle2 className={cls} style={{ color: "var(--status-up)" }} />
+		);
 	if (status === "degraded")
-		return <AlertTriangle className={cls} style={{ color: "var(--status-warn)" }} />;
+		return (
+			<AlertTriangle className={cls} style={{ color: "var(--status-warn)" }} />
+		);
 	if (status === "down")
 		return <XCircle className={cls} style={{ color: "var(--status-down)" }} />;
 	return <HelpCircle className={cls} style={{ color: "var(--text-faint)" }} />;
@@ -97,17 +100,21 @@ export function ServicesPage() {
 			const matchesSearch =
 				s.name.toLowerCase().includes(search.toLowerCase()) ||
 				s.host.toLowerCase().includes(search.toLowerCase());
-			const matchesStatus =
-				statusFilter === "all" || s.status === statusFilter;
+			const matchesStatus = statusFilter === "all" || s.status === statusFilter;
 			return matchesSearch && matchesStatus;
 		});
 	}, [services, search, statusFilter]);
 
 	const statusCounts = useMemo(() => {
-		const counts = { all: services.length, up: 0, degraded: 0, down: 0, unknown: 0 };
+		const counts = {
+			all: services.length,
+			up: 0,
+			degraded: 0,
+			down: 0,
+			unknown: 0,
+		};
 		for (const s of services) {
-			if (s.status in counts)
-				counts[s.status as keyof typeof counts]++;
+			if (s.status in counts) counts[s.status as keyof typeof counts]++;
 		}
 		return counts;
 	}, [services]);
@@ -122,8 +129,8 @@ export function ServicesPage() {
 				className="flex items-center justify-between"
 			>
 				<p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-						{services.length} servis izleniyor
-					</p>
+					{services.length} servis izleniyor
+				</p>
 				<AddServiceDialog />
 			</motion.div>
 
@@ -244,7 +251,10 @@ export function ServicesPage() {
 						className="p-1.5 rounded-md transition-all"
 						style={
 							viewMode === "grid"
-								? { background: "var(--color-teal-subtle)", color: "var(--color-teal)" }
+								? {
+										background: "var(--color-teal-subtle)",
+										color: "var(--color-teal)",
+									}
 								: { color: "var(--text-faint)" }
 						}
 					>
@@ -256,7 +266,10 @@ export function ServicesPage() {
 						className="p-1.5 rounded-md transition-all"
 						style={
 							viewMode === "list"
-								? { background: "var(--color-teal-subtle)", color: "var(--color-teal)" }
+								? {
+										background: "var(--color-teal-subtle)",
+										color: "var(--color-teal)",
+									}
 								: { color: "var(--text-faint)" }
 						}
 					>
@@ -349,7 +362,10 @@ export function ServicesPage() {
 									whileHover={{ y: -1 }}
 									layout
 								>
-									<Link to={`/app/services/${service.id}`} className="block group">
+									<Link
+										to={`/app/services/${service.id}`}
+										className="block group"
+									>
 										<Card
 											className="relative p-4 transition-all duration-150 overflow-hidden"
 											style={{

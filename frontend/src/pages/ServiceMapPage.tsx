@@ -22,11 +22,18 @@ export function ServiceMapPage() {
 					<GitFork className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
 				</div>
 				<div className="flex-1 min-w-0">
-					<h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+					<h1
+						className="text-sm font-semibold"
+						style={{ color: "var(--text-primary)" }}
+					>
 						Servis Bağımlılık Haritası
 					</h1>
-					<p className="text-xs hidden sm:block" style={{ color: "var(--text-faint)" }}>
-						Sürükle · bağlantı için node'dan node'a çiz · tıkla detay ve AI analizi için
+					<p
+						className="text-xs hidden sm:block"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Sürükle · bağlantı için node'dan node'a çiz · tıkla detay ve AI
+						analizi için
 					</p>
 				</div>
 				<span

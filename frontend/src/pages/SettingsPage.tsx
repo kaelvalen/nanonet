@@ -341,8 +341,8 @@ export function SettingsPage() {
 				className="flex items-start justify-between gap-4"
 			>
 				<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-						Platform yapılandırması ve tercihler
-					</p>
+					Platform yapılandırması ve tercihler
+				</p>
 				{anyDirty && (
 					<button
 						type="button"
