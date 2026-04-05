@@ -318,7 +318,7 @@ function StatusEdge({
 							className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold"
 							style={{
 								background: "var(--surface-card)",
-								border: `2px solid ${srcColor}`,
+								border: `1px solid ${srcColor}`,
 								color: srcColor,
 								boxShadow: "var(--card-shadow)",
 							}}
@@ -356,7 +356,7 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 			style={{
 				width: 200,
 				background: "var(--surface-card)",
-				border: selected ? `2px solid ${color}` : `2px solid ${border}`,
+				border: selected ? `1px solid ${color}` : `1px solid ${border}`,
 				boxShadow: selected
 					? `0 0 0 3px color-mix(in srgb, ${color} 25%, transparent), var(--card-shadow)`
 					: "var(--card-shadow)",
@@ -372,7 +372,7 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 					background: color,
 					width: 9,
 					height: 9,
-					border: `2px solid var(--surface-card)`,
+					border: `1px solid var(--surface-card)`,
 				}}
 			/>
 			<Handle
@@ -382,7 +382,7 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 					background: color,
 					width: 9,
 					height: 9,
-					border: `2px solid var(--surface-card)`,
+					border: `1px solid var(--surface-card)`,
 				}}
 			/>
 
@@ -407,7 +407,7 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 				<div className="flex items-center gap-2 mb-2">
 					<div
 						className="w-6 h-6 rounded flex items-center justify-center shrink-0"
-						style={{ background: bg, border: `2px solid ${border}` }}
+						style={{ background: bg, border: `1px solid ${border}` }}
 					>
 						<Server className="w-3 h-3" style={{ color }} />
 					</div>
@@ -431,7 +431,7 @@ function ServiceNode({ data }: { data: ServiceNodeData }) {
 				<div className="flex items-center gap-2">
 					<span
 						className="px-1.5 py-0.5 rounded text-[9px] font-semibold flex items-center gap-1"
-						style={{ background: bg, color, border: `2px solid ${border}` }}
+						style={{ background: bg, color, border: `1px solid ${border}` }}
 					>
 						<StatusIcon status={service.status} size="w-2.5 h-2.5" />
 						{STATUS_LABEL[service.status] ?? service.status}
@@ -539,19 +539,19 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 				width: 300,
 				minWidth: 300,
 				background: "var(--surface-card)",
-				borderLeft: "2px solid var(--border-default)",
+				borderLeft: "1px solid var(--border-default)",
 			}}
 		>
 			{/* Header */}
 			<div
 				className="flex items-center gap-2 px-4 py-3 shrink-0"
-				style={{ borderBottom: "2px solid var(--border-default)" }}
+				style={{ borderBottom: "1px solid var(--border-default)" }}
 			>
 				<div
 					className="w-7 h-7 rounded flex items-center justify-center shrink-0"
 					style={{
 						background: STATUS_BG[service.status],
-						border: `2px solid ${STATUS_BORDER[service.status]}`,
+						border: `1px solid ${STATUS_BORDER[service.status]}`,
 					}}
 				>
 					<Server className="w-3.5 h-3.5" style={{ color }} />
@@ -589,7 +589,7 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 					className="flex items-center gap-2 px-3 py-2 rounded"
 					style={{
 						background: STATUS_BG[service.status],
-						border: `2px solid ${STATUS_BORDER[service.status]}`,
+						border: `1px solid ${STATUS_BORDER[service.status]}`,
 					}}
 				>
 					<StatusIcon status={service.status} />
@@ -653,7 +653,7 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 									className="p-2 rounded"
 									style={{
 										background: "var(--surface-sunken)",
-										border: "2px solid var(--border-default)",
+										border: "1px solid var(--border-default)",
 									}}
 								>
 									<div className="flex items-center gap-1 mb-0.5">
@@ -705,7 +705,7 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 												: alert.severity === "warn"
 													? "var(--status-warn-subtle)"
 													: "var(--color-blue-subtle)",
-										border: `2px solid ${alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)"}`,
+										border: `1px solid ${alert.severity === "crit" ? "var(--status-down-border)" : alert.severity === "warn" ? "var(--status-warn-border)" : "var(--color-blue-border)"}`,
 									}}
 								>
 									<p
@@ -725,7 +725,7 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 					className="p-3 rounded"
 					style={{
 						background: "var(--color-lavender-subtle)",
-						border: "2px solid var(--color-lavender-border)",
+						border: "1px solid var(--color-lavender-border)",
 					}}
 				>
 					<div className="flex items-center gap-2 mb-2">
@@ -776,7 +776,7 @@ function RightPanel({ service, onClose }: RightPanelProps) {
 								<div
 									className="pt-2"
 									style={{
-										borderTop: "2px solid var(--color-lavender-border)",
+										borderTop: "1px solid var(--color-lavender-border)",
 									}}
 								>
 									<p
@@ -1130,7 +1130,7 @@ function ServiceMapInner() {
 				{/* Toolbar */}
 				<div
 					className="flex items-center gap-2 px-4 py-2 shrink-0 flex-wrap"
-					style={{ borderBottom: "2px solid var(--border-default)" }}
+					style={{ borderBottom: "1px solid var(--border-default)" }}
 				>
 					{/* Status counts */}
 					<div className="flex items-center gap-2 mr-1">
@@ -1146,7 +1146,7 @@ function ServiceMapInner() {
 								className="flex items-center gap-1 px-2 py-0.5 rounded"
 								style={{
 									background: STATUS_BG[status],
-									border: `1.5px solid ${STATUS_BORDER[status]}`,
+									border: `1px solid ${STATUS_BORDER[status]}`,
 								}}
 							>
 								<div
@@ -1173,7 +1173,7 @@ function ServiceMapInner() {
 						className="text-[10px] px-2 py-0.5 rounded"
 						style={{
 							background: "var(--surface-sunken)",
-							border: "1.5px solid var(--border-subtle)",
+							border: "1px solid var(--border-subtle)",
 							color: "var(--text-faint)",
 						}}
 					>
@@ -1204,7 +1204,7 @@ function ServiceMapInner() {
 							<button
 								type="button"
 								onClick={() => setAddMode((v) => !v)}
-								className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border-2 transition-all"
+								className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border transition-all"
 								style={{
 									background: addMode
 										? "var(--color-teal-subtle)"
@@ -1223,7 +1223,7 @@ function ServiceMapInner() {
 									className="absolute top-9 right-0 z-20 rounded p-2 min-w-52 max-h-72 overflow-y-auto space-y-0.5"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--border-default)",
+										border: "1px solid var(--border-default)",
 										boxShadow: "var(--card-shadow)",
 									}}
 								>
@@ -1271,7 +1271,7 @@ function ServiceMapInner() {
 					<button
 						type="button"
 						onClick={handleSave}
-						className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border-2 transition-all"
+						className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border transition-all"
 						style={{
 							borderColor: "var(--color-teal-border)",
 							color: "var(--color-teal)",
@@ -1287,7 +1287,7 @@ function ServiceMapInner() {
 							<button
 								type="button"
 								onClick={handleReset}
-								className="flex items-center gap-1 px-2 h-7 rounded text-[10px] font-semibold border-2"
+								className="flex items-center gap-1 px-2 h-7 rounded text-[10px] font-semibold border"
 								style={{
 									background: "var(--status-down-subtle)",
 									borderColor: "var(--status-down-border)",
@@ -1299,7 +1299,7 @@ function ServiceMapInner() {
 							<button
 								type="button"
 								onClick={() => setResetAsking(false)}
-								className="w-7 h-7 rounded flex items-center justify-center border-2"
+								className="w-7 h-7 rounded flex items-center justify-center border"
 								style={{
 									borderColor: "var(--border-subtle)",
 									color: "var(--text-muted)",
@@ -1312,7 +1312,7 @@ function ServiceMapInner() {
 						<button
 							type="button"
 							onClick={() => setResetAsking(true)}
-							className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border-2 transition-all"
+							className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border transition-all"
 							style={{
 								borderColor: "var(--border-default)",
 								color: "var(--text-muted)",
@@ -1348,7 +1348,7 @@ function ServiceMapInner() {
 						<Controls
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								boxShadow: "var(--card-shadow)",
 								borderRadius: "6px",
 							}}

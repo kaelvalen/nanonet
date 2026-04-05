@@ -29,7 +29,7 @@ export function ErrorPage() {
 				className="rounded p-10 max-w-md w-full text-center"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 					boxShadow: "var(--card-shadow)",
 				}}
 			>

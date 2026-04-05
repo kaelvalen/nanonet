@@ -48,7 +48,7 @@ export function EndpointsTab({
 				className="p-4 rounded"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 					boxShadow: "var(--card-shadow)",
 				}}
 			>
@@ -110,7 +110,7 @@ export function EndpointsTab({
 					className="p-5 rounded"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--border-default)",
+						border: "1px solid var(--border-default)",
 						boxShadow: "var(--card-shadow)",
 					}}
 				>

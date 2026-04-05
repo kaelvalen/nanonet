@@ -108,7 +108,7 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 				className="p-5 rounded animate-pulse"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 				}}
 			>
 				<div className="space-y-3">
@@ -129,8 +129,7 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 			className="p-5 rounded"
 			style={{
 				background: "var(--surface-card)",
-				border: "2px solid var(--border-default)",
-				boxShadow: "var(--card-shadow)",
+				border: "1px solid var(--border-default)",
 			}}
 		>
 			<div className="flex items-center justify-between mb-5">
@@ -205,7 +204,7 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 							className="p-4 rounded space-y-2"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
 							<div className="flex items-center justify-between">

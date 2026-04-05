@@ -26,7 +26,7 @@ export function NotFoundPage() {
 				className="relative z-10 rounded p-12 max-w-lg w-full text-center"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 					boxShadow: "var(--card-shadow)",
 				}}
 			>

@@ -9,9 +9,9 @@ import { NavLink, useLocation } from "react-router";
 import { useServices } from "@/hooks/useServices";
 
 const navItems = [
-	{ to: "/app", label: "Ana Sayfa", icon: LayoutDashboard },
+	{ to: "/app", label: "Ana Sayfa", icon: LayoutDashboard, end: true },
 	{ to: "/app/services", label: "Servisler", icon: Server },
-	{ to: "/app/alerts", label: "Uyarılar", icon: AlertCircle },
+	{ to: "/app/alerts", label: "Uyarılar", icon: AlertCircle, badge: true },
 	{ to: "/app/ai-insights", label: "AI", icon: Sparkles },
 	{ to: "/app/settings", label: "Ayarlar", icon: Settings },
 ];
@@ -23,8 +23,8 @@ export function MobileNav() {
 		(s) => s.status === "down" || s.status === "degraded",
 	).length;
 
-	const isActive = (to: string) => {
-		if (to === "/app") return location.pathname === "/app";
+	const isActive = (to: string, end?: boolean) => {
+		if (end) return location.pathname === to;
 		return location.pathname.startsWith(to);
 	};
 
@@ -32,51 +32,49 @@ export function MobileNav() {
 		<nav
 			className="fixed bottom-0 left-0 right-0 z-50 flex items-center md:hidden"
 			style={{
-				background: "var(--sidebar)",
-				borderTop: "2px solid var(--border-default)",
-				boxShadow: "0 -4px 16px rgba(0,0,0,0.2)",
+				background: "var(--surface-raised)",
+				borderTop: "1px solid var(--border-default)",
 				paddingBottom: "env(safe-area-inset-bottom)",
 			}}
 		>
 			{navItems.map((item) => {
-				const active = isActive(item.to);
-				const showBadge = item.to === "/app/alerts" && downCount > 0;
+				const active = isActive(item.to, item.end);
+				const showBadge = item.badge && downCount > 0;
 				return (
 					<NavLink
 						key={item.to}
 						to={item.to}
-						end={item.to === "/app"}
-						className="relative flex flex-col items-center justify-center flex-1 py-2 gap-0.5 transition-all"
+						end={item.end}
+						className="relative flex flex-col items-center justify-center flex-1 py-2.5 gap-0.5 transition-colors"
 						style={{
-							color: active
-								? "var(--sidebar-primary)"
-								: "var(--sidebar-foreground)",
-							opacity: active ? 1 : 0.6,
+							color: active ? "var(--sidebar-primary)" : "var(--text-faint)",
 						}}
 					>
+						{/* Active top indicator */}
+						{active && (
+							<span
+								className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-b-full"
+								style={{ background: "var(--sidebar-primary)" }}
+							/>
+						)}
+
 						<div className="relative">
 							<item.icon className="w-5 h-5" />
 							{showBadge && (
 								<span
-									className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
-									style={{
-										background: "var(--status-down)",
-										color: "white",
-									}}
+									className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center text-white"
+									style={{ background: "var(--status-down)" }}
 								>
 									{downCount > 9 ? "9+" : downCount}
 								</span>
 							)}
 						</div>
-						<span className="text-[9px] font-medium truncate max-w-12 text-center">
+						<span
+							className="text-[9px] font-medium tracking-tight"
+							style={{ color: active ? "var(--sidebar-primary)" : "var(--text-faint)" }}
+						>
 							{item.label}
 						</span>
-						{active && (
-							<span
-								className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full"
-								style={{ background: "var(--sidebar-primary)" }}
-							/>
-						)}
 					</NavLink>
 				);
 			})}

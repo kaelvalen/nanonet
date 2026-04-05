@@ -40,7 +40,7 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 			className="rounded p-3 font-mono text-xs relative group"
 			style={{
 				background: "var(--surface-sunken)",
-				border: "2px solid var(--border-default)",
+				border: "1px solid var(--border-default)",
 			}}
 		>
 			{label && (
@@ -65,7 +65,7 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 					background: copied
 						? "var(--status-up-subtle)"
 						: "var(--surface-card)",
-					border: "1.5px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 					color: copied ? "var(--status-up-text)" : "var(--text-muted)",
 				}}
 				title="Kopya"
@@ -140,7 +140,7 @@ export function AgentSetupWizard({
 				className="max-w-lg rounded"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 					boxShadow: "var(--panel-shadow)",
 				}}
 			>
@@ -177,7 +177,7 @@ export function AgentSetupWizard({
 											: active
 												? "var(--color-teal-subtle)"
 												: "var(--surface-sunken)",
-										border: `1.5px solid ${done ? "var(--status-up-border)" : active ? "var(--color-teal-border)" : "var(--border-subtle)"}`,
+										border: `1px solid ${done ? "var(--status-up-border)" : active ? "var(--color-teal-border)" : "var(--border-subtle)"}`,
 										color: done
 											? "var(--status-up-text)"
 											: active
@@ -215,7 +215,7 @@ export function AgentSetupWizard({
 							className="p-3 rounded text-xs"
 							style={{
 								background: "var(--color-lavender-subtle)",
-								border: "1.5px solid var(--color-lavender-border)",
+								border: "1px solid var(--color-lavender-border)",
 								color: "var(--text-secondary)",
 							}}
 						>
@@ -229,7 +229,7 @@ export function AgentSetupWizard({
 							style={{
 								background: "var(--primary)",
 								color: "var(--primary-foreground)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								boxShadow: "var(--btn-shadow)",
 							}}
 						>
@@ -264,7 +264,7 @@ export function AgentSetupWizard({
 								className="flex-1 flex items-center justify-center gap-2 py-2 rounded text-xs font-semibold"
 								style={{
 									background: "var(--surface-sunken)",
-									border: "2px solid var(--border-default)",
+									border: "1px solid var(--border-default)",
 									color: "var(--text-secondary)",
 									boxShadow: "var(--btn-shadow)",
 								}}
@@ -276,7 +276,7 @@ export function AgentSetupWizard({
 								className="flex-1 flex items-center justify-center gap-2 py-2 rounded text-xs font-semibold"
 								style={{
 									background: "var(--surface-sunken)",
-									border: "2px solid var(--border-default)",
+									border: "1px solid var(--border-default)",
 									color: "var(--text-secondary)",
 									boxShadow: "var(--btn-shadow)",
 								}}
@@ -291,7 +291,7 @@ export function AgentSetupWizard({
 							style={{
 								background: "var(--primary)",
 								color: "var(--primary-foreground)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								boxShadow: "var(--btn-shadow)",
 							}}
 						>
@@ -338,7 +338,7 @@ export function AgentSetupWizard({
 							className="p-3 rounded text-xs"
 							style={{
 								background: "var(--status-up-subtle)",
-								border: "1.5px solid var(--status-up-border)",
+								border: "1px solid var(--status-up-border)",
 								color: "var(--status-up-text)",
 							}}
 						>
@@ -352,7 +352,7 @@ export function AgentSetupWizard({
 							style={{
 								background: "var(--primary)",
 								color: "var(--primary-foreground)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								boxShadow: "var(--btn-shadow)",
 							}}
 						>

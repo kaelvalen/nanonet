@@ -128,7 +128,7 @@ export function LoadBalancingTab({
 				<button
 					type="button"
 					onClick={() => setK8sMode("k8s")}
-					className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all"
 					style={
 						k8sMode === "k8s"
 							? {
@@ -168,7 +168,7 @@ export function LoadBalancingTab({
 				<button
 					type="button"
 					onClick={() => setK8sMode("agent")}
-					className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all"
 					style={
 						k8sMode === "agent"
 							? {
@@ -192,8 +192,7 @@ export function LoadBalancingTab({
 							className="p-8 rounded text-center"
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--color-blue-border)",
-								boxShadow: "var(--card-shadow)",
+								border: "1px solid var(--color-blue-border)",
 							}}
 						>
 							<Layers
@@ -233,8 +232,7 @@ export function LoadBalancingTab({
 								className="p-4 rounded"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--color-blue-border)",
-									boxShadow: "var(--card-shadow)",
+									border: "1px solid var(--color-blue-border)",
 								}}
 							>
 								<label
@@ -282,8 +280,7 @@ export function LoadBalancingTab({
 									className="p-5 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--color-blue-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--color-blue-border)",
 									}}
 								>
 									<div className="flex items-center gap-2 mb-4">
@@ -298,7 +295,7 @@ export function LoadBalancingTab({
 											{deployment.name}
 										</h3>
 										<Badge
-											className="text-[9px] px-1.5 py-0.5 rounded border-2 ml-auto"
+											className="text-[9px] px-1.5 py-0.5 rounded border ml-auto"
 											style={{
 												background: "var(--color-blue-subtle)",
 												color: "var(--color-blue)",
@@ -337,7 +334,7 @@ export function LoadBalancingTab({
 												className="p-2.5 rounded text-center"
 												style={{
 													background: "var(--surface-sunken)",
-													border: "1.5px solid var(--border-default)",
+													border: "1px solid var(--border-default)",
 												}}
 											>
 												<p
@@ -361,7 +358,7 @@ export function LoadBalancingTab({
 										className="p-3 rounded mb-3"
 										style={{
 											background: "var(--surface-sunken)",
-											border: "2px solid var(--border-default)",
+											border: "1px solid var(--border-default)",
 										}}
 									>
 										<p
@@ -379,7 +376,7 @@ export function LoadBalancingTab({
 												aria-label="Kubernetes replica azalt"
 												className="w-7 h-7 rounded flex items-center justify-center"
 												style={{
-													border: "2px solid var(--color-blue-border)",
+													border: "1px solid var(--color-blue-border)",
 													color: "var(--color-blue)",
 												}}
 											>
@@ -399,7 +396,7 @@ export function LoadBalancingTab({
 												aria-label="Kubernetes replica artır"
 												className="w-7 h-7 rounded flex items-center justify-center"
 												style={{
-													border: "2px solid var(--color-blue-border)",
+													border: "1px solid var(--color-blue-border)",
 													color: "var(--color-blue)",
 												}}
 											>
@@ -411,7 +408,7 @@ export function LoadBalancingTab({
 														type="button"
 														key={n}
 														onClick={() => setK8sReplicas(n)}
-														className="px-2 py-1 rounded text-[10px] font-medium border-2 transition-all"
+														className="px-2 py-1 rounded text-[10px] font-medium border transition-all"
 														style={
 															k8sReplicas === n
 																? {
@@ -455,8 +452,7 @@ export function LoadBalancingTab({
 									className="p-4 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--color-teal-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--color-teal-border)",
 									}}
 								>
 									<div className="flex items-center justify-between mb-3">
@@ -471,7 +467,7 @@ export function LoadBalancingTab({
 											Pod'lar
 										</h4>
 										<Badge
-											className="text-[9px] px-1.5 py-0.5 rounded border-2"
+											className="text-[9px] px-1.5 py-0.5 rounded border"
 											style={{
 												background: "var(--color-teal-subtle)",
 												color: "var(--color-teal)",
@@ -496,7 +492,7 @@ export function LoadBalancingTab({
 													className="flex items-center gap-2 px-3 py-2 rounded"
 													style={{
 														background: "var(--surface-sunken)",
-														border: "1.5px solid var(--border-default)",
+														border: "1px solid var(--border-default)",
 													}}
 												>
 													<div
@@ -559,8 +555,7 @@ export function LoadBalancingTab({
 									className="p-5 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--color-lavender-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--color-lavender-border)",
 									}}
 								>
 									<div className="flex items-center justify-between mb-4">
@@ -626,7 +621,7 @@ export function LoadBalancingTab({
 													className="p-2 rounded text-center"
 													style={{
 														background: "var(--surface-sunken)",
-														border: "1.5px solid var(--border-default)",
+														border: "1px solid var(--border-default)",
 													}}
 												>
 													<p
@@ -661,7 +656,7 @@ export function LoadBalancingTab({
 													aria-label="Minimum replica azalt"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
-														border: "2px solid var(--color-lavender-border)",
+														border: "1px solid var(--color-lavender-border)",
 														color: "var(--color-lavender)",
 													}}
 												>
@@ -679,7 +674,7 @@ export function LoadBalancingTab({
 													aria-label="Minimum replica artır"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
-														border: "2px solid var(--color-lavender-border)",
+														border: "1px solid var(--color-lavender-border)",
 														color: "var(--color-lavender)",
 													}}
 												>
@@ -703,7 +698,7 @@ export function LoadBalancingTab({
 													aria-label="Maksimum replica azalt"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
-														border: "2px solid var(--color-lavender-border)",
+														border: "1px solid var(--color-lavender-border)",
 														color: "var(--color-lavender)",
 													}}
 												>
@@ -721,7 +716,7 @@ export function LoadBalancingTab({
 													aria-label="Maksimum replica artır"
 													className="w-6 h-6 rounded flex items-center justify-center"
 													style={{
-														border: "2px solid var(--color-lavender-border)",
+														border: "1px solid var(--color-lavender-border)",
 														color: "var(--color-lavender)",
 													}}
 												>
@@ -756,7 +751,7 @@ export function LoadBalancingTab({
 										className="p-2 rounded text-[10px] leading-relaxed mb-3"
 										style={{
 											background: "var(--color-lavender-subtle)",
-											border: "2px solid var(--color-lavender-border)",
+											border: "1px solid var(--color-lavender-border)",
 											color: "var(--text-muted)",
 										}}
 									>
@@ -795,8 +790,7 @@ export function LoadBalancingTab({
 					className="p-6 rounded"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--status-up-border)",
-						boxShadow: "var(--card-shadow)",
+						border: "1px solid var(--status-up-border)",
 					}}
 				>
 					<div className="flex items-center gap-2 mb-5">
@@ -830,7 +824,7 @@ export function LoadBalancingTab({
 									aria-label="Instance sayısı azalt"
 									className="w-8 h-8 rounded flex items-center justify-center transition-all"
 									style={{
-										border: "2px solid var(--status-up-border)",
+										border: "1px solid var(--status-up-border)",
 										color: "var(--status-up)",
 									}}
 								>
@@ -850,7 +844,7 @@ export function LoadBalancingTab({
 									aria-label="Instance sayısı artır"
 									className="w-8 h-8 rounded flex items-center justify-center transition-all"
 									style={{
-										border: "2px solid var(--status-up-border)",
+										border: "1px solid var(--status-up-border)",
 										color: "var(--status-up)",
 									}}
 								>
@@ -862,7 +856,7 @@ export function LoadBalancingTab({
 											type="button"
 											key={n}
 											onClick={() => setScaleInstances(n)}
-											className="px-2.5 py-1 rounded text-[10px] font-medium border-2 transition-all"
+											className="px-2.5 py-1 rounded text-[10px] font-medium border transition-all"
 											style={
 												scaleInstances === n
 													? {
@@ -913,7 +907,7 @@ export function LoadBalancingTab({
 										type="button"
 										key={s.value}
 										onClick={() => setScaleStrategy(s.value)}
-										className="p-3 rounded border-2 text-left transition-all"
+										className="p-3 rounded border text-left transition-all"
 										style={
 											scaleStrategy === s.value
 												? {
@@ -950,7 +944,7 @@ export function LoadBalancingTab({
 							className="p-3 rounded text-[10px] leading-relaxed"
 							style={{
 								background: "var(--status-up-subtle)",
-								border: "2px solid var(--status-up-border)",
+								border: "1px solid var(--status-up-border)",
 								color: "var(--text-muted)",
 							}}
 						>

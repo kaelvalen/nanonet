@@ -35,7 +35,7 @@ export function EmptyState({
 				className="w-14 h-14 rounded flex items-center justify-center mb-4"
 				style={{
 					background: "var(--surface-sunken)",
-					border: "2px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 				}}
 			>
 				<Icon className="w-7 h-7" style={{ color: "var(--text-faint)" }} />
@@ -61,7 +61,7 @@ export function EmptyState({
 							style={{
 								background: "var(--primary)",
 								color: "var(--primary-foreground)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								boxShadow: "var(--btn-shadow)",
 							}}
 						>
@@ -76,7 +76,7 @@ export function EmptyState({
 							style={{
 								background: "var(--surface-sunken)",
 								color: "var(--text-secondary)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
 							{secondaryAction.label}

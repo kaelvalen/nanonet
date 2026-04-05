@@ -66,7 +66,7 @@ function UndeployButton({
 						setAsking(false);
 						onUndeploy();
 					}}
-					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border"
 					style={{
 						background: "var(--status-down-subtle)",
 						borderColor: "var(--status-down-border)",
@@ -78,7 +78,7 @@ function UndeployButton({
 				<button
 					type="button"
 					onClick={() => setAsking(false)}
-					className="w-7 h-7 rounded-lg flex items-center justify-center border-2"
+					className="w-7 h-7 rounded-lg flex items-center justify-center border"
 					style={{
 						borderColor: "var(--border-subtle)",
 						color: "var(--text-muted)",
@@ -94,7 +94,7 @@ function UndeployButton({
 			type="button"
 			onClick={() => setAsking(true)}
 			disabled={isUndeploying}
-			className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border-2 shrink-0 transition-opacity hover:opacity-80"
+			className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border shrink-0 transition-opacity hover:opacity-80"
 			style={{
 				background: "color-mix(in srgb, var(--status-down) 10%, transparent)",
 				borderColor: "var(--status-down-border)",
@@ -181,7 +181,7 @@ export function NanonetTab({
 						refetchDeployments();
 					}}
 					disabled={nanonetServicesLoading}
-					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
+					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
 					style={{
 						borderColor: "var(--border-subtle)",
 						color: "var(--text-muted)",
@@ -235,7 +235,7 @@ export function NanonetTab({
 					className="p-8 rounded text-center"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--border-default)",
+						border: "1px solid var(--border-default)",
 						boxShadow: "var(--card-shadow)",
 					}}
 				>
@@ -280,7 +280,7 @@ export function NanonetTab({
 									className="p-4 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: `2px solid ${isDeployed ? "var(--color-teal-border)" : "var(--border-default)"}`,
+										border: `1px solid ${isDeployed ? "var(--color-teal-border)" : "var(--border-default)"}`,
 										boxShadow: "var(--card-shadow)",
 									}}
 								>
@@ -346,7 +346,7 @@ export function NanonetTab({
 														[svc.name]: { ...form, open: !form.open },
 													}))
 												}
-												className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border-2 shrink-0 transition-all"
+												className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] border shrink-0 transition-all"
 												style={
 													form.open
 														? {

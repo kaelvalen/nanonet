@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
 						className="w-full max-w-md rounded p-6 text-center"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--status-down-border)",
+							border: "1px solid var(--status-down-border)",
 							boxShadow: "var(--card-shadow)",
 						}}
 					>
@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
 							className="w-14 h-14 rounded flex items-center justify-center mx-auto mb-4"
 							style={{
 								background: "var(--status-down-subtle)",
-								border: "2px solid var(--status-down-border)",
+								border: "1px solid var(--status-down-border)",
 							}}
 						>
 							<AlertTriangle

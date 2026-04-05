@@ -65,7 +65,7 @@ function SectionHeader({
 				className="w-7 h-7 rounded flex items-center justify-center"
 				style={{
 					backgroundColor: "var(--brand-primary-subtle)",
-					border: "1.5px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 				}}
 			>
 				<Icon
@@ -327,8 +327,7 @@ export function SettingsPage() {
 
 	const cardStyle = {
 		background: "var(--surface-card)",
-		border: "2px solid var(--border-default)",
-		boxShadow: "var(--card-shadow)",
+		border: "1px solid var(--border-default)",
 	};
 	const dividerStyle = { backgroundColor: "var(--border-divider)" };
 
@@ -341,17 +340,9 @@ export function SettingsPage() {
 				transition={{ duration: 0.5 }}
 				className="flex items-start justify-between gap-4"
 			>
-				<div>
-					<h1
-						className="text-2xl font-bold bg-clip-text text-transparent"
-						style={{ backgroundImage: "var(--gradient-heading)" }}
-					>
-						Ayarlar
-					</h1>
-					<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+				<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
 						Platform yapılandırması ve tercihler
 					</p>
-				</div>
 				{anyDirty && (
 					<button
 						type="button"
@@ -411,7 +402,7 @@ export function SettingsPage() {
 							</p>
 						</div>
 						<Badge
-							className="text-[9px] rounded border-2 shrink-0"
+							className="text-[9px] rounded border shrink-0"
 							style={{
 								background: "var(--status-up-subtle)",
 								color: "var(--status-up-text)",
@@ -437,7 +428,7 @@ export function SettingsPage() {
 							size="sm"
 							variant="outline"
 							onClick={() => setShowPasswordSection(!showPasswordSection)}
-							className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+							className="h-7 px-3 text-[10px] rounded border transition-all mb-4"
 							style={{
 								borderColor: "var(--border-default)",
 								color: "var(--text-muted)",
@@ -585,7 +576,7 @@ export function SettingsPage() {
 								className="text-[10px] px-2 py-0.5 rounded mb-4"
 								style={{
 									background: "var(--status-warn-subtle)",
-									border: "1.5px solid var(--status-warn-border)",
+									border: "1px solid var(--status-warn-border)",
 									color: "var(--status-warn-text)",
 								}}
 							>
@@ -652,7 +643,7 @@ export function SettingsPage() {
 								className="text-[10px] px-2 py-0.5 rounded mb-4"
 								style={{
 									background: "var(--status-warn-subtle)",
-									border: "1.5px solid var(--status-warn-border)",
+									border: "1px solid var(--status-warn-border)",
 									color: "var(--status-warn-text)",
 								}}
 							>
@@ -730,7 +721,7 @@ export function SettingsPage() {
 								className="text-[10px] px-2 py-0.5 rounded mb-4"
 								style={{
 									background: "var(--status-warn-subtle)",
-									border: "1.5px solid var(--status-warn-border)",
+									border: "1px solid var(--status-warn-border)",
 									color: "var(--status-warn-text)",
 								}}
 							>
@@ -816,7 +807,7 @@ export function SettingsPage() {
 										type="button"
 										key={`${opt.name}-${opt.mode}`}
 										onClick={() => handleThemeSelect(opt.name, opt.mode)}
-										className="relative rounded overflow-hidden border-2 transition-all text-left focus:outline-none"
+										className="relative rounded overflow-hidden border transition-all text-left focus:outline-none"
 										style={{
 											borderColor: isActive
 												? "var(--brand-primary)"
@@ -857,7 +848,7 @@ export function SettingsPage() {
 												className="absolute top-1.5 right-1.5 w-4 h-4 rounded flex items-center justify-center"
 												style={{
 													background: "var(--brand-primary)",
-													border: "2px solid var(--border-default)",
+													border: "1px solid var(--border-default)",
 												}}
 											>
 												<CheckCircle2 className="w-2.5 h-2.5 text-white" />
@@ -885,7 +876,7 @@ export function SettingsPage() {
 								className="text-[10px] px-2 py-0.5 rounded mb-4"
 								style={{
 									background: "var(--status-warn-subtle)",
-									border: "1.5px solid var(--status-warn-border)",
+									border: "1px solid var(--status-warn-border)",
 									color: "var(--status-warn-text)",
 								}}
 							>
@@ -901,7 +892,7 @@ export function SettingsPage() {
 							className="p-4 rounded space-y-3"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
 							<div className="flex items-center gap-2 mb-1">
@@ -1003,7 +994,7 @@ export function SettingsPage() {
 							className="p-4 rounded space-y-3"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
 							<div className="flex items-center gap-2 mb-1">
@@ -1086,7 +1077,7 @@ export function SettingsPage() {
 								setShowAuditLogs(!showAuditLogs);
 								if (!showAuditLogs) refetchAudit();
 							}}
-							className="h-7 px-3 text-[10px] rounded border-2 transition-all mb-4"
+							className="h-7 px-3 text-[10px] rounded border transition-all mb-4"
 							style={{
 								borderColor: "var(--border-default)",
 								color: "var(--text-muted)",
@@ -1162,7 +1153,7 @@ export function SettingsPage() {
 												className="flex items-start gap-3 p-2.5 rounded"
 												style={{
 													background: "var(--surface-sunken)",
-													border: "1.5px solid var(--border-default)",
+													border: "1px solid var(--border-default)",
 												}}
 											>
 												<Shield
@@ -1282,7 +1273,7 @@ export function SettingsPage() {
 							className="flex-1 flex items-center gap-2 px-3 h-9 rounded font-mono text-xs overflow-hidden"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								color: showApiKey
 									? "var(--text-secondary)"
 									: "var(--text-faint)",
@@ -1299,7 +1290,7 @@ export function SettingsPage() {
 							className="w-9 h-9 rounded flex items-center justify-center shrink-0"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								color: "var(--text-muted)",
 							}}
 						>
@@ -1318,7 +1309,7 @@ export function SettingsPage() {
 								background: apiKeyCopied
 									? "var(--status-up-subtle)"
 									: "var(--surface-sunken)",
-								border: `2px solid ${apiKeyCopied ? "var(--status-up-border)" : "var(--border-default)"}`,
+								border: `1px solid ${apiKeyCopied ? "var(--status-up-border)" : "var(--border-default)"}`,
 								color: apiKeyCopied
 									? "var(--status-up-text)"
 									: "var(--text-muted)",
@@ -1344,7 +1335,7 @@ export function SettingsPage() {
 					className="rounded p-5"
 					style={{
 						...cardStyle,
-						border: "2px solid var(--status-down-border)",
+						border: "1px solid var(--status-down-border)",
 					}}
 				>
 					<SectionHeader icon={AlertTriangle} label="Tehlikeli Bölge" />
@@ -1376,7 +1367,7 @@ export function SettingsPage() {
 										setDangerAsking(false);
 										toast.info("Tüm oturumlar kapatıldı (simüle edildi)");
 									}}
-									className="flex items-center gap-1 px-3 h-8 rounded text-xs font-semibold border-2"
+									className="flex items-center gap-1 px-3 h-8 rounded text-xs font-semibold border"
 									style={{
 										background: "var(--status-down-subtle)",
 										borderColor: "var(--status-down-border)",
@@ -1388,7 +1379,7 @@ export function SettingsPage() {
 								<button
 									type="button"
 									onClick={() => setDangerAsking(false)}
-									className="w-8 h-8 rounded flex items-center justify-center border-2"
+									className="w-8 h-8 rounded flex items-center justify-center border"
 									style={{
 										borderColor: "var(--border-subtle)",
 										color: "var(--text-muted)",
@@ -1401,7 +1392,7 @@ export function SettingsPage() {
 							<button
 								type="button"
 								onClick={() => setDangerAsking(true)}
-								className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2 shrink-0 transition-opacity hover:opacity-80"
+								className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border shrink-0 transition-opacity hover:opacity-80"
 								style={{
 									background:
 										"color-mix(in srgb, var(--status-down) 8%, transparent)",
@@ -1443,7 +1434,7 @@ export function SettingsPage() {
 								className="p-3 rounded"
 								style={{
 									background: "var(--surface-sunken)",
-									border: "2px solid var(--border-default)",
+									border: "1px solid var(--border-default)",
 								}}
 							>
 								<span
@@ -1464,7 +1455,7 @@ export function SettingsPage() {
 					<div
 						className="mt-4 pt-3 flex items-center justify-center gap-1.5 text-[10px]"
 						style={{
-							borderTop: "2px solid var(--border-default)",
+							borderTop: "1px solid var(--border-default)",
 							color: "var(--text-faint)",
 						}}
 					>

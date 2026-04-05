@@ -40,7 +40,7 @@ function DeletePodButton({
 						setAsking(false);
 						deletePodMutation.mutate(podName);
 					}}
-					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border"
 					style={{
 						background: "var(--status-down-subtle)",
 						borderColor: "var(--status-down-border)",
@@ -52,7 +52,7 @@ function DeletePodButton({
 				<button
 					type="button"
 					onClick={() => setAsking(false)}
-					className="w-7 h-7 rounded-lg flex items-center justify-center border-2"
+					className="w-7 h-7 rounded-lg flex items-center justify-center border"
 					style={{
 						borderColor: "var(--border-subtle)",
 						color: "var(--text-muted)",
@@ -145,7 +145,7 @@ export function PodsTab({
 					type="button"
 					onClick={() => refetchAllPods()}
 					disabled={allPodsLoading}
-					className="flex items-center gap-1.5 px-3 h-9 rounded text-xs border-2 transition-all"
+					className="flex items-center gap-1.5 px-3 h-9 rounded text-xs border transition-all"
 					style={{
 						borderColor: "var(--color-blue-border)",
 						color: "var(--color-blue)",
@@ -186,7 +186,7 @@ export function PodsTab({
 								className="p-3.5 rounded"
 								style={{
 									background: "var(--surface-card)",
-									border: `2px solid ${pod.ready ? "var(--color-blue-border)" : pod.status === "Pending" ? "var(--status-warn-border)" : "var(--status-down-border)"}`,
+									border: `1px solid ${pod.ready ? "var(--color-blue-border)" : pod.status === "Pending" ? "var(--status-warn-border)" : "var(--status-down-border)"}`,
 									boxShadow: "var(--card-shadow)",
 								}}
 							>
@@ -280,7 +280,7 @@ export function PodsTab({
 					className="p-8 rounded text-center"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--border-default)",
+						border: "1px solid var(--border-default)",
 						boxShadow: "var(--card-shadow)",
 					}}
 				>

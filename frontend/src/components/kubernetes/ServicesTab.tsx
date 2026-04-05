@@ -39,7 +39,7 @@ export function ServicesTab({
 					type="button"
 					onClick={() => refetchServices()}
 					disabled={servicesLoading}
-					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
+					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
 					style={{
 						borderColor: "var(--border-subtle)",
 						color: "var(--text-muted)",
@@ -65,7 +65,7 @@ export function ServicesTab({
 							className="p-4 rounded"
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 								boxShadow: "var(--card-shadow)",
 							}}
 						>
@@ -146,7 +146,7 @@ export function ServicesTab({
 											className="px-2 py-0.5 rounded text-[10px] font-mono"
 											style={{
 												background: "var(--surface-sunken)",
-												border: "2px solid var(--border-subtle)",
+												border: "1px solid var(--border-subtle)",
 												color: "var(--text-secondary)",
 											}}
 										>
@@ -165,7 +165,7 @@ export function ServicesTab({
 												background:
 													"color-mix(in srgb, var(--status-up) 8%, transparent)",
 												border:
-													"2px solid color-mix(in srgb, var(--status-up) 20%, transparent)",
+													"1px solid color-mix(in srgb, var(--status-up) 20%, transparent)",
 												color: "var(--status-up)",
 											}}
 										>
@@ -182,7 +182,7 @@ export function ServicesTab({
 					className="p-8 rounded text-center"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--border-default)",
+						border: "1px solid var(--border-default)",
 						boxShadow: "var(--card-shadow)",
 					}}
 				>

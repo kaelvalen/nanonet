@@ -176,7 +176,7 @@ function AlertRulesPanel() {
 								setSelectedServiceId(svc.id);
 								setDraft(null);
 							}}
-							className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border-2 transition-all"
+							className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border transition-all"
 							style={
 								selectedServiceId === svc.id
 									? {
@@ -214,8 +214,7 @@ function AlertRulesPanel() {
 					className="p-10 rounded text-center"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--border-default)",
-						boxShadow: "var(--card-shadow)",
+						border: "1px solid var(--border-default)",
 					}}
 				>
 					<Settings2
@@ -250,7 +249,7 @@ function AlertRulesPanel() {
 								className="flex items-center gap-2 px-3 py-2 rounded text-xs"
 								style={{
 									background: "var(--color-blue-subtle)",
-									border: "2px solid var(--color-blue-border)",
+									border: "1px solid var(--color-blue-border)",
 									color: "var(--color-blue-text)",
 								}}
 							>
@@ -264,15 +263,14 @@ function AlertRulesPanel() {
 								className="p-4 rounded"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--border-default)",
-									boxShadow: "var(--card-shadow)",
+									border: "1px solid var(--border-default)",
 								}}
 							>
 								<div className="flex items-center gap-2 mb-3">
 									<div
 										className="w-8 h-8 rounded flex items-center justify-center shrink-0"
 										style={{
-											border: `1.5px solid ${f.color}`,
+											border: `1px solid ${f.color}`,
 											backgroundColor: `color-mix(in srgb, ${f.color} 12%, transparent)`,
 										}}
 									>
@@ -353,7 +351,7 @@ function AlertRulesPanel() {
 									onClick={() => {
 										setDraft(null);
 									}}
-									className="px-3 h-9 rounded text-xs border-2"
+									className="px-3 h-9 rounded text-xs border"
 									style={{
 										borderColor: "var(--border-default)",
 										color: "var(--text-muted)",
@@ -521,77 +519,48 @@ export function AlertsPage() {
 		<div className="space-y-6">
 			{/* Header */}
 			<motion.div
-				initial={{ opacity: 0, y: 20 }}
+				initial={{ opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.5 }}
+				transition={{ duration: 0.35 }}
+				className="flex items-center justify-between"
 			>
-				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-					<div>
-						<h1
-							className="text-2xl font-bold bg-clip-text text-transparent"
-							style={{ backgroundImage: "var(--gradient-heading)" }}
-						>
-							Uyarılar
-						</h1>
-						<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-							Gerçek zamanlı olay bildirimleri ve uyarılar
-						</p>
-					</div>
-					<div
-						className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border-2 transition-all"
-						style={
-							activeCount > 0
-								? {
-										background: "var(--status-down-subtle)",
-										borderColor: "var(--status-down-border)",
-										color: "var(--status-down-text)",
-									}
-								: {
-										background: "var(--status-up-subtle)",
-										borderColor: "var(--status-up-border)",
-										color: "var(--status-up-text)",
-									}
-						}
-					>
-						{activeCount > 0 ? (
-							<>
-								<Bell className="w-3 h-3 animate-pulse" />
-								{activeCount} Aktif
-							</>
-						) : (
-							<>
-								<BellOff className="w-3 h-3" />
-								Sorun Yok
-							</>
-						)}
-					</div>
+				<p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
+						Gerçek zamanlı olay bildirimleri
+					</p>
+				<div
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
+					style={
+						activeCount > 0
+							? { background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }
+							: { background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)", color: "var(--status-up-text)" }
+					}
+				>
+					{activeCount > 0 ? (
+						<><Bell className="w-3.5 h-3.5 animate-pulse" />{activeCount} Aktif</>
+					) : (
+						<><BellOff className="w-3.5 h-3.5" />Sorun Yok</>
+					)}
 				</div>
 			</motion.div>
 
 			{/* Tabs */}
-			<div className="flex items-center gap-1.5">
+			<div
+				className="flex items-center gap-0.5 p-0.5 w-fit rounded-lg"
+				style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}
+			>
 				{[
-					{ key: "alerts" as const, label: "Aktif Uyarılar", icon: Bell },
+					{ key: "alerts" as const, label: "Uyarılar", icon: Bell },
 					{ key: "rules" as const, label: "Eşik Ayarları", icon: Settings2 },
 				].map((tab) => (
 					<button
 						type="button"
 						key={tab.key}
 						onClick={() => setActiveTab(tab.key)}
-						className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border-2 transition-all"
+						className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
 						style={
 							activeTab === tab.key
-								? {
-										background:
-											"color-mix(in srgb, var(--color-teal) 12%, transparent)",
-										borderColor: "var(--color-teal-border)",
-										color: "var(--color-teal)",
-									}
-								: {
-										color: "var(--text-muted)",
-										borderColor: "transparent",
-										background: "transparent",
-									}
+								? { background: "var(--surface-raised)", color: "var(--text-primary)", boxShadow: "var(--btn-shadow)" }
+								: { color: "var(--text-muted)" }
 						}
 					>
 						<tab.icon className="w-3.5 h-3.5" />
@@ -651,7 +620,7 @@ export function AlertsPage() {
 									onClick={() =>
 										setSeverityFilter(severityFilter === s.key ? "all" : s.key)
 									}
-									className={`w-full text-left p-3 rounded border-2 transition-all duration-200`}
+									className={`w-full text-left p-3 rounded border transition-all duration-200`}
 									style={{ background: s.bgVar, borderColor: s.borderVar }}
 								>
 									<div className="flex items-center justify-between mb-1.5">
@@ -707,7 +676,7 @@ export function AlertsPage() {
 									type="button"
 									key={s}
 									onClick={() => setSeverityFilter(s)}
-									className="px-2.5 py-1 rounded text-[10px] font-medium transition-all border-2"
+									className="px-2.5 py-1 rounded text-[10px] font-medium transition-all border"
 									style={
 										severityFilter === s
 											? {
@@ -754,7 +723,7 @@ export function AlertsPage() {
 							<button
 								type="button"
 								onClick={() => setShowResolved(!showResolved)}
-								className="ml-auto px-2.5 py-1 rounded text-[10px] font-medium transition-all border-2"
+								className="ml-auto px-2.5 py-1 rounded text-[10px] font-medium transition-all border"
 								style={
 									showResolved
 										? {
@@ -779,7 +748,7 @@ export function AlertsPage() {
 									className="p-4 rounded animate-pulse"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--border-default)",
+										border: "1px solid var(--border-default)",
 									}}
 								>
 									<div className="flex items-start gap-3">
@@ -811,15 +780,14 @@ export function AlertsPage() {
 								className="p-14 rounded text-center"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--status-up-border)",
-									boxShadow: "var(--card-shadow)",
+									border: "1px solid var(--status-up-border)",
 								}}
 							>
 								<div
 									className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4"
 									style={{
 										backgroundColor: "var(--status-up-subtle)",
-										border: "2px solid var(--status-up-border)",
+										border: "1px solid var(--status-up-border)",
 									}}
 								>
 									<Shield
@@ -865,7 +833,7 @@ export function AlertsPage() {
 												<div className="flex items-start gap-3">
 													{/* Timeline icon */}
 													<div
-														className="relative z-10 w-9 h-9 rounded flex items-center justify-center border-2 shrink-0 mt-0.5"
+														className="relative z-10 w-9 h-9 rounded flex items-center justify-center border shrink-0 mt-0.5"
 														style={{
 															background: config.badgeBg,
 															borderColor: config.badgeBorder,
@@ -883,15 +851,14 @@ export function AlertsPage() {
 														className={`flex-1 rounded p-4 transition-all duration-200 ${alert.resolved_at ? "opacity-60" : ""}`}
 														style={{
 															background: "var(--surface-card)",
-															border: `2px solid ${config.borderVar}`,
-															boxShadow: "var(--card-shadow)",
+															border: `1px solid ${config.borderVar}`,
 														}}
 													>
 														<div className="flex items-start justify-between gap-3">
 															<div className="min-w-0 flex-1">
 																<div className="flex items-center gap-2 mb-1.5 flex-wrap">
 																	<Badge
-																		className="text-[9px] px-1.5 py-0 rounded border-2 uppercase font-(--font-mono)"
+																		className="text-[9px] px-1.5 py-0 rounded border uppercase font-(--font-mono)"
 																		style={{
 																			background: config.badgeBg,
 																			color: config.badgeText,
@@ -911,7 +878,7 @@ export function AlertsPage() {
 																	</span>
 																	{alert.resolved_at && (
 																		<Badge
-																			className="text-[9px] px-1.5 py-0 rounded border-2"
+																			className="text-[9px] px-1.5 py-0 rounded border"
 																			style={{
 																				background: "var(--status-up-subtle)",
 																				color: "var(--status-up-text)",
@@ -1005,7 +972,7 @@ export function AlertsPage() {
 																					style={{
 																						background: "var(--surface-card)",
 																						border:
-																							"2px solid var(--color-blue-border)",
+																							"1px solid var(--color-blue-border)",
 																						boxShadow: "var(--panel-shadow)",
 																					}}
 																				>

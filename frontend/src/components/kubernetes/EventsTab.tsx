@@ -54,7 +54,7 @@ export function EventsTab({
 							type="button"
 							key={t || "all"}
 							onClick={() => setEventTypeFilter(t)}
-							className="px-3 py-1.5 rounded text-xs border-2 transition-all"
+							className="px-3 py-1.5 rounded text-xs border transition-all"
 							style={
 								eventTypeFilter === t
 									? t === "Warning"
@@ -109,7 +109,7 @@ export function EventsTab({
 					type="button"
 					onClick={() => refetchEvents()}
 					disabled={eventsLoading}
-					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2 ml-auto"
+					className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border ml-auto"
 					style={{
 						borderColor: "var(--status-warn-border)",
 						color: "var(--status-warn-text)",
@@ -149,7 +149,7 @@ export function EventsTab({
 					className="p-8 rounded text-center"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--border-default)",
+						border: "1px solid var(--border-default)",
 						boxShadow: "var(--card-shadow)",
 					}}
 				>
@@ -173,7 +173,7 @@ export function EventsTab({
 								className="px-4 py-3 rounded"
 								style={{
 									background: "var(--surface-card)",
-									border: `2px solid ${ev.type === "Warning" ? "var(--status-warn-border)" : "var(--border-default)"}`,
+									border: `1px solid ${ev.type === "Warning" ? "var(--status-warn-border)" : "var(--border-default)"}`,
 									boxShadow: "var(--card-shadow)",
 								}}
 							>

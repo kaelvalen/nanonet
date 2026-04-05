@@ -23,7 +23,7 @@ export function PageSkeleton() {
 						className="p-4 rounded"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--border-default)",
+							border: "1px solid var(--border-default)",
 						}}
 					>
 						<div
@@ -46,7 +46,7 @@ export function PageSkeleton() {
 						className="p-4 rounded"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--border-default)",
+							border: "1px solid var(--border-default)",
 						}}
 					>
 						<div
@@ -70,7 +70,7 @@ export function CardSkeleton({ rows = 3 }: { rows?: number }) {
 			className="p-4 rounded animate-pulse"
 			style={{
 				background: "var(--surface-card)",
-				border: "2px solid var(--border-default)",
+				border: "1px solid var(--border-default)",
 			}}
 		>
 			{Array.from({ length: rows }, (_, i) => i).map((i) => (

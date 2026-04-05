@@ -87,7 +87,7 @@ export function ForgotPasswordPage() {
 						className="rounded p-8"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--border-default)",
+							border: "1px solid var(--border-default)",
 							boxShadow: "var(--card-shadow)",
 						}}
 					>

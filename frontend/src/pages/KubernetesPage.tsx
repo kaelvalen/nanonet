@@ -110,8 +110,7 @@ function StatCard({
 			className="p-4 rounded"
 			style={{
 				background: "var(--surface-card)",
-				border: `2px solid color-mix(in srgb, ${color} 30%, var(--border-default))`,
-				boxShadow: "var(--card-shadow)",
+				border: `1px solid color-mix(in srgb, ${color} 30%, var(--border-default))`,
 			}}
 		>
 			<div className="flex items-center gap-3">
@@ -383,7 +382,7 @@ function ConfirmButton({
 						setAsking(false);
 						onConfirm();
 					}}
-					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border-2"
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border"
 					style={{
 						background: "var(--status-down-subtle)",
 						borderColor: "var(--status-down-border)",
@@ -396,7 +395,7 @@ function ConfirmButton({
 				<button
 					type="button"
 					onClick={() => setAsking(false)}
-					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] border-2"
+					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] border"
 					style={{
 						borderColor: "var(--border-subtle)",
 						color: "var(--text-muted)",
@@ -764,8 +763,8 @@ export function KubernetesPage() {
 				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
 					<div>
 						<h1
-							className="text-2xl font-bold bg-clip-text text-transparent"
-							style={{ backgroundImage: "var(--gradient-heading)" }}
+							className="text-xl font-bold"
+							style={{ color: "var(--text-primary)" }}
 						>
 							Kubernetes
 						</h1>
@@ -785,7 +784,7 @@ export function KubernetesPage() {
 									refetchAllPods();
 									refetchDeployments();
 								}}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border-2 transition-all"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border transition-all"
 								style={{
 									borderColor: "var(--border-subtle)",
 									color: "var(--text-muted)",
@@ -800,7 +799,7 @@ export function KubernetesPage() {
 							</button>
 						)}
 						<div
-							className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border-2"
+							className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border"
 							style={
 								isAvailable
 									? {
@@ -840,8 +839,7 @@ export function KubernetesPage() {
 						className="p-8 rounded text-center"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--status-warn-border)",
-							boxShadow: "var(--card-shadow)",
+							border: "1px solid var(--status-warn-border)",
 						}}
 					>
 						<CloudOff
@@ -981,8 +979,7 @@ export function KubernetesPage() {
 											className="p-5 text-center rounded"
 											style={{
 												background: "var(--surface-card)",
-												border: "2px solid var(--border-default)",
-												boxShadow: "var(--card-shadow)",
+												border: "1px solid var(--border-default)",
 											}}
 										>
 											<p
@@ -1000,8 +997,7 @@ export function KubernetesPage() {
 													className="rounded overflow-hidden"
 													style={{
 														background: "var(--surface-card)",
-														border: `2px solid ${node.ready ? "var(--color-teal-border)" : "var(--status-down-border)"}`,
-														boxShadow: "var(--card-shadow)",
+														border: `1px solid ${node.ready ? "var(--color-teal-border)" : "var(--status-down-border)"}`,
 													}}
 												>
 													<button
@@ -1146,8 +1142,7 @@ export function KubernetesPage() {
 														className="p-3 rounded flex items-center gap-3"
 														style={{
 															background: "var(--surface-card)",
-															border: `2px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
-															boxShadow: "var(--card-shadow)",
+															border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
 														}}
 													>
 														<StatusDot ready={healthy} />
@@ -1228,7 +1223,7 @@ export function KubernetesPage() {
 										type="button"
 										onClick={() => refetchDeployments()}
 										disabled={deploymentsLoading}
-										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
+										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
 										style={{
 											borderColor: "var(--color-lavender-border)",
 											color: "var(--color-lavender)",
@@ -1256,8 +1251,7 @@ export function KubernetesPage() {
 										className="p-5 text-center rounded"
 										style={{
 											background: "var(--surface-card)",
-											border: "2px solid var(--border-default)",
-											boxShadow: "var(--card-shadow)",
+											border: "1px solid var(--border-default)",
 										}}
 									>
 										<Layers
@@ -1289,8 +1283,7 @@ export function KubernetesPage() {
 														className="p-5 rounded"
 														style={{
 															background: "var(--surface-card)",
-															border: `2px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
-															boxShadow: "var(--card-shadow)",
+															border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
 														}}
 													>
 														<div className="flex items-center gap-3 mb-4">
@@ -1401,7 +1394,7 @@ export function KubernetesPage() {
 															className="p-3 rounded"
 															style={{
 																background: "var(--surface-sunken)",
-																border: "2px solid var(--border-subtle)",
+																border: "1px solid var(--border-subtle)",
 															}}
 														>
 															<p
@@ -1548,7 +1541,7 @@ export function KubernetesPage() {
 										type="button"
 										onClick={() => refetchHPAs()}
 										disabled={hpasLoading}
-										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border-2"
+										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
 										style={{
 											borderColor: "var(--color-pink-border)",
 											color: "var(--color-pink)",
@@ -1567,8 +1560,7 @@ export function KubernetesPage() {
 												className="p-4 rounded"
 												style={{
 													background: "var(--surface-card)",
-													border: "2px solid var(--color-pink-border)",
-													boxShadow: "var(--card-shadow)",
+													border: "1px solid var(--color-pink-border)",
 												}}
 											>
 												<div className="flex items-start justify-between gap-3 mb-3">
@@ -1655,7 +1647,7 @@ export function KubernetesPage() {
 															className="p-3 rounded text-center"
 															style={{
 																background: "var(--surface-sunken)",
-																border: "2px solid var(--border-default)",
+																border: "1px solid var(--border-default)",
 															}}
 														>
 															<p
@@ -1725,8 +1717,7 @@ export function KubernetesPage() {
 									className="p-5 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--color-pink-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--color-pink-border)",
 									}}
 								>
 									<div className="flex items-center gap-2 mb-4">

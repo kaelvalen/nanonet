@@ -90,8 +90,7 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 				className="p-5 rounded"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--color-blue-border)",
-					boxShadow: "var(--card-shadow)",
+					border: "1px solid var(--color-blue-border)",
 				}}
 			>
 				<div className="flex items-center gap-2 mb-4">
@@ -192,8 +191,7 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 				className="p-5 rounded"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
-					boxShadow: "var(--card-shadow)",
+					border: "1px solid var(--border-default)",
 				}}
 			>
 				<div className="flex items-center justify-between mb-4">
@@ -218,7 +216,7 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 								type="button"
 								key={f.key}
 								onClick={() => setFilter(f.key)}
-								className="px-2 py-1 rounded text-[10px] font-medium border-2 transition-all"
+								className="px-2 py-1 rounded text-[10px] font-medium border transition-all"
 								style={
 									filter === f.key
 										? {
@@ -292,7 +290,7 @@ export function MaintenanceTab({ serviceId }: MaintenanceTabProps) {
 									className="flex items-start justify-between gap-3 p-3 rounded"
 									style={{
 										background: "var(--surface-sunken)",
-										border: `2px solid ${isActive ? "var(--status-warn-border)" : "var(--border-subtle)"}`,
+										border: `1px solid ${isActive ? "var(--status-warn-border)" : "var(--border-subtle)"}`,
 									}}
 								>
 									<div className="min-w-0 flex-1">

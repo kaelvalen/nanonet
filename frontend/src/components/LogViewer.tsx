@@ -362,8 +362,7 @@ export function LogViewer({
 			className="flex flex-col h-full rounded overflow-hidden"
 			style={{
 				background: "var(--surface-card)",
-				border: "2px solid var(--border-default)",
-				boxShadow: "var(--card-shadow)",
+				border: "1px solid var(--border-default)",
 				fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
 			}}
 		>

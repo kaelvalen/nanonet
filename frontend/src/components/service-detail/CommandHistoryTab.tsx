@@ -67,7 +67,7 @@ export function CommandHistoryTab({ serviceId }: { serviceId: string }) {
 				className="p-6 rounded animate-pulse"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
+					border: "1px solid var(--border-default)",
 				}}
 			>
 				<div className="space-y-3">
@@ -88,8 +88,7 @@ export function CommandHistoryTab({ serviceId }: { serviceId: string }) {
 				className="p-12 rounded text-center"
 				style={{
 					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
-					boxShadow: "var(--card-shadow)",
+					border: "1px solid var(--border-default)",
 				}}
 			>
 				<History
@@ -110,8 +109,7 @@ export function CommandHistoryTab({ serviceId }: { serviceId: string }) {
 					className="p-3 rounded"
 					style={{
 						background: "var(--surface-card)",
-						border: "2px solid var(--border-default)",
-						boxShadow: "var(--card-shadow)",
+						border: "1px solid var(--border-default)",
 					}}
 				>
 					<div className="flex items-center gap-3">
@@ -158,7 +156,7 @@ export function CommandHistoryTab({ serviceId }: { serviceId: string }) {
 							style={{
 								color: "var(--text-muted)",
 								background: "var(--surface-sunken)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
 							{log.output}

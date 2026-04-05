@@ -4,29 +4,18 @@ import {
 	AlertCircle,
 	AlertTriangle,
 	ArrowRight,
-	BellRing,
-	Brain,
 	CheckCircle2,
 	Clock,
-	Cloud,
 	Cpu,
-	Eye,
 	Gauge,
-	GitFork,
-	Heart,
-	Lightbulb,
 	Plus,
 	Server,
-	Settings,
-	Shield,
-	Sparkles,
-	Target,
+	TrendingUp,
 	XCircle,
 	Zap,
 } from "lucide-react";
-import { motion, useInView } from "motion/react";
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { motion } from "motion/react";
+import { Link } from "react-router";
 import { metricsApi } from "@/api/metrics";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
 import { Badge } from "@/components/ui/badge";
@@ -34,151 +23,108 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useServices } from "@/hooks/useServices";
 
-const navCards = [
-	{
-		to: "/app/services",
-		label: "Servisler",
-		description: "Tüm mikroservisleri izle ve yönet",
-		icon: Server,
-		colorVar: "var(--color-teal)",
-		borderVar: "var(--color-teal-border)",
-		pulse: false,
-	},
-	{
-		to: "/app/alerts",
-		label: "Uyarılar",
-		description: "Gerçek zamanlı olay bildirimleri",
-		icon: AlertCircle,
-		colorVar: "var(--color-pink)",
-		borderVar: "var(--color-pink-border)",
-		pulse: true,
-	},
-	{
-		to: "/app/ai-insights",
-		label: "AI Analiz",
-		description: "Yapay zeka destekli anomali tespiti ve öneriler",
-		icon: Sparkles,
-		colorVar: "var(--color-lavender)",
-		borderVar: "var(--color-lavender-border)",
-		pulse: false,
-	},
-	{
-		to: "/app/service-map",
-		label: "Servis Haritası",
-		description: "Servis bağımlılıklarını görsel olarak keşfet ve yönet",
-		icon: GitFork,
-		colorVar: "var(--color-teal)",
-		borderVar: "var(--color-teal-border)",
-		pulse: false,
-	},
-	{
-		to: "/app/kubernetes",
-		label: "Kubernetes",
-		description: "Cluster yönetimi, pod izleme ve auto-scaling",
-		icon: Cloud,
-		colorVar: "var(--status-up)",
-		borderVar: "var(--status-up-border)",
-		pulse: false,
-	},
-	{
-		to: "/app/settings",
-		label: "Ayarlar",
-		description: "Platform yapılandırması ve tercihler",
-		icon: Settings,
-		colorVar: "var(--color-blue)",
-		borderVar: "var(--color-blue-border)",
-		pulse: false,
-	},
-];
-
-function AnimatedCounter({
-	value,
-	duration = 800,
-}: {
-	value: number;
-	duration?: number;
-}) {
-	const [display, setDisplay] = useState(0);
-	const ref = useRef<HTMLSpanElement>(null);
-	const inView = useInView(ref, { once: true });
-
-	useEffect(() => {
-		if (!inView) return;
-		setDisplay(0);
-		let start = 0;
-		const steps = 20;
-		const inc = value / steps;
-		const timer = setInterval(() => {
-			start += inc;
-			if (start >= value) {
-				setDisplay(value);
-				clearInterval(timer);
-			} else setDisplay(Math.floor(start));
-		}, duration / steps);
-		return () => clearInterval(timer);
-	}, [value, duration, inView]);
-
-	return <span ref={ref}>{display}</span>;
+function StatusDot({ status }: { status: string }) {
+	const colors: Record<string, string> = {
+		up: "var(--status-up)",
+		degraded: "var(--status-warn)",
+		down: "var(--status-down)",
+	};
+	return (
+		<span
+			className="inline-block w-2 h-2 rounded-full shrink-0"
+			style={{ background: colors[status] ?? "var(--text-faint)" }}
+		/>
+	);
 }
 
-function _UptimeRing({
-	percent,
-	size = 56,
-}: {
-	percent: number;
-	size?: number;
-}) {
-	const r = (size - 8) / 2;
-	const circ = 2 * Math.PI * r;
-	const offset = circ - (percent / 100) * circ;
-	const color =
-		percent >= 95
-			? "var(--status-up)"
-			: percent >= 80
-				? "var(--status-warn)"
-				: "var(--status-down)";
+interface StatCardProps {
+	label: string;
+	value: number | string;
+	icon: React.ElementType;
+	color: string;
+	bg: string;
+	border: string;
+	delay?: number;
+}
+
+function StatCard({ label, value, icon: Icon, color, bg, border, delay = 0 }: StatCardProps) {
 	return (
-		<svg width={size} height={size} className="-rotate-90" aria-hidden="true">
-			<circle
-				cx={size / 2}
-				cy={size / 2}
-				r={r}
-				fill="none"
-				stroke="var(--border-track)"
-				strokeWidth={4}
-			/>
-			<circle
-				cx={size / 2}
-				cy={size / 2}
-				r={r}
-				fill="none"
-				stroke={color}
-				strokeWidth={4}
-				strokeDasharray={circ}
-				strokeDashoffset={offset}
-				strokeLinecap="round"
-				style={{ transition: "stroke-dashoffset 1s ease" }}
-			/>
-		</svg>
+		<motion.div
+			initial={{ opacity: 0, y: 10 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.3, delay }}
+		>
+			<Card
+				className="relative overflow-hidden px-4 py-3.5"
+				style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}
+			>
+				{/* Accent strip */}
+				<div
+					className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+					style={{ background: color }}
+				/>
+				<div className="flex items-center justify-between">
+					<div>
+						<p className="text-[11px] font-medium mb-1" style={{ color: "var(--text-faint)" }}>
+							{label}
+						</p>
+						<p className="text-2xl font-bold tabular-nums leading-none" style={{ color: "var(--text-primary)" }}>
+							{value}
+						</p>
+					</div>
+					<div
+						className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+						style={{ background: bg, border: `1px solid ${border}` }}
+					>
+						<Icon className="w-4.5 h-4.5" style={{ color }} />
+					</div>
+				</div>
+			</Card>
+		</motion.div>
+	);
+}
+
+interface MetricCardProps {
+	label: string;
+	value: string;
+	icon: React.ElementType;
+	color: string;
+	delay?: number;
+}
+
+function MetricCard({ label, value, icon: Icon, color, delay = 0 }: MetricCardProps) {
+	return (
+		<motion.div
+			initial={{ opacity: 0, y: 10 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.3, delay }}
+		>
+			<Card
+				className="px-4 py-3.5"
+				style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}
+			>
+				<div className="flex items-center justify-between mb-2">
+					<p className="text-[11px] font-medium" style={{ color: "var(--text-faint)" }}>
+						{label}
+					</p>
+					<Icon className="w-3.5 h-3.5" style={{ color }} />
+				</div>
+				<p className="text-xl font-bold tabular-nums font-mono leading-none" style={{ color: "var(--text-primary)" }}>
+					{value}
+				</p>
+			</Card>
+		</motion.div>
 	);
 }
 
 export function DashboardPage() {
 	const { services, isLoading } = useServices();
-	const navigate = useNavigate();
 
 	const { data: activeAlerts } = useQuery({
 		queryKey: ["activeAlerts"],
 		queryFn: () => metricsApi.getActiveAlerts(),
 		refetchInterval: 30_000,
 		staleTime: 15_000,
-	});
-
-	const { data: insightsData } = useQuery({
-		queryKey: ["dashInsightsAll"],
-		queryFn: () => metricsApi.getAllInsights(3),
-		enabled: services.length > 0,
-		staleTime: 60_000,
 	});
 
 	const { data: globalSummary } = useQuery({
@@ -189,1034 +135,318 @@ export function DashboardPage() {
 		staleTime: 30_000,
 	});
 
-	const recentAlerts = (activeAlerts ?? []).slice(0, 5);
-	const recentInsights = (insightsData?.insights ?? []).slice(0, 3);
-
-	const globalMetrics = [
-		{
-			label: "Ort. Latency",
-			value:
-				globalSummary?.avg_latency_ms != null &&
-				globalSummary.avg_latency_ms > 0
-					? `${globalSummary.avg_latency_ms.toFixed(0)}ms`
-					: "—",
-			icon: Gauge,
-			colorVar: "var(--status-warn)",
-			borderVar: "var(--status-warn-border)",
-			bgVar: "var(--status-warn-subtle)",
-		},
-		{
-			label: "P95 Latency",
-			value:
-				globalSummary?.p95_latency_ms != null &&
-				globalSummary.p95_latency_ms > 0
-					? `${globalSummary.p95_latency_ms.toFixed(0)}ms`
-					: "—",
-			icon: Activity,
-			colorVar: "var(--color-lavender)",
-			borderVar: "var(--color-lavender-border)",
-			bgVar: "var(--color-lavender-subtle)",
-		},
-		{
-			label: "Hata Oranı",
-			value:
-				globalSummary?.avg_error_rate != null &&
-				globalSummary.avg_error_rate > 0
-					? `${Math.min(globalSummary.avg_error_rate, 100).toFixed(1)}%`
-					: "—",
-			icon: AlertCircle,
-			colorVar: "var(--status-down-text)",
-			borderVar: "var(--status-down-border)",
-			bgVar: "var(--status-down-subtle)",
-		},
-		{
-			label: "Ort. CPU",
-			value:
-				globalSummary?.avg_cpu_percent != null &&
-				globalSummary.avg_cpu_percent > 0
-					? `${globalSummary.avg_cpu_percent.toFixed(1)}%`
-					: "—",
-			icon: Cpu,
-			colorVar: "var(--color-teal)",
-			borderVar: "var(--color-teal-border)",
-			bgVar: "var(--color-teal-subtle)",
-		},
-	];
-
 	const totalServices = services.length;
-	const activeServices = services.filter((s) => s.status === "up").length;
-	const degradedServices = services.filter(
-		(s) => s.status === "degraded",
-	).length;
-	const offlineServices = services.filter(
-		(s) => s.status === "down" || s.status === "unknown",
-	).length;
-	const healthPercent =
-		totalServices > 0 ? Math.round((activeServices / totalServices) * 100) : 0;
+	const onlineServices = services.filter((s) => s.status === "up").length;
+	const degradedServices = services.filter((s) => s.status === "degraded").length;
+	const offlineServices = services.filter((s) => s.status === "down" || s.status === "unknown").length;
+	const recentAlerts = (activeAlerts ?? []).slice(0, 6);
+	const criticalServices = services.filter((s) => s.status === "down" || s.status === "degraded");
+	const healthPercent = totalServices > 0 ? Math.round((onlineServices / totalServices) * 100) : 0;
 
-	const stats = [
-		{
-			label: "Toplam",
-			value: totalServices,
-			icon: Server,
-			iconVar: "var(--color-teal)",
-			bgVar: "var(--color-teal-subtle)",
-			borderVar: "var(--color-teal-border)",
-			barVar: "var(--color-teal)",
-			bar: totalServices > 0 ? 100 : 0,
-		},
-		{
-			label: "Çevrimiçi",
-			value: activeServices,
-			icon: CheckCircle2,
-			iconVar: "var(--status-up)",
-			bgVar: "var(--status-up-subtle)",
-			borderVar: "var(--status-up-border)",
-			barVar: "var(--status-up)",
-			bar: totalServices > 0 ? (activeServices / totalServices) * 100 : 0,
-		},
-		{
-			label: "Bozuk",
-			value: degradedServices,
-			icon: AlertTriangle,
-			iconVar: "var(--status-warn)",
-			bgVar: "var(--status-warn-subtle)",
-			borderVar: "var(--status-warn-border)",
-			barVar: "var(--status-warn)",
-			bar: totalServices > 0 ? (degradedServices / totalServices) * 100 : 0,
-		},
-		{
-			label: "Çevrimdışı",
-			value: offlineServices,
-			icon: XCircle,
-			iconVar: "var(--status-down)",
-			bgVar: "var(--status-down-subtle)",
-			borderVar: "var(--status-down-border)",
-			barVar: "var(--status-down)",
-			bar: totalServices > 0 ? (offlineServices / totalServices) * 100 : 0,
-		},
-	];
+	const formatLatency = (v: number | undefined) => {
+		if (!v || v <= 0) return "—";
+		if (v < 1) return "< 1 ms";
+		return `${v.toFixed(0)} ms`;
+	};
 
 	return (
-		<div className="space-y-6">
-			{/* Hero Section */}
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.6 }}
-				className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2"
-			>
-				<div>
-					<div className="relative inline-block">
-						<h1
-							className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent mb-1"
-							style={{ backgroundImage: "var(--gradient-heading)" }}
-						>
-							Kontrol Merkezi
-						</h1>
-						<div
-							className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-40 animate-twinkle"
-							style={{ color: "var(--color-teal)" }}
-						>
-							✦
-						</div>
-					</div>
-					<p
-						className="text-xs tracking-wider flex items-center gap-2"
-						style={{ color: "var(--text-muted)" }}
-					>
-						<span
-							className="w-1.5 h-1.5 rounded-full animate-pulse inline-block"
-							style={{ backgroundColor: "var(--status-up)" }}
-						/>
-						{activeServices === totalServices && totalServices > 0
-							? "Tüm Sistemler Aktif"
-							: `${activeServices}/${totalServices} Servis Çevrimiçi`}
-					</p>
-				</div>
-			</motion.div>
-
-			{/* Onboarding — sadece hiç servis yokken göster */}
+		<div className="space-y-5">
+			{/* Onboarding */}
 			{!isLoading && services.length === 0 && (
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.15 }}
-				>
+				<motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
 					<Card
-						className="rounded p-8 text-center relative overflow-hidden"
-						style={{
-							background: "var(--surface-card)",
-							border: "2px solid var(--border-default)",
-							boxShadow: "var(--card-shadow)",
-						}}
+						className="p-8 text-center relative overflow-hidden"
+						style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}
 					>
-						<div
-							className="absolute inset-x-0 top-0 h-1"
-							style={{ background: "var(--gradient-btn-primary)" }}
-						/>
-						<div
-							className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4"
-							style={{
-								background: "var(--gradient-logo)",
-								border: "2px solid var(--border-default)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							<span className="text-2xl text-white">✦</span>
+						<div className="absolute inset-x-0 top-0 h-0.5" style={{ background: "var(--gradient-btn-primary)" }} />
+						<div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: "var(--gradient-logo)" }}>
+							<Server className="w-7 h-7 text-white" />
 						</div>
-						<h2
-							className="text-lg font-bold mb-2"
-							style={{ color: "var(--text-secondary)" }}
-						>
-							NanoNet'e Hoş Geldiniz!
-						</h2>
-						<p
-							className="text-sm mb-6 max-w-md mx-auto"
-							style={{ color: "var(--text-muted)" }}
-						>
-							Mikroservislerinizi izlemeye başlamak için 3 basit adım:
+						<h2 className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>NanoNet'e Hoş Geldiniz</h2>
+						<p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: "var(--text-muted)" }}>
+							Mikroservislerinizi izlemeye başlamak için ilk servisi ekleyin.
 						</p>
-
-						<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+						<div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 max-w-lg mx-auto">
 							{[
-								{
-									step: "1",
-									title: "Servis Ekle",
-									desc: "İzlemek istediğiniz servisi kaydedin",
-									icon: Plus,
-									colorVar: "var(--color-teal)",
-								},
-								{
-									step: "2",
-									title: "Agent Kur",
-									desc: "Hedef sunucuya NanoNet Agent'ı kurun",
-									icon: Zap,
-									colorVar: "var(--color-blue)",
-								},
-								{
-									step: "3",
-									title: "İzlemeye Başla",
-									desc: "Gerçek zamanlı metrikleri takip edin",
-									icon: Activity,
-									colorVar: "var(--color-lavender)",
-								},
+								{ step: "1", title: "Servis Ekle", icon: Plus, desc: "Servisi kaydedin" },
+								{ step: "2", title: "Agent Kur", icon: Zap, desc: "Sunucuya agent yükleyin" },
+								{ step: "3", title: "İzle", icon: Activity, desc: "Gerçek zamanlı takip" },
 							].map((item) => (
-								<div
-									key={item.step}
-									className="p-4 rounded text-left relative"
-									style={{
-										background: "var(--surface-sunken)",
-										border: "2px solid var(--border-default)",
-									}}
-								>
-									<div
-										className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-										style={{
-											background: `color-mix(in srgb, ${item.colorVar} 15%, transparent)`,
-											color: item.colorVar,
-										}}
-									>
+								<div key={item.step} className="p-3 rounded-lg text-left" style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>
+									<div className="w-6 h-6 rounded-md flex items-center justify-center mb-2 text-[11px] font-bold" style={{ background: "var(--color-teal-subtle)", color: "var(--color-teal)", border: "1px solid var(--color-teal-border)" }}>
 										{item.step}
 									</div>
-									<item.icon
-										className="w-5 h-5 mb-2"
-										style={{ color: item.colorVar }}
-									/>
-									<h3
-										className="text-xs font-semibold mb-0.5"
-										style={{ color: "var(--text-secondary)" }}
-									>
-										{item.title}
-									</h3>
-									<p
-										className="text-[10px]"
-										style={{ color: "var(--text-faint)" }}
-									>
-										{item.desc}
-									</p>
+									<p className="text-xs font-semibold mb-0.5" style={{ color: "var(--text-secondary)" }}>{item.title}</p>
+									<p className="text-[11px]" style={{ color: "var(--text-faint)" }}>{item.desc}</p>
 								</div>
 							))}
 						</div>
-
-						<AddServiceDialog
-							trigger={
-								<Button
-									className="text-white rounded transition-all px-6"
-									style={{
-										background: "var(--gradient-btn-primary)",
-										boxShadow: "var(--btn-shadow)",
-									}}
-								>
-									<Plus className="w-4 h-4 mr-2" /> İlk Servisini Ekle
-								</Button>
-							}
-						/>
+						<AddServiceDialog trigger={
+							<Button className="text-white px-6" style={{ background: "var(--gradient-btn-primary)" }}>
+								<Plus className="w-4 h-4 mr-2" />İlk Servisi Ekle
+							</Button>
+						} />
 					</Card>
 				</motion.div>
 			)}
 
-			{/* Stats Row */}
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.6, delay: 0.1 }}
-				className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-			>
-				{stats.map((stat, i) => (
+			{/* Main content */}
+			{(isLoading || services.length > 0) && (
+				<>
+					{/* Top action bar */}
 					<motion.div
-						key={stat.label}
-						initial={{ opacity: 0, y: 16 }}
+						initial={{ opacity: 0, y: 8 }}
 						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
-						className="group relative"
+						transition={{ duration: 0.3 }}
+						className="flex items-center justify-between"
 					>
-						<Card
-							className="p-3 rounded overflow-hidden"
-							style={{
-								background: "var(--surface-card)",
-								border: `2px solid ${stat.borderVar}`,
-								boxShadow: "var(--card-shadow)",
-							}}
-						>
-							<div className="flex items-center justify-between mb-1.5">
-								<div
-									className="w-7 h-7 rounded flex items-center justify-center"
-									style={{
-										backgroundColor: stat.bgVar,
-										border: `2px solid ${stat.borderVar}`,
-									}}
-								>
-									<stat.icon
-										className="w-3.5 h-3.5"
-										style={{ color: stat.iconVar }}
-									/>
-								</div>
-								<p
-									className="text-[10px] uppercase tracking-wider"
-									style={{ color: "var(--text-muted)" }}
-								>
-									{stat.label}
-								</p>
-							</div>
+						<div className="flex items-center gap-2">
+							{/* Health pill */}
 							<span
-								className="text-2xl font-bold tabular-nums block mb-2"
-								style={{ color: stat.iconVar }}
-							>
-								<AnimatedCounter value={stat.value} />
-							</span>
-							<div
-								className="h-1 rounded-full overflow-hidden"
-								style={{ backgroundColor: "var(--border-track)" }}
-							>
-								<motion.div
-									className="h-full rounded-full"
-									style={{ backgroundColor: stat.barVar }}
-									initial={{ width: 0 }}
-									animate={{ width: `${stat.bar}%` }}
-									transition={{ duration: 0.8, delay: 0.3 + i * 0.07 }}
-								/>
-							</div>
-						</Card>
-					</motion.div>
-				))}
-			</motion.div>
-
-			{/* Global Metrics Summary */}
-			{services.length > 0 && (
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.15 }}
-					className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-				>
-					{globalMetrics.map((m, i) => (
-						<motion.div
-							key={m.label}
-							initial={{ opacity: 0, y: 12 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.35, delay: 0.15 + i * 0.06 }}
-						>
-							<Card
-								className="p-3 rounded"
+								className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
 								style={{
-									background: "var(--surface-card)",
-									border: `2px solid ${m.borderVar}`,
-									boxShadow: "var(--card-shadow)",
+									background: healthPercent === 100
+										? "var(--status-up-subtle)"
+										: healthPercent >= 70
+											? "var(--status-warn-subtle)"
+											: "var(--status-down-subtle)",
+									color: healthPercent === 100
+										? "var(--status-up-text)"
+										: healthPercent >= 70
+											? "var(--status-warn-text)"
+											: "var(--status-down-text)",
+									border: `1px solid ${healthPercent === 100
+										? "var(--status-up-border)"
+										: healthPercent >= 70
+											? "var(--status-warn-border)"
+											: "var(--status-down-border)"}`,
 								}}
 							>
-								<div className="flex items-center justify-between mb-1.5">
-									<div
-										className="w-7 h-7 rounded flex items-center justify-center"
-										style={{
-											backgroundColor: m.bgVar,
-											border: `1.5px solid ${m.borderVar}`,
-										}}
-									>
-										<m.icon
-											className="w-3.5 h-3.5"
-											style={{ color: m.colorVar }}
-										/>
-									</div>
-									<p
-										className="text-[10px] uppercase tracking-wider"
-										style={{ color: "var(--text-muted)" }}
-									>
-										{m.label}
-									</p>
-								</div>
 								<span
-									className="text-xl tabular-nums font-(--font-mono)"
-									style={{ color: m.colorVar, fontWeight: 700 }}
-								>
-									{m.value}
-								</span>
-							</Card>
-						</motion.div>
-					))}
-				</motion.div>
-			)}
-
-			{/* Navigation Cards Grid */}
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.6, delay: 0.2 }}
-			>
-				<div className="flex items-center gap-2 mb-4">
-					<div
-						className="h-px flex-1"
-						style={{
-							background:
-								"linear-gradient(to right, transparent, var(--color-teal-border), transparent)",
-						}}
-					/>
-					<h2
-						className="text-xs uppercase tracking-widest flex items-center gap-2"
-						style={{ color: "var(--text-muted)" }}
-					>
-						<Eye className="w-3 h-3" /> Hızlı Erişim
-					</h2>
-					<div
-						className="h-px flex-1"
-						style={{
-							background:
-								"linear-gradient(to right, transparent, var(--color-teal-border), transparent)",
-						}}
-					/>
-				</div>
-
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-					{navCards.map((card, index) => (
-						<motion.div
-							key={card.to}
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.4, delay: 0.3 + index * 0.08 }}
-							whileHover={{ y: -2 }}
-						>
-							<Link to={card.to} className="block group">
-								<Card
-									className="relative rounded p-4 transition-all duration-200 overflow-hidden"
+									className="w-1.5 h-1.5 rounded-full"
 									style={{
-										background: "var(--surface-card)",
-										border: `2px solid ${card.borderVar}`,
-										boxShadow: "var(--card-shadow)",
+										background: healthPercent === 100
+											? "var(--status-up)"
+											: healthPercent >= 70
+												? "var(--status-warn)"
+												: "var(--status-down)",
 									}}
-								>
-									<div
-										className="absolute inset-x-0 top-0 h-0.5 opacity-0 group-hover:opacity-60 transition-opacity duration-300"
-										style={{
-											background: `linear-gradient(to right, transparent, ${card.colorVar}, transparent)`,
-										}}
-									/>
+								/>
+								{healthPercent === 100
+									? "Tüm sistemler çalışıyor"
+									: `Platform %${healthPercent} sağlıklı`}
+							</span>
+						</div>
+						{!isLoading && <AddServiceDialog />}
+					</motion.div>
 
-									<div className="relative z-10 flex items-center gap-3">
-										<div
-											className="w-9 h-9 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105 shrink-0"
-											style={{
-												backgroundColor: `color-mix(in srgb, ${card.colorVar} 15%, transparent)`,
-												border: `2px solid ${card.colorVar}`,
-											}}
-										>
-											<card.icon
-												className="w-4 h-4"
-												style={{ color: card.colorVar }}
-											/>
+					{/* Stat cards */}
+					<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+						{isLoading ? (
+							Array.from({ length: 4 }).map((_, i) => (
+								<Card key={i} className="px-4 py-3.5 animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+									<div className="flex items-center justify-between">
+										<div className="space-y-2">
+											<div className="h-3 w-20 rounded" style={{ background: "var(--surface-sunken)" }} />
+											<div className="h-7 w-10 rounded" style={{ background: "var(--surface-sunken)" }} />
 										</div>
-										<div className="flex-1 min-w-0">
-											<div className="flex items-center justify-between">
-												<h3
-													className="text-sm font-semibold transition-colors"
-													style={{ color: "var(--text-secondary)" }}
-												>
-													{card.label}
-												</h3>
-												<ArrowRight
-													className="w-4 h-4 group-hover:translate-x-1 transition-all shrink-0"
-													style={{ color: "var(--text-faint)" }}
-												/>
-											</div>
-											<p
-												className="text-xs mt-0.5 truncate"
-												style={{ color: "var(--text-muted)" }}
-											>
-												{card.description}
-											</p>
-											{card.pulse && (
-												<div className="flex items-center gap-1.5 mt-1.5">
-													<div
-														className="w-1.5 h-1.5 rounded-full animate-pulse"
-														style={{ backgroundColor: "var(--color-pink)" }}
-													/>
-													<span
-														className="text-[10px]"
-														style={{ color: "var(--status-down-text)" }}
-													>
-														Dikkat gerekli
-													</span>
-												</div>
-											)}
-										</div>
+										<div className="w-9 h-9 rounded-xl" style={{ background: "var(--surface-sunken)" }} />
 									</div>
 								</Card>
-							</Link>
-						</motion.div>
-					))}
-				</div>
-			</motion.div>
-
-			{/* Quick Services Overview */}
-			{services.length > 0 && (
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.5 }}
-				>
-					<div className="flex items-center justify-between mb-4">
-						<h2
-							className="text-xs uppercase tracking-widest flex items-center gap-2"
-							style={{ color: "var(--text-muted)" }}
-						>
-							<Activity className="w-3 h-3" /> Son Servisler
-						</h2>
-						<div className="flex items-center gap-2">
-							<AddServiceDialog />
-							<Link
-								to="/app/services"
-								className="text-xs transition-colors flex items-center gap-1"
-								style={{ color: "var(--text-muted)" }}
-							>
-								Tümünü Gör <ArrowRight className="w-3 h-3" />
-							</Link>
-						</div>
+							))
+						) : (
+							<>
+								<StatCard label="Toplam Servis" value={totalServices} icon={Server} color="var(--color-teal)" bg="var(--color-teal-subtle)" border="var(--color-teal-border)" delay={0.05} />
+								<StatCard label="Çevrimiçi" value={onlineServices} icon={CheckCircle2} color="var(--status-up)" bg="var(--status-up-subtle)" border="var(--status-up-border)" delay={0.1} />
+								<StatCard label="Bozuk" value={degradedServices} icon={AlertTriangle} color="var(--status-warn)" bg="var(--status-warn-subtle)" border="var(--status-warn-border)" delay={0.15} />
+								<StatCard label="Çevrimdışı" value={offlineServices} icon={XCircle} color="var(--status-down)" bg="var(--status-down-subtle)" border="var(--status-down-border)" delay={0.2} />
+							</>
+						)}
 					</div>
 
-					{isLoading ? (
-						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-							{[1, 2, 3].map((i) => (
-								<Card
-									key={i}
-									className="p-4 rounded animate-pulse"
-									style={{
-										background: "var(--surface-card)",
-										border: "2px solid var(--border-default)",
-									}}
-								>
-									<div className="flex items-center gap-3 mb-3">
-										<div
-											className="w-9 h-9 rounded"
-											style={{
-												backgroundColor: "var(--color-teal-subtle)",
-												border: "1.5px solid var(--color-teal-border)",
-											}}
-										/>
-										<div className="flex-1">
-											<div
-												className="h-3.5 w-28 rounded mb-1.5"
-												style={{ backgroundColor: "var(--color-teal-subtle)" }}
-											/>
-											<div
-												className="h-2.5 w-20 rounded"
-												style={{ backgroundColor: "var(--color-teal-subtle)" }}
-											/>
-										</div>
-									</div>
-									<div
-										className="h-1.5 w-full rounded-full"
-										style={{ backgroundColor: "var(--color-teal-subtle)" }}
-									/>
-								</Card>
-							))}
-						</div>
-					) : (
-						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-							{services.slice(0, 6).map((service, index) => {
-								const statusDotVar =
-									service.status === "up"
-										? "var(--status-up)"
-										: service.status === "degraded"
-											? "var(--status-warn)"
-											: "var(--status-down)";
-								const StatusIcon =
-									service.status === "up"
-										? CheckCircle2
-										: service.status === "degraded"
-											? AlertTriangle
-											: XCircle;
-								const cardBorderVar =
-									service.status === "up"
-										? "var(--color-teal-border)"
-										: service.status === "degraded"
-											? "var(--status-warn-border)"
-											: "var(--status-down-border)";
-								const iconBgVar =
-									service.status === "up"
-										? "var(--color-teal-subtle)"
-										: service.status === "degraded"
-											? "var(--status-warn-subtle)"
-											: "var(--status-down-subtle)";
-								const iconColorVar =
-									service.status === "up"
-										? "var(--color-teal)"
-										: service.status === "degraded"
-											? "var(--status-warn)"
-											: "var(--status-down)";
-								return (
-									<motion.div
-										key={service.id}
-										initial={{ opacity: 0, y: 12 }}
-										animate={{ opacity: 1, y: 0 }}
-										transition={{ duration: 0.3, delay: 0.55 + index * 0.06 }}
-										whileHover={{ y: -2 }}
-									>
-										<Link
-											to={`/app/services/${service.id}`}
-											className="block group"
-										>
-											<Card
-												className="relative rounded p-4 transition-all duration-200 overflow-hidden"
-												style={{
-													background: "var(--surface-card)",
-													border: `2px solid ${cardBorderVar}`,
-													boxShadow: "var(--card-shadow)",
-												}}
-											>
-												{service.status === "up" && (
-													<div
-														className="absolute inset-x-0 top-0 h-px"
-														style={{
-															background: `linear-gradient(to right, transparent, var(--color-teal-border), transparent)`,
-														}}
-													/>
-												)}
-												<div className="flex items-center gap-3">
-													<div
-														className="w-9 h-9 rounded flex items-center justify-center shrink-0"
-														style={{
-															backgroundColor: iconBgVar,
-															border: `1.5px solid ${iconColorVar}`,
-														}}
-													>
-														<Server
-															className="w-4 h-4"
-															style={{ color: iconColorVar }}
-														/>
-													</div>
-													<div className="flex-1 min-w-0">
-														<div className="flex items-center gap-2">
-															<div className="relative shrink-0">
-																<div
-																	className="w-2 h-2 rounded-full"
-																	style={{ backgroundColor: statusDotVar }}
-																/>
-																{service.status === "up" && (
-																	<div
-																		className="absolute inset-0 w-2 h-2 rounded-full animate-pulse-ring"
-																		style={{
-																			backgroundColor: "var(--status-up)",
-																		}}
-																	/>
-																)}
-															</div>
-															<h3
-																className="text-xs font-(--font-mono) truncate transition-colors"
-																style={{ color: "var(--text-secondary)" }}
-															>
-																{service.name}
-															</h3>
-														</div>
-														<div className="flex items-center justify-between mt-1">
-															<p
-																className="text-[10px] font-(--font-mono)"
-																style={{ color: "var(--text-faint)" }}
-															>
-																{service.host}:{service.port}
-															</p>
-															<div className="flex items-center gap-1">
-																<Clock
-																	className="w-2.5 h-2.5"
-																	style={{ color: "var(--text-faint)" }}
-																/>
-																<span
-																	className="text-[10px]"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	{service.poll_interval_sec}s
-																</span>
-															</div>
-														</div>
-													</div>
-													<StatusIcon
-														className="w-4 h-4 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity"
-														style={{ color: iconColorVar }}
-													/>
-												</div>
-											</Card>
-										</Link>
-									</motion.div>
-								);
-							})}
+					{/* Metric cards */}
+					{!isLoading && (
+						<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+							<MetricCard label="Ort. Gecikme" value={formatLatency(globalSummary?.avg_latency_ms)} icon={Gauge} color="var(--status-warn)" delay={0.1} />
+							<MetricCard label="P95 Gecikme" value={formatLatency(globalSummary?.p95_latency_ms)} icon={Activity} color="var(--color-lavender)" delay={0.15} />
+							<MetricCard
+								label="Hata Oranı"
+								value={globalSummary?.avg_error_rate && globalSummary.avg_error_rate > 0
+									? `${Math.min(globalSummary.avg_error_rate * 100, 100).toFixed(1)}%`
+									: "—"}
+								icon={AlertCircle}
+								color="var(--status-down)"
+								delay={0.2}
+							/>
+							<MetricCard
+								label="Ort. CPU"
+								value={globalSummary?.avg_cpu_percent && globalSummary.avg_cpu_percent > 0
+									? `${globalSummary.avg_cpu_percent.toFixed(1)}%`
+									: "—"}
+								icon={Cpu}
+								color="var(--color-teal)"
+								delay={0.25}
+							/>
 						</div>
 					)}
-				</motion.div>
-			)}
 
-			{/* Recent Alerts + AI Insights — 2-column live feed */}
-			{services.length > 0 && (
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.65 }}
-					className="grid grid-cols-1 lg:grid-cols-2 gap-4"
-				>
-					{/* Son Alertler */}
-					<Card
-						className="rounded p-4"
-						style={{
-							background: "var(--surface-card)",
-							border: "2px solid var(--border-default)",
-							boxShadow: "var(--card-shadow)",
-						}}
-					>
-						<div className="flex items-center justify-between mb-3">
-							<div className="flex items-center gap-2">
-								<BellRing
-									className="w-3.5 h-3.5"
-									style={{ color: "var(--color-pink)" }}
-								/>
-								<h3
-									className="text-xs font-semibold uppercase tracking-wider"
-									style={{ color: "var(--text-muted)" }}
-								>
-									Son Alertler
-								</h3>
-								{recentAlerts.length > 0 && (
+					{/* Bottom grid: Services + Alerts */}
+					{!isLoading && (
+						<motion.div
+							initial={{ opacity: 0, y: 12 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.4, delay: 0.25 }}
+							className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+						>
+							{/* Services panel */}
+							<Card className="p-4" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+								<div className="flex items-center justify-between mb-3">
+									<div className="flex items-center gap-2">
+										<div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+											<Server className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
+										</div>
+										<span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+											{criticalServices.length > 0 ? "Dikkat Gereken" : "Servisler"}
+										</span>
+										{criticalServices.length > 0 && (
+											<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: "var(--status-down-subtle)", color: "var(--status-down-text)", border: "1px solid var(--status-down-border)" }}>
+												{criticalServices.length}
+											</span>
+										)}
+									</div>
+									<Link to="/app/services" className="flex items-center gap-1 text-xs transition-colors" style={{ color: "var(--text-faint)" }}>
+										Tümü <ArrowRight className="w-3 h-3" />
+									</Link>
+								</div>
+								<div className="space-y-1">
+									{(criticalServices.length > 0 ? criticalServices : services.slice(0, 6)).map((service) => (
+										<Link
+											key={service.id}
+											to={`/app/services/${service.id}`}
+											className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group"
+											style={{ background: "var(--surface-sunken)" }}
+										>
+											<StatusDot status={service.status} />
+											<span className="flex-1 text-sm font-medium truncate" style={{ color: "var(--text-secondary)" }}>
+												{service.name}
+											</span>
+											<span className="text-[11px] font-mono" style={{ color: "var(--text-faint)" }}>
+												{service.host}:{service.port}
+											</span>
+											<Badge
+												className="text-[10px] px-1.5 shrink-0"
+												style={{
+													background: service.status === "up" ? "var(--status-up-subtle)" : service.status === "degraded" ? "var(--status-warn-subtle)" : "var(--status-down-subtle)",
+													color: service.status === "up" ? "var(--status-up-text)" : service.status === "degraded" ? "var(--status-warn-text)" : "var(--status-down-text)",
+													border: "none",
+												}}
+											>
+												{service.status === "up" ? "Aktif" : service.status === "degraded" ? "Bozuk" : "Çevrimdışı"}
+											</Badge>
+										</Link>
+									))}
+									{criticalServices.length === 0 && services.length > 6 && (
+										<Link to="/app/services" className="flex items-center justify-center gap-1 py-2 text-xs" style={{ color: "var(--text-faint)" }}>
+											+{services.length - 6} servis daha <ArrowRight className="w-3 h-3" />
+										</Link>
+									)}
+								</div>
+							</Card>
+
+							{/* Alerts panel */}
+							<Card className="p-4" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+								<div className="flex items-center justify-between mb-3">
+									<div className="flex items-center gap-2">
+										<div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
+											<AlertCircle className="w-3.5 h-3.5" style={{ color: "var(--status-down)" }} />
+										</div>
+										<span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Son Uyarılar</span>
+										{recentAlerts.length > 0 && (
+											<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: "var(--status-down-subtle)", color: "var(--status-down-text)", border: "1px solid var(--status-down-border)" }}>
+												{recentAlerts.length}
+											</span>
+										)}
+									</div>
+									<Link to="/app/alerts" className="flex items-center gap-1 text-xs transition-colors" style={{ color: "var(--text-faint)" }}>
+										Tümü <ArrowRight className="w-3 h-3" />
+									</Link>
+								</div>
+
+								{recentAlerts.length === 0 ? (
+									<div className="flex flex-col items-center justify-center py-8 gap-2">
+										<div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--status-up-subtle)" }}>
+											<CheckCircle2 className="w-5 h-5" style={{ color: "var(--status-up)" }} />
+										</div>
+										<p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Aktif uyarı yok</p>
+										<p className="text-xs" style={{ color: "var(--text-faint)" }}>Tüm sistemler normal çalışıyor</p>
+									</div>
+								) : (
+									<div className="space-y-1">
+										{recentAlerts.map((alert) => (
+											<div key={alert.id} className="flex items-start gap-3 px-3 py-2 rounded-lg" style={{ background: "var(--surface-sunken)" }}>
+												<AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--status-warn)" }} />
+												<div className="flex-1 min-w-0">
+													<p className="text-xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>
+														{services.find((s) => s.id === alert.service_id)?.name ?? "Bilinmeyen Servis"}
+													</p>
+													<p className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>
+														{alert.message ?? alert.type}
+													</p>
+												</div>
+												<div className="flex items-center gap-1 shrink-0">
+													<Clock className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+													<span className="text-[10px] font-mono" style={{ color: "var(--text-faint)" }}>
+														{alert.triggered_at
+															? new Date(alert.triggered_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+															: "—"}
+													</span>
+												</div>
+											</div>
+										))}
+									</div>
+								)}
+							</Card>
+						</motion.div>
+					)}
+
+					{/* Health bar */}
+					{!isLoading && (
+						<motion.div
+							initial={{ opacity: 0, y: 8 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.4, delay: 0.35 }}
+						>
+							<Card className="px-4 py-3" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+								<div className="flex items-center justify-between mb-2">
+									<div className="flex items-center gap-2">
+										<TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
+										<span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Platform Sağlığı</span>
+									</div>
 									<span
-										className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+										className="text-xs font-bold tabular-nums font-mono"
 										style={{
-											background: "var(--status-down-subtle)",
-											color: "var(--status-down-text)",
-											border: "1px solid var(--status-down-border)",
+											color: healthPercent >= 90 ? "var(--status-up-text)" : healthPercent >= 70 ? "var(--status-warn-text)" : "var(--status-down-text)",
 										}}
 									>
-										{recentAlerts.length}
+										{healthPercent}%
 									</span>
-								)}
-							</div>
-							<Link
-								to="/app/alerts"
-								className="text-[10px] flex items-center gap-1 transition-colors"
-								style={{ color: "var(--text-faint)" }}
-							>
-								Tümü <ArrowRight className="w-3 h-3" />
-							</Link>
-						</div>
-
-						{recentAlerts.length === 0 ? (
-							<div className="py-6 text-center space-y-2">
-								<div
-									className="w-10 h-10 rounded flex items-center justify-center mx-auto"
-									style={{
-										backgroundColor: "var(--status-up-subtle)",
-										border: "2px solid var(--status-up-border)",
-									}}
-								>
-									<CheckCircle2
-										className="w-5 h-5"
-										style={{ color: "var(--status-up)" }}
+								</div>
+								<div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-sunken)" }}>
+									<motion.div
+										className="h-full rounded-full"
+										style={{
+											background: healthPercent >= 90 ? "var(--status-up)" : healthPercent >= 70 ? "var(--status-warn)" : "var(--status-down)",
+										}}
+										initial={{ width: 0 }}
+										animate={{ width: `${healthPercent}%` }}
+										transition={{ duration: 0.8, delay: 0.4 }}
 									/>
 								</div>
-								<p
-									className="text-xs font-medium"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									Tüm sistemler sağlıklı
-								</p>
-								<p
-									className="text-[10px]"
-									style={{ color: "var(--text-faint)" }}
-								>
-									Eşik değerlerini ayarlamak için
-									<button
-										type="button"
-										onClick={() => navigate("/app/alerts")}
-										className="underline ml-1"
-										style={{ color: "var(--color-teal)" }}
-									>
-										Uyarılar
-									</button>{" "}
-									sayfasını ziyaret edin
-								</p>
-							</div>
-						) : (
-							<div className="space-y-2">
-								{recentAlerts.map((alert) => {
-									const sevColor =
-										alert.severity === "crit"
-											? "var(--status-down-text)"
-											: alert.severity === "warn"
-												? "var(--status-warn-text)"
-												: "var(--color-blue)";
-									const sevBg =
-										alert.severity === "crit"
-											? "var(--status-down-subtle)"
-											: alert.severity === "warn"
-												? "var(--status-warn-subtle)"
-												: "var(--color-blue-subtle)";
-									const sevBorder =
-										alert.severity === "crit"
-											? "var(--status-down-border)"
-											: alert.severity === "warn"
-												? "var(--status-warn-border)"
-												: "var(--color-blue-border)";
-									return (
-										<div
-											key={alert.id}
-											className="flex items-start gap-2.5 p-2.5 rounded"
-											style={{
-												background: "var(--surface-sunken)",
-												border: "1.5px solid var(--border-default)",
-											}}
-										>
-											<AlertCircle
-												className="w-3.5 h-3.5 mt-0.5 shrink-0"
-												style={{ color: sevColor }}
-											/>
-											<div className="min-w-0 flex-1">
-												<p
-													className="text-xs truncate"
-													style={{ color: "var(--text-secondary)" }}
-												>
-													{alert.message}
-												</p>
-												<div className="flex items-center gap-2 mt-1">
-													<Badge
-														className="text-[8px] px-1.5 py-0 rounded border"
-														style={{
-															background: sevBg,
-															color: sevColor,
-															borderColor: sevBorder,
-														}}
-													>
-														{(alert.severity || "").toUpperCase()}
-													</Badge>
-													<span
-														className="text-[10px]"
-														style={{ color: "var(--text-faint)" }}
-													>
-														<Clock className="w-2.5 h-2.5 inline mr-0.5" />
-														{new Date(alert.triggered_at).toLocaleTimeString(
-															"tr-TR",
-															{ hour: "2-digit", minute: "2-digit" },
-														)}
-													</span>
-												</div>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						)}
-					</Card>
-
-					{/* Son AI Insights */}
-					<Card
-						className="rounded p-4"
-						style={{
-							background: "var(--surface-card)",
-							border: "2px solid var(--color-lavender-border)",
-							boxShadow: "var(--card-shadow)",
-						}}
-					>
-						<div className="flex items-center justify-between mb-3">
-							<div className="flex items-center gap-2">
-								<Brain
-									className="w-3.5 h-3.5"
-									style={{ color: "var(--color-lavender)" }}
-								/>
-								<h3
-									className="text-xs font-semibold uppercase tracking-wider"
-									style={{ color: "var(--text-muted)" }}
-								>
-									AI Insights
-								</h3>
-							</div>
-							<Link
-								to="/app/ai-insights"
-								className="text-[10px] flex items-center gap-1 transition-colors"
-								style={{ color: "var(--text-faint)" }}
-							>
-								Tümü <ArrowRight className="w-3 h-3" />
-							</Link>
-						</div>
-
-						{recentInsights.length === 0 ? (
-							<div className="py-6 text-center space-y-2">
-								<div
-									className="w-10 h-10 rounded flex items-center justify-center mx-auto"
-									style={{
-										backgroundColor: "var(--color-lavender-subtle)",
-										border: "2px solid var(--color-lavender-border)",
-									}}
-								>
-									<Sparkles
-										className="w-5 h-5"
-										style={{ color: "var(--color-lavender)" }}
-									/>
-								</div>
-								<p
-									className="text-xs font-medium"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									Henüz AI analizi yok
-								</p>
-								<p
-									className="text-[10px]"
-									style={{ color: "var(--text-faint)" }}
-								>
-									Servis detayında &ldquo;Analiz Et&rdquo; butonuna basın
-								</p>
-								<Button
-									size="sm"
-									onClick={() => navigate("/app/ai-insights")}
-									className="mt-1 rounded text-xs h-7 text-white"
-									style={{
-										background: "var(--gradient-btn-primary)",
-										boxShadow: "var(--btn-shadow)",
-									}}
-								>
-									<Zap className="w-3 h-3 mr-1" /> AI Insights
-								</Button>
-							</div>
-						) : (
-							<div className="space-y-2">
-								{recentInsights.map((insight) => {
-									const topPriority =
-										insight.recommendations?.[0]?.priority ?? "low";
-									const priColor =
-										topPriority === "high"
-											? "var(--status-down-text)"
-											: topPriority === "medium"
-												? "var(--status-warn-text)"
-												: "var(--color-teal)";
-									const priBg =
-										topPriority === "high"
-											? "var(--status-down-subtle)"
-											: topPriority === "medium"
-												? "var(--status-warn-subtle)"
-												: "var(--color-teal-subtle)";
-									const priBorder =
-										topPriority === "high"
-											? "var(--status-down-border)"
-											: topPriority === "medium"
-												? "var(--status-warn-border)"
-												: "var(--color-teal-border)";
-									return (
-										<div
-											key={insight.id}
-											className="flex items-start gap-2.5 p-2.5 rounded"
-											style={{
-												background: "var(--surface-sunken)",
-												border: "1.5px solid var(--color-lavender-border)",
-											}}
-										>
-											<Lightbulb
-												className="w-3.5 h-3.5 mt-0.5 shrink-0"
-												style={{ color: "var(--color-lavender)" }}
-											/>
-											<div className="min-w-0 flex-1">
-												<p
-													className="text-xs line-clamp-2 leading-relaxed"
-													style={{ color: "var(--text-secondary)" }}
-												>
-													{insight.summary}
-												</p>
-												<div className="flex items-center gap-2 mt-1">
-													{insight.recommendations &&
-														insight.recommendations.length > 0 && (
-															<Badge
-																className="text-[8px] px-1.5 py-0 rounded border"
-																style={{
-																	background: priBg,
-																	color: priColor,
-																	borderColor: priBorder,
-																}}
-															>
-																<Target className="w-2 h-2 inline mr-0.5" />
-																{insight.recommendations.length} öneri
-															</Badge>
-														)}
-													<span
-														className="text-[10px]"
-														style={{ color: "var(--text-faint)" }}
-													>
-														<Clock className="w-2.5 h-2.5 inline mr-0.5" />
-														{new Date(insight.created_at).toLocaleDateString(
-															"tr-TR",
-														)}
-													</span>
-												</div>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						)}
-					</Card>
-				</motion.div>
+							</Card>
+						</motion.div>
+					)}
+				</>
 			)}
-
-			{/* Footer */}
-			<motion.div
-				initial={{ opacity: 0 }}
-				animate={{ opacity: 1 }}
-				transition={{ duration: 0.6, delay: 0.9 }}
-				className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-[10px]"
-				style={{ color: "var(--text-faint)" }}
-			>
-				<span className="flex items-center gap-1.5">
-					<Shield className="w-3 h-3" style={{ color: "var(--status-up)" }} />
-					{totalServices > 0
-						? `%${healthPercent} çalışma süresi`
-						: "İzlenen servis yok"}
-				</span>
-				<span style={{ color: "var(--color-lavender)" }}>·</span>
-				<span className="flex items-center gap-1.5">
-					<Zap className="w-3 h-3" style={{ color: "var(--color-blue)" }} />
-					{totalServices} kayıtlı
-				</span>
-				<span
-					className="hidden sm:inline"
-					style={{ color: "var(--color-lavender)" }}
-				>
-					·
-				</span>
-				<span className="hidden sm:flex items-center gap-1.5">
-					<Heart className="w-3 h-3" style={{ color: "var(--color-pink)" }} />
-					NanoNet v2.0
-				</span>
-			</motion.div>
 		</div>
 	);
 }

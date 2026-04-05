@@ -289,7 +289,7 @@ export function ServiceDetailPage() {
 							className="p-4 rounded animate-pulse"
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
 							<div
@@ -376,7 +376,7 @@ export function ServiceDetailPage() {
 								{service?.name ?? ""}
 							</h1>
 							<Badge
-								className="text-[10px] font-([--font-mono]) px-2 py-0.5 rounded border-2"
+								className="text-[10px] font-([--font-mono]) px-2 py-0.5 rounded border"
 								style={statusBadgeStyle}
 							>
 								{service?.status?.toUpperCase() ?? "UNKNOWN"}
@@ -466,7 +466,7 @@ export function ServiceDetailPage() {
 								className="rounded"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--status-down-border)",
+									border: "1px solid var(--status-down-border)",
 									boxShadow: "var(--panel-shadow)",
 								}}
 							>
@@ -506,7 +506,7 @@ export function ServiceDetailPage() {
 								className="rounded max-w-sm"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--color-teal-border)",
+									border: "1px solid var(--color-teal-border)",
 									boxShadow: "var(--panel-shadow)",
 								}}
 							>
@@ -546,7 +546,7 @@ export function ServiceDetailPage() {
 								className="rounded max-w-sm"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--status-warn-border)",
+									border: "1px solid var(--status-warn-border)",
 									boxShadow: "var(--panel-shadow)",
 								}}
 							>
@@ -596,8 +596,7 @@ export function ServiceDetailPage() {
 						className="p-4 rounded overflow-hidden"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--color-teal-border)",
-							boxShadow: "var(--card-shadow)",
+							border: "1px solid var(--color-teal-border)",
 						}}
 					>
 						<div className="flex items-center justify-between mb-2">
@@ -669,8 +668,7 @@ export function ServiceDetailPage() {
 						className="p-4 rounded overflow-hidden"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--color-blue-border)",
-							boxShadow: "var(--card-shadow)",
+							border: "1px solid var(--color-blue-border)",
 						}}
 					>
 						<div className="flex items-center justify-between mb-2">
@@ -717,8 +715,7 @@ export function ServiceDetailPage() {
 						className="p-4 rounded overflow-hidden"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--color-lavender-border)",
-							boxShadow: "var(--card-shadow)",
+							border: "1px solid var(--color-lavender-border)",
 						}}
 					>
 						<div className="flex items-center justify-between mb-2">
@@ -790,8 +787,7 @@ export function ServiceDetailPage() {
 						className="p-4 rounded overflow-hidden"
 						style={{
 							background: "var(--surface-card)",
-							border: "2px solid var(--status-up-border)",
-							boxShadow: "var(--card-shadow)",
+							border: "1px solid var(--status-up-border)",
 						}}
 					>
 						<div className="flex items-center justify-between mb-2">
@@ -854,7 +850,7 @@ export function ServiceDetailPage() {
 							className="rounded p-1 overflow-x-auto w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap"
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
 							<TabsTrigger value="metrics" className="rounded text-xs">
@@ -894,7 +890,7 @@ export function ServiceDetailPage() {
 									type="button"
 									key={d}
 									onClick={() => setMetricsDuration(d)}
-									className="px-2 py-1 rounded text-[10px] font-medium transition-all border-2"
+									className="px-2 py-1 rounded text-[10px] font-medium transition-all border"
 									style={
 										metricsDuration === d
 											? {
@@ -921,7 +917,7 @@ export function ServiceDetailPage() {
 								className="p-8 rounded animate-pulse"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--border-default)",
+									border: "1px solid var(--border-default)",
 								}}
 							>
 								<div
@@ -934,7 +930,7 @@ export function ServiceDetailPage() {
 								className="p-12 rounded text-center"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--color-teal-border)",
+									border: "1px solid var(--color-teal-border)",
 								}}
 							>
 								<Activity
@@ -952,8 +948,7 @@ export function ServiceDetailPage() {
 									className="p-4 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--color-teal-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--color-teal-border)",
 									}}
 								>
 									<h3
@@ -1002,7 +997,7 @@ export function ServiceDetailPage() {
 											<Tooltip
 												contentStyle={{
 													borderRadius: 0,
-													border: "2px solid #39c5bb",
+													border: "1px solid #39c5bb",
 													fontSize: 11,
 												}}
 											/>
@@ -1022,8 +1017,7 @@ export function ServiceDetailPage() {
 									className="p-4 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--color-blue-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--color-blue-border)",
 									}}
 								>
 									<h3
@@ -1068,7 +1062,7 @@ export function ServiceDetailPage() {
 											<Tooltip
 												contentStyle={{
 													borderRadius: 0,
-													border: "2px solid #93c5fd",
+													border: "1px solid #93c5fd",
 													fontSize: 11,
 												}}
 											/>
@@ -1088,8 +1082,7 @@ export function ServiceDetailPage() {
 									className="p-4 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--color-lavender-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--color-lavender-border)",
 									}}
 								>
 									<h3
@@ -1134,7 +1127,7 @@ export function ServiceDetailPage() {
 											<Tooltip
 												contentStyle={{
 													borderRadius: 0,
-													border: "2px solid #c4b5fd",
+													border: "1px solid #c4b5fd",
 													fontSize: 11,
 												}}
 											/>
@@ -1154,8 +1147,7 @@ export function ServiceDetailPage() {
 									className="p-4 rounded"
 									style={{
 										background: "var(--surface-card)",
-										border: "2px solid var(--status-down-border)",
-										boxShadow: "var(--card-shadow)",
+										border: "1px solid var(--status-down-border)",
 									}}
 								>
 									<h3
@@ -1204,7 +1196,7 @@ export function ServiceDetailPage() {
 											<Tooltip
 												contentStyle={{
 													borderRadius: 0,
-													border: "2px solid #fda4af",
+													border: "1px solid #fda4af",
 													fontSize: 11,
 												}}
 											/>
@@ -1229,7 +1221,7 @@ export function ServiceDetailPage() {
 								className="p-12 rounded text-center"
 								style={{
 									background: "var(--surface-card)",
-									border: "2px solid var(--color-teal-border)",
+									border: "1px solid var(--color-teal-border)",
 								}}
 							>
 								<Shield
@@ -1252,7 +1244,7 @@ export function ServiceDetailPage() {
 										className="p-4 rounded"
 										style={{
 											background: "var(--surface-card)",
-											border: "2px solid",
+											border: "1px solid",
 											borderColor:
 												alert.severity === "crit"
 													? "var(--status-down-border)"
@@ -1277,7 +1269,7 @@ export function ServiceDetailPage() {
 												<div>
 													<div className="flex items-center gap-2 mb-1">
 														<Badge
-															className="text-[9px] px-1.5 py-0 rounded border-2 uppercase font-([--font-mono])"
+															className="text-[9px] px-1.5 py-0 rounded border uppercase font-([--font-mono])"
 															style={{
 																background:
 																	alert.severity === "crit"
@@ -1351,7 +1343,7 @@ export function ServiceDetailPage() {
 								className="flex items-center gap-2 px-3 py-2 rounded text-xs"
 								style={{
 									background: "var(--status-up-subtle)",
-									border: "2px solid var(--status-up-border)",
+									border: "1px solid var(--status-up-border)",
 								}}
 							>
 								<CheckCircle2
@@ -1367,7 +1359,7 @@ export function ServiceDetailPage() {
 								className="flex items-start gap-3 px-4 py-3 rounded text-xs"
 								style={{
 									background: "var(--status-warn-subtle)",
-									border: "2px solid var(--status-warn-border)",
+									border: "1px solid var(--status-warn-border)",
 								}}
 							>
 								<AlertCircle
@@ -1553,7 +1545,7 @@ export function ServiceDetailPage() {
 														style={{
 															color: "var(--text-muted)",
 															background: "var(--surface-sunken)",
-															border: "2px solid var(--border-default)",
+															border: "1px solid var(--border-default)",
 														}}
 													>
 														{entry.output}
@@ -1566,7 +1558,7 @@ export function ServiceDetailPage() {
 														style={{
 															color: "var(--status-down-text)",
 															background: "var(--status-down-subtle)",
-															border: "2px solid var(--status-down-border)",
+															border: "1px solid var(--status-down-border)",
 														}}
 													>
 														{entry.error}
@@ -1668,7 +1660,7 @@ export function ServiceDetailPage() {
 							className="rounded max-w-sm"
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--status-warn-border)",
+								border: "1px solid var(--status-warn-border)",
 								boxShadow: "var(--panel-shadow)",
 							}}
 						>
@@ -1691,7 +1683,7 @@ export function ServiceDetailPage() {
 										<ul
 											className="space-y-1 pl-3"
 											style={{
-												borderLeft: "2px solid var(--status-warn-border)",
+												borderLeft: "1px solid var(--status-warn-border)",
 											}}
 										>
 											<li>
@@ -1776,8 +1768,7 @@ export function ServiceDetailPage() {
 							className="p-6 rounded"
 							style={{
 								background: "var(--surface-card)",
-								border: "2px solid var(--color-lavender-border)",
-								boxShadow: "var(--card-shadow)",
+								border: "1px solid var(--color-lavender-border)",
 							}}
 						>
 							<div className="flex items-center justify-between mb-4">
@@ -1795,7 +1786,7 @@ export function ServiceDetailPage() {
 								</div>
 								<div className="flex items-center gap-2">
 									<div
-										className="flex rounded overflow-hidden border-2"
+										className="flex rounded overflow-hidden border"
 										style={{ borderColor: "var(--color-lavender-border)" }}
 									>
 										<button
@@ -1858,7 +1849,7 @@ export function ServiceDetailPage() {
 										className="p-4 rounded"
 										style={{
 											background: "var(--surface-sunken)",
-											border: "2px solid var(--border-default)",
+											border: "1px solid var(--border-default)",
 										}}
 									>
 										<h4
@@ -1879,7 +1870,7 @@ export function ServiceDetailPage() {
 											className="p-4 rounded"
 											style={{
 												background: "var(--status-down-subtle)",
-												border: "2px solid var(--status-down-border)",
+												border: "1px solid var(--status-down-border)",
 											}}
 										>
 											<h4
@@ -1902,7 +1893,7 @@ export function ServiceDetailPage() {
 												className="p-4 rounded"
 												style={{
 													background: "var(--color-teal-subtle)",
-													border: "2px solid var(--color-teal-border)",
+													border: "1px solid var(--color-teal-border)",
 												}}
 											>
 												<h4

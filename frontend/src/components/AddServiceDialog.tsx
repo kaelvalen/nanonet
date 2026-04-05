@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, Plus } from "lucide-react";
+import { CheckCircle2, Copy, Plus, Terminal } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,42 +31,30 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 	const [port, setPort] = useState(8080);
 	const [healthEndpoint, setHealthEndpoint] = useState("/health");
 	const [pollInterval, setPollInterval] = useState(10);
-
-	// Validasyon state'leri
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
 	const validate = (): boolean => {
-		const newErrors: Record<string, string> = {};
+		const e: Record<string, string> = {};
+		if (!name.trim()) e.name = "Zorunlu";
+		else if (name.length < 2) e.name = "En az 2 karakter";
+		else if (!/^[a-zA-Z0-9_-]+$/.test(name)) e.name = "Harf, rakam, tire ve alt çizgi kullanılabilir";
 
-		if (!name.trim()) newErrors.name = "Servis adı zorunludur";
-		else if (name.length < 2) newErrors.name = "En az 2 karakter olmalı";
-		else if (name.length > 100)
-			newErrors.name = "En fazla 100 karakter olabilir";
-		else if (!/^[a-zA-Z0-9_-]+$/.test(name))
-			newErrors.name = "Sadece harf, rakam, tire ve alt çizgi kullanılabilir";
+		if (!host.trim()) e.host = "Zorunlu";
+		else if (!/^[a-zA-Z0-9._-]+$/.test(host)) e.host = "Geçerli hostname veya IP girin";
 
-		if (!host.trim()) newErrors.host = "Host/IP zorunludur";
-		else if (!/^[a-zA-Z0-9._-]+$/.test(host))
-			newErrors.host = "Geçerli bir hostname veya IP adresi girin";
+		if (!port || port < 1 || port > 65535) e.port = "1–65535 arası";
 
-		if (!port || port < 1 || port > 65535)
-			newErrors.port = "Port 1-65535 arasında olmalı";
+		if (!healthEndpoint.trim()) e.healthEndpoint = "Zorunlu";
+		else if (!healthEndpoint.startsWith("/")) e.healthEndpoint = "/ ile başlamalı";
 
-		if (!healthEndpoint.trim())
-			newErrors.healthEndpoint = "Health endpoint zorunludur";
-		else if (!healthEndpoint.startsWith("/"))
-			newErrors.healthEndpoint = "Endpoint / ile başlamalı";
+		if (pollInterval < 5 || pollInterval > 300) e.pollInterval = "5–300 saniye";
 
-		if (pollInterval < 5 || pollInterval > 300)
-			newErrors.pollInterval = "Poll interval 5-300 saniye arasında olmalı";
-
-		setErrors(newErrors);
-		return Object.keys(newErrors).length === 0;
+		setErrors(e);
+		return Object.keys(e).length === 0;
 	};
 
 	const handleCreate = () => {
 		if (!validate()) return;
-
 		createService(
 			{
 				name: name.trim(),
@@ -78,7 +66,7 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 			{
 				onSuccess: (data: unknown) => {
 					const svc = data as { id?: string };
-					setCreatedServiceId(svc?.id || "");
+					setCreatedServiceId(svc?.id ?? "");
 					setStep("success");
 				},
 			},
@@ -89,14 +77,9 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 		setOpen(false);
 		setTimeout(() => {
 			setStep("form");
-			setName("");
-			setHost("");
-			setPort(8080);
-			setHealthEndpoint("/health");
-			setPollInterval(10);
-			setErrors({});
-			setCreatedServiceId("");
-			setCopied(false);
+			setName(""); setHost(""); setPort(8080);
+			setHealthEndpoint("/health"); setPollInterval(10);
+			setErrors({}); setCreatedServiceId(""); setCopied(false);
 		}, 200);
 	};
 
@@ -113,264 +96,118 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 	};
 
 	return (
-		<Dialog
-			open={open}
-			onOpenChange={(v) => (v ? setOpen(true) : handleClose())}
-		>
+		<Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : handleClose())}>
 			<DialogTrigger asChild>
-				{trigger || (
+				{trigger ?? (
 					<Button
 						size="sm"
-						className="h-7 px-3 text-xs text-white rounded transition-all"
-						style={{
-							background: "var(--gradient-btn-primary)",
-							boxShadow: "var(--btn-shadow)",
-						}}
+						className="h-8 px-3 text-xs text-white"
+						style={{ background: "var(--gradient-btn-primary)" }}
 					>
-						<Plus className="w-3 h-3 mr-1" /> Servis Ekle
+						<Plus className="w-3.5 h-3.5 mr-1.5" />
+						Servis Ekle
 					</Button>
 				)}
 			</DialogTrigger>
 
 			<DialogContent
-				className="sm:max-w-125 rounded"
+				className="sm:max-w-md"
 				style={{
-					background: "var(--surface-card)",
-					border: "2px solid var(--border-default)",
-					boxShadow: "var(--panel-shadow)",
+					background: "var(--surface-raised)",
+					border: "1px solid var(--border-default)",
+					boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
 				}}
 			>
 				{step === "form" ? (
 					<>
 						<DialogHeader>
-							<DialogTitle style={{ color: "var(--text-link)" }}>
+							<DialogTitle style={{ color: "var(--text-primary)" }}>
 								Yeni Servis
 							</DialogTitle>
 							<DialogDescription style={{ color: "var(--text-muted)" }}>
-								İzlemek için yeni bir mikroservis ekleyin
+								İzlemek için bir mikroservis ekleyin
 							</DialogDescription>
 						</DialogHeader>
 
-						<div className="grid gap-4 py-4">
-							{/* Name */}
-							<div className="grid gap-1.5">
-								<Label
-									htmlFor="svc-name"
-									className="text-xs"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									Servis Adı *
-								</Label>
+						<div className="space-y-4 py-2">
+							<Field
+								id="svc-name"
+								label="Servis Adı"
+								error={errors.name}
+								required
+							>
 								<Input
 									id="svc-name"
 									placeholder="payment-service"
 									value={name}
-									onChange={(e) => {
-										setName(e.target.value);
-										setErrors((p) => ({ ...p, name: "" }));
-									}}
-									className="rounded"
-									style={{
-										background: "var(--input-bg)",
-										borderColor: errors.name
-											? "var(--status-down)"
-											: "var(--input-border)",
-										color: "var(--text-secondary)",
-									}}
+									onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: "" })); }}
 									aria-invalid={!!errors.name}
+									style={{ borderColor: errors.name ? "var(--status-down)" : undefined }}
 								/>
-								{errors.name && (
-									<p
-										className="text-[10px]"
-										style={{ color: "var(--status-down-text)" }}
-									>
-										{errors.name}
-									</p>
-								)}
-							</div>
+							</Field>
 
-							{/* Host */}
-							<div className="grid gap-1.5">
-								<Label
-									htmlFor="svc-host"
-									className="text-xs"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									Host / IP *
-								</Label>
+							<Field id="svc-host" label="Host / IP" error={errors.host} required>
 								<Input
 									id="svc-host"
 									placeholder="192.168.1.42"
 									value={host}
-									onChange={(e) => {
-										setHost(e.target.value);
-										setErrors((p) => ({ ...p, host: "" }));
-									}}
-									className="rounded"
-									style={{
-										background: "var(--input-bg)",
-										borderColor: errors.host
-											? "var(--status-down)"
-											: "var(--input-border)",
-										color: "var(--text-secondary)",
-									}}
+									onChange={(e) => { setHost(e.target.value); setErrors((p) => ({ ...p, host: "" })); }}
 									aria-invalid={!!errors.host}
+									style={{ borderColor: errors.host ? "var(--status-down)" : undefined }}
 								/>
-								{errors.host && (
-									<p
-										className="text-[10px]"
-										style={{ color: "var(--status-down-text)" }}
-									>
-										{errors.host}
-									</p>
-								)}
-							</div>
+							</Field>
 
-							{/* Port + Endpoint */}
-							<div className="grid grid-cols-2 gap-4">
-								<div className="grid gap-1.5">
-									<Label
-										htmlFor="svc-port"
-										className="text-xs"
-										style={{ color: "var(--text-secondary)" }}
-									>
-										Port *
-									</Label>
+							<div className="grid grid-cols-2 gap-3">
+								<Field id="svc-port" label="Port" error={errors.port} required>
 									<Input
 										id="svc-port"
 										type="number"
 										placeholder="8080"
-										min={1}
-										max={65535}
+										min={1} max={65535}
 										value={port}
-										onChange={(e) => {
-											setPort(parseInt(e.target.value, 10) || 0);
-											setErrors((p) => ({ ...p, port: "" }));
-										}}
-										className="rounded"
-										style={{
-											background: "var(--input-bg)",
-											borderColor: errors.port
-												? "var(--status-down)"
-												: "var(--input-border)",
-											color: "var(--text-secondary)",
-										}}
+										onChange={(e) => { setPort(parseInt(e.target.value, 10) || 0); setErrors((p) => ({ ...p, port: "" })); }}
 										aria-invalid={!!errors.port}
+										style={{ borderColor: errors.port ? "var(--status-down)" : undefined }}
 									/>
-									{errors.port && (
-										<p
-											className="text-[10px]"
-											style={{ color: "var(--status-down-text)" }}
-										>
-											{errors.port}
-										</p>
-									)}
-								</div>
-								<div className="grid gap-1.5">
-									<Label
-										htmlFor="svc-endpoint"
-										className="text-xs"
-										style={{ color: "var(--text-secondary)" }}
-									>
-										Health Endpoint *
-									</Label>
+								</Field>
+								<Field id="svc-endpoint" label="Health Endpoint" error={errors.healthEndpoint} required>
 									<Input
 										id="svc-endpoint"
 										placeholder="/health"
 										value={healthEndpoint}
-										onChange={(e) => {
-											setHealthEndpoint(e.target.value);
-											setErrors((p) => ({ ...p, healthEndpoint: "" }));
-										}}
-										className="rounded"
-										style={{
-											background: "var(--input-bg)",
-											borderColor: errors.healthEndpoint
-												? "var(--status-down)"
-												: "var(--input-border)",
-											color: "var(--text-secondary)",
-										}}
+										onChange={(e) => { setHealthEndpoint(e.target.value); setErrors((p) => ({ ...p, healthEndpoint: "" })); }}
 										aria-invalid={!!errors.healthEndpoint}
+										style={{ borderColor: errors.healthEndpoint ? "var(--status-down)" : undefined }}
 									/>
-									{errors.healthEndpoint && (
-										<p
-											className="text-[10px]"
-											style={{ color: "var(--status-down-text)" }}
-										>
-											{errors.healthEndpoint}
-										</p>
-									)}
-								</div>
+								</Field>
 							</div>
 
-							{/* Poll Interval */}
-							<div className="grid gap-1.5">
-								<Label
-									htmlFor="svc-poll"
-									className="text-xs"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									Poll Interval (saniye)
-								</Label>
-								<div className="flex items-center gap-3">
+							<Field id="svc-poll" label="Poll Interval (saniye)" error={errors.pollInterval}>
+								<div className="flex items-center gap-2">
 									<Input
 										id="svc-poll"
 										type="number"
-										min={5}
-										max={300}
+										min={5} max={300}
 										value={pollInterval}
-										onChange={(e) => {
-											setPollInterval(parseInt(e.target.value, 10) || 10);
-											setErrors((p) => ({ ...p, pollInterval: "" }));
-										}}
-										className="rounded w-24"
-										style={{
-											background: "var(--input-bg)",
-											borderColor: errors.pollInterval
-												? "var(--status-down)"
-												: "var(--input-border)",
-											color: "var(--text-secondary)",
-										}}
-										aria-invalid={!!errors.pollInterval}
+										onChange={(e) => { setPollInterval(parseInt(e.target.value, 10) || 10); setErrors((p) => ({ ...p, pollInterval: "" })); }}
+										className="w-24"
+										style={{ borderColor: errors.pollInterval ? "var(--status-down)" : undefined }}
 									/>
-									<span
-										className="text-[10px]"
-										style={{ color: "var(--text-faint)" }}
-									>
-										Min 5s, Maks 300s
+									<span className="text-xs" style={{ color: "var(--text-faint)" }}>
+										5–300 saniye
 									</span>
 								</div>
-								{errors.pollInterval && (
-									<p
-										className="text-[10px]"
-										style={{ color: "var(--status-down-text)" }}
-									>
-										{errors.pollInterval}
-									</p>
-								)}
-							</div>
+							</Field>
 						</div>
 
 						<DialogFooter>
-							<Button
-								variant="outline"
-								onClick={handleClose}
-								className="rounded"
-								style={{
-									borderColor: "var(--border-default)",
-									color: "var(--text-secondary)",
-									boxShadow: "var(--btn-shadow)",
-								}}
-							>
+							<Button variant="outline" onClick={handleClose} style={{ color: "var(--text-muted)" }}>
 								İptal
 							</Button>
 							<Button
 								onClick={handleCreate}
-								className="text-white rounded"
-								style={{
-									background: "var(--gradient-btn-primary)",
-									boxShadow: "var(--btn-shadow)",
-								}}
+								className="text-white"
+								style={{ background: "var(--gradient-btn-primary)" }}
 							>
 								Oluştur
 							</Button>
@@ -383,23 +220,34 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 								className="flex items-center gap-2"
 								style={{ color: "var(--status-up-text)" }}
 							>
-								<CheckCircle2 className="w-5 h-5" /> Servis Oluşturuldu
+								<CheckCircle2 className="w-5 h-5" />
+								Servis Oluşturuldu
 							</DialogTitle>
 							<DialogDescription style={{ color: "var(--text-muted)" }}>
-								Agent'ı hedef sunucuya kurmak için aşağıdaki komutu çalıştırın
+								Agent'ı hedef sunucuya kurmak için bu komutu çalıştırın
 							</DialogDescription>
 						</DialogHeader>
 
-						<div className="space-y-4 py-4">
-							{/* Agent Install Command */}
+						<div className="space-y-3 py-2">
+							{/* Agent command */}
 							<div className="relative">
-								<pre
-									className="rounded p-4 text-xs font-(--font-mono) overflow-x-auto whitespace-pre-wrap break-all"
+								<div
+									className="flex items-center gap-2 px-3 py-2 mb-2 rounded-t-lg"
 									style={{
 										background: "var(--surface-sunken)",
-										border: "2px solid var(--border-default)",
+										borderBottom: "1px solid var(--border-subtle)",
+									}}
+								>
+									<Terminal className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+									<span className="text-xs font-mono" style={{ color: "var(--text-faint)" }}>
+										bash
+									</span>
+								</div>
+								<pre
+									className="px-4 pb-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all rounded-b-lg"
+									style={{
+										background: "var(--surface-sunken)",
 										color: "var(--text-secondary)",
-										boxShadow: "var(--card-shadow)",
 									}}
 								>
 									{agentCmd}
@@ -407,42 +255,33 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 								<button
 									type="button"
 									onClick={handleCopy}
-									className="absolute top-2 right-2 p-1.5 rounded transition-all"
+									className="absolute top-2 right-2 p-1.5 rounded-md transition-colors"
 									style={{
 										background: "var(--surface-raised)",
-										border: "2px solid var(--border-default)",
-										boxShadow: "1px 1px 0px var(--border-default)",
+										border: "1px solid var(--border-default)",
+										color: copied ? "var(--status-up)" : "var(--text-muted)",
 									}}
 									aria-label="Komutu kopyala"
 								>
 									{copied ? (
-										<CheckCircle2
-											className="w-3.5 h-3.5"
-											style={{ color: "var(--status-up)" }}
-										/>
+										<CheckCircle2 className="w-3.5 h-3.5" />
 									) : (
-										<Copy
-											className="w-3.5 h-3.5"
-											style={{ color: "var(--text-muted)" }}
-										/>
+										<Copy className="w-3.5 h-3.5" />
 									)}
 								</button>
 							</div>
 
+							{/* Warning */}
 							<div
-								className="p-3 rounded"
+								className="px-3 py-2.5 rounded-lg"
 								style={{
 									background: "var(--status-warn-subtle)",
-									border: "2px solid var(--status-warn-border)",
+									border: "1px solid var(--status-warn-border)",
 								}}
 							>
-								<p
-									className="text-[11px]"
-									style={{ color: "var(--status-warn-text)" }}
-								>
-									⚠️ <strong>Önemli:</strong> Agent token'ınızı almak için
-									Ayarlar → Agent Token bölümüne gidin ve
-									&lt;YOUR_AGENT_TOKEN&gt; kısmını gerçek token ile değiştirin.
+								<p className="text-xs" style={{ color: "var(--status-warn-text)" }}>
+									<strong>Önemli:</strong> Agent token'ınızı Ayarlar → Agent Token
+									bölümünden alın ve &lt;YOUR_AGENT_TOKEN&gt; kısmını değiştirin.
 								</p>
 							</div>
 						</div>
@@ -450,11 +289,8 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 						<DialogFooter>
 							<Button
 								onClick={handleClose}
-								className="text-white rounded"
-								style={{
-									background: "var(--gradient-btn-primary)",
-									boxShadow: "var(--btn-shadow)",
-								}}
+								className="text-white"
+								style={{ background: "var(--gradient-btn-primary)" }}
 							>
 								Tamam
 							</Button>
@@ -463,5 +299,40 @@ export function AddServiceDialog({ trigger }: AddServiceDialogProps) {
 				)}
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+function Field({
+	id,
+	label,
+	error,
+	required,
+	children,
+}: {
+	id: string;
+	label: string;
+	error?: string;
+	required?: boolean;
+	children: React.ReactNode;
+}) {
+	return (
+		<div className="space-y-1.5">
+			<Label
+				htmlFor={id}
+				className="text-xs font-medium flex items-center gap-1"
+				style={{ color: "var(--text-secondary)" }}
+			>
+				{label}
+				{required && (
+					<span style={{ color: "var(--status-down)" }}>*</span>
+				)}
+			</Label>
+			{children}
+			{error && (
+				<p className="text-xs" style={{ color: "var(--status-down-text)" }}>
+					{error}
+				</p>
+			)}
+		</div>
 	);
 }
