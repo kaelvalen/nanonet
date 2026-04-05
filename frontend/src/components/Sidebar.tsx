@@ -170,7 +170,7 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
 			{/* Navigation */}
 			<nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
 				{navSections.map((section, si) => (
-					<div key={si} className="space-y-0.5">
+					<div key={section.label ?? `section-${si}`} className="space-y-0.5">
 						{/* Section label */}
 						{section.label && !collapsed && (
 							<p

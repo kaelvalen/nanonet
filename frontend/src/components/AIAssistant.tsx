@@ -20,9 +20,10 @@ export function AIAssistant() {
 	const [isMinimized, setIsMinimized] = useState(false);
 	const [message, setMessage] = useState("");
 	const [chatMessages, setChatMessages] = useState<
-		{ role: "ai" | "user"; text: string; time: string }[]
+		{ id: string; role: "ai" | "user"; text: string; time: string }[]
 	>([
 		{
+			id: "init",
 			role: "ai",
 			text: "Merhaba! Sistem analizi yapmak, anomali tespit etmek veya servisleriniz hakkında bilgi almak için bana soru sorabilirsiniz.",
 			time: "Şimdi",
@@ -63,7 +64,7 @@ export function AIAssistant() {
 		setMessage("");
 		setChatMessages((prev) => [
 			...prev,
-			{ role: "user", text: userMsg, time: now() },
+			{ id: `user-${Date.now()}`, role: "user", text: userMsg, time: now() },
 		]);
 		setIsAnalyzing(true);
 		try {
@@ -78,12 +79,13 @@ export function AIAssistant() {
 			);
 			setChatMessages((prev) => [
 				...prev,
-				{ role: "ai", text: result.reply, time: now() },
+				{ id: `ai-${Date.now()}`, role: "ai", text: result.reply, time: now() },
 			]);
 		} catch {
 			setChatMessages((prev) => [
 				...prev,
 				{
+					id: `ai-err-${Date.now()}`,
 					role: "ai",
 					text: "AI asistanı geçici olarak kullanılamıyor.",
 					time: now(),
@@ -194,9 +196,9 @@ export function AIAssistant() {
 							<>
 								{/* Messages */}
 								<div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-									{chatMessages.map((msg, i) => (
+									{chatMessages.map((msg) => (
 										<div
-											key={i}
+											key={msg.id}
 											className={`flex gap-2 ${msg.role === "user" ? "justify-end" : ""}`}
 										>
 											{msg.role === "ai" && (

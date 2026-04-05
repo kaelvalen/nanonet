@@ -402,7 +402,12 @@ export function AIInsightsPage() {
 									{liveResult.confidence !== undefined && (
 										<div className="flex items-center gap-2 shrink-0">
 											<div className="relative">
-												<svg width="52" height="52" className="-rotate-90">
+												<svg
+													width="52"
+													height="52"
+													className="-rotate-90"
+													aria-hidden="true"
+												>
 													<circle
 														cx="26"
 														cy="26"

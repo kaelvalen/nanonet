@@ -182,7 +182,7 @@ export function DashboardPage() {
 	const healthPercent =
 		totalServices > 0 ? Math.round((onlineServices / totalServices) * 100) : 0;
 
-	const formatLatency = (v: number | undefined) => {
+	const formatLatency = (v: number | null | undefined) => {
 		if (!v || v <= 0) return "—";
 		if (v < 1) return "< 1 ms";
 		return `${v.toFixed(0)} ms`;
@@ -353,9 +353,9 @@ export function DashboardPage() {
 					{/* Stat cards */}
 					<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
 						{isLoading ? (
-							Array.from({ length: 4 }).map((_, i) => (
+							(["latency", "p95", "error", "cpu"] as const).map((sk) => (
 								<Card
-									key={i}
+									key={`skeleton-stat-${sk}`}
 									className="px-4 py-3.5 animate-pulse"
 									style={{
 										background: "var(--surface-card)",
