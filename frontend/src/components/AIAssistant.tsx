@@ -102,11 +102,13 @@ function ReportView({
 	const scoreConfig = SCORE_CONFIG[report.system_score] ?? SCORE_CONFIG["DİKKAT"];
 	const [isExporting, setIsExporting] = useState(false);
 
-	const handleExport = () => {
+	const handleExport = async () => {
 		if (isExporting) return;
 		setIsExporting(true);
 		try {
-			downloadReportPDF(report);
+			await downloadReportPDF(report);
+		} catch (err) {
+			console.error("PDF export hatası:", err);
 		} finally {
 			setIsExporting(false);
 		}

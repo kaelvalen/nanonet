@@ -1,9 +1,10 @@
-import jsPDF from "jspdf";
+import { PDFDocument, PageSizes, StandardFonts, rgb } from "pdf-lib";
 import type { ReportResult } from "@/api/metrics";
 
-function tr(s: string): string {
-	if (!s) return "";
-	return s
+// pdf-lib StandardFonts Helvetica WinAnsi encoding — Türkçe özel karakterleri ASCII'ye map et
+function enc(v: string | undefined | null): string {
+	if (!v) return "";
+	return v
 		.replace(/ş/g, "s").replace(/Ş/g, "S")
 		.replace(/ğ/g, "g").replace(/Ğ/g, "G")
 		.replace(/ü/g, "u").replace(/Ü/g, "U")
@@ -12,343 +13,416 @@ function tr(s: string): string {
 		.replace(/ı/g, "i").replace(/İ/g, "I");
 }
 
-const M = 20;
-const PW = 210;
-const CW = PW - M * 2;
-const LINE = 4.8;
+// ── Renk yardımcıları ────────────────────────────────────────────
+function hex(h: string) {
+	const r = parseInt(h.slice(1, 3), 16) / 255;
+	const g = parseInt(h.slice(3, 5), 16) / 255;
+	const b = parseInt(h.slice(5, 7), 16) / 255;
+	return rgb(r, g, b);
+}
 
-const SCORE_RGB: Record<string, [number, number, number]> = {
-	SAGLIKLI: [22, 163, 74],
-	DIKKAT:   [217, 119, 6],
-	KRITIK:   [220, 38, 38],
+const C = {
+	dark:      hex("#0f172a"),
+	indigo:    hex("#4f46e5"),
+	white:     hex("#ffffff"),
+	gray900:   hex("#111827"),
+	gray600:   hex("#4b5563"),
+	gray400:   hex("#9ca3af"),
+	gray100:   hex("#f3f4f6"),
+	gray50:    hex("#f9fafb"),
+	green700:  hex("#15803d"),
+	green100:  hex("#dcfce7"),
+	red700:    hex("#b91c1c"),
+	red100:    hex("#fee2e2"),
+	amber700:  hex("#b45309"),
+	amber100:  hex("#fef3c7"),
+	violet700: hex("#6d28d9"),
+	violet100: hex("#ede9fe"),
+	indigoBg:  hex("#eef2ff"),
+	indigoBorder: hex("#c7d2fe"),
 };
 
-const SCORE_BG_RGB: Record<string, [number, number, number]> = {
-	SAGLIKLI: [240, 253, 244],
-	DIKKAT:   [255, 251, 235],
-	KRITIK:   [254, 242, 242],
+const CAT_COLORS: Record<string, { fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }> = {
+	"tamamlandi":       { fg: C.green700,  bg: C.green100  },
+	"mudahale_gerekli": { fg: C.red700,    bg: C.red100    },
+	"izleniyor":        { fg: C.amber700,  bg: C.amber100  },
+	"trend":            { fg: C.violet700, bg: C.violet100 },
 };
-
-const CAT_RGB: Record<string, [number, number, number]> = {
-	tamamlandi:       [22, 163, 74],
-	mudahale_gerekli: [220, 38, 38],
-	izleniyor:        [217, 119, 6],
-	trend:            [124, 58, 237],
-};
-
-const CAT_BG_RGB: Record<string, [number, number, number]> = {
-	tamamlandi:       [240, 253, 244],
-	mudahale_gerekli: [254, 242, 242],
-	izleniyor:        [255, 251, 235],
-	trend:            [245, 243, 255],
-};
-
 const CAT_LABEL: Record<string, string> = {
-	tamamlandi:       "TAMAMLANDI",
-	mudahale_gerekli: "MUDAHALE GEREKLI",
-	izleniyor:        "IZLENIYOR",
-	trend:            "TREND",
+	"tamamlandi":       "Tamamlandı",
+	"mudahale_gerekli": "Müdahale Gerekli",
+	"izleniyor":        "İzleniyor",
+	"trend":            "Trend",
 };
-
-const PRI_RGB: Record<string, [number, number, number]> = {
-	high:   [220, 38, 38],
-	medium: [217, 119, 6],
-	low:    [22, 163, 74],
+const PRI_COLORS: Record<string, { fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }> = {
+	high:   { fg: C.red700,   bg: C.red100   },
+	medium: { fg: C.amber700, bg: C.amber100 },
+	low:    { fg: C.green700, bg: C.green100 },
 };
-
-const PRI_BG_RGB: Record<string, [number, number, number]> = {
-	high:   [254, 242, 242],
-	medium: [255, 251, 235],
-	low:    [240, 253, 244],
-};
-
 const PRI_LABEL: Record<string, string> = {
-	high:   "YUKSEK",
-	medium: "ORTA",
-	low:    "DUSUK",
+	high: "Yüksek", medium: "Orta", low: "Düşük",
+};
+const SCORE_COLORS: Record<string, { fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }> = {
+	"SAĞLIKLI": { fg: C.green700,  bg: C.green100  },
+	"DİKKAT":   { fg: C.amber700,  bg: C.amber100  },
+	"KRİTİK":   { fg: C.red700,    bg: C.red100    },
 };
 
-function setFont(pdf: jsPDF, bold: boolean) {
-	pdf.setFont("helvetica", bold ? "bold" : "normal");
-}
+// ── Layout sabitleri (pt) ────────────────────────────────────────
+const PW = PageSizes.A4[0];   // 595.28
+const PH = PageSizes.A4[1];   // 841.89
+const ML = 40;
+const MR = 40;
+const CW = PW - ML - MR;
+const LH = 14;
 
-function setRGB(pdf: jsPDF, rgb: [number, number, number]) {
-	pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
-}
-
-function pill(
-pdf: jsPDF,
-text: string,
-x: number,
-y: number,
-fg: [number, number, number],
-bg: [number, number, number],
+// ── pdf-lib yardımcıları ─────────────────────────────────────────
+function drawRect(
+page: ReturnType<PDFDocument["addPage"]>,
+	x: number, y: number, w: number, h: number,
+	fillColor?: ReturnType<typeof rgb>,
+	borderColor?: ReturnType<typeof rgb>,
+	borderWidth = 1,
 ) {
-	pdf.setFontSize(7);
-	setFont(pdf, true);
-	const tw = pdf.getTextWidth(text);
-	const ph = 4.5;
-	const pw = tw + 6;
-	pdf.setFillColor(bg[0], bg[1], bg[2]);
-	pdf.roundedRect(x, y - 3.2, pw, ph, 1, 1, "F");
-	setRGB(pdf, fg);
-	pdf.text(text, x + 3, y);
-	return pw;
+	if (fillColor) page.drawRectangle({ x, y, width: w, height: h, color: fillColor });
+	if (borderColor) page.drawRectangle({ x, y, width: w, height: h, borderColor, borderWidth, opacity: 0, borderOpacity: 1 });
 }
 
-function multiLine(
-pdf: jsPDF,
+function drawText(
+page: ReturnType<PDFDocument["addPage"]>,
+	text: string,
+	x: number,
+	y: number,
+	font: import("pdf-lib").PDFFont,
+	size: number,
+	color: ReturnType<typeof rgb>,
+) {
+	page.drawText(text, { x, y, font, size, color });
+}
+
+function measureText(text: string, font: import("pdf-lib").PDFFont, size: number): number {
+	return font.widthOfTextAtSize(text, size);
+}
+
+// Metni satırlara böl
+function splitLines(
 text: string,
-x: number,
-y: number,
+font: import("pdf-lib").PDFFont,
+size: number,
 maxW: number,
-): number {
-	const lines = pdf.splitTextToSize(text, maxW);
-	pdf.text(lines, x, y);
-	return y + lines.length * LINE;
-}
-
-function checkPage(pdf: jsPDF, y: number, need = 14): number {
-	if (y + need > 278) {
-		pdf.addPage();
-		return 22;
+): string[] {
+	const words = text.split(" ");
+	const lines: string[] = [];
+	let cur = "";
+	for (const w of words) {
+		const test = cur ? cur + " " + w : w;
+		if (font.widthOfTextAtSize(test, size) <= maxW) {
+			cur = test;
+		} else {
+			if (cur) lines.push(cur);
+			cur = w;
+		}
 	}
-	return y;
+	if (cur) lines.push(cur);
+	return lines.length ? lines : [""];
 }
 
-function divider(pdf: jsPDF, y: number): number {
-	pdf.setDrawColor(229, 231, 235);
-	pdf.line(M, y, M + CW, y);
-	return y + 5;
+// Metin bloğu çiz, yeni y döndür (pdf-lib y yukarıdan değil aşağıdan)
+function drawWrapped(
+page: ReturnType<PDFDocument["addPage"]>,
+	text: string,
+	x: number,
+	y: number,             // başlangıç baseline (yukarı = büyük y)
+	font: import("pdf-lib").PDFFont,
+	size: number,
+	color: ReturnType<typeof rgb>,
+	maxW: number,
+	lineH = LH,
+): number {
+	const lines = splitLines(text, font, size, maxW);
+	let cy = y;
+	for (const line of lines) {
+		drawText(page, line, x, cy, font, size, color);
+		cy -= lineH;
+	}
+	return cy;
 }
 
-function sectionHeader(pdf: jsPDF, y: number, label: string): number {
-	y = checkPage(pdf, y, 14);
-	pdf.setFontSize(7.5);
-	setFont(pdf, true);
-	pdf.setTextColor(156, 163, 175);
-	pdf.text(label, M, y);
-	y += 1.5;
-	pdf.setDrawColor(243, 244, 246);
-	pdf.line(M, y, M + CW, y);
-	return y + 6;
-}
+// ── Ana export ───────────────────────────────────────────────────
+export async function downloadReportPDF(report: ReportResult): Promise<void> {
+	const pdfDoc = await PDFDocument.create();
+	pdfDoc.setTitle(`NanoNet - ${report.period_label}`);
+	pdfDoc.setAuthor("NanoNet");
 
-export function downloadReportPDF(report: ReportResult): void {
-	const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-	let y = 0;
+	// Font — pdf-lib'in built-in Helvetica'sı tüm Latin karakterleri destekler
+	// Türkçe için WinAnsiEncoding kapsamı yeterlidir (ş,ğ,ü,ç,ö,ı dahil)
+	const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+	const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-	// ── HEADER BAND ─────────────────────────────────────────────
-	const scoreKey = tr(report.system_score).toUpperCase();
-	const scoreRGB = SCORE_RGB[scoreKey] ?? SCORE_RGB["DIKKAT"];
-	const scoreBgRGB = SCORE_BG_RGB[scoreKey] ?? SCORE_BG_RGB["DIKKAT"];
+	const now = new Date().toLocaleDateString("tr-TR", {
+day: "2-digit", month: "long", year: "numeric",
+});
 
-	pdf.setFillColor(scoreRGB[0], scoreRGB[1], scoreRGB[2]);
-	pdf.rect(0, 0, PW, 12, "F");
-	pdf.setFontSize(7.5);
-	setFont(pdf, true);
-	pdf.setTextColor(255, 255, 255);
-	pdf.text("NANONET  /  OPERASYONEL RAPOR", M, 7.5);
+	// Render state
+	let page = pdfDoc.addPage(PageSizes.A4);
+	let y = PH - 0; // yukarıdan başlar
 
-	const scoreLabel = tr(report.system_score).toUpperCase();
-	const scoreLabelW = pdf.getTextWidth(scoreLabel) + 8;
-	pdf.setFillColor(255, 255, 255, 0.25);
-	pdf.roundedRect(PW - M - scoreLabelW, 4, scoreLabelW, 5.5, 1, 1, "F");
-	setRGB(pdf, scoreRGB);
-	pdf.text(scoreLabel, PW - M - scoreLabelW / 2, 7.5, { align: "center" });
-
-	y = 20;
-
-	// ── HEADLINE ────────────────────────────────────────────────
-	pdf.setFontSize(15);
-	setFont(pdf, true);
-	pdf.setTextColor(17, 24, 39);
-	y = multiLine(pdf, tr(report.headline), M, y, CW);
-	y += 3;
-
-	// Stats row
-	pdf.setFontSize(8);
-	setFont(pdf, true);
-	const now = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-
-	let sx = M;
-	// critical chip
-	pdf.setFillColor(254, 242, 242);
-	pdf.roundedRect(sx, y - 3.5, 32, 5.5, 1.5, 1.5, "F");
-	pdf.setTextColor(220, 38, 38);
-	pdf.text(`${report.critical_events} kritik`, sx + 3, y);
-	sx += 35;
-
-	// resolved chip
-	pdf.setFillColor(240, 253, 244);
-	pdf.roundedRect(sx, y - 3.5, 32, 5.5, 1.5, 1.5, "F");
-	pdf.setTextColor(22, 163, 74);
-	pdf.text(`${report.resolved_events} cozuldu`, sx + 3, y);
-	sx += 35;
-
-	// period chip
-	pdf.setFillColor(249, 250, 251);
-	pdf.roundedRect(sx, y - 3.5, 38, 5.5, 1.5, 1.5, "F");
-	pdf.setTextColor(55, 65, 81);
-	pdf.text(tr(report.period_label), sx + 3, y);
-
-	y += 10;
-	pdf.setDrawColor(229, 231, 235);
-	pdf.line(M, y, M + CW, y);
-	y += 8;
-
-	// ── EVENTS ──────────────────────────────────────────────────
-	if (report.events.length > 0) {
-		y = sectionHeader(pdf, y, "DONEM OLAYLARI");
-
-		for (const ev of report.events) {
-			// estimate card height
-			const obsLines = pdf.splitTextToSize(tr(ev.observation), CW - 8).length;
-			const needH = 10 + obsLines * LINE + 4 * LINE + 12;
-			y = checkPage(pdf, y, needH);
-
-			const cardX = M;
-			const cardStartY = y - 2;
-
-			// category key normalise
-			const catRaw = tr(ev.category).toLowerCase().replace(/\s/g, "_");
-			const catRGB = CAT_RGB[catRaw] ?? [107, 114, 128];
-			const catBgRGB = CAT_BG_RGB[catRaw] ?? [249, 250, 251];
-			const catLabel = CAT_LABEL[catRaw] ?? catRaw.toUpperCase();
-
-			// card head background
-			pdf.setFillColor(249, 250, 251);
-			pdf.roundedRect(cardX, cardStartY, CW, 8, 2, 2, "F");
-			pdf.setDrawColor(229, 231, 235);
-			pdf.roundedRect(cardX, cardStartY, CW, 8, 2, 2, "S");
-
-			// category pill
-			y = cardStartY + 5.5;
-			const pillW = pill(pdf, catLabel, cardX + 4, y, catRGB, catBgRGB);
-
-			// service + time (right)
-			pdf.setFontSize(7.5);
-			setFont(pdf, true);
-			pdf.setTextColor(107, 114, 128);
-			const metaText = `${tr(ev.service)}  /  ${tr(ev.time)}`;
-			pdf.text(metaText, cardX + CW - 4, y, { align: "right" });
-
-			y = cardStartY + 11;
-
-			// card body border
-			const bodyStartY = y - 1;
-
-			// observation
-			pdf.setFontSize(10);
-			setFont(pdf, true);
-			pdf.setTextColor(17, 24, 39);
-			y = multiLine(pdf, tr(ev.observation), cardX + 4, y, CW - 8);
-			y += 2;
-
-			// detail rows
-			const rows: Array<{ label: string; value: string; green?: boolean }> = [
-				{ label: "Neden:", value: tr(ev.root_cause) },
-			];
-			if (ev.impact) rows.push({ label: "Etki:", value: tr(ev.impact) });
-			if (ev.action) rows.push({ label: "Aksiyon:", value: tr(ev.action) });
-			if (ev.outcome) rows.push({ label: "Sonuc:", value: tr(ev.outcome), green: true });
-
-			for (const row of rows) {
-				y = checkPage(pdf, y, 8);
-				pdf.setFontSize(8);
-				setFont(pdf, true);
-				pdf.setTextColor(107, 114, 128);
-				pdf.text(row.label, cardX + 4, y);
-
-				setFont(pdf, false);
-				pdf.setTextColor(row.green ? 22 : 55, row.green ? 163 : 65, row.green ? 74 : 81);
-				y = multiLine(pdf, row.value, cardX + 22, y, CW - 26);
-			}
-
-			// draw card body border now we know height
-			pdf.setDrawColor(229, 231, 235);
-			pdf.line(cardX, bodyStartY, cardX, y + 2);
-			pdf.line(cardX + CW, bodyStartY, cardX + CW, y + 2);
-			pdf.line(cardX, y + 2, cardX + CW, y + 2);
-
-			y += 7;
+	function newPageIfNeeded(need: number): void {
+		if (y - need < 50) {
+			page = pdfDoc.addPage(PageSizes.A4);
+			y = PH - drawFooter(page) - 10;
 		}
 	}
 
-	// ── ACTIONS ─────────────────────────────────────────────────
+	function drawFooter(p: ReturnType<PDFDocument["addPage"]>): number {
+		const fh = 24;
+		drawRect(p, 0, 0, PW, fh, C.dark);
+		const left = `NanoNet  ·  ${enc(report.period_label)}  ·  ${now}`;
+		drawText(p, left, ML, 8, fontRegular, 7, C.gray400);
+		return fh;
+	}
+
+	// ═══════════════════════════════════════════════════════════
+	// HEADER BAND
+	// ═══════════════════════════════════════════════════════════
+	const HEADER_H = 52;
+	drawRect(page, 0, PH - HEADER_H, PW, HEADER_H, C.dark);
+
+	// Logo
+	const logoX = ML;
+	const logoSize = 28;
+	try {
+		const logoRes = await fetch("/logo.png");
+		const logoBuf = await logoRes.arrayBuffer();
+		const logoImg = await pdfDoc.embedPng(logoBuf);
+		page.drawImage(logoImg, { x: logoX, y: PH - HEADER_H + 12, width: logoSize, height: logoSize });
+	} catch {
+		// Logo yüklenemezse indigo kare
+		drawRect(page, logoX, PH - HEADER_H + 12, logoSize, logoSize, C.indigo);
+		drawText(page, "N", logoX + 8, PH - HEADER_H + 22, fontBold, 12, C.white);
+	}
+
+	// Brand
+	drawText(page, "NanoNet", ML + logoSize + 8, PH - HEADER_H + 32, fontBold, 11, C.white);
+	drawText(page, `Operasyonel Rapor  /  ${enc(report.period_label)}  /  ${now}`,
+		ML + logoSize + 8, PH - HEADER_H + 18, fontRegular, 7.5, C.gray400);
+
+	// Score badge
+	const scoreColors = SCORE_COLORS[report.system_score] ?? SCORE_COLORS["DIKKAT"];
+	const scoreText = enc(report.system_score);
+	const scoreW = measureText(scoreText, fontBold, 8) + 16;
+	const scoreBadgeX = PW - MR - scoreW;
+	const scoreBadgeY = PH - HEADER_H + 18;
+	drawRect(page, scoreBadgeX, scoreBadgeY, scoreW, 16, scoreColors.bg);
+	drawText(page, scoreText, scoreBadgeX + 8, scoreBadgeY + 5, fontBold, 8, scoreColors.fg);
+
+	y = PH - HEADER_H - 28;
+
+	// ═══════════════════════════════════════════════════════════
+	// HEADLINE
+	// ═══════════════════════════════════════════════════════════
+	const headLines = splitLines(enc(report.headline), fontBold, 14, CW);
+	for (const line of headLines) {
+		newPageIfNeeded(18);
+		drawText(page, line, ML, y, fontBold, 14, C.gray900);
+		y -= 18;
+	}
+	y -= 6;
+
+	// Stat chips
+	const chips = [
+		{ text: `${report.critical_events} kritik olay`, fg: C.red700,   bg: C.red100   },
+		{ text: `${report.resolved_events} cozuldu`,      fg: C.green700, bg: C.green100 },
+		{ text: enc(report.period_label),                 fg: C.gray600,  bg: C.gray100  },
+	];
+	let cx = ML;
+	for (const chip of chips) {
+		const tw = measureText(chip.text, fontBold, 8);
+		const cw2 = tw + 16;
+		drawRect(page, cx, y - 4, cw2, 14, chip.bg);
+		drawText(page, chip.text, cx + 8, y + 2, fontBold, 8, chip.fg);
+		cx += cw2 + 8;
+	}
+	y -= 22;
+
+	// Divider
+	page.drawLine({ start: { x: ML, y }, end: { x: ML + CW, y }, thickness: 0.5, color: C.gray100 });
+	y -= 20;
+
+	// ═══════════════════════════════════════════════════════════
+	// EVENTS
+	// ═══════════════════════════════════════════════════════════
+	if (report.events.length > 0) {
+		newPageIfNeeded(30);
+		drawText(page, "DONEM OLAYLARI", ML, y, fontBold, 7.5, C.gray400);
+		y -= 14;
+
+		for (const ev of report.events) {
+			// Estimate card height
+			const obsH = splitLines(enc(ev.observation), fontBold, 10, CW - 20).length * LH;
+			const detailFields = [ev.root_cause, ev.impact, ev.action, ev.outcome].filter(Boolean);
+			const detailH = detailFields.reduce((acc, val) => {
+				return acc + splitLines(enc(val), fontRegular, 8, CW - 90).length * 12 + 2;
+			}, 0);
+			const cardH = 28 + obsH + detailH + 16;
+
+			newPageIfNeeded(cardH + 10);
+
+			const cardX = ML;
+			const cardY = y - cardH;
+
+			// Card background + border
+			drawRect(page, cardX, cardY, CW, cardH, C.white, hex("#e2e8f0"), 0.8);
+
+			// Left accent bar
+			const catKey = ev.category.toLowerCase().replace(/[\s-]/g, "_");
+			const catC = CAT_COLORS[catKey] ?? CAT_COLORS["izleniyor"];
+			drawRect(page, cardX, cardY, 4, cardH, catC.fg);
+
+			// Card head background
+			drawRect(page, cardX, cardY + cardH - 24, CW, 24, C.gray50);
+
+			// Category badge
+			const catLabel = enc(CAT_LABEL[catKey] ?? ev.category);
+			const catW = measureText(catLabel, fontBold, 7) + 12;
+			drawRect(page, cardX + 10, cardY + cardH - 19, catW, 13, catC.bg);
+			drawText(page, catLabel, cardX + 16, cardY + cardH - 13, fontBold, 7, catC.fg);
+
+			// Service / time (right)
+			const metaText = `${enc(ev.service)}  /  ${enc(ev.time)}`;
+			const metaW = measureText(metaText, fontBold, 7.5);
+			drawText(page, metaText, cardX + CW - metaW - 8, cardY + cardH - 13, fontBold, 7.5, C.gray400);
+
+			// Separator
+			let iy = cardY + cardH - 25;
+			page.drawLine({ start: { x: cardX + 10, y: iy }, end: { x: cardX + CW - 8, y: iy }, thickness: 0.4, color: C.gray100 });
+
+			// Observation
+			iy -= 4;
+			const obsLines = splitLines(enc(ev.observation), fontBold, 10, CW - 20);
+			for (const line of obsLines) {
+				drawText(page, line, cardX + 10, iy, fontBold, 10, C.gray900);
+				iy -= LH;
+			}
+			iy -= 6;
+
+			// Separator
+			page.drawLine({ start: { x: cardX + 10, y: iy }, end: { x: cardX + CW - 8, y: iy }, thickness: 0.4, color: C.gray100 });
+			iy -= 10;
+
+			// Detail rows
+			const rows: Array<{ lbl: string; val: string; valColor?: ReturnType<typeof rgb> }> = [
+				{ lbl: "Neden:", val: enc(ev.root_cause) },
+			];
+			if (ev.impact)  rows.push({ lbl: "Etki:",    val: enc(ev.impact) });
+			if (ev.action)  rows.push({ lbl: "Aksiyon:", val: enc(ev.action) });
+			if (ev.outcome) rows.push({ lbl: "Sonuc:",   val: enc(ev.outcome), valColor: C.green700 });
+
+			for (const row of rows) {
+				drawText(page, row.lbl, cardX + 10, iy, fontBold, 7.5, C.gray400);
+				const valLines = splitLines(row.val, fontRegular, 8, CW - 90);
+				for (const vl of valLines) {
+					drawText(page, vl, cardX + 80, iy, fontRegular, 8, row.valColor ?? C.gray600);
+					iy -= 12;
+				}
+				iy -= 2;
+			}
+
+			y -= cardH + 8;
+		}
+		y -= 8;
+	}
+
+	// ═══════════════════════════════════════════════════════════
+	// ACTIONS
+	// ═══════════════════════════════════════════════════════════
 	if (report.actions.length > 0) {
-		y = sectionHeader(pdf, y, "ONERILEN AKSIYONLAR");
+		newPageIfNeeded(30);
+		page.drawLine({ start: { x: ML, y }, end: { x: ML + CW, y }, thickness: 0.5, color: C.gray100 });
+		y -= 16;
+		drawText(page, "ONERILEN AKSIYONLAR", ML, y, fontBold, 7.5, C.gray400);
+		y -= 14;
 
 		report.actions.forEach((action, i) => {
-			y = checkPage(pdf, y, 12);
-			const priRGB = PRI_RGB[action.priority] ?? [107, 114, 128];
-			const priBgRGB = PRI_BG_RGB[action.priority] ?? [249, 250, 251];
-			const priLabel = PRI_LABEL[action.priority] ?? action.priority.toUpperCase();
+			const actionLines = splitLines(enc(action.action), fontBold, 9, CW - 90);
+			const impactLines = action.estimated_impact
+				? splitLines(enc(action.estimated_impact), fontRegular, 7.5, CW - 90)
+				: [];
+			const rowH = (actionLines.length + impactLines.length) * 12 + 16;
+			newPageIfNeeded(rowH);
 
-			pdf.setFontSize(8);
-			setFont(pdf, true);
-			pdf.setTextColor(156, 163, 175);
-			pdf.text(`${i + 1}.`, M, y);
+			const priC = PRI_COLORS[action.priority] ?? PRI_COLORS["medium"];
+			const priLabel = enc(PRI_LABEL[action.priority] ?? action.priority);
 
-			pill(pdf, priLabel, M + 6, y, priRGB, priBgRGB);
-			const pillW2 = pdf.getTextWidth(priLabel) + 6 + 6;
+			// Index
+			drawText(page, `${i + 1}.`, ML, y, fontBold, 8, C.gray400);
 
-			pdf.setFontSize(9);
-			setFont(pdf, true);
-			pdf.setTextColor(17, 24, 39);
-			y = multiLine(pdf, tr(action.action), M + 6 + pillW2 + 3, y, CW - 6 - pillW2 - 3);
+			// Priority badge
+			const priW = measureText(priLabel, fontBold, 7) + 10;
+			drawRect(page, ML + 12, y - 4, priW, 13, priC.bg);
+			drawText(page, priLabel, ML + 17, y + 1, fontBold, 7, priC.fg);
 
-			if (action.estimated_impact) {
-				pdf.setFontSize(8);
-				setFont(pdf, false);
-				pdf.setTextColor(107, 114, 128);
-				y = multiLine(pdf, tr(action.estimated_impact), M + 6 + pillW2 + 3, y, CW - 6 - pillW2 - 3);
+			// Action text
+			const textX = ML + 12 + priW + 8;
+			let ay = y;
+			for (const line of actionLines) {
+				drawText(page, line, textX, ay, fontBold, 9, C.gray900);
+				ay -= 12;
 			}
-			y += 3;
-			pdf.setDrawColor(243, 244, 246);
-			pdf.line(M, y, M + CW, y);
-			y += 4;
+			for (const line of impactLines) {
+				drawText(page, line, textX, ay, fontRegular, 7.5, C.gray400);
+				ay -= 11;
+			}
+
+			y = Math.min(y - rowH, ay - 4);
+			page.drawLine({ start: { x: ML, y: y + 2 }, end: { x: ML + CW, y: y + 2 }, thickness: 0.4, color: C.gray100 });
+			y -= 8;
 		});
 	}
 
-	// ── RISK FORECAST ───────────────────────────────────────────
+	// ═══════════════════════════════════════════════════════════
+	// RISK FORECAST
+	// ═══════════════════════════════════════════════════════════
 	if (report.risk_forecast) {
-		const riskLines = pdf.splitTextToSize(tr(report.risk_forecast), CW - 10).length;
-		const boxH = riskLines * LINE + 14;
-		y = checkPage(pdf, y, boxH + 6);
-		y += 4;
+		const rLines = splitLines(enc(report.risk_forecast), fontRegular, 9, CW - 20);
+		const boxH = rLines.length * LH + 30;
+		newPageIfNeeded(boxH + 16);
+		y -= 8;
 
-		pdf.setFillColor(245, 243, 255);
-		pdf.roundedRect(M, y, CW, boxH, 3, 3, "F");
-		pdf.setDrawColor(221, 214, 254);
-		pdf.roundedRect(M, y, CW, boxH, 3, 3, "S");
+		const boxY = y - boxH;
+		drawRect(page, ML, boxY, CW, boxH, C.indigoBg, C.indigoBorder, 0.8);
+		// Indigo left accent
+		drawRect(page, ML, boxY, 4, boxH, C.indigo);
 
-		pdf.setFontSize(7.5);
-		setFont(pdf, true);
-		pdf.setTextColor(124, 58, 237);
-		pdf.text("7 GUNLUK RISK TAHMINI", M + 5, y + 6);
-
-		pdf.setFontSize(9);
-		setFont(pdf, false);
-		pdf.setTextColor(55, 65, 81);
-		multiLine(pdf, tr(report.risk_forecast), M + 5, y + 11, CW - 10);
-		y += boxH + 6;
+		drawText(page, "7 GUNLUK RISK TAHMINI", ML + 12, y - 8, fontBold, 7.5, C.indigo);
+		let ry = y - 22;
+		for (const line of rLines) {
+			drawText(page, line, ML + 12, ry, fontRegular, 9, C.gray600);
+			ry -= LH;
+		}
+		y = boxY - 10;
 	}
 
-	// ── FOOTER (all pages) ───────────────────────────────────────
-	const totalPages = (pdf as unknown as { internal: { getNumberOfPages: () => number } })
-		.internal.getNumberOfPages();
-	for (let p = 1; p <= totalPages; p++) {
-		pdf.setPage(p);
-		pdf.setFontSize(7);
-		setFont(pdf, false);
-		pdf.setTextColor(156, 163, 175);
-		pdf.setDrawColor(243, 244, 246);
-		pdf.line(M, 287, M + CW, 287);
-		pdf.text(`NanoNet  /  ${tr(report.period_label)}  /  ${now}`, M, 291);
-		pdf.text(`${p} / ${totalPages}`, M + CW, 291, { align: "right" });
-	}
+	// ═══════════════════════════════════════════════════════════
+	// FOOTER (tüm sayfalar)
+	// ═══════════════════════════════════════════════════════════
+	const pages = pdfDoc.getPages();
+	pages.forEach((p, idx) => {
+		drawFooter(p);
+		const pageNum = `${idx + 1} / ${pages.length}`;
+		const pw2 = measureText(pageNum, fontRegular, 7);
+		drawText(p, pageNum, PW - MR - pw2, 8, fontRegular, 7, C.gray400);
+	});
 
-	const slug = tr(report.period_label).replace(/\s+/g, "-").toLowerCase();
-	pdf.save(`nanonet-rapor-${slug}.pdf`);
+	// ─── İndir ──────────────────────────────────────────────────
+	const bytes = await pdfDoc.save();
+	const blob = new Blob([bytes], { type: "application/pdf" });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `nanonet-rapor-${enc(report.period_label).replace(/\s+/g, "-").toLowerCase()}.pdf`;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
