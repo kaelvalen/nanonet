@@ -4,6 +4,7 @@ import {
 	GitFork,
 	LayoutDashboard,
 	LogOut,
+	Scroll,
 	Server,
 	Settings,
 	Sparkles,
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
 	{ to: "/app/ai-insights", label: "AI İçgörüler", icon: Sparkles },
 	{ to: "/app/service-map", label: "Servis Haritası", icon: GitFork },
 	{ to: "/app/kubernetes", label: "Kubernetes", icon: Cloud },
+	{ to: "/app/logs",       label: "Loglar",     icon: Scroll },
 ];
 
 function Tooltip({ label, visible }: { label: string; visible: boolean }) {

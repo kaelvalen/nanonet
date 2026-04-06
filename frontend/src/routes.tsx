@@ -14,6 +14,7 @@ import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
 import { ServiceMapPage } from "@/pages/ServiceMapPage";
 import { ServicesPage } from "@/pages/ServicesPage";
+import { LogsPage } from "@/pages/LogsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { useAuthStore } from "@/store/authStore";
 
@@ -155,6 +156,7 @@ export const router = createBrowserRouter([
 			{ path: "service-map", element: <ServiceMapPage /> },
 			{ path: "settings", element: <SettingsPage /> },
 			{ path: "kubernetes", element: <KubernetesPage /> },
+			{ path: "logs", element: <LogsPage /> },
 		],
 	},
 	{

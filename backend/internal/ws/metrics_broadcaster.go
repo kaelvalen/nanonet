@@ -2,10 +2,12 @@ package ws
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
 	"nanonet-backend/internal/alerts"
+	"nanonet-backend/internal/logs"
 	"nanonet-backend/internal/metrics"
 
 	"github.com/google/uuid"
@@ -16,15 +18,17 @@ type MetricsBroadcaster struct {
 	hub          *Hub
 	db           *gorm.DB
 	metricsRepo  *metrics.Repository
+	logsRepo     *logs.Repository
 	alertService *alerts.Service
 	pollInterval time.Duration
 }
 
-func NewMetricsBroadcaster(hub *Hub, db *gorm.DB, alertSvc *alerts.Service, pollInterval time.Duration) *MetricsBroadcaster {
+func NewMetricsBroadcaster(hub *Hub, db *gorm.DB, alertSvc *alerts.Service, logsRepo *logs.Repository, pollInterval time.Duration) *MetricsBroadcaster {
 	mb := &MetricsBroadcaster{
 		hub:          hub,
 		db:           db,
 		metricsRepo:  metrics.NewRepository(db),
+		logsRepo:     logsRepo,
 		alertService: alertSvc,
 		pollInterval: pollInterval,
 	}
@@ -112,6 +116,9 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 		return
 	}
 
+	// service_logs'a yaz
+	go mb.writeAgentLog(svcID, metric, msg)
+
 	if metric.Status != "" {
 		go func(id uuid.UUID, status string) {
 			updateCtx, updateCancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -150,6 +157,83 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 
 	if err := mb.alertService.CheckMetricAndCreateAlert(ctx, svcID, metric); err != nil {
 		log.Printf("Alert kontrol hatası [service=%s]: %v", serviceID, err)
+	}
+}
+
+func (mb *MetricsBroadcaster) writeAgentLog(svcID uuid.UUID, metric *metrics.Metric, msg AgentMessage) {
+	if mb.logsRepo == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	level := "info"
+	message := ""
+	fields := map[string]interface{}{}
+
+	if metric.CPUPercent != nil {
+		fields["cpu_percent"] = *metric.CPUPercent
+	}
+	if metric.MemoryUsedMB != nil {
+		fields["memory_used_mb"] = *metric.MemoryUsedMB
+	}
+	if metric.LatencyMS != nil {
+		fields["latency_ms"] = *metric.LatencyMS
+	}
+	if metric.Status != "" {
+		fields["status"] = metric.Status
+	}
+
+	// error_rate: agent 0-100 arası yüzde olarak gönderir (örn: 5.0 = %5)
+	if metric.ErrorRate != nil {
+		rate := float64(*metric.ErrorRate)
+		fields["error_rate"] = rate
+		if rate > 5.0 {
+			level = "error"
+			message = fmt.Sprintf("Yüksek hata oranı: %.1f%%", rate)
+		}
+	}
+
+	if metric.Status == "down" {
+		level = "error"
+		message = "Servis erişilemiyor"
+	} else if metric.Status == "degraded" {
+		if level != "error" {
+			level = "warn"
+		}
+		if message == "" {
+			message = "Servis performans sorunu yaşıyor"
+		}
+	}
+
+	if metric.CPUPercent != nil && *metric.CPUPercent > 90 {
+		if level == "info" {
+			level = "warn"
+			message = fmt.Sprintf("Yüksek CPU kullanımı: %.1f%%", *metric.CPUPercent)
+		}
+	}
+	if metric.LatencyMS != nil && *metric.LatencyMS > 1000 {
+		if level == "info" {
+			level = "warn"
+			message = fmt.Sprintf("Yüksek gecikme: %.0fms", *metric.LatencyMS)
+		}
+	}
+
+	// Sadece warn/error logları yaz — normal info metrikleri gereksiz gürültü
+	if level == "info" {
+		return
+	}
+
+	entry := &logs.ServiceLog{
+		Time:      time.Now(),
+		ServiceID: svcID,
+		Level:     level,
+		Source:    "agent",
+		Message:   message,
+		Fields:    fields,
+	}
+	if err := mb.logsRepo.Insert(ctx, entry); err != nil {
+		log.Printf("[WARN] Agent log yazılamadı [service=%s]: %v", svcID, err)
 	}
 }
 

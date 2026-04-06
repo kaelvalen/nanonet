@@ -288,6 +288,62 @@ export interface ChatResponse {
 	tokens_used?: number;
 }
 
+export interface ServiceLog {
+	time: string;
+	id: string;
+	service_id: string;
+	level: "debug" | "info" | "warn" | "error";
+	source: "agent" | "system" | "k8s" | "health_check" | "command";
+	message: string;
+	fields?: Record<string, unknown>;
+}
+
+export interface LogsResponse {
+	logs: ServiceLog[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+export interface LogQueryParams {
+	level?: string;
+	source?: string;
+	search?: string;
+	from?: string;
+	to?: string;
+	limit?: number;
+	offset?: number;
+}
+
+export const logsApi = {
+	getServiceLogs: async (
+		serviceId: string,
+		params: LogQueryParams = {},
+	): Promise<LogsResponse> => {
+		const response = await apiClient.get(`/services/${serviceId}/logs`, {
+			params,
+		});
+		return response.data.data;
+	},
+
+	getStats: async (
+		serviceId?: string,
+		since?: string,
+	): Promise<Record<string, number>> => {
+		const response = await apiClient.get("/logs/stats", {
+			params: { service_id: serviceId, since },
+		});
+		return response.data.data;
+	},
+
+	getAuditLogs: async (
+		params: { limit?: number; offset?: number } = {},
+	): Promise<{ logs: unknown[]; total: number; limit: number; offset: number }> => {
+		const response = await apiClient.get("/audit", { params });
+		return response.data.data;
+	},
+};
+
 export const aiChatApi = {
 	chat: async (
 		message: string,

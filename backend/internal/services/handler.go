@@ -6,6 +6,7 @@ import (
 
 	"nanonet-backend/internal/commands"
 	"nanonet-backend/internal/ws"
+	"nanonet-backend/pkg/audit"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -47,6 +48,17 @@ func (h *Handler) Create(c *gin.Context) {
 		response.InternalError(c, "servis oluşturulamadı")
 		return
 	}
+
+	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+		UserID:       &userID,
+		Action:       audit.ActionServiceCreate,
+		ResourceType: "service",
+		ResourceID:   &service.ID,
+		IPAddress:    c.ClientIP(),
+		UserAgent:    c.GetHeader("User-Agent"),
+		Status:       audit.StatusSuccess,
+		Details:      map[string]any{"name": service.Name, "host": service.Host, "port": service.Port},
+	})
 
 	response.Created(c, service)
 }
@@ -155,6 +167,16 @@ func (h *Handler) Delete(c *gin.Context) {
 		response.InternalError(c, "servis silinemedi")
 		return
 	}
+
+	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+		UserID:       &userID,
+		Action:       audit.ActionServiceDelete,
+		ResourceType: "service",
+		ResourceID:   &id,
+		IPAddress:    c.ClientIP(),
+		UserAgent:    c.GetHeader("User-Agent"),
+		Status:       audit.StatusSuccess,
+	})
 
 	response.Success(c, gin.H{"message": "servis silindi"})
 }

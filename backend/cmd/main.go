@@ -14,6 +14,7 @@ import (
 	"nanonet-backend/internal/auth"
 	"nanonet-backend/internal/commands"
 	"nanonet-backend/internal/k8s"
+	"nanonet-backend/internal/logs"
 	"nanonet-backend/internal/maintenance"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/services"
@@ -80,8 +81,9 @@ func main() {
 	alertSvc := alerts.NewService(db)
 	maintRepo := maintenance.NewRepository(db)
 	alertSvc.SetMaintenanceChecker(maintRepo)
+	logsRepo := logs.NewRepository(db)
 
-	broadcaster := ws.NewMetricsBroadcaster(hub, db, alertSvc, time.Duration(cfg.PollDefaultSec)*time.Second)
+	broadcaster := ws.NewMetricsBroadcaster(hub, db, alertSvc, logsRepo, time.Duration(cfg.PollDefaultSec)*time.Second)
 	go func() {
 		for {
 			func() {
@@ -132,6 +134,7 @@ func main() {
 	cmdService := commands.NewService(db)
 	settingsHandler := settings.NewHandler(db)
 	auditHandler := audit.NewHandler(db)
+	logsHandler := logs.NewHandler(logsRepo)
 
 	// ── Kubernetes (optional) ─────────────────────────────────────
 	var k8sClient *k8s.Client
@@ -164,6 +167,26 @@ func main() {
 	hub.SetOnCommandResult(func(commandID, status string, msg ws.AgentMessage) {
 		_ = cmdService.UpdateStatus(context.Background(), commandID, status, nil)
 	})
+
+	// 30 günlük log retention — her gün gece yarısı çalışır
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				threshold := time.Now().Add(-30 * 24 * time.Hour)
+				n, err := logsRepo.DeleteOlderThan(context.Background(), threshold)
+				if err != nil {
+					log.Printf("[WARN] Log retention temizleme hatası: %v", err)
+				} else if n > 0 {
+					log.Printf("[INFO] Log retention: %d eski kayıt silindi", n)
+				}
+			}
+		}
+	}()
 
 	// Askıda kalan komutları periyodik olarak timeout'a al
 	go func() {
@@ -232,6 +255,7 @@ func main() {
 			svcGroup.POST("/:id/ping", serviceHandler.Ping)
 			svcGroup.POST("/:id/analyze", aiHandler.Analyze)
 			svcGroup.GET("/:id/commands", cmdHandler.GetHistory)
+			svcGroup.GET("/:id/logs", logsHandler.GetServiceLogs)
 		}
 
 		alertsGroup := v1.Group("/alerts", authMiddleware.Required())
@@ -250,6 +274,11 @@ func main() {
 		auditGroup := v1.Group("/audit", authMiddleware.Required())
 		{
 			auditGroup.GET("", auditHandler.GetLogs)
+		}
+
+		logsGroup := v1.Group("/logs", authMiddleware.Required())
+		{
+			logsGroup.GET("/stats", logsHandler.GetStats)
 		}
 
 		// Tek istekle tüm servislerin uptime özetini döndürür (N+1 önleme)

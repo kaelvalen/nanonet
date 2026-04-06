@@ -6,6 +6,7 @@ import {
 	LogOut,
 	PanelLeft,
 	PanelLeftClose,
+	Scroll,
 	Server,
 	Settings,
 	Sparkles,
@@ -76,7 +77,10 @@ const navSections: NavSection[] = [
 	},
 	{
 		label: "Sistem",
-		items: [{ to: "/app/settings", label: "Ayarlar", icon: Settings }],
+		items: [
+			{ to: "/app/logs",     label: "Loglar",  icon: Scroll   },
+			{ to: "/app/settings", label: "Ayarlar", icon: Settings },
+		],
 	},
 ];
 

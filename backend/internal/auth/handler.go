@@ -58,6 +58,16 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
+	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+		UserID:       &user.ID,
+		Action:       audit.ActionRegister,
+		ResourceType: "user",
+		ResourceID:   &user.ID,
+		IPAddress:    c.ClientIP(),
+		UserAgent:    c.GetHeader("User-Agent"),
+		Status:       audit.StatusSuccess,
+	})
+
 	response.Created(c, gin.H{
 		"user":   user,
 		"tokens": tokens,
@@ -82,6 +92,16 @@ func (h *Handler) Login(c *gin.Context) {
 		response.InternalError(c, "token oluşturulamadı")
 		return
 	}
+
+	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+		UserID:       &user.ID,
+		Action:       audit.ActionLogin,
+		ResourceType: "user",
+		ResourceID:   &user.ID,
+		IPAddress:    c.ClientIP(),
+		UserAgent:    c.GetHeader("User-Agent"),
+		Status:       audit.StatusSuccess,
+	})
 
 	response.Success(c, gin.H{
 		"user":   user,
@@ -206,6 +226,21 @@ func (h *Handler) Logout(c *gin.Context) {
 		// Access tokens live for 24h; blacklist for the full window.
 		_ = h.blacklist.Add(c.Request.Context(), tokenString, 24*time.Hour)
 	}
+
+	if userIDStr := c.GetString("user_id"); userIDStr != "" {
+		if userID, err := uuid.Parse(userIDStr); err == nil {
+			audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+				UserID:       &userID,
+				Action:       audit.ActionLogout,
+				ResourceType: "user",
+				ResourceID:   &userID,
+				IPAddress:    c.ClientIP(),
+				UserAgent:    c.GetHeader("User-Agent"),
+				Status:       audit.StatusSuccess,
+			})
+		}
+	}
+
 	response.Success(c, gin.H{"message": "çıkış başarılı"})
 }
 
