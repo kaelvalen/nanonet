@@ -94,13 +94,13 @@ export function AIInsightsPage() {
 	const [deepAnalysis, setDeepAnalysis] = useState(false);
 	const [liveResult, setLiveResult] = useState<AnalysisResult | null>(null);
 
-	const serviceForInsights =
-		selectedServiceId === "all" ? (services[0]?.id ?? "") : selectedServiceId;
-
 	const { data: insightsData, isLoading } = useQuery({
-		queryKey: ["insights", serviceForInsights, page],
-		queryFn: () => metricsApi.getInsights(serviceForInsights, page + 1),
-		enabled: !!serviceForInsights,
+		queryKey: ["insights", selectedServiceId, page],
+		queryFn: () =>
+			selectedServiceId === "all"
+				? metricsApi.getAllInsights(20)
+				: metricsApi.getInsights(selectedServiceId, page + 1),
+		enabled: selectedServiceId === "all" || !!selectedServiceId,
 	});
 
 	const allInsights: AIInsight[] = insightsData?.insights ?? [];
@@ -652,7 +652,7 @@ export function AIInsightsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.35, delay: 0.25 }}
 			>
-				{!serviceForInsights ? (
+				{services.length === 0 && selectedServiceId !== "all" ? (
 					<EmptyState
 						icon={Sparkles}
 						title="Servis bulunamadı"
