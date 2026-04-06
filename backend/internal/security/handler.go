@@ -2,7 +2,6 @@ package security
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -81,11 +80,7 @@ func (h *Handler) GetOverview(c *gin.Context) {
 			if sc.TLSEnabled && (!sc.TLSValid || (sc.TLSDaysLeft != nil && *sc.TLSDaysLeft < 30)) {
 				tlsWarnings++
 			}
-			var missing []string
-			if len(sc.MissingHeaders) > 2 {
-				_ = json.Unmarshal(sc.MissingHeaders, &missing)
-			}
-			headerIssues += len(missing)
+			headerIssues += len(sc.MissingHeaders)
 		}
 		summaries = append(summaries, summary)
 	}

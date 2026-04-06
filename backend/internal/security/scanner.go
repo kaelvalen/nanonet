@@ -3,7 +3,6 @@ package security
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -51,11 +50,12 @@ type headerCheckResult struct {
 }
 
 // scanService bir servis kaydını tarar ve Scan nesnesi döndürür.
-// Ulaşılamayan servislerde hata döner; bu durumda skor 0 olarak kaydedilir.
 func scanService(ctx context.Context, svc serviceRow) (*Scan, error) {
 	scan := &Scan{
-		ServiceID: svc.ID,
-		ScannedAt: time.Now(),
+		ServiceID:      svc.ID,
+		ScannedAt:      time.Now(),
+		MissingHeaders: []string{},
+		Findings:       []Finding{},
 	}
 
 	host := cleanHost(svc.Host)
@@ -84,16 +84,15 @@ func scanService(ctx context.Context, svc serviceRow) (*Scan, error) {
 	}
 	targetURL := fmt.Sprintf("%s://%s:%d%s", scheme, host, svc.Port, endpoint)
 
-	hRes, err := checkHeaders(ctx, targetURL, isHTTPS)
+	hRes, err := checkHeaders(ctx, targetURL)
 	if err != nil {
-		log.Printf("[security] %s tarama hatası: %v", targetURL, err)
-		// Ulaşılamayan servis — bulgusuz sıfır skor
-		scan.MissingHeaders = json.RawMessage("[]")
-		scan.Findings = json.RawMessage("[]")
+		// Ulaşılamayan servis — bulgusuz, skor hesaplanamaz
+		log.Printf("[security] %s ulaşılamadı: %v", targetURL, err)
 		scan.RiskScore = 0
 		return scan, nil
 	}
-	scan.MissingHeaders = mustMarshal(hRes.missingHeaders)
+
+	scan.MissingHeaders = hRes.missingHeaders
 	scan.ServerHeader = hRes.serverHeader
 	scan.RedirectToHTTPS = hRes.redirectsToHTTPS
 
@@ -156,13 +155,8 @@ func scanService(ctx context.Context, svc serviceRow) (*Scan, error) {
 		})
 	}
 
-	if len(findings) == 0 {
-		scan.Findings = json.RawMessage("[]")
-	} else {
-		scan.Findings = mustMarshal(findings)
-	}
-
-	scan.RiskScore = calculateScore(scan, findings, isHTTPS)
+	scan.Findings = findings
+	scan.RiskScore = calculateScore(isHTTPS, scan.TLSEnabled, scan.TLSValid, scan.TLSDaysLeft, hRes.missingHeaders, hRes.serverHeader, hRes.redirectsToHTTPS)
 	return scan, nil
 }
 
@@ -171,7 +165,7 @@ func checkTLS(ctx context.Context, host string, port int) tlsCheckResult {
 	addr := fmt.Sprintf("%s:%d", host, port)
 	dialer := &tls.Dialer{
 		NetDialer: &net.Dialer{Timeout: 5 * time.Second},
-		Config:    &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // Sertifika bilgisi için bilinçli olarak atlanıyor
+		Config:    &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // Sertifika bilgisi için bilinçli
 	}
 
 	conn, err := dialer.DialContext(ctx, "tcp", addr)
@@ -196,19 +190,17 @@ func checkTLS(ctx context.Context, host string, port int) tlsCheckResult {
 	expiry := leaf.NotAfter
 	daysLeft := int(time.Until(leaf.NotAfter).Hours() / 24)
 
-	version := tlsVersionName(tlsConn.ConnectionState().Version)
-
 	return tlsCheckResult{
 		valid:    valid,
 		expiry:   &expiry,
 		daysLeft: &daysLeft,
 		issuer:   leaf.Issuer.CommonName,
-		version:  version,
+		version:  tlsVersionName(tlsConn.ConnectionState().Version),
 	}
 }
 
 // checkHeaders HTTP isteği atarak yanıt başlıklarını denetler.
-func checkHeaders(ctx context.Context, targetURL string, isHTTPS bool) (headerCheckResult, error) {
+func checkHeaders(ctx context.Context, targetURL string) (headerCheckResult, error) {
 	transport := &http.Transport{
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 		DisableKeepAlives: true,
@@ -216,8 +208,8 @@ func checkHeaders(ctx context.Context, targetURL string, isHTTPS bool) (headerCh
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   8 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse // redirect'leri elle incele
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
 		},
 	}
 
@@ -235,13 +227,12 @@ func checkHeaders(ctx context.Context, targetURL string, isHTTPS bool) (headerCh
 
 	var res headerCheckResult
 
-	// Redirect kontrolü
 	if loc := resp.Header.Get("Location"); loc != "" &&
-		(resp.StatusCode == 301 || resp.StatusCode == 302 || resp.StatusCode == 307 || resp.StatusCode == 308) {
+		(resp.StatusCode == 301 || resp.StatusCode == 302 ||
+			resp.StatusCode == 307 || resp.StatusCode == 308) {
 		res.redirectsToHTTPS = strings.HasPrefix(strings.ToLower(loc), "https://")
 	}
 
-	// Eksik güvenlik başlıkları
 	for _, h := range securityHeaders {
 		if resp.Header.Get(h.name) == "" {
 			res.missingHeaders = append(res.missingHeaders, h.name)
@@ -251,34 +242,27 @@ func checkHeaders(ctx context.Context, targetURL string, isHTTPS bool) (headerCh
 		res.missingHeaders = []string{}
 	}
 
-	// Server başlığı sızıntısı
 	res.serverHeader = resp.Header.Get("Server")
-
 	return res, nil
 }
 
 // calculateScore 0-100 arası güvenlik skoru hesaplar (100 = mükemmel).
-func calculateScore(scan *Scan, findings []Finding, isHTTPS bool) float64 {
+func calculateScore(isHTTPS, tlsEnabled, tlsValid bool, tlsDaysLeft *int, missingHeaders []string, serverHeader string, redirectsToHTTPS bool) float64 {
 	score := 100.0
 
-	if scan.TLSEnabled && !scan.TLSValid {
+	if tlsEnabled && !tlsValid {
 		score -= 40
-	} else if scan.TLSDaysLeft != nil {
+	} else if tlsDaysLeft != nil {
 		switch {
-		case *scan.TLSDaysLeft < 7:
+		case *tlsDaysLeft < 7:
 			score -= 30
-		case *scan.TLSDaysLeft < 30:
+		case *tlsDaysLeft < 30:
 			score -= 15
 		}
 	}
 
-	// Eksik başlık cezaları
-	var missing []string
-	if len(scan.MissingHeaders) > 2 {
-		_ = json.Unmarshal(scan.MissingHeaders, &missing)
-	}
 	for _, h := range securityHeaders {
-		for _, m := range missing {
+		for _, m := range missingHeaders {
 			if m == h.name {
 				score -= h.penalty
 				break
@@ -286,11 +270,11 @@ func calculateScore(scan *Scan, findings []Finding, isHTTPS bool) float64 {
 		}
 	}
 
-	if scan.ServerHeader != "" && containsVersion(scan.ServerHeader) {
+	if serverHeader != "" && containsVersion(serverHeader) {
 		score -= 10
 	}
 
-	if !isHTTPS && !scan.RedirectToHTTPS {
+	if !isHTTPS && !redirectsToHTTPS {
 		score -= 10
 	}
 
@@ -300,9 +284,7 @@ func calculateScore(scan *Scan, findings []Finding, isHTTPS bool) float64 {
 	return score
 }
 
-// containsVersion server başlığının sürüm bilgisi içerip içermediğini kontrol eder.
 func containsVersion(header string) bool {
-	// "nginx/1.18.0", "Apache/2.4.51", "Microsoft-IIS/10.0" vb.
 	return strings.Contains(header, "/") || strings.ContainsAny(header, "0123456789")
 }
 
@@ -327,16 +309,7 @@ func tlsVersionName(v uint16) string {
 	}
 }
 
-func mustMarshal(v any) json.RawMessage {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return json.RawMessage("[]")
-	}
-	return b
-}
-
 // ScanAllServices DB'deki tüm servisleri tarar ve sonuçları kaydeder.
-// Broadcaster tarafından periyodik çağrılır.
 func ScanAllServices(ctx context.Context, db *gorm.DB) {
 	var rows []serviceRow
 	if err := db.WithContext(ctx).

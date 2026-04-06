@@ -1,7 +1,6 @@
 package security
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,21 +15,21 @@ type Finding struct {
 
 // Scan bir servis için tek bir güvenlik tarama sonucu.
 type Scan struct {
-	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	ServiceID       uuid.UUID       `gorm:"type:uuid;not null"                            json:"service_id"`
-	ScannedAt       time.Time       `gorm:"not null;default:now()"                        json:"scanned_at"`
-	TLSEnabled      bool            `gorm:"not null;default:false"                        json:"tls_enabled"`
-	TLSValid        bool            `gorm:"not null;default:false"                        json:"tls_valid"`
-	TLSExpiry       *time.Time      `                                                     json:"tls_expiry,omitempty"`
-	TLSDaysLeft     *int            `                                                     json:"tls_days_left,omitempty"`
-	TLSIssuer       string          `gorm:"type:text;not null;default:''"                 json:"tls_issuer"`
-	TLSVersion      string          `gorm:"type:text;not null;default:''"                 json:"tls_version"`
-	MissingHeaders  json.RawMessage `gorm:"type:jsonb;not null;default:'[]'"              json:"missing_headers"`
-	ServerHeader    string          `gorm:"type:text;not null;default:''"                 json:"server_header"`
-	RedirectToHTTPS bool            `gorm:"not null;default:false"                        json:"redirect_to_https"`
-	RiskScore       float64         `gorm:"not null;default:0"                            json:"risk_score"`
-	Findings        json.RawMessage `gorm:"type:jsonb;not null;default:'[]'"              json:"findings"`
-	CreatedAt       time.Time       `gorm:"not null;default:now()"                        json:"created_at"`
+	ID              uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ServiceID       uuid.UUID  `gorm:"type:uuid;not null"                            json:"service_id"`
+	ScannedAt       time.Time  `gorm:"not null;default:now()"                        json:"scanned_at"`
+	TLSEnabled      bool       `gorm:"not null;default:false"                        json:"tls_enabled"`
+	TLSValid        bool       `gorm:"not null;default:false"                        json:"tls_valid"`
+	TLSExpiry       *time.Time `                                                     json:"tls_expiry,omitempty"`
+	TLSDaysLeft     *int       `                                                     json:"tls_days_left,omitempty"`
+	TLSIssuer       string     `gorm:"type:text;not null;default:''"                 json:"tls_issuer"`
+	TLSVersion      string     `gorm:"type:text;not null;default:''"                 json:"tls_version"`
+	MissingHeaders  []string   `gorm:"type:jsonb;serializer:json"                    json:"missing_headers"`
+	ServerHeader    string     `gorm:"type:text;not null;default:''"                 json:"server_header"`
+	RedirectToHTTPS bool       `gorm:"not null;default:false"                        json:"redirect_to_https"`
+	RiskScore       float64    `gorm:"not null;default:0"                            json:"risk_score"`
+	Findings        []Finding  `gorm:"type:jsonb;serializer:json"                    json:"findings"`
+	CreatedAt       time.Time  `gorm:"not null;default:now()"                        json:"created_at"`
 }
 
 func (Scan) TableName() string { return "security_scans" }
