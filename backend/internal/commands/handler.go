@@ -3,6 +3,7 @@ package commands
 import (
 	"strconv"
 
+	"nanonet-backend/pkg/ownership"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +13,13 @@ import (
 
 type Handler struct {
 	service *Service
+	db      *gorm.DB
 }
 
 func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{
 		service: NewService(db),
+		db:      db,
 	}
 }
 
@@ -33,7 +36,7 @@ func (h *Handler) GetHistory(c *gin.Context) {
 		return
 	}
 
-	if !h.service.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}

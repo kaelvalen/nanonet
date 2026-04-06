@@ -45,18 +45,6 @@ export interface AnalysisResult {
 	confidence?: number;
 }
 
-export interface CommandLog {
-	id: string;
-	service_id: string;
-	user_id: string;
-	command_id: string;
-	action: string;
-	status: string;
-	queued_at: string;
-	completed_at?: string;
-	duration_ms?: number;
-}
-
 export const metricsApi = {
 	getHistory: async (
 		serviceId: string,
@@ -150,16 +138,6 @@ export const metricsApi = {
 			params: { page, limit: 20 },
 		});
 		return response.data.data || { insights: [], total: 0 };
-	},
-
-	getCommands: async (
-		serviceId: string,
-		page: number = 1,
-	): Promise<{ commands: CommandLog[]; total: number }> => {
-		const response = await apiClient.get(`/services/${serviceId}/commands`, {
-			params: { page, limit: 20 },
-		});
-		return response.data.data || { commands: [], total: 0 };
 	},
 
 	getAlertRules: async (serviceId: string): Promise<AlertRules> => {

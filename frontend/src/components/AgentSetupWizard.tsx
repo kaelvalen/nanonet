@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import apiClient from "@/api/client";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -92,12 +92,7 @@ export function AgentSetupWizard({
 	const [agentToken, setAgentToken] = useState<string | null>(null);
 
 	const generateToken = useMutation({
-		mutationFn: async () => {
-			const res = await apiClient.post("/auth/agent-token", {
-				service_id: serviceId,
-			});
-			return res.data.data?.token as string;
-		},
+		mutationFn: () => authApi.createAgentToken(serviceId ?? ""),
 		onSuccess: (token) => {
 			setAgentToken(token);
 			setStep(2);

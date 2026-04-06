@@ -126,8 +126,8 @@ func main() {
 	authSvc := auth.NewService(db, cfg.JWTSecret)
 	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)
-	alertHandler := alerts.NewHandler(alertSvc)
-	maintHandler := maintenance.NewHandler(maintRepo)
+	alertHandler := alerts.NewHandler(alertSvc, db)
+	maintHandler := maintenance.NewHandler(maintRepo, db)
 	wsHandler := ws.NewHandler(hub, cfg.JWTSecret, cfg.FrontendURL, authSvc)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
 	cmdHandler := commands.NewHandler(db)
@@ -158,9 +158,7 @@ func main() {
 	router.Use(corsMiddleware(cfg.FrontendURL, cfg.AllowedOrigins))
 	router.Use(securityHeadersMiddleware())
 
-	generalLimiter := auth.NewRateLimiter(100, time.Minute)
-	authLimiter := auth.NewRateLimiter(10, time.Minute)
-	router.Use(auth.RateLimitMiddleware(generalLimiter))
+	router.Use(ratelimit.Middleware(100, time.Minute))
 
 	strictLimiter := ratelimit.StrictMiddleware(10, time.Minute)
 
@@ -208,7 +206,7 @@ func main() {
 	v1 := router.Group("/api/v1")
 	{
 		authGroup := v1.Group("/auth")
-		authGroup.Use(auth.AuthRateLimitMiddleware(authLimiter))
+		authGroup.Use(ratelimit.Middleware(10, time.Minute))
 		{
 			authGroup.POST("/register", authHandler.Register)
 			authGroup.POST("/login", authHandler.Login)

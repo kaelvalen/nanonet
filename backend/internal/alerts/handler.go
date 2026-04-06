@@ -3,18 +3,21 @@ package alerts
 import (
 	"strconv"
 
+	"nanonet-backend/pkg/ownership"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
 	service *Service
+	db      *gorm.DB
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{service: svc}
+func NewHandler(svc *Service, db *gorm.DB) *Handler {
+	return &Handler{service: svc, db: db}
 }
 
 func (h *Handler) List(c *gin.Context) {
@@ -30,7 +33,7 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
-	if !h.service.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}
@@ -148,7 +151,7 @@ func (h *Handler) GetAlertRules(c *gin.Context) {
 		return
 	}
 
-	if !h.service.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}
@@ -189,7 +192,7 @@ func (h *Handler) UpsertAlertRules(c *gin.Context) {
 		return
 	}
 
-	if !h.service.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}

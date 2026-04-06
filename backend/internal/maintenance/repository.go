@@ -68,16 +68,3 @@ func (r *Repository) Delete(ctx context.Context, id, serviceID uuid.UUID) error 
 	}
 	return nil
 }
-
-// IsServiceOwner checks ownership via the services table.
-func (r *Repository) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	var count int64
-	r.db.WithContext(ctx).
-		Table("services").
-		Where("id = ? AND user_id = ?", serviceID, userID).
-		Count(&count)
-	return count > 0
-}

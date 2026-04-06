@@ -3,18 +3,21 @@ package maintenance
 import (
 	"time"
 
+	"nanonet-backend/pkg/ownership"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
 	repo *Repository
+	db   *gorm.DB
 }
 
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo *Repository, db *gorm.DB) *Handler {
+	return &Handler{repo: repo, db: db}
 }
 
 // List returns all maintenance windows for a service.
@@ -31,7 +34,7 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
-	if !h.repo.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}
@@ -59,7 +62,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	if !h.repo.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}
@@ -121,7 +124,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	if !h.repo.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}

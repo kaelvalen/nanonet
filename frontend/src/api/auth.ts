@@ -43,4 +43,11 @@ export const authApi = {
 			new_password: newPassword,
 		});
 	},
+
+	createAgentToken: async (serviceId: string): Promise<string> => {
+		const response = await apiClient.post("/auth/agent-token", {
+			service_id: serviceId,
+		});
+		return response.data.data?.token as string;
+	},
 };

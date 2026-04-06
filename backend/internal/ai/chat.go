@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"nanonet-backend/pkg/ratelimit"
+
 	"gorm.io/gorm"
 )
 
@@ -38,7 +40,7 @@ type ChatService struct {
 	db          *gorm.DB
 	apiKey      string
 	client      *http.Client
-	rateLimiter *RateLimiter
+	rateLimiter *ratelimit.Limiter
 }
 
 func NewChatService(db *gorm.DB, apiKey string) *ChatService {
@@ -46,7 +48,7 @@ func NewChatService(db *gorm.DB, apiKey string) *ChatService {
 		db:          db,
 		apiKey:      apiKey,
 		client:      &http.Client{Timeout: 60 * time.Second},
-		rateLimiter: NewRateLimiter(20, time.Minute),
+		rateLimiter: ratelimit.New(20, time.Minute),
 	}
 }
 

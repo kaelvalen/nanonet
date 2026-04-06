@@ -52,7 +52,3 @@ func (s *Service) HasInFlightCommand(ctx context.Context, serviceID uuid.UUID, a
 func (s *Service) MarkStalledCommandsTimeout(ctx context.Context, threshold time.Time) error {
 	return s.repo.MarkStalledCommandsTimeout(ctx, threshold)
 }
-
-func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
-	return s.repo.IsServiceOwner(ctx, serviceID, userID)
-}

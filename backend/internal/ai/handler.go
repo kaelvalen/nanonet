@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"nanonet-backend/pkg/ownership"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -16,12 +17,14 @@ import (
 type Handler struct {
 	service     *Service
 	chatService *ChatService
+	db          *gorm.DB
 }
 
 func NewHandler(db *gorm.DB, apiKey string) *Handler {
 	return &Handler{
 		service:     NewService(db, apiKey),
 		chatService: NewChatService(db, apiKey),
+		db:          db,
 	}
 }
 
@@ -100,7 +103,7 @@ func (h *Handler) GetInsights(c *gin.Context) {
 		return
 	}
 
-	if !h.service.IsServiceOwner(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}

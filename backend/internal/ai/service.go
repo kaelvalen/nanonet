@@ -10,10 +10,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"nanonet-backend/internal/metrics"
+	"nanonet-backend/pkg/ratelimit"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -28,78 +28,7 @@ type Service struct {
 	client      *http.Client
 	repo        *Repository
 	metricsRepo *metrics.Repository
-	rateLimiter *RateLimiter
-}
-
-type RateLimiter struct {
-	mu       sync.Mutex
-	counters map[string][]time.Time
-	limit    int
-	window   time.Duration
-}
-
-const maxAIRateLimitUsers = 50000
-
-func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
-	rl := &RateLimiter{
-		counters: make(map[string][]time.Time),
-		limit:    limit,
-		window:   window,
-	}
-	go rl.cleanup()
-	return rl
-}
-
-func (rl *RateLimiter) cleanup() {
-	ticker := time.NewTicker(15 * time.Minute)
-	defer ticker.Stop()
-	for range ticker.C {
-		rl.mu.Lock()
-		cutoff := time.Now().Add(-rl.window)
-		for userID, timestamps := range rl.counters {
-			var valid []time.Time
-			for _, t := range timestamps {
-				if t.After(cutoff) {
-					valid = append(valid, t)
-				}
-			}
-			if len(valid) == 0 {
-				delete(rl.counters, userID)
-			} else {
-				rl.counters[userID] = valid
-			}
-		}
-		rl.mu.Unlock()
-	}
-}
-
-func (rl *RateLimiter) Allow(userID string) bool {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	now := time.Now()
-	cutoff := now.Add(-rl.window)
-
-	timestamps := rl.counters[userID]
-	var valid []time.Time
-	for _, t := range timestamps {
-		if t.After(cutoff) {
-			valid = append(valid, t)
-		}
-	}
-
-	if len(valid) >= rl.limit {
-		rl.counters[userID] = valid
-		return false
-	}
-
-	// Haritanın sınırsız büyümesini önle
-	if _, exists := rl.counters[userID]; !exists && len(rl.counters) >= maxAIRateLimitUsers {
-		return true // izin ver ama kaydetme
-	}
-
-	rl.counters[userID] = append(valid, now)
-	return true
+	rateLimiter *ratelimit.Limiter
 }
 
 func NewService(db *gorm.DB, apiKey string) *Service {
@@ -109,7 +38,7 @@ func NewService(db *gorm.DB, apiKey string) *Service {
 		client:      &http.Client{Timeout: 60 * time.Second},
 		repo:        NewRepository(db),
 		metricsRepo: metrics.NewRepository(db),
-		rateLimiter: NewRateLimiter(10, time.Minute),
+		rateLimiter: ratelimit.New(10, time.Minute),
 	}
 }
 
@@ -232,21 +161,26 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		model = ModelSonnet
 	}
 
-	result, err := s.callClaude(prompt, model)
+	raw, err := s.callClaude(prompt, model, MaxTokensDefault)
 	if err != nil {
 		return nil, fmt.Errorf("AI analizi başarısız: %w", err)
 	}
+	var result AnalysisResult
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, fmt.Errorf("AI yanıtı parse edilemedi (raw: %.200s): %w", string(raw), err)
+	}
 
 	// Insight'ı kaydet
-	go s.saveInsight(serviceID, model, result)
+	go s.saveInsight(serviceID, model, &result)
 
-	return result, nil
+	return &result, nil
 }
 
-func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
+// callClaude tek Claude isteği yapar ve ham JSON'u döner; caller kendi struct'ına Unmarshal eder.
+func (s *Service) callClaude(prompt, model string, maxTokens int) ([]byte, error) {
 	reqBody := ClaudeRequest{
 		Model:     model,
-		MaxTokens: MaxTokensDefault,
+		MaxTokens: maxTokens,
 		Messages: []Message{
 			{Role: "user", Content: prompt},
 		},
@@ -261,7 +195,6 @@ func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", s.apiKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
@@ -282,31 +215,21 @@ func (s *Service) callClaude(prompt, model string) (*AnalysisResult, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&claudeResp); err != nil {
 		return nil, err
 	}
-
 	if len(claudeResp.Content) == 0 {
 		return nil, fmt.Errorf("claude boş yanıt döndü")
 	}
-
 	if claudeResp.StopReason == "max_tokens" {
-		return nil, fmt.Errorf("AI yanıtı token limitinde kesildi; MaxTokens değerini artırın")
+		return nil, fmt.Errorf("AI yanıtı token limitinde kesildi; maxTokens değerini artırın")
 	}
 
-	rawText := claudeResp.Content[0].Text
-	// Markdown code fence varsa temizle (```json ... ``` veya ``` ... ```)
-	rawText = strings.TrimSpace(rawText)
+	rawText := strings.TrimSpace(claudeResp.Content[0].Text)
 	if idx := strings.Index(rawText, "{"); idx > 0 {
 		rawText = rawText[idx:]
 	}
 	if idx := strings.LastIndex(rawText, "}"); idx >= 0 && idx < len(rawText)-1 {
 		rawText = rawText[:idx+1]
 	}
-
-	var result AnalysisResult
-	if err := json.Unmarshal([]byte(rawText), &result); err != nil {
-		return nil, fmt.Errorf("AI yanıtı parse edilemedi (raw: %.200s): %w", rawText, err)
-	}
-
-	return &result, nil
+	return []byte(rawText), nil
 }
 
 func (s *Service) saveInsight(serviceID uuid.UUID, model string, result *AnalysisResult) {
@@ -488,84 +411,13 @@ func (s *Service) GenerateReport(ctx context.Context, userID uuid.UUID, req Repo
 		periodLabel,
 	)
 
-	result, err := s.callClaudeReport(prompt)
+	raw, err := s.callClaude(prompt, ModelSonnet, 4096)
 	if err != nil {
 		return nil, fmt.Errorf("AI raporu başarısız: %w", err)
 	}
-
-	return result, nil
-}
-
-func (s *Service) callClaudeReport(prompt string) (*ReportResult, error) {
-	reqBody := ClaudeRequest{
-		Model:     ModelSonnet,
-		MaxTokens: 4096,
-		Messages: []Message{
-			{Role: "user", Content: prompt},
-		},
-	}
-
-	jsonData, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", "https://api.anthropic.com/v1/messages", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", s.apiKey)
-	req.Header.Set("anthropic-version", "2023-06-01")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		log.Printf("[Claude Report API] HTTP %d (body: %.200s)", resp.StatusCode, string(body))
-		return nil, fmt.Errorf("claude API hatası (HTTP %d)", resp.StatusCode)
-	}
-
-	var claudeResp ClaudeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&claudeResp); err != nil {
-		return nil, err
-	}
-
-	if len(claudeResp.Content) == 0 {
-		return nil, fmt.Errorf("claude boş yanıt döndü")
-	}
-
-	if claudeResp.StopReason == "max_tokens" {
-		return nil, fmt.Errorf("AI yanıtı token limitinde kesildi")
-	}
-
-	rawText := strings.TrimSpace(claudeResp.Content[0].Text)
-	if idx := strings.Index(rawText, "{"); idx > 0 {
-		rawText = rawText[idx:]
-	}
-	if idx := strings.LastIndex(rawText, "}"); idx >= 0 && idx < len(rawText)-1 {
-		rawText = rawText[:idx+1]
-	}
-
 	var result ReportResult
-	if err := json.Unmarshal([]byte(rawText), &result); err != nil {
-		return nil, fmt.Errorf("rapor parse edilemedi (raw: %.200s): %w", rawText, err)
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, fmt.Errorf("rapor parse edilemedi (raw: %.200s): %w", string(raw), err)
 	}
-
 	return &result, nil
-}
-
-// IsServiceOwner servisin belirtilen kullanıcıya ait olup olmadığını kontrol eder.
-func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
-	var count int64
-	s.db.WithContext(ctx).
-		Table("services").
-		Where("id = ? AND user_id = ?", serviceID, userID).
-		Count(&count)
-	return count > 0
 }
