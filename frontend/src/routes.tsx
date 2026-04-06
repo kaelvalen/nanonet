@@ -13,6 +13,7 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
+import { SecurityPage } from "@/pages/SecurityPage";
 import { ServiceMapPage } from "@/pages/ServiceMapPage";
 import { ServicesPage } from "@/pages/ServicesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -157,6 +158,7 @@ export const router = createBrowserRouter([
 			{ path: "settings", element: <SettingsPage /> },
 			{ path: "kubernetes", element: <KubernetesPage /> },
 			{ path: "logs", element: <LogsPage /> },
+			{ path: "security", element: <SecurityPage /> },
 		],
 	},
 	{

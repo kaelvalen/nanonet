@@ -7,6 +7,7 @@ import {
 	Scroll,
 	Server,
 	Settings,
+	Shield,
 	Sparkles,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
 	{ to: "/app/ai-insights", label: "AI İçgörüler", icon: Sparkles },
 	{ to: "/app/service-map", label: "Servis Haritası", icon: GitFork },
 	{ to: "/app/kubernetes", label: "Kubernetes", icon: Cloud },
+	{ to: "/app/security", label: "Güvenlik", icon: Shield },
 	{ to: "/app/logs", label: "Loglar", icon: Scroll },
 ];
 

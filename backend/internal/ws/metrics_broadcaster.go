@@ -9,10 +9,14 @@ import (
 	"nanonet-backend/internal/alerts"
 	"nanonet-backend/internal/logs"
 	"nanonet-backend/internal/metrics"
+	"nanonet-backend/internal/security"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// securityScanInterval güvenlik taramaları arasındaki varsayılan süre.
+const securityScanInterval = 6 * time.Hour
 
 type MetricsBroadcaster struct {
 	hub          *Hub
@@ -42,7 +46,14 @@ func (mb *MetricsBroadcaster) Start(ctx context.Context) {
 	ticker := time.NewTicker(mb.pollInterval)
 	defer ticker.Stop()
 
-	log.Printf("MetricsBroadcaster başlatıldı (interval: %s)", mb.pollInterval)
+	// Güvenlik taramaları daha seyrek çalışır
+	secTicker := time.NewTicker(securityScanInterval)
+	defer secTicker.Stop()
+
+	log.Printf("MetricsBroadcaster başlatıldı (interval: %s, security: %s)", mb.pollInterval, securityScanInterval)
+
+	// İlk başlatmada bir tarama çalıştır
+	go security.ScanAllServices(ctx, mb.db)
 
 	for {
 		select {
@@ -51,6 +62,8 @@ func (mb *MetricsBroadcaster) Start(ctx context.Context) {
 			return
 		case <-ticker.C:
 			mb.broadcastLatestMetrics(ctx)
+		case <-secTicker.C:
+			go security.ScanAllServices(ctx, mb.db)
 		}
 	}
 }

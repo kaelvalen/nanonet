@@ -17,6 +17,7 @@ import (
 	"nanonet-backend/internal/logs"
 	"nanonet-backend/internal/maintenance"
 	"nanonet-backend/internal/metrics"
+	"nanonet-backend/internal/security"
 	"nanonet-backend/internal/services"
 	"nanonet-backend/internal/settings"
 	"nanonet-backend/internal/ws"
@@ -135,6 +136,7 @@ func main() {
 	settingsHandler := settings.NewHandler(db)
 	auditHandler := audit.NewHandler(db)
 	logsHandler := logs.NewHandler(logsRepo)
+	securityHandler := security.NewHandler(db)
 
 	// ── Kubernetes (optional) ─────────────────────────────────────
 	var k8sClient *k8s.Client
@@ -273,6 +275,14 @@ func main() {
 		{
 			auditGroup.GET("", auditHandler.GetLogs)
 		}
+
+		securityGroup := v1.Group("/security", authMiddleware.Required())
+		{
+			securityGroup.GET("/overview", securityHandler.GetOverview)
+		}
+
+		svcGroup.GET("/:id/security/scans", securityHandler.GetServiceScans)
+		svcGroup.POST("/:id/security/scan", strictLimiter, securityHandler.TriggerScan)
 
 		logsGroup := v1.Group("/logs", authMiddleware.Required())
 		{
