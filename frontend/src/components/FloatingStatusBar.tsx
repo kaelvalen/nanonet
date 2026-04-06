@@ -29,10 +29,8 @@ function buildBreadcrumbs(pathname: string): Crumb[] {
 
 export function FloatingStatusBar({
 	onOpenCommandPalette,
-	sidebarCollapsed,
 }: {
 	onOpenCommandPalette: () => void;
-	sidebarCollapsed: boolean;
 }) {
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -49,11 +47,10 @@ export function FloatingStatusBar({
 	return (
 		<motion.div
 			className="fixed z-40 hidden md:block"
-			style={{ top: 10, right: 12 }}
-			animate={{
-				left: sidebarCollapsed ? 72 : 252,
-			}}
-			transition={{ duration: 0.2, ease: "easeInOut" }}
+			style={{ top: 10, right: 12, left: "auto" }}
+			initial={{ opacity: 0, y: -8 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.25, ease: "easeOut" }}
 		>
 			<div
 				className="flex items-center h-9 px-1 gap-0.5 rounded-full"
