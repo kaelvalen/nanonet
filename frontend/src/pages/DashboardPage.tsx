@@ -408,9 +408,9 @@ export function DashboardPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.35, delay: 0.4 }}
 				>
-					<Card className="p-4 h-full flex flex-col" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+					<Card className="p-4" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
 						{/* Panel header */}
-						<div className="flex items-center justify-between mb-3 shrink-0">
+						<div className="flex items-center justify-between mb-3">
 							<div className="flex items-center gap-2">
 								<div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
 									<Server className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
@@ -430,7 +430,7 @@ export function DashboardPage() {
 						</div>
 
 						{/* List */}
-						<div className="space-y-1 flex-1">
+						<div className="space-y-1">
 							<AnimatePresence>
 								{displayServices.map((service, idx) => {
 									const sc = statusColors(service.status);
@@ -506,9 +506,9 @@ export function DashboardPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.35, delay: 0.45 }}
 				>
-					<Card className="p-4 h-full flex flex-col" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+					<Card className="p-4" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
 						{/* Panel header */}
-						<div className="flex items-center justify-between mb-3 shrink-0">
+						<div className="flex items-center justify-between mb-3">
 							<div className="flex items-center gap-2">
 								<div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)" }}>
 									<AlertCircle className="w-3.5 h-3.5" style={{ color: "var(--status-down)" }} />
@@ -536,7 +536,7 @@ export function DashboardPage() {
 
 						{/* Alert list */}
 						{recentAlerts.length === 0 ? (
-							<div className="flex-1 flex flex-col items-center justify-center gap-2 py-8">
+							<div className="flex flex-col items-center justify-center gap-2 py-8">
 								<div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--status-up-subtle)" }}>
 									<CheckCircle2 className="w-5 h-5" style={{ color: "var(--status-up)" }} />
 								</div>
@@ -544,7 +544,7 @@ export function DashboardPage() {
 								<p className="text-xs" style={{ color: "var(--text-faint)" }}>Tüm sistemler normal çalışıyor</p>
 							</div>
 						) : (
-							<div className="space-y-1.5 flex-1">
+							<div className="space-y-1.5">
 								{recentAlerts.map((alert) => {
 									const sv = severityColors(alert.severity);
 									const svcName = services.find((s) => s.id === alert.service_id)?.name ?? "Bilinmeyen";
@@ -587,7 +587,7 @@ export function DashboardPage() {
 						)}
 
 						{/* Quick nav footer */}
-						<div className="flex gap-2 mt-3 pt-3 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+						<div className="flex gap-2 mt-3 pt-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
 							<button
 								type="button"
 								onClick={() => navigate("/app/ai-insights")}

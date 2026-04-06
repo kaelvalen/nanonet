@@ -9,7 +9,6 @@ import {
 	CheckCircle2,
 	Clock,
 	Cpu,
-	Filter,
 	Gauge,
 	Info,
 	Loader2,
@@ -22,7 +21,7 @@ import {
 	XOctagon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { type AlertRules, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
@@ -392,66 +391,48 @@ function AlertRulesPanel() {
 }
 
 export function AlertsPage() {
-	const [activeTab, setActiveTab] = useState<"alerts" | "rules">("alerts");
 	const [severityFilter, setSeverityFilter] = useState<string>("all");
 	const [showResolved, setShowResolved] = useState(false);
-
-	const {
-		data: alerts = [],
-		isLoading,
-		refetch,
-	} = useQuery({
-		queryKey: ["activeAlerts"],
-		queryFn: () => metricsApi.getActiveAlerts(),
-		refetchInterval: 15000,
-	});
-
-	const filtered = useMemo(() => {
-		return alerts
-			.filter((a) => {
-				if (severityFilter !== "all" && a.severity !== severityFilter)
-					return false;
-				if (!showResolved && a.resolved_at) return false;
-				return true;
-			})
-			.sort(
-				(a, b) =>
-					new Date(b.triggered_at).getTime() -
-					new Date(a.triggered_at).getTime(),
-			);
-	}, [alerts, severityFilter, showResolved]);
-
-	const severityCounts = useMemo(() => {
-		const counts = { all: alerts.length, crit: 0, warn: 0, info: 0 };
-		alerts.forEach((a) => {
-			if (a.severity in counts) counts[a.severity as keyof typeof counts]++;
-		});
-		return counts;
-	}, [alerts]);
-
 	const [snoozeOpenId, setSnoozeOpenId] = useState<string | null>(null);
 	const snoozeRef = useRef<HTMLDivElement>(null);
 
+	const { data: alerts = [], isLoading, refetch } = useQuery({
+		queryKey: ["activeAlerts"],
+		queryFn: () => metricsApi.getActiveAlerts(),
+		refetchInterval: 15_000,
+	});
+
+	const filtered = useMemo(() =>
+		alerts
+			.filter((a) => {
+				if (severityFilter !== "all" && a.severity !== severityFilter) return false;
+				if (!showResolved && a.resolved_at) return false;
+				return true;
+			})
+			.sort((a, b) => new Date(b.triggered_at).getTime() - new Date(a.triggered_at).getTime()),
+		[alerts, severityFilter, showResolved],
+	);
+
+	const severityCounts = useMemo(() => {
+		const c = { all: alerts.length, crit: 0, warn: 0, info: 0 };
+		alerts.forEach((a) => { if (a.severity in c) c[a.severity as keyof typeof c]++; });
+		return c;
+	}, [alerts]);
+
+	const activeCount = alerts.filter((a) => !a.resolved_at).length;
+
 	const handleResolve = async (alertId: string) => {
-		try {
-			await metricsApi.resolveAlert(alertId);
-			toast.success("Alert çözüldü");
-			refetch();
-		} catch {
-			toast.error("Alert çözülemedi");
-		}
+		try { await metricsApi.resolveAlert(alertId); toast.success("Alert çözüldü"); refetch(); }
+		catch { toast.error("Alert çözülemedi"); }
 	};
 
 	const handleSnooze = async (alertId: string, minutes: number) => {
 		setSnoozeOpenId(null);
 		try {
 			await metricsApi.snoozeAlert(alertId, minutes);
-			const label = minutes < 60 ? `${minutes}dk` : `${minutes / 60}sa`;
-			toast.success(`Alert ${label} süreyle ertelendi`);
+			toast.success(`Alert ${minutes < 60 ? `${minutes}dk` : `${minutes / 60}sa`} ertelendi`);
 			refetch();
-		} catch {
-			toast.error("Alert ertelenemedi");
-		}
+		} catch { toast.error("Alert ertelenemedi"); }
 	};
 
 	const SNOOZE_OPTIONS = [
@@ -463,610 +444,316 @@ export function AlertsPage() {
 	];
 
 	const severityConfig = (severity: string) => {
-		switch (severity) {
-			case "crit":
-				return {
-					dotVar: "var(--status-down)",
-					badgeBg: "var(--status-down-subtle)",
-					badgeText: "var(--status-down-text)",
-					badgeBorder: "var(--status-down-border)",
-					borderVar: "var(--status-down-border)",
-					colorVar: "var(--status-down-text)",
-					label: "Kritik",
-				};
-			case "warn":
-				return {
-					dotVar: "var(--status-warn)",
-					badgeBg: "var(--status-warn-subtle)",
-					badgeText: "var(--status-warn-text)",
-					badgeBorder: "var(--status-warn-border)",
-					borderVar: "var(--status-warn-border)",
-					colorVar: "var(--status-warn-text)",
-					label: "Uyarı",
-				};
-			default:
-				return {
-					dotVar: "var(--color-blue)",
-					badgeBg: "var(--color-blue-subtle)",
-					badgeText: "var(--color-blue-text)",
-					badgeBorder: "var(--color-blue-border)",
-					borderVar: "var(--color-blue-border)",
-					colorVar: "var(--color-blue-text)",
-					label: "Bilgi",
-				};
-		}
+		if (severity === "crit") return {
+			dot: "var(--status-down)",
+			bg: "var(--status-down-subtle)",
+			text: "var(--status-down-text)",
+			border: "var(--status-down-border)",
+			label: "Kritik",
+		};
+		if (severity === "warn") return {
+			dot: "var(--status-warn)",
+			bg: "var(--status-warn-subtle)",
+			text: "var(--status-warn-text)",
+			border: "var(--status-warn-border)",
+			label: "Uyarı",
+		};
+		return {
+			dot: "var(--color-blue)",
+			bg: "var(--color-blue-subtle)",
+			text: "var(--color-blue-text)",
+			border: "var(--color-blue-border)",
+			label: "Bilgi",
+		};
 	};
 
-	const activeCount = alerts.filter((a) => !a.resolved_at).length;
-
-	const SeverityIcon = ({
-		severity,
-		className,
-		style,
-	}: {
-		severity: string;
-		className?: string;
-		style?: React.CSSProperties;
-	}) => {
-		if (severity === "crit")
-			return <XOctagon className={className} style={style} />;
-		if (severity === "warn")
-			return <AlertTriangle className={className} style={style} />;
+	const SeverityIcon = ({ severity, className, style }: { severity: string; className?: string; style?: React.CSSProperties }) => {
+		if (severity === "crit") return <XOctagon className={className} style={style} />;
+		if (severity === "warn") return <AlertTriangle className={className} style={style} />;
 		return <Info className={className} style={style} />;
 	};
 
 	return (
-		<div className="space-y-6">
-			{/* Header */}
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.35 }}
-				className="flex items-center justify-between"
-			>
-				<p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-					Gerçek zamanlı olay bildirimleri
-				</p>
-				<div
-					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
-					style={
-						activeCount > 0
-							? {
-									background: "var(--status-down-subtle)",
-									border: "1px solid var(--status-down-border)",
-									color: "var(--status-down-text)",
-								}
-							: {
-									background: "var(--status-up-subtle)",
-									border: "1px solid var(--status-up-border)",
-									color: "var(--status-up-text)",
-								}
-					}
-				>
-					{activeCount > 0 ? (
-						<>
-							<Bell className="w-3.5 h-3.5 animate-pulse" />
-							{activeCount} Aktif
-						</>
-					) : (
-						<>
-							<BellOff className="w-3.5 h-3.5" />
-							Sorun Yok
-						</>
-					)}
-				</div>
-			</motion.div>
+		<div className="space-y-4">
 
-			{/* Tabs */}
-			<div
-				className="flex items-center gap-0.5 p-0.5 w-fit rounded-lg"
-				style={{
-					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-subtle)",
-				}}
+			{/* ── Stat tiles ──────────────────────────────────────────── */}
+			<motion.div
+				className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+				initial={{ opacity: 0, y: 8 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.3 }}
 			>
-				{[
-					{ key: "alerts" as const, label: "Uyarılar", icon: Bell },
-					{ key: "rules" as const, label: "Eşik Ayarları", icon: Settings2 },
-				].map((tab) => (
+				{([
+					{ key: "all",  label: "Toplam",  icon: Bell,          color: "var(--color-lavender)",  bg: "var(--color-lavender-subtle)",  border: "var(--color-lavender-border)",  count: severityCounts.all  },
+					{ key: "crit", label: "Kritik",  icon: XOctagon,      color: "var(--status-down-text)", bg: "var(--status-down-subtle)",   border: "var(--status-down-border)",   count: severityCounts.crit },
+					{ key: "warn", label: "Uyarı",   icon: AlertTriangle, color: "var(--status-warn-text)", bg: "var(--status-warn-subtle)",   border: "var(--status-warn-border)",   count: severityCounts.warn },
+					{ key: "info", label: "Bilgi",   icon: Info,          color: "var(--color-blue-text)",  bg: "var(--color-blue-subtle)",    border: "var(--color-blue-border)",    count: severityCounts.info },
+				] as const).map(({ key, label, icon: Icon, color, bg, border, count }) => (
 					<button
+						key={key}
 						type="button"
-						key={tab.key}
-						onClick={() => setActiveTab(tab.key)}
-						className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
-						style={
-							activeTab === tab.key
-								? {
-										background: "var(--surface-raised)",
-										color: "var(--text-primary)",
-										boxShadow: "var(--btn-shadow)",
-									}
-								: { color: "var(--text-muted)" }
-						}
+						onClick={() => setSeverityFilter(severityFilter === key ? "all" : key)}
+						className="relative overflow-hidden px-4 py-3.5 rounded-xl text-left transition-all"
+						style={{
+							background: bg,
+							border: `1.5px solid ${severityFilter === key ? color : border}`,
+							boxShadow: severityFilter === key ? `0 0 0 1px ${border}` : "none",
+						}}
 					>
-						<tab.icon className="w-3.5 h-3.5" />
-						{tab.label}
+						<div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full" style={{ background: color }} />
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-[11px] font-medium mb-1" style={{ color: "var(--text-faint)" }}>{label}</p>
+								<p className="text-3xl font-bold tabular-nums leading-none" style={{ color }}>{count}</p>
+							</div>
+							<div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--surface-card)", border: `1px solid ${border}` }}>
+								<Icon className="w-4 h-4" style={{ color }} />
+							</div>
+						</div>
 					</button>
 				))}
-			</div>
+			</motion.div>
 
-			{activeTab === "rules" && <AlertRulesPanel />}
+			{/* ── 2-column layout ─────────────────────────────────────── */}
+			<div className="grid grid-cols-12 gap-4">
 
-			{activeTab === "alerts" && (
-				<>
-					{/* Severity Summary Cards */}
-					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.4, delay: 0.05 }}
-						className="grid grid-cols-3 gap-3"
-					>
-						{[
-							{
-								key: "crit" as const,
-								label: "Kritik",
-								icon: XOctagon,
-								colorVar: "var(--status-down-text)",
-								bgVar: "var(--status-down-subtle)",
-								borderVar: "var(--status-down-border)",
-								barVar: "var(--status-down)",
-							},
-							{
-								key: "warn" as const,
-								label: "Uyarı",
-								icon: AlertTriangle,
-								colorVar: "var(--status-warn-text)",
-								bgVar: "var(--status-warn-subtle)",
-								borderVar: "var(--status-warn-border)",
-								barVar: "var(--status-warn)",
-							},
-							{
-								key: "info" as const,
-								label: "Bilgi",
-								icon: Info,
-								colorVar: "var(--color-blue-text)",
-								bgVar: "var(--color-blue-subtle)",
-								borderVar: "var(--color-blue-border)",
-								barVar: "var(--color-blue)",
-							},
-						].map((s, i) => (
-							<motion.div
-								key={s.key}
-								initial={{ opacity: 0, y: 12 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.3, delay: 0.1 + i * 0.06 }}
-							>
-								<button
-									type="button"
-									onClick={() =>
-										setSeverityFilter(severityFilter === s.key ? "all" : s.key)
-									}
-									className={`w-full text-left p-3 rounded border transition-all duration-200`}
-									style={{ background: s.bgVar, borderColor: s.borderVar }}
-								>
-									<div className="flex items-center justify-between mb-1.5">
-										<s.icon className="w-4 h-4" style={{ color: s.colorVar }} />
-										<span
-											className="text-xl font-bold"
-											style={{ color: s.colorVar }}
-										>
-											{severityCounts[s.key]}
-										</span>
-									</div>
-									<p
-										className="text-[10px] font-medium"
-										style={{ color: s.colorVar }}
+				{/* ── LEFT: Alert feed ─────────────────────────────── */}
+				<motion.div
+					className="col-span-12 lg:col-span-8 flex flex-col gap-3"
+					initial={{ opacity: 0, x: -10 }}
+					animate={{ opacity: 1, x: 0 }}
+					transition={{ duration: 0.35, delay: 0.1 }}
+				>
+					{/* Filter bar */}
+					<div className="flex items-center justify-between gap-2 flex-wrap">
+						<div className="flex items-center gap-1.5 flex-wrap">
+							{(["all", "crit", "warn", "info"] as const).map((s) => {
+								const cfg = s !== "all" ? severityConfig(s) : null;
+								const labels = { all: `Tümü (${severityCounts.all})`, crit: `Kritik (${severityCounts.crit})`, warn: `Uyarı (${severityCounts.warn})`, info: `Bilgi (${severityCounts.info})` };
+								return (
+									<button key={s} type="button" onClick={() => setSeverityFilter(s)}
+										className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border"
+										style={severityFilter === s
+											? cfg ? { background: cfg.bg, color: cfg.text, borderColor: cfg.border }
+												: { background: "var(--color-lavender-subtle)", color: "var(--color-lavender)", borderColor: "var(--color-lavender-border)" }
+											: { color: "var(--text-muted)", borderColor: "var(--border-subtle)", background: "transparent" }
+										}
 									>
-										{s.label}
-									</p>
-									<div
-										className="mt-2 h-1 rounded-full overflow-hidden"
-										style={{ backgroundColor: "var(--border-track)" }}
-									>
-										<motion.div
-											className="h-full rounded-full"
-											style={{ backgroundColor: s.barVar }}
-											initial={{ width: 0 }}
-											animate={{
-												width:
-													severityCounts.all > 0
-														? `${(severityCounts[s.key] / severityCounts.all) * 100}%`
-														: "0%",
-											}}
-											transition={{ duration: 0.6, delay: 0.2 + i * 0.06 }}
-										/>
-									</div>
-								</button>
-							</motion.div>
-						))}
-					</motion.div>
-
-					{/* Filters */}
-					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.4, delay: 0.15 }}
-					>
-						<div className="flex flex-wrap items-center gap-2">
-							<Filter
-								className="w-3 h-3"
-								style={{ color: "var(--text-faint)" }}
-							/>
-							{(["all", "crit", "warn", "info"] as const).map((s) => (
-								<button
-									type="button"
-									key={s}
-									onClick={() => setSeverityFilter(s)}
-									className="px-2.5 py-1 rounded text-[10px] font-medium transition-all border"
-									style={
-										severityFilter === s
-											? {
-													background:
-														s === "all"
-															? "var(--color-teal-subtle)"
-															: s === "crit"
-																? "var(--status-down-subtle)"
-																: s === "warn"
-																	? "var(--status-warn-subtle)"
-																	: "var(--color-blue-subtle)",
-													color:
-														s === "all"
-															? "var(--color-teal)"
-															: s === "crit"
-																? "var(--status-down-text)"
-																: s === "warn"
-																	? "var(--status-warn-text)"
-																	: "var(--color-blue-text)",
-													borderColor:
-														s === "all"
-															? "var(--color-teal-border)"
-															: s === "crit"
-																? "var(--status-down-border)"
-																: s === "warn"
-																	? "var(--status-warn-border)"
-																	: "var(--color-blue-border)",
-												}
-											: {
-													color: "var(--text-muted)",
-													borderColor: "transparent",
-												}
-									}
-								>
-									{s === "all"
-										? `Tümü (${severityCounts.all})`
-										: s === "crit"
-											? `Kritik (${severityCounts.crit})`
-											: s === "warn"
-												? `Uyarı (${severityCounts.warn})`
-												: `Bilgi (${severityCounts.info})`}
-								</button>
-							))}
-							<button
-								type="button"
-								onClick={() => setShowResolved(!showResolved)}
-								className="ml-auto px-2.5 py-1 rounded text-[10px] font-medium transition-all border"
-								style={
-									showResolved
-										? {
-												background: "var(--status-up-subtle)",
-												color: "var(--status-up-text)",
-												borderColor: "var(--status-up-border)",
-											}
-										: { color: "var(--text-muted)", borderColor: "transparent" }
-								}
-							>
-								{showResolved ? "✓ Çözülmüşleri Göster" : "Çözülmüşleri Göster"}
-							</button>
+										{labels[s]}
+									</button>
+								);
+							})}
 						</div>
-					</motion.div>
+						<button
+							type="button"
+							onClick={() => setShowResolved(!showResolved)}
+							className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border"
+							style={showResolved
+								? { background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }
+								: { color: "var(--text-muted)", borderColor: "var(--border-subtle)", background: "transparent" }
+							}
+						>
+							{showResolved ? "✓ Çözülmüşleri Gizle" : "Çözülmüşleri Göster"}
+						</button>
+					</div>
 
-					{/* Timeline / Alerts List */}
+					{/* Feed */}
 					{isLoading ? (
-						<div className="space-y-3">
+						<div className="space-y-2">
 							{[1, 2, 3].map((i) => (
-								<Card
-									key={i}
-									className="p-4 rounded animate-pulse"
-									style={{
-										background: "var(--surface-card)",
-										border: "1px solid var(--border-default)",
-									}}
-								>
-									<div className="flex items-start gap-3">
-										<div
-											className="w-8 h-8 rounded-lg shrink-0"
-											style={{ backgroundColor: "var(--color-teal-subtle)" }}
-										/>
-										<div className="flex-1">
-											<div
-												className="h-3.5 w-48 rounded mb-2"
-												style={{ backgroundColor: "var(--color-teal-subtle)" }}
-											/>
-											<div
-												className="h-2.5 w-32 rounded"
-												style={{ backgroundColor: "var(--color-teal-subtle)" }}
-											/>
+								<Card key={i} className="p-4 animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+									<div className="flex gap-3">
+										<div className="w-8 h-8 rounded-lg shrink-0" style={{ background: "var(--surface-sunken)" }} />
+										<div className="flex-1 space-y-2">
+											<div className="h-3.5 w-2/3 rounded" style={{ background: "var(--surface-sunken)" }} />
+											<div className="h-2.5 w-1/3 rounded" style={{ background: "var(--surface-sunken)" }} />
 										</div>
 									</div>
 								</Card>
 							))}
 						</div>
 					) : filtered.length === 0 ? (
-						<motion.div
-							initial={{ opacity: 0, scale: 0.97 }}
-							animate={{ opacity: 1, scale: 1 }}
-							transition={{ duration: 0.3 }}
-						>
-							<Card
-								className="p-14 rounded text-center"
-								style={{
-									background: "var(--surface-card)",
-									border: "1px solid var(--status-up-border)",
-								}}
-							>
-								<div
-									className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4"
-									style={{
-										backgroundColor: "var(--status-up-subtle)",
-										border: "1px solid var(--status-up-border)",
-									}}
-								>
-									<Shield
-										className="w-8 h-8 opacity-50"
-										style={{ color: "var(--status-up)" }}
-									/>
-								</div>
-								<h3
-									className="text-sm font-semibold mb-1"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									Tüm Sistemler Aktif
-								</h3>
-								<p className="text-xs" style={{ color: "var(--text-muted)" }}>
-									{severityFilter !== "all"
-										? "Bu filtreye uygun uyarı bulunamadı"
-										: "Şu anda aktif uyarı yok"}
+						<Card className="py-14 flex flex-col items-center gap-3 text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--status-up-border)" }}>
+							<div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)" }}>
+								<Shield className="w-7 h-7" style={{ color: "var(--status-up)" }} />
+							</div>
+							<div>
+								<p className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Tüm Sistemler Normal</p>
+								<p className="text-xs" style={{ color: "var(--text-faint)" }}>
+									{severityFilter !== "all" ? "Bu filtreye uygun uyarı bulunamadı" : "Aktif uyarı yok"}
 								</p>
-							</Card>
-						</motion.div>
+							</div>
+						</Card>
 					) : (
-						<div className="relative">
-							{/* Timeline line */}
-							<div
-								className="absolute left-4.75 top-4 bottom-4 w-px"
-								style={{
-									background:
-										"linear-gradient(to bottom, var(--color-teal-border), var(--color-lavender-border), transparent)",
-								}}
-							/>
-							<div className="space-y-3 pl-1">
-								<AnimatePresence mode="popLayout">
-									{filtered.map((alert, index) => {
-										const config = severityConfig(alert.severity);
-										return (
-											<motion.div
-												key={alert.id}
-												initial={{ opacity: 0, x: -16 }}
-												animate={{ opacity: 1, x: 0 }}
-												exit={{ opacity: 0, x: 16, height: 0 }}
-												transition={{ duration: 0.25, delay: index * 0.04 }}
+						<div className="space-y-2">
+							<AnimatePresence mode="popLayout">
+								{filtered.map((alert, index) => {
+									const cfg = severityConfig(alert.severity);
+									return (
+										<motion.div
+											key={alert.id}
+											initial={{ opacity: 0, y: 6 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, scale: 0.98, height: 0 }}
+											transition={{ duration: 0.2, delay: index * 0.03 }}
+											layout
+										>
+											<Card
+												className={`overflow-hidden transition-opacity ${alert.resolved_at ? "opacity-55" : ""}`}
+												style={{
+													background: "var(--surface-card)",
+													border: "1px solid var(--border-default)",
+													borderLeft: `3px solid ${cfg.dot}`,
+												}}
 											>
-												<div className="flex items-start gap-3">
-													{/* Timeline icon */}
-													<div
-														className="relative z-10 w-9 h-9 rounded flex items-center justify-center border shrink-0 mt-0.5"
-														style={{
-															background: config.badgeBg,
-															borderColor: config.badgeBorder,
-														}}
-													>
+												<div className="px-4 py-3.5 flex items-start gap-3">
+													{/* Icon */}
+													<div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
 														<SeverityIcon
 															severity={alert.severity}
 															className={`w-4 h-4 ${alert.severity === "crit" && !alert.resolved_at ? "animate-pulse" : ""}`}
-															style={{ color: config.colorVar }}
+															style={{ color: cfg.text }}
 														/>
 													</div>
 
-													{/* Card */}
-													<Card
-														className={`flex-1 rounded p-4 transition-all duration-200 ${alert.resolved_at ? "opacity-60" : ""}`}
-														style={{
-															background: "var(--surface-card)",
-															border: `1px solid ${config.borderVar}`,
-														}}
-													>
-														<div className="flex items-start justify-between gap-3">
-															<div className="min-w-0 flex-1">
-																<div className="flex items-center gap-2 mb-1.5 flex-wrap">
-																	<Badge
-																		className="text-[9px] px-1.5 py-0 rounded border uppercase font-(--font-mono)"
-																		style={{
-																			background: config.badgeBg,
-																			color: config.badgeText,
-																			borderColor: config.badgeBorder,
-																		}}
-																	>
-																		{config.label}
-																	</Badge>
-																	<span
-																		className="text-[10px] font-(--font-mono) px-1.5 py-0.5 rounded"
-																		style={{
-																			color: "var(--text-faint)",
-																			background: "var(--surface-sunken)",
-																		}}
-																	>
-																		{alert.type}
-																	</span>
-																	{alert.resolved_at && (
-																		<Badge
-																			className="text-[9px] px-1.5 py-0 rounded border"
-																			style={{
-																				background: "var(--status-up-subtle)",
-																				color: "var(--status-up-text)",
-																				borderColor: "var(--status-up-border)",
-																			}}
-																		>
-																			<CheckCircle2 className="w-2.5 h-2.5 mr-0.5 inline" />{" "}
-																			Resolved
-																		</Badge>
-																	)}
-																</div>
-																<p
-																	className="text-xs leading-relaxed"
-																	style={{ color: "var(--text-secondary)" }}
-																>
-																	{alert.message}
-																</p>
-																<div
-																	className="flex items-center gap-3 mt-2 text-[10px]"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	<span className="flex items-center gap-1">
-																		<Clock className="w-2.5 h-2.5" />
-																		{new Date(
-																			alert.triggered_at,
-																		).toLocaleString("tr-TR")}
-																	</span>
-																	{alert.resolved_at && (
-																		<span
-																			className="flex items-center gap-1"
-																			style={{ color: "var(--status-up-text)" }}
-																		>
-																			<ArrowRight className="w-2.5 h-2.5" />
-																			{new Date(
-																				alert.resolved_at,
-																			).toLocaleTimeString("tr-TR")}
-																		</span>
-																	)}
-																</div>
-															</div>
-															{!alert.resolved_at && (
-																<div className="flex items-center gap-1 shrink-0">
-																	{/* Snooze dropdown */}
-																	<div
-																		className="relative"
-																		ref={
-																			snoozeOpenId === alert.id
-																				? snoozeRef
-																				: undefined
-																		}
-																	>
-																		<Button
-																			variant="outline"
-																			size="sm"
-																			onClick={() =>
-																				setSnoozeOpenId(
-																					snoozeOpenId === alert.id
-																						? null
-																						: alert.id,
-																				)
-																			}
-																			className="text-[10px] rounded h-7 px-2 shrink-0"
-																			style={{
-																				borderColor: "var(--color-blue-border)",
-																				color: "var(--color-blue-text)",
-																			}}
-																			title="Ertele"
-																		>
-																			<Timer className="w-3 h-3" />
-																		</Button>
-																		<AnimatePresence>
-																			{snoozeOpenId === alert.id && (
-																				<motion.div
-																					initial={{
-																						opacity: 0,
-																						y: -4,
-																						scale: 0.97,
-																					}}
-																					animate={{
-																						opacity: 1,
-																						y: 0,
-																						scale: 1,
-																					}}
-																					exit={{
-																						opacity: 0,
-																						y: -4,
-																						scale: 0.97,
-																					}}
-																					transition={{ duration: 0.15 }}
-																					className="absolute right-0 top-8 z-20 min-w-32 rounded overflow-hidden"
-																					style={{
-																						background: "var(--surface-card)",
-																						border:
-																							"1px solid var(--color-blue-border)",
-																						boxShadow: "var(--panel-shadow)",
-																					}}
-																				>
-																					<div
-																						className="flex items-center gap-1.5 px-3 py-2 border-b"
-																						style={{
-																							borderColor:
-																								"var(--border-subtle)",
-																							color: "var(--text-faint)",
-																						}}
-																					>
-																						<BellRing className="w-3 h-3" />
-																						<span className="text-[10px] uppercase tracking-wider">
-																							Ertele
-																						</span>
-																					</div>
-																					{SNOOZE_OPTIONS.map((opt) => (
-																						<button
-																							type="button"
-																							key={opt.minutes}
-																							onClick={() =>
-																								handleSnooze(
-																									alert.id,
-																									opt.minutes,
-																								)
-																							}
-																							className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:opacity-80"
-																							style={{
-																								color: "var(--text-secondary)",
-																								background: "transparent",
-																							}}
-																						>
-																							<Clock
-																								className="w-3 h-3"
-																								style={{
-																									color: "var(--color-blue)",
-																								}}
-																							/>
-																							{opt.label}
-																						</button>
-																					))}
-																				</motion.div>
-																			)}
-																		</AnimatePresence>
-																	</div>
-																	{/* Resolve button */}
-																	<Button
-																		variant="outline"
-																		size="sm"
-																		onClick={() => handleResolve(alert.id)}
-																		className="text-[10px] rounded h-7 px-2.5 shrink-0"
-																		style={{
-																			borderColor: "var(--status-up-border)",
-																			color: "var(--status-up-text)",
-																		}}
-																	>
-																		<CheckCircle2 className="w-3 h-3 mr-1" />{" "}
-																		Çöz
-																	</Button>
-																</div>
+													{/* Content */}
+													<div className="flex-1 min-w-0">
+														<div className="flex items-center gap-2 mb-1 flex-wrap">
+															<Badge
+																className="text-[9px] px-1.5 py-0 rounded border uppercase"
+																style={{ background: cfg.bg, color: cfg.text, borderColor: cfg.border }}
+															>
+																{cfg.label}
+															</Badge>
+															<span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ color: "var(--text-faint)", background: "var(--surface-sunken)" }}>
+																{alert.type}
+															</span>
+															{alert.resolved_at && (
+																<Badge className="text-[9px] px-1.5 py-0 rounded border" style={{ background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }}>
+																	<CheckCircle2 className="w-2.5 h-2.5 mr-0.5 inline" /> Çözüldü
+																</Badge>
 															)}
 														</div>
-													</Card>
+														<p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{alert.message}</p>
+														<div className="flex items-center gap-3 mt-1.5 text-[10px]" style={{ color: "var(--text-faint)" }}>
+															<span className="flex items-center gap-1">
+																<Clock className="w-2.5 h-2.5" />
+																{new Date(alert.triggered_at).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
+															</span>
+															{alert.resolved_at && (
+																<span className="flex items-center gap-1" style={{ color: "var(--status-up-text)" }}>
+																	<ArrowRight className="w-2.5 h-2.5" />
+																	{new Date(alert.resolved_at).toLocaleTimeString("tr-TR")}
+																</span>
+															)}
+														</div>
+													</div>
+
+													{/* Actions */}
+													{!alert.resolved_at && (
+														<div className="flex items-center gap-1.5 shrink-0">
+															{/* Snooze */}
+															<div className="relative" ref={snoozeOpenId === alert.id ? snoozeRef : undefined}>
+																<Button
+																	variant="outline" size="sm"
+																	onClick={() => setSnoozeOpenId(snoozeOpenId === alert.id ? null : alert.id)}
+																	className="h-7 w-7 p-0 rounded-lg"
+																	style={{ borderColor: "var(--color-blue-border)", color: "var(--color-blue-text)" }}
+																	title="Ertele"
+																>
+																	<Timer className="w-3.5 h-3.5" />
+																</Button>
+																<AnimatePresence>
+																	{snoozeOpenId === alert.id && (
+																		<motion.div
+																			initial={{ opacity: 0, y: -4, scale: 0.97 }}
+																			animate={{ opacity: 1, y: 0, scale: 1 }}
+																			exit={{ opacity: 0, y: -4, scale: 0.97 }}
+																			transition={{ duration: 0.15 }}
+																			className="absolute right-0 top-8 z-20 w-36 rounded-xl overflow-hidden"
+																			style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)", boxShadow: "var(--panel-shadow)" }}
+																		>
+																			<div className="flex items-center gap-1.5 px-3 py-2 border-b" style={{ borderColor: "var(--border-subtle)", color: "var(--text-faint)" }}>
+																				<BellRing className="w-3 h-3" />
+																				<span className="text-[10px] uppercase tracking-wider">Ertele</span>
+																			</div>
+																			{SNOOZE_OPTIONS.map((opt) => (
+																				<button
+																					type="button" key={opt.minutes}
+																					onClick={() => handleSnooze(alert.id, opt.minutes)}
+																					className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:opacity-80 transition-opacity"
+																					style={{ color: "var(--text-secondary)", background: "transparent" }}
+																				>
+																					<Clock className="w-3 h-3" style={{ color: "var(--color-blue)" }} />
+																					{opt.label}
+																				</button>
+																			))}
+																		</motion.div>
+																	)}
+																</AnimatePresence>
+															</div>
+
+															{/* Resolve */}
+															<Button
+																variant="outline" size="sm"
+																onClick={() => handleResolve(alert.id)}
+																className="h-7 px-2.5 rounded-lg text-[11px] font-medium"
+																style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}
+															>
+																<CheckCircle2 className="w-3 h-3 mr-1" /> Çöz
+															</Button>
+														</div>
+													)}
 												</div>
-											</motion.div>
-										);
-									})}
-								</AnimatePresence>
-							</div>
+											</Card>
+										</motion.div>
+									);
+								})}
+							</AnimatePresence>
 						</div>
 					)}
-				</>
-			)}
+				</motion.div>
+
+				{/* ── RIGHT: Rules panel ───────────────────────────── */}
+				<motion.div
+					className="col-span-12 lg:col-span-4"
+					initial={{ opacity: 0, x: 10 }}
+					animate={{ opacity: 1, x: 0 }}
+					transition={{ duration: 0.35, delay: 0.15 }}
+				>
+					<Card className="overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
+						<div className="h-0.5" style={{ background: "var(--gradient-btn-primary)" }} />
+						<div className="p-4">
+							{/* Panel title */}
+							<div className="flex items-center gap-2.5 mb-4">
+								<div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+									<Settings2 className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
+								</div>
+								<div>
+									<p className="text-sm font-bold leading-none" style={{ color: "var(--text-primary)" }}>Eşik Ayarları</p>
+									<p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>Servis bazlı uyarı limitleri</p>
+								</div>
+							</div>
+
+							{/* Active status pill */}
+							<div
+								className="flex items-center gap-1.5 px-3 py-2 rounded-lg mb-4 text-xs font-medium"
+								style={activeCount > 0
+									? { background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }
+									: { background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)", color: "var(--status-up-text)" }
+								}
+							>
+								{activeCount > 0
+									? <><Bell className="w-3.5 h-3.5 animate-pulse" /> {activeCount} aktif uyarı</>
+									: <><BellOff className="w-3.5 h-3.5" /> Sorun yok</>
+								}
+							</div>
+
+							<AlertRulesPanel />
+						</div>
+					</Card>
+				</motion.div>
+			</div>
 		</div>
 	);
 }

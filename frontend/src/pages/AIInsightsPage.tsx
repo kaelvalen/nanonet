@@ -197,11 +197,11 @@ export function AIInsightsPage() {
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ duration: 0.35, delay: 0.1 }}
 				>
-					<Card className="flex flex-col h-full overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
+					<Card className="flex flex-col overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-lavender-border)" }}>
 						{/* Top accent */}
 						<div className="h-0.5 shrink-0" style={{ background: "var(--gradient-btn-primary)" }} />
 
-						<div className="p-5 space-y-5 flex-1 flex flex-col">
+						<div className="p-5 space-y-5 flex flex-col">
 							{/* Panel title */}
 							<div className="flex items-center gap-2.5">
 								<div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--color-lavender-subtle)", border: "1px solid var(--color-lavender-border)" }}>
@@ -294,6 +294,27 @@ export function AIInsightsPage() {
 								</div>
 							)}
 
+							{/* Idle placeholder — only shown when no result and not analyzing */}
+							{!liveResult && !analyzeMutation.isPending && (
+								<div className="rounded-xl px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>
+									<div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--color-lavender-subtle)", border: "1px solid var(--color-lavender-border)" }}>
+										<Sparkles className="w-5 h-5" style={{ color: "var(--color-lavender)" }} />
+									</div>
+									<div>
+										<p className="text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Analiz yapmaya hazır</p>
+										<p className="text-[11px] leading-relaxed" style={{ color: "var(--text-faint)" }}>Servis seçip mod belirledikten sonra analiz başlatın. Sonuçlar burada görünür.</p>
+									</div>
+									<div className="w-full space-y-1.5">
+										{["Kök neden tespiti", "Öneri listesi", "Güven skoru"].map((feat) => (
+											<div key={feat} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "var(--surface-card)" }}>
+												<CheckCircle2 className="w-3 h-3 shrink-0" style={{ color: "var(--color-lavender)" }} />
+												<span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{feat}</span>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+
 							{/* Live result */}
 							<AnimatePresence>
 								{liveResult && !analyzeMutation.isPending && (
@@ -302,7 +323,7 @@ export function AIInsightsPage() {
 										initial={{ opacity: 0, y: 8 }}
 										animate={{ opacity: 1, y: 0 }}
 										exit={{ opacity: 0 }}
-										className="flex-1 flex flex-col space-y-3 pt-1"
+										className="flex flex-col space-y-3 pt-1"
 									>
 										{/* Confidence ring */}
 										{liveResult.confidence !== undefined && (
