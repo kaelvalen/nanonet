@@ -21,7 +21,8 @@ import {
 	XOctagon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import React, { useMemo, useRef, useState } from "react";
+import type React from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { type AlertRules, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
@@ -396,43 +397,64 @@ export function AlertsPage() {
 	const [snoozeOpenId, setSnoozeOpenId] = useState<string | null>(null);
 	const snoozeRef = useRef<HTMLDivElement>(null);
 
-	const { data: alerts = [], isLoading, refetch } = useQuery({
+	const {
+		data: alerts = [],
+		isLoading,
+		refetch,
+	} = useQuery({
 		queryKey: ["activeAlerts"],
 		queryFn: () => metricsApi.getActiveAlerts(),
 		refetchInterval: 15_000,
 	});
 
-	const filtered = useMemo(() =>
-		alerts
-			.filter((a) => {
-				if (severityFilter !== "all" && a.severity !== severityFilter) return false;
-				if (!showResolved && a.resolved_at) return false;
-				return true;
-			})
-			.sort((a, b) => new Date(b.triggered_at).getTime() - new Date(a.triggered_at).getTime()),
+	const filtered = useMemo(
+		() =>
+			alerts
+				.filter((a) => {
+					if (severityFilter !== "all" && a.severity !== severityFilter)
+						return false;
+					if (!showResolved && a.resolved_at) return false;
+					return true;
+				})
+				.sort(
+					(a, b) =>
+						new Date(b.triggered_at).getTime() -
+						new Date(a.triggered_at).getTime(),
+				),
 		[alerts, severityFilter, showResolved],
 	);
 
 	const severityCounts = useMemo(() => {
 		const c = { all: alerts.length, crit: 0, warn: 0, info: 0 };
-		alerts.forEach((a) => { if (a.severity in c) c[a.severity as keyof typeof c]++; });
+		alerts.forEach((a) => {
+			if (a.severity in c) c[a.severity as keyof typeof c]++;
+		});
 		return c;
 	}, [alerts]);
 
 	const activeCount = alerts.filter((a) => !a.resolved_at).length;
 
 	const handleResolve = async (alertId: string) => {
-		try { await metricsApi.resolveAlert(alertId); toast.success("Alert çözüldü"); refetch(); }
-		catch { toast.error("Alert çözülemedi"); }
+		try {
+			await metricsApi.resolveAlert(alertId);
+			toast.success("Alert çözüldü");
+			refetch();
+		} catch {
+			toast.error("Alert çözülemedi");
+		}
 	};
 
 	const handleSnooze = async (alertId: string, minutes: number) => {
 		setSnoozeOpenId(null);
 		try {
 			await metricsApi.snoozeAlert(alertId, minutes);
-			toast.success(`Alert ${minutes < 60 ? `${minutes}dk` : `${minutes / 60}sa`} ertelendi`);
+			toast.success(
+				`Alert ${minutes < 60 ? `${minutes}dk` : `${minutes / 60}sa`} ertelendi`,
+			);
 			refetch();
-		} catch { toast.error("Alert ertelenemedi"); }
+		} catch {
+			toast.error("Alert ertelenemedi");
+		}
 	};
 
 	const SNOOZE_OPTIONS = [
@@ -444,20 +466,22 @@ export function AlertsPage() {
 	];
 
 	const severityConfig = (severity: string) => {
-		if (severity === "crit") return {
-			dot: "var(--status-down)",
-			bg: "var(--status-down-subtle)",
-			text: "var(--status-down-text)",
-			border: "var(--status-down-border)",
-			label: "Kritik",
-		};
-		if (severity === "warn") return {
-			dot: "var(--status-warn)",
-			bg: "var(--status-warn-subtle)",
-			text: "var(--status-warn-text)",
-			border: "var(--status-warn-border)",
-			label: "Uyarı",
-		};
+		if (severity === "crit")
+			return {
+				dot: "var(--status-down)",
+				bg: "var(--status-down-subtle)",
+				text: "var(--status-down-text)",
+				border: "var(--status-down-border)",
+				label: "Kritik",
+			};
+		if (severity === "warn")
+			return {
+				dot: "var(--status-warn)",
+				bg: "var(--status-warn-subtle)",
+				text: "var(--status-warn-text)",
+				border: "var(--status-warn-border)",
+				label: "Uyarı",
+			};
 		return {
 			dot: "var(--color-blue)",
 			bg: "var(--color-blue-subtle)",
@@ -467,15 +491,24 @@ export function AlertsPage() {
 		};
 	};
 
-	const SeverityIcon = ({ severity, className, style }: { severity: string; className?: string; style?: React.CSSProperties }) => {
-		if (severity === "crit") return <XOctagon className={className} style={style} />;
-		if (severity === "warn") return <AlertTriangle className={className} style={style} />;
+	const SeverityIcon = ({
+		severity,
+		className,
+		style,
+	}: {
+		severity: string;
+		className?: string;
+		style?: React.CSSProperties;
+	}) => {
+		if (severity === "crit")
+			return <XOctagon className={className} style={style} />;
+		if (severity === "warn")
+			return <AlertTriangle className={className} style={style} />;
 		return <Info className={className} style={style} />;
 	};
 
 	return (
 		<div className="space-y-4">
-
 			{/* ── Stat tiles ──────────────────────────────────────────── */}
 			<motion.div
 				className="grid grid-cols-2 sm:grid-cols-4 gap-3"
@@ -483,30 +516,86 @@ export function AlertsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3 }}
 			>
-				{([
-					{ key: "all",  label: "Toplam",  icon: Bell,          color: "var(--color-lavender)",  bg: "var(--color-lavender-subtle)",  border: "var(--color-lavender-border)",  count: severityCounts.all  },
-					{ key: "crit", label: "Kritik",  icon: XOctagon,      color: "var(--status-down-text)", bg: "var(--status-down-subtle)",   border: "var(--status-down-border)",   count: severityCounts.crit },
-					{ key: "warn", label: "Uyarı",   icon: AlertTriangle, color: "var(--status-warn-text)", bg: "var(--status-warn-subtle)",   border: "var(--status-warn-border)",   count: severityCounts.warn },
-					{ key: "info", label: "Bilgi",   icon: Info,          color: "var(--color-blue-text)",  bg: "var(--color-blue-subtle)",    border: "var(--color-blue-border)",    count: severityCounts.info },
-				] as const).map(({ key, label, icon: Icon, color, bg, border, count }) => (
+				{(
+					[
+						{
+							key: "all",
+							label: "Toplam",
+							icon: Bell,
+							color: "var(--color-lavender)",
+							bg: "var(--color-lavender-subtle)",
+							border: "var(--color-lavender-border)",
+							count: severityCounts.all,
+						},
+						{
+							key: "crit",
+							label: "Kritik",
+							icon: XOctagon,
+							color: "var(--status-down-text)",
+							bg: "var(--status-down-subtle)",
+							border: "var(--status-down-border)",
+							count: severityCounts.crit,
+						},
+						{
+							key: "warn",
+							label: "Uyarı",
+							icon: AlertTriangle,
+							color: "var(--status-warn-text)",
+							bg: "var(--status-warn-subtle)",
+							border: "var(--status-warn-border)",
+							count: severityCounts.warn,
+						},
+						{
+							key: "info",
+							label: "Bilgi",
+							icon: Info,
+							color: "var(--color-blue-text)",
+							bg: "var(--color-blue-subtle)",
+							border: "var(--color-blue-border)",
+							count: severityCounts.info,
+						},
+					] as const
+				).map(({ key, label, icon: Icon, color, bg, border, count }) => (
 					<button
 						key={key}
 						type="button"
-						onClick={() => setSeverityFilter(severityFilter === key ? "all" : key)}
+						onClick={() =>
+							setSeverityFilter(severityFilter === key ? "all" : key)
+						}
 						className="relative overflow-hidden px-4 py-3.5 rounded-xl text-left transition-all"
 						style={{
 							background: bg,
 							border: `1.5px solid ${severityFilter === key ? color : border}`,
-							boxShadow: severityFilter === key ? `0 0 0 1px ${border}` : "none",
+							boxShadow:
+								severityFilter === key ? `0 0 0 1px ${border}` : "none",
 						}}
 					>
-						<div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full" style={{ background: color }} />
+						<div
+							className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+							style={{ background: color }}
+						/>
 						<div className="flex items-center justify-between">
 							<div>
-								<p className="text-[11px] font-medium mb-1" style={{ color: "var(--text-faint)" }}>{label}</p>
-								<p className="text-3xl font-bold tabular-nums leading-none" style={{ color }}>{count}</p>
+								<p
+									className="text-[11px] font-medium mb-1"
+									style={{ color: "var(--text-faint)" }}
+								>
+									{label}
+								</p>
+								<p
+									className="text-3xl font-bold tabular-nums leading-none"
+									style={{ color }}
+								>
+									{count}
+								</p>
 							</div>
-							<div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--surface-card)", border: `1px solid ${border}` }}>
+							<div
+								className="w-9 h-9 rounded-xl flex items-center justify-center"
+								style={{
+									background: "var(--surface-card)",
+									border: `1px solid ${border}`,
+								}}
+							>
 								<Icon className="w-4 h-4" style={{ color }} />
 							</div>
 						</div>
@@ -516,7 +605,6 @@ export function AlertsPage() {
 
 			{/* ── 2-column layout ─────────────────────────────────────── */}
 			<div className="grid grid-cols-12 gap-4">
-
 				{/* ── LEFT: Alert feed ─────────────────────────────── */}
 				<motion.div
 					className="col-span-12 lg:col-span-8 flex flex-col gap-3"
@@ -529,14 +617,36 @@ export function AlertsPage() {
 						<div className="flex items-center gap-1.5 flex-wrap">
 							{(["all", "crit", "warn", "info"] as const).map((s) => {
 								const cfg = s !== "all" ? severityConfig(s) : null;
-								const labels = { all: `Tümü (${severityCounts.all})`, crit: `Kritik (${severityCounts.crit})`, warn: `Uyarı (${severityCounts.warn})`, info: `Bilgi (${severityCounts.info})` };
+								const labels = {
+									all: `Tümü (${severityCounts.all})`,
+									crit: `Kritik (${severityCounts.crit})`,
+									warn: `Uyarı (${severityCounts.warn})`,
+									info: `Bilgi (${severityCounts.info})`,
+								};
 								return (
-									<button key={s} type="button" onClick={() => setSeverityFilter(s)}
+									<button
+										key={s}
+										type="button"
+										onClick={() => setSeverityFilter(s)}
 										className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border"
-										style={severityFilter === s
-											? cfg ? { background: cfg.bg, color: cfg.text, borderColor: cfg.border }
-												: { background: "var(--color-lavender-subtle)", color: "var(--color-lavender)", borderColor: "var(--color-lavender-border)" }
-											: { color: "var(--text-muted)", borderColor: "var(--border-subtle)", background: "transparent" }
+										style={
+											severityFilter === s
+												? cfg
+													? {
+															background: cfg.bg,
+															color: cfg.text,
+															borderColor: cfg.border,
+														}
+													: {
+															background: "var(--color-lavender-subtle)",
+															color: "var(--color-lavender)",
+															borderColor: "var(--color-lavender-border)",
+														}
+												: {
+														color: "var(--text-muted)",
+														borderColor: "var(--border-subtle)",
+														background: "transparent",
+													}
 										}
 									>
 										{labels[s]}
@@ -548,9 +658,18 @@ export function AlertsPage() {
 							type="button"
 							onClick={() => setShowResolved(!showResolved)}
 							className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border"
-							style={showResolved
-								? { background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }
-								: { color: "var(--text-muted)", borderColor: "var(--border-subtle)", background: "transparent" }
+							style={
+								showResolved
+									? {
+											background: "var(--status-up-subtle)",
+											color: "var(--status-up-text)",
+											borderColor: "var(--status-up-border)",
+										}
+									: {
+											color: "var(--text-muted)",
+											borderColor: "var(--border-subtle)",
+											background: "transparent",
+										}
 							}
 						>
 							{showResolved ? "✓ Çözülmüşleri Gizle" : "Çözülmüşleri Göster"}
@@ -561,26 +680,64 @@ export function AlertsPage() {
 					{isLoading ? (
 						<div className="space-y-2">
 							{[1, 2, 3].map((i) => (
-								<Card key={i} className="p-4 animate-pulse" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+								<Card
+									key={i}
+									className="p-4 animate-pulse"
+									style={{
+										background: "var(--surface-card)",
+										border: "1px solid var(--border-default)",
+									}}
+								>
 									<div className="flex gap-3">
-										<div className="w-8 h-8 rounded-lg shrink-0" style={{ background: "var(--surface-sunken)" }} />
+										<div
+											className="w-8 h-8 rounded-lg shrink-0"
+											style={{ background: "var(--surface-sunken)" }}
+										/>
 										<div className="flex-1 space-y-2">
-											<div className="h-3.5 w-2/3 rounded" style={{ background: "var(--surface-sunken)" }} />
-											<div className="h-2.5 w-1/3 rounded" style={{ background: "var(--surface-sunken)" }} />
+											<div
+												className="h-3.5 w-2/3 rounded"
+												style={{ background: "var(--surface-sunken)" }}
+											/>
+											<div
+												className="h-2.5 w-1/3 rounded"
+												style={{ background: "var(--surface-sunken)" }}
+											/>
 										</div>
 									</div>
 								</Card>
 							))}
 						</div>
 					) : filtered.length === 0 ? (
-						<Card className="py-14 flex flex-col items-center gap-3 text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--status-up-border)" }}>
-							<div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)" }}>
-								<Shield className="w-7 h-7" style={{ color: "var(--status-up)" }} />
+						<Card
+							className="py-14 flex flex-col items-center gap-3 text-center"
+							style={{
+								background: "var(--surface-card)",
+								border: "1px solid var(--status-up-border)",
+							}}
+						>
+							<div
+								className="w-14 h-14 rounded-2xl flex items-center justify-center"
+								style={{
+									background: "var(--status-up-subtle)",
+									border: "1px solid var(--status-up-border)",
+								}}
+							>
+								<Shield
+									className="w-7 h-7"
+									style={{ color: "var(--status-up)" }}
+								/>
 							</div>
 							<div>
-								<p className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Tüm Sistemler Normal</p>
+								<p
+									className="text-sm font-semibold mb-1"
+									style={{ color: "var(--text-secondary)" }}
+								>
+									Tüm Sistemler Normal
+								</p>
 								<p className="text-xs" style={{ color: "var(--text-faint)" }}>
-									{severityFilter !== "all" ? "Bu filtreye uygun uyarı bulunamadı" : "Aktif uyarı yok"}
+									{severityFilter !== "all"
+										? "Bu filtreye uygun uyarı bulunamadı"
+										: "Aktif uyarı yok"}
 								</p>
 							</div>
 						</Card>
@@ -608,7 +765,13 @@ export function AlertsPage() {
 											>
 												<div className="px-4 py-3.5 flex items-start gap-3">
 													{/* Icon */}
-													<div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+													<div
+														className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+														style={{
+															background: cfg.bg,
+															border: `1px solid ${cfg.border}`,
+														}}
+													>
 														<SeverityIcon
 															severity={alert.severity}
 															className={`w-4 h-4 ${alert.severity === "crit" && !alert.resolved_at ? "animate-pulse" : ""}`}
@@ -621,29 +784,63 @@ export function AlertsPage() {
 														<div className="flex items-center gap-2 mb-1 flex-wrap">
 															<Badge
 																className="text-[9px] px-1.5 py-0 rounded border uppercase"
-																style={{ background: cfg.bg, color: cfg.text, borderColor: cfg.border }}
+																style={{
+																	background: cfg.bg,
+																	color: cfg.text,
+																	borderColor: cfg.border,
+																}}
 															>
 																{cfg.label}
 															</Badge>
-															<span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ color: "var(--text-faint)", background: "var(--surface-sunken)" }}>
+															<span
+																className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+																style={{
+																	color: "var(--text-faint)",
+																	background: "var(--surface-sunken)",
+																}}
+															>
 																{alert.type}
 															</span>
 															{alert.resolved_at && (
-																<Badge className="text-[9px] px-1.5 py-0 rounded border" style={{ background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }}>
-																	<CheckCircle2 className="w-2.5 h-2.5 mr-0.5 inline" /> Çözüldü
+																<Badge
+																	className="text-[9px] px-1.5 py-0 rounded border"
+																	style={{
+																		background: "var(--status-up-subtle)",
+																		color: "var(--status-up-text)",
+																		borderColor: "var(--status-up-border)",
+																	}}
+																>
+																	<CheckCircle2 className="w-2.5 h-2.5 mr-0.5 inline" />{" "}
+																	Çözüldü
 																</Badge>
 															)}
 														</div>
-														<p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{alert.message}</p>
-														<div className="flex items-center gap-3 mt-1.5 text-[10px]" style={{ color: "var(--text-faint)" }}>
+														<p
+															className="text-xs leading-relaxed"
+															style={{ color: "var(--text-secondary)" }}
+														>
+															{alert.message}
+														</p>
+														<div
+															className="flex items-center gap-3 mt-1.5 text-[10px]"
+															style={{ color: "var(--text-faint)" }}
+														>
 															<span className="flex items-center gap-1">
 																<Clock className="w-2.5 h-2.5" />
-																{new Date(alert.triggered_at).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
+																{new Date(alert.triggered_at).toLocaleString(
+																	"tr-TR",
+																	{ dateStyle: "short", timeStyle: "short" },
+																)}
 															</span>
 															{alert.resolved_at && (
-																<span className="flex items-center gap-1" style={{ color: "var(--status-up-text)" }}>
+																<span
+																	className="flex items-center gap-1"
+																	style={{ color: "var(--status-up-text)" }}
+																>
 																	<ArrowRight className="w-2.5 h-2.5" />
-																	{new Date(alert.resolved_at).toLocaleTimeString("tr-TR")}
+																	{new Date(
+																		alert.resolved_at,
+																	).toLocaleTimeString("tr-TR")}
 																</span>
 															)}
 														</div>
@@ -653,12 +850,29 @@ export function AlertsPage() {
 													{!alert.resolved_at && (
 														<div className="flex items-center gap-1.5 shrink-0">
 															{/* Snooze */}
-															<div className="relative" ref={snoozeOpenId === alert.id ? snoozeRef : undefined}>
+															<div
+																className="relative"
+																ref={
+																	snoozeOpenId === alert.id
+																		? snoozeRef
+																		: undefined
+																}
+															>
 																<Button
-																	variant="outline" size="sm"
-																	onClick={() => setSnoozeOpenId(snoozeOpenId === alert.id ? null : alert.id)}
+																	variant="outline"
+																	size="sm"
+																	onClick={() =>
+																		setSnoozeOpenId(
+																			snoozeOpenId === alert.id
+																				? null
+																				: alert.id,
+																		)
+																	}
 																	className="h-7 w-7 p-0 rounded-lg"
-																	style={{ borderColor: "var(--color-blue-border)", color: "var(--color-blue-text)" }}
+																	style={{
+																		borderColor: "var(--color-blue-border)",
+																		color: "var(--color-blue-text)",
+																	}}
 																	title="Ertele"
 																>
 																	<Timer className="w-3.5 h-3.5" />
@@ -666,25 +880,53 @@ export function AlertsPage() {
 																<AnimatePresence>
 																	{snoozeOpenId === alert.id && (
 																		<motion.div
-																			initial={{ opacity: 0, y: -4, scale: 0.97 }}
+																			initial={{
+																				opacity: 0,
+																				y: -4,
+																				scale: 0.97,
+																			}}
 																			animate={{ opacity: 1, y: 0, scale: 1 }}
 																			exit={{ opacity: 0, y: -4, scale: 0.97 }}
 																			transition={{ duration: 0.15 }}
 																			className="absolute right-0 top-8 z-20 w-36 rounded-xl overflow-hidden"
-																			style={{ background: "var(--surface-card)", border: "1px solid var(--color-blue-border)", boxShadow: "var(--panel-shadow)" }}
+																			style={{
+																				background: "var(--surface-card)",
+																				border:
+																					"1px solid var(--color-blue-border)",
+																				boxShadow: "var(--panel-shadow)",
+																			}}
 																		>
-																			<div className="flex items-center gap-1.5 px-3 py-2 border-b" style={{ borderColor: "var(--border-subtle)", color: "var(--text-faint)" }}>
+																			<div
+																				className="flex items-center gap-1.5 px-3 py-2 border-b"
+																				style={{
+																					borderColor: "var(--border-subtle)",
+																					color: "var(--text-faint)",
+																				}}
+																			>
 																				<BellRing className="w-3 h-3" />
-																				<span className="text-[10px] uppercase tracking-wider">Ertele</span>
+																				<span className="text-[10px] uppercase tracking-wider">
+																					Ertele
+																				</span>
 																			</div>
 																			{SNOOZE_OPTIONS.map((opt) => (
 																				<button
-																					type="button" key={opt.minutes}
-																					onClick={() => handleSnooze(alert.id, opt.minutes)}
+																					type="button"
+																					key={opt.minutes}
+																					onClick={() =>
+																						handleSnooze(alert.id, opt.minutes)
+																					}
 																					className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:opacity-80 transition-opacity"
-																					style={{ color: "var(--text-secondary)", background: "transparent" }}
+																					style={{
+																						color: "var(--text-secondary)",
+																						background: "transparent",
+																					}}
 																				>
-																					<Clock className="w-3 h-3" style={{ color: "var(--color-blue)" }} />
+																					<Clock
+																						className="w-3 h-3"
+																						style={{
+																							color: "var(--color-blue)",
+																						}}
+																					/>
 																					{opt.label}
 																				</button>
 																			))}
@@ -695,10 +937,14 @@ export function AlertsPage() {
 
 															{/* Resolve */}
 															<Button
-																variant="outline" size="sm"
+																variant="outline"
+																size="sm"
 																onClick={() => handleResolve(alert.id)}
 																className="h-7 px-2.5 rounded-lg text-[11px] font-medium"
-																style={{ borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }}
+																style={{
+																	borderColor: "var(--status-up-border)",
+																	color: "var(--status-up-text)",
+																}}
 															>
 																<CheckCircle2 className="w-3 h-3 mr-1" /> Çöz
 															</Button>
@@ -721,32 +967,75 @@ export function AlertsPage() {
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ duration: 0.35, delay: 0.15 }}
 				>
-					<Card className="overflow-hidden" style={{ background: "var(--surface-card)", border: "1px solid var(--color-teal-border)" }}>
-						<div className="h-0.5" style={{ background: "var(--gradient-btn-primary)" }} />
+					<Card
+						className="overflow-hidden"
+						style={{
+							background: "var(--surface-card)",
+							border: "1px solid var(--color-teal-border)",
+						}}
+					>
+						<div
+							className="h-0.5"
+							style={{ background: "var(--gradient-btn-primary)" }}
+						/>
 						<div className="p-4">
 							{/* Panel title */}
 							<div className="flex items-center gap-2.5 mb-4">
-								<div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
-									<Settings2 className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
+								<div
+									className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+									style={{
+										background: "var(--color-teal-subtle)",
+										border: "1px solid var(--color-teal-border)",
+									}}
+								>
+									<Settings2
+										className="w-4 h-4"
+										style={{ color: "var(--color-teal)" }}
+									/>
 								</div>
 								<div>
-									<p className="text-sm font-bold leading-none" style={{ color: "var(--text-primary)" }}>Eşik Ayarları</p>
-									<p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>Servis bazlı uyarı limitleri</p>
+									<p
+										className="text-sm font-bold leading-none"
+										style={{ color: "var(--text-primary)" }}
+									>
+										Eşik Ayarları
+									</p>
+									<p
+										className="text-[10px] mt-0.5"
+										style={{ color: "var(--text-faint)" }}
+									>
+										Servis bazlı uyarı limitleri
+									</p>
 								</div>
 							</div>
 
 							{/* Active status pill */}
 							<div
 								className="flex items-center gap-1.5 px-3 py-2 rounded-lg mb-4 text-xs font-medium"
-								style={activeCount > 0
-									? { background: "var(--status-down-subtle)", border: "1px solid var(--status-down-border)", color: "var(--status-down-text)" }
-									: { background: "var(--status-up-subtle)", border: "1px solid var(--status-up-border)", color: "var(--status-up-text)" }
+								style={
+									activeCount > 0
+										? {
+												background: "var(--status-down-subtle)",
+												border: "1px solid var(--status-down-border)",
+												color: "var(--status-down-text)",
+											}
+										: {
+												background: "var(--status-up-subtle)",
+												border: "1px solid var(--status-up-border)",
+												color: "var(--status-up-text)",
+											}
 								}
 							>
-								{activeCount > 0
-									? <><Bell className="w-3.5 h-3.5 animate-pulse" /> {activeCount} aktif uyarı</>
-									: <><BellOff className="w-3.5 h-3.5" /> Sorun yok</>
-								}
+								{activeCount > 0 ? (
+									<>
+										<Bell className="w-3.5 h-3.5 animate-pulse" /> {activeCount}{" "}
+										aktif uyarı
+									</>
+								) : (
+									<>
+										<BellOff className="w-3.5 h-3.5" /> Sorun yok
+									</>
+								)}
 							</div>
 
 							<AlertRulesPanel />

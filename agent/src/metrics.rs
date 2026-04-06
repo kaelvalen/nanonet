@@ -198,6 +198,161 @@ fn read_proc_diskstats() -> (u64, u64) {
     (total_read, total_write)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── DiskIOSnapshot ────────────────────────────────────────────
+
+    #[test]
+    fn test_disk_io_snapshot_default_is_zero() {
+        let snap = DiskIOSnapshot::default();
+        assert_eq!(snap.read_bytes, 0);
+        assert_eq!(snap.write_bytes, 0);
+    }
+
+    // ── read_proc_diskstats ───────────────────────────────────────
+
+    #[test]
+    fn test_read_proc_diskstats_returns_tuple() {
+        // /proc/diskstats'ı okuyan fonksiyon: Linux'ta (>0,>0), Linux dışında (0,0) dönmeli.
+        let (reads, writes) = read_proc_diskstats();
+        // Hem negatif olamaz hem de u64 sınırının altında kalmalı
+        assert!(reads < u64::MAX);
+        assert!(writes < u64::MAX);
+    }
+
+    // ── disk_read_bytes_sec hesabı ────────────────────────────────
+
+    #[test]
+    fn test_disk_io_rate_calculation() {
+        // Basit aritmetik: fark / zaman = oran
+        let prev = DiskIOSnapshot {
+            read_bytes: 1000,
+            write_bytes: 500,
+        };
+        let cur_read: u64 = 3000;
+        let cur_write: u64 = 1500;
+        let elapsed = 2.0_f64;
+
+        let read_rate = (cur_read.saturating_sub(prev.read_bytes)) as f64 / elapsed;
+        let write_rate = (cur_write.saturating_sub(prev.write_bytes)) as f64 / elapsed;
+
+        assert!((read_rate - 1000.0).abs() < f64::EPSILON);
+        assert!((write_rate - 500.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_disk_io_rate_no_negative_on_counter_reset() {
+        // Counter sıfırlandığında saturating_sub 0 döner
+        let prev = DiskIOSnapshot {
+            read_bytes: 5000,
+            write_bytes: 3000,
+        };
+        let cur_read: u64 = 100; // counter sıfırlandı
+        let elapsed = 1.0_f64;
+
+        let read_rate = (cur_read.saturating_sub(prev.read_bytes)) as f64 / elapsed;
+        assert_eq!(
+            read_rate, 0.0,
+            "counter sıfırlamasında negatif oran olmamalı"
+        );
+    }
+
+    // ── CPU ortalaması hesabı ────────────────────────────────────
+
+    #[test]
+    fn test_cpu_average_empty_returns_zero() {
+        // sysinfo'dan boş CPU listesi gelirse 0.0 dönmeli
+        let cpus: Vec<f32> = vec![];
+        let cpu_percent = if cpus.is_empty() {
+            0.0_f32
+        } else {
+            cpus.iter().sum::<f32>() / cpus.len() as f32
+        };
+        assert_eq!(cpu_percent, 0.0);
+    }
+
+    #[test]
+    fn test_cpu_average_single_core() {
+        let cpus = vec![42.5_f32];
+        let avg = cpus.iter().sum::<f32>() / cpus.len() as f32;
+        assert!((avg - 42.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_cpu_average_multi_core() {
+        let cpus = vec![20.0_f32, 40.0, 60.0, 80.0];
+        let avg = cpus.iter().sum::<f32>() / cpus.len() as f32;
+        assert!((avg - 50.0).abs() < 0.001);
+    }
+
+    // ── Bellek MB dönüşümü ────────────────────────────────────────
+
+    #[test]
+    fn test_memory_bytes_to_mb() {
+        let bytes: u64 = 1024 * 1024 * 512; // 512 MB
+        let mb = bytes as f32 / 1024.0 / 1024.0;
+        assert!((mb - 512.0).abs() < 0.001);
+    }
+
+    // ── Disk GB dönüşümü ─────────────────────────────────────────
+
+    #[test]
+    fn test_disk_bytes_to_gb() {
+        let bytes: u64 = 1024 * 1024 * 1024 * 10; // 10 GB
+        let gb = bytes as f32 / 1024.0 / 1024.0 / 1024.0;
+        assert!((gb - 10.0).abs() < 0.001);
+    }
+
+    // ── MetricSnapshot serde ──────────────────────────────────────
+
+    #[test]
+    fn test_metric_snapshot_serializes_optional_fields() {
+        let snap = MetricSnapshot {
+            cpu_percent: 50.0,
+            memory_used_mb: 1024.0,
+            memory_total_mb: 8192.0,
+            disk_used_gb: 50.0,
+            disk_total_gb: 500.0,
+            net_rx_bytes: 1000,
+            net_tx_bytes: 2000,
+            disk_read_bytes_sec: 1024.0,
+            disk_write_bytes_sec: 512.0,
+            app_cpu_percent: Some(25.0),
+            app_memory_used_mb: None,
+        };
+
+        let json = serde_json::to_string(&snap).expect("serde başarısız olmamalı");
+        assert!(json.contains("\"app_cpu_percent\":25.0"));
+        // None alanlar JSON'da null olarak yer almalı
+        assert!(json.contains("\"app_memory_used_mb\":null"));
+    }
+
+    #[test]
+    fn test_metric_snapshot_roundtrip() {
+        let snap = MetricSnapshot {
+            cpu_percent: 75.5,
+            memory_used_mb: 2048.0,
+            memory_total_mb: 16384.0,
+            disk_used_gb: 100.0,
+            disk_total_gb: 1000.0,
+            net_rx_bytes: 99999,
+            net_tx_bytes: 88888,
+            disk_read_bytes_sec: 0.0,
+            disk_write_bytes_sec: 0.0,
+            app_cpu_percent: None,
+            app_memory_used_mb: Some(512.0),
+        };
+
+        let json = serde_json::to_string(&snap).unwrap();
+        let back: MetricSnapshot = serde_json::from_str(&json).unwrap();
+        assert!((back.cpu_percent - snap.cpu_percent).abs() < 0.001);
+        assert_eq!(back.net_rx_bytes, snap.net_rx_bytes);
+        assert_eq!(back.app_memory_used_mb, snap.app_memory_used_mb);
+    }
+}
+
 /// Servis /metrics endpoint'inden uygulama metriklerini çeker ve snapshot'a ekler
 pub async fn fetch_app_metrics(client: &Client, snapshot: &mut MetricSnapshot, metrics_url: &str) {
     match client

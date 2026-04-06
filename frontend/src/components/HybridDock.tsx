@@ -125,11 +125,7 @@ export function HybridDock() {
 				whileHover={{ scale: 1.08 }}
 				whileTap={{ scale: 0.94 }}
 			>
-				<img
-					src={logo}
-					alt="NanoNet"
-					className="w-full h-full object-cover"
-				/>
+				<img src={logo} alt="NanoNet" className="w-full h-full object-cover" />
 				<Tooltip label="NanoNet" visible={hoveredItem === "logo"} />
 			</motion.button>
 
@@ -156,11 +152,12 @@ export function HybridDock() {
 							<motion.div
 								className="w-9 h-9 flex items-center justify-center rounded-xl relative"
 								style={{
-									background: active
-										? "var(--sidebar-accent)"
-										: "transparent",
+									background: active ? "var(--sidebar-accent)" : "transparent",
 								}}
-								whileHover={{ scale: 1.1, background: active ? undefined : "var(--surface-sunken)" }}
+								whileHover={{
+									scale: 1.1,
+									background: active ? undefined : "var(--surface-sunken)",
+								}}
 								whileTap={{ scale: 0.92 }}
 								transition={{ duration: 0.1 }}
 							>
@@ -199,7 +196,12 @@ export function HybridDock() {
 										className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full"
 										style={{ background: "var(--sidebar-primary)" }}
 										layoutId="dock-active"
-										transition={{ duration: 0.2, type: "spring", stiffness: 400, damping: 30 }}
+										transition={{
+											duration: 0.2,
+											type: "spring",
+											stiffness: 400,
+											damping: 30,
+										}}
 									/>
 								)}
 							</motion.div>
@@ -230,7 +232,12 @@ export function HybridDock() {
 								? "var(--sidebar-accent)"
 								: "transparent",
 						}}
-						whileHover={{ scale: 1.1, background: isActive("/app/settings") ? undefined : "var(--surface-sunken)" }}
+						whileHover={{
+							scale: 1.1,
+							background: isActive("/app/settings")
+								? undefined
+								: "var(--surface-sunken)",
+						}}
 						whileTap={{ scale: 0.92 }}
 					>
 						<Settings
@@ -246,7 +253,12 @@ export function HybridDock() {
 								className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full"
 								style={{ background: "var(--sidebar-primary)" }}
 								layoutId="dock-active"
-								transition={{ duration: 0.2, type: "spring", stiffness: 400, damping: 30 }}
+								transition={{
+									duration: 0.2,
+									type: "spring",
+									stiffness: 400,
+									damping: 30,
+								}}
 							/>
 						)}
 					</motion.div>
@@ -278,9 +290,7 @@ export function HybridDock() {
 										? "var(--status-up)"
 										: "var(--text-faint)",
 									borderColor: "var(--surface-raised)",
-									boxShadow: isConnected
-										? "0 0 6px var(--status-up)"
-										: "none",
+									boxShadow: isConnected ? "0 0 6px var(--status-up)" : "none",
 								}}
 							/>
 						</motion.button>
@@ -325,7 +335,10 @@ export function HybridDock() {
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
-				<Tooltip label={user?.email ?? "Hesabım"} visible={hoveredItem === "user"} />
+				<Tooltip
+					label={user?.email ?? "Hesabım"}
+					visible={hoveredItem === "user"}
+				/>
 			</div>
 		</motion.aside>
 	);

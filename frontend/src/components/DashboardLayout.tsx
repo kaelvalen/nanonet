@@ -30,9 +30,13 @@ export function DashboardLayout() {
 			<FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
 			{/* Page wrapper — full width, small left padding for dock clearance (except full-bleed pages) */}
-			<div className={`flex flex-col min-h-screen ${pathname === "/app/service-map" ? "" : "md:pl-16"}`}>
+			<div
+				className={`flex flex-col min-h-screen ${pathname === "/app/service-map" ? "" : "md:pl-16"}`}
+			>
 				{/* Main Content */}
-				<main className={`flex-1 flex flex-col min-h-0 ${pathname === "/app/service-map" ? "" : "pb-20 md:pb-8 px-4 sm:px-6 lg:px-8 pt-14"}`}>
+				<main
+					className={`flex-1 flex flex-col min-h-0 ${pathname === "/app/service-map" ? "" : "pb-20 md:pb-8 px-4 sm:px-6 lg:px-8 pt-14"}`}
+				>
 					<ErrorBoundary key={pathname}>
 						<Outlet />
 					</ErrorBoundary>

@@ -5,7 +5,12 @@ export function ServiceMapPage() {
 	return (
 		<div
 			className="flex flex-col"
-			style={{ height: "100vh", paddingTop: "48px", paddingLeft: "76px", boxSizing: "border-box" }}
+			style={{
+				height: "100vh",
+				paddingTop: "48px",
+				paddingLeft: "76px",
+				boxSizing: "border-box",
+			}}
 		>
 			{/* Header */}
 			<div
