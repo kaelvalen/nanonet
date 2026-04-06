@@ -142,6 +142,7 @@ export function HybridDock() {
 				const isAlert = item.badge === "alerts";
 
 				return (
+					// biome-ignore lint/a11y/noStaticElementInteractions: tooltip hover wrapper, NavLink inside is the interactive element
 					<div
 						key={item.to}
 						className="relative"
@@ -219,6 +220,7 @@ export function HybridDock() {
 			/>
 
 			{/* Settings */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: tooltip hover wrapper, NavLink inside is the interactive element */}
 			<div
 				className="relative"
 				onMouseEnter={() => setHoveredItem("settings")}
@@ -267,6 +269,7 @@ export function HybridDock() {
 			</div>
 
 			{/* User avatar + logout */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: tooltip hover wrapper, DropdownMenuTrigger inside is the interactive element */}
 			<div
 				className="relative mt-1"
 				onMouseEnter={() => setHoveredItem("user")}

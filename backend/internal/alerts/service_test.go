@@ -23,17 +23,6 @@ func (m *mockMaintChecker) IsActiveNow(_ context.Context, _ uuid.UUID) (bool, er
 	return m.active, m.err
 }
 
-type mockNotifier struct {
-	enabled bool
-	sent    []string
-}
-
-func (m *mockNotifier) Enabled() bool { return m.enabled }
-func (m *mockNotifier) SendAlert(_, _, alertType, _, _ string) error {
-	m.sent = append(m.sent, alertType)
-	return nil
-}
-
 // ── Email cooldown ────────────────────────────────────────────────
 
 func newServiceForCooldown() *Service {
