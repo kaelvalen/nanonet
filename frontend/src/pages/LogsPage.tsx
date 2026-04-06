@@ -734,7 +734,7 @@ function K8sLogsTab() {
 	const [podInput, setPodInput] = useState("");
 	const [lines, setLines] = useState(200);
 
-	const { data, isLoading, refetch, isFetching } = useQuery({
+	const { data, isLoading, isFetching } = useQuery({
 		queryKey: ["k8s-pod-logs", podName, lines],
 		queryFn: async () => {
 			const res = await fetch(
@@ -845,12 +845,12 @@ function K8sLogsTab() {
 						className="overflow-y-auto font-mono text-xs"
 						style={{ maxHeight: "600px" }}
 					>
-						{logLines.map((line, i) => {
+						{[...logLines.entries()].map(([lineNum, line]) => {
 							const lvlKey = getLineLevel(line);
 							const cfg = LEVEL_CONFIG[lvlKey];
 							return (
 								<div
-									key={i}
+									key={line}
 									className="px-4 py-1"
 									style={{
 										borderBottom: "1px solid var(--border-subtle)",
@@ -861,7 +861,7 @@ function K8sLogsTab() {
 										className="mr-3 select-none"
 										style={{ color: cfg.textColor, opacity: 0.5 }}
 									>
-										{i + 1}
+										{lineNum + 1}
 									</span>
 									<span style={{ color: "var(--text-secondary)" }}>{line}</span>
 								</div>

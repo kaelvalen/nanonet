@@ -174,13 +174,13 @@ function ReportView({
 									Tespit Edilen Olaylar
 								</p>
 								<div className="space-y-2">
-									{report.events.map((event, i) => {
+									{report.events.map((event, _i) => {
 										const cat =
 											CATEGORY_CONFIG[event.category] ??
 											CATEGORY_CONFIG.izleniyor;
 										return (
 											<div
-												key={`evt-${i}`}
+												key={`${event.service}-${event.time}`}
 												className="rounded-xl px-3 py-2.5"
 												style={{
 													background: "var(--surface-sunken)",
@@ -274,9 +274,9 @@ function ReportView({
 									Önerilen Aksiyonlar
 								</p>
 								<div className="space-y-1.5">
-									{report.actions.map((action, i) => (
+									{report.actions.map((action) => (
 										<div
-											key={`act-${i}`}
+											key={`${action.action}-${action.priority}`}
 											className="flex items-start gap-2.5 rounded-lg px-3 py-2"
 											style={{
 												background: "var(--surface-sunken)",
