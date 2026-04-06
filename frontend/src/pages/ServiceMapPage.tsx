@@ -1,5 +1,5 @@
 import { Brain, GitFork } from "lucide-react";
-import { ServiceMap } from "@/components/ServiceMap";
+import { ServiceMap } from "@/components/service-map/ServiceMap";
 
 export function ServiceMapPage() {
 	return (

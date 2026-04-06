@@ -316,7 +316,12 @@ export const logsApi = {
 
 	getAuditLogs: async (
 		params: { limit?: number; offset?: number } = {},
-	): Promise<{ logs: unknown[]; total: number; limit: number; offset: number }> => {
+	): Promise<{
+		logs: unknown[];
+		total: number;
+		limit: number;
+		offset: number;
+	}> => {
 		const response = await apiClient.get("/audit", { params });
 		return response.data.data;
 	},

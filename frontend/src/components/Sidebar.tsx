@@ -78,7 +78,7 @@ const navSections: NavSection[] = [
 	{
 		label: "Sistem",
 		items: [
-			{ to: "/app/logs",     label: "Loglar",  icon: Scroll   },
+			{ to: "/app/logs", label: "Loglar", icon: Scroll },
 			{ to: "/app/settings", label: "Ayarlar", icon: Settings },
 		],
 	},

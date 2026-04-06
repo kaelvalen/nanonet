@@ -73,28 +73,28 @@ type ReportRequest struct {
 
 // ReportEvent tek bir tespit edilen olay.
 type ReportEvent struct {
-	Service    string `json:"service"`
-	Time       string `json:"time"`
+	Service     string `json:"service"`
+	Time        string `json:"time"`
 	Observation string `json:"observation"`
-	RootCause  string `json:"root_cause"`
-	Impact     string `json:"impact"`
-	Action     string `json:"action"`
-	Outcome    string `json:"outcome"`
-	Category   string `json:"category"` // tamamlandı / müdahale_gerekli / izleniyor / trend
+	RootCause   string `json:"root_cause"`
+	Impact      string `json:"impact"`
+	Action      string `json:"action"`
+	Outcome     string `json:"outcome"`
+	Category    string `json:"category"` // tamamlandı / müdahale_gerekli / izleniyor / trend
 }
 
 // ReportResult proaktif AI raporunun tam yapısı.
 type ReportResult struct {
-	PeriodLabel     string        `json:"period_label"`
-	SystemScore     string        `json:"system_score"` // SAĞLIKLI / DİKKAT / KRİTİK
-	Headline        string        `json:"headline"`
-	TotalRequests   string        `json:"total_requests,omitempty"`
-	CriticalEvents  int           `json:"critical_events"`
-	ResolvedEvents  int           `json:"resolved_events"`
-	Events          []ReportEvent `json:"events"`
-	Actions         []Recommendation `json:"actions"`
-	RiskForecast    string        `json:"risk_forecast"`
-	Confidence      float64       `json:"confidence,omitempty"`
+	PeriodLabel    string           `json:"period_label"`
+	SystemScore    string           `json:"system_score"` // SAĞLIKLI / DİKKAT / KRİTİK
+	Headline       string           `json:"headline"`
+	TotalRequests  string           `json:"total_requests,omitempty"`
+	CriticalEvents int              `json:"critical_events"`
+	ResolvedEvents int              `json:"resolved_events"`
+	Events         []ReportEvent    `json:"events"`
+	Actions        []Recommendation `json:"actions"`
+	RiskForecast   string           `json:"risk_forecast"`
+	Confidence     float64          `json:"confidence,omitempty"`
 }
 
 type MetricsSummary struct {

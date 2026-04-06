@@ -1,16 +1,22 @@
-import { PDFDocument, PageSizes, StandardFonts, rgb } from "pdf-lib";
+import { PageSizes, PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import type { ReportResult } from "@/api/metrics";
 
 // pdf-lib StandardFonts Helvetica WinAnsi encoding — Türkçe özel karakterleri ASCII'ye map et
 function enc(v: string | undefined | null): string {
 	if (!v) return "";
 	return v
-		.replace(/ş/g, "s").replace(/Ş/g, "S")
-		.replace(/ğ/g, "g").replace(/Ğ/g, "G")
-		.replace(/ü/g, "u").replace(/Ü/g, "U")
-		.replace(/ç/g, "c").replace(/Ç/g, "C")
-		.replace(/ö/g, "o").replace(/Ö/g, "O")
-		.replace(/ı/g, "i").replace(/İ/g, "I");
+		.replace(/ş/g, "s")
+		.replace(/Ş/g, "S")
+		.replace(/ğ/g, "g")
+		.replace(/Ğ/g, "G")
+		.replace(/ü/g, "u")
+		.replace(/Ü/g, "U")
+		.replace(/ç/g, "c")
+		.replace(/Ç/g, "C")
+		.replace(/ö/g, "o")
+		.replace(/Ö/g, "O")
+		.replace(/ı/g, "i")
+		.replace(/İ/g, "I");
 }
 
 // ── Renk yardımcıları ────────────────────────────────────────────
@@ -22,55 +28,66 @@ function hex(h: string) {
 }
 
 const C = {
-	dark:      hex("#0f172a"),
-	indigo:    hex("#4f46e5"),
-	white:     hex("#ffffff"),
-	gray900:   hex("#111827"),
-	gray600:   hex("#4b5563"),
-	gray400:   hex("#9ca3af"),
-	gray100:   hex("#f3f4f6"),
-	gray50:    hex("#f9fafb"),
-	green700:  hex("#15803d"),
-	green100:  hex("#dcfce7"),
-	red700:    hex("#b91c1c"),
-	red100:    hex("#fee2e2"),
-	amber700:  hex("#b45309"),
-	amber100:  hex("#fef3c7"),
+	dark: hex("#0f172a"),
+	indigo: hex("#4f46e5"),
+	white: hex("#ffffff"),
+	gray900: hex("#111827"),
+	gray600: hex("#4b5563"),
+	gray400: hex("#9ca3af"),
+	gray100: hex("#f3f4f6"),
+	gray50: hex("#f9fafb"),
+	green700: hex("#15803d"),
+	green100: hex("#dcfce7"),
+	red700: hex("#b91c1c"),
+	red100: hex("#fee2e2"),
+	amber700: hex("#b45309"),
+	amber100: hex("#fef3c7"),
 	violet700: hex("#6d28d9"),
 	violet100: hex("#ede9fe"),
-	indigoBg:  hex("#eef2ff"),
+	indigoBg: hex("#eef2ff"),
 	indigoBorder: hex("#c7d2fe"),
 };
 
-const CAT_COLORS: Record<string, { fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }> = {
-	"tamamlandi":       { fg: C.green700,  bg: C.green100  },
-	"mudahale_gerekli": { fg: C.red700,    bg: C.red100    },
-	"izleniyor":        { fg: C.amber700,  bg: C.amber100  },
-	"trend":            { fg: C.violet700, bg: C.violet100 },
+const CAT_COLORS: Record<
+	string,
+	{ fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }
+> = {
+	tamamlandi: { fg: C.green700, bg: C.green100 },
+	mudahale_gerekli: { fg: C.red700, bg: C.red100 },
+	izleniyor: { fg: C.amber700, bg: C.amber100 },
+	trend: { fg: C.violet700, bg: C.violet100 },
 };
 const CAT_LABEL: Record<string, string> = {
-	"tamamlandi":       "Tamamlandı",
-	"mudahale_gerekli": "Müdahale Gerekli",
-	"izleniyor":        "İzleniyor",
-	"trend":            "Trend",
+	tamamlandi: "Tamamlandı",
+	mudahale_gerekli: "Müdahale Gerekli",
+	izleniyor: "İzleniyor",
+	trend: "Trend",
 };
-const PRI_COLORS: Record<string, { fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }> = {
-	high:   { fg: C.red700,   bg: C.red100   },
+const PRI_COLORS: Record<
+	string,
+	{ fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }
+> = {
+	high: { fg: C.red700, bg: C.red100 },
 	medium: { fg: C.amber700, bg: C.amber100 },
-	low:    { fg: C.green700, bg: C.green100 },
+	low: { fg: C.green700, bg: C.green100 },
 };
 const PRI_LABEL: Record<string, string> = {
-	high: "Yüksek", medium: "Orta", low: "Düşük",
+	high: "Yüksek",
+	medium: "Orta",
+	low: "Düşük",
 };
-const SCORE_COLORS: Record<string, { fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }> = {
-	"SAĞLIKLI": { fg: C.green700,  bg: C.green100  },
-	"DİKKAT":   { fg: C.amber700,  bg: C.amber100  },
-	"KRİTİK":   { fg: C.red700,    bg: C.red100    },
+const SCORE_COLORS: Record<
+	string,
+	{ fg: ReturnType<typeof rgb>; bg: ReturnType<typeof rgb> }
+> = {
+	SAĞLIKLI: { fg: C.green700, bg: C.green100 },
+	DİKKAT: { fg: C.amber700, bg: C.amber100 },
+	KRİTİK: { fg: C.red700, bg: C.red100 },
 };
 
 // ── Layout sabitleri (pt) ────────────────────────────────────────
-const PW = PageSizes.A4[0];   // 595.28
-const PH = PageSizes.A4[1];   // 841.89
+const PW = PageSizes.A4[0]; // 595.28
+const PH = PageSizes.A4[1]; // 841.89
 const ML = 40;
 const MR = 40;
 const CW = PW - ML - MR;
@@ -78,18 +95,32 @@ const LH = 14;
 
 // ── pdf-lib yardımcıları ─────────────────────────────────────────
 function drawRect(
-page: ReturnType<PDFDocument["addPage"]>,
-	x: number, y: number, w: number, h: number,
+	page: ReturnType<PDFDocument["addPage"]>,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
 	fillColor?: ReturnType<typeof rgb>,
 	borderColor?: ReturnType<typeof rgb>,
 	borderWidth = 1,
 ) {
-	if (fillColor) page.drawRectangle({ x, y, width: w, height: h, color: fillColor });
-	if (borderColor) page.drawRectangle({ x, y, width: w, height: h, borderColor, borderWidth, opacity: 0, borderOpacity: 1 });
+	if (fillColor)
+		page.drawRectangle({ x, y, width: w, height: h, color: fillColor });
+	if (borderColor)
+		page.drawRectangle({
+			x,
+			y,
+			width: w,
+			height: h,
+			borderColor,
+			borderWidth,
+			opacity: 0,
+			borderOpacity: 1,
+		});
 }
 
 function drawText(
-page: ReturnType<PDFDocument["addPage"]>,
+	page: ReturnType<PDFDocument["addPage"]>,
 	text: string,
 	x: number,
 	y: number,
@@ -100,22 +131,26 @@ page: ReturnType<PDFDocument["addPage"]>,
 	page.drawText(text, { x, y, font, size, color });
 }
 
-function measureText(text: string, font: import("pdf-lib").PDFFont, size: number): number {
+function measureText(
+	text: string,
+	font: import("pdf-lib").PDFFont,
+	size: number,
+): number {
 	return font.widthOfTextAtSize(text, size);
 }
 
 // Metni satırlara böl
 function splitLines(
-text: string,
-font: import("pdf-lib").PDFFont,
-size: number,
-maxW: number,
+	text: string,
+	font: import("pdf-lib").PDFFont,
+	size: number,
+	maxW: number,
 ): string[] {
 	const words = text.split(" ");
 	const lines: string[] = [];
 	let cur = "";
 	for (const w of words) {
-		const test = cur ? cur + " " + w : w;
+		const test = cur ? `${cur} ${w}` : w;
 		if (font.widthOfTextAtSize(test, size) <= maxW) {
 			cur = test;
 		} else {
@@ -128,11 +163,11 @@ maxW: number,
 }
 
 // Metin bloğu çiz, yeni y döndür (pdf-lib y yukarıdan değil aşağıdan)
-function drawWrapped(
-page: ReturnType<PDFDocument["addPage"]>,
+function _drawWrapped(
+	page: ReturnType<PDFDocument["addPage"]>,
 	text: string,
 	x: number,
-	y: number,             // başlangıç baseline (yukarı = büyük y)
+	y: number, // başlangıç baseline (yukarı = büyük y)
 	font: import("pdf-lib").PDFFont,
 	size: number,
 	color: ReturnType<typeof rgb>,
@@ -157,11 +192,13 @@ export async function downloadReportPDF(report: ReportResult): Promise<void> {
 	// Font — pdf-lib'in built-in Helvetica'sı tüm Latin karakterleri destekler
 	// Türkçe için WinAnsiEncoding kapsamı yeterlidir (ş,ğ,ü,ç,ö,ı dahil)
 	const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-	const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
 	const now = new Date().toLocaleDateString("tr-TR", {
-day: "2-digit", month: "long", year: "numeric",
-});
+		day: "2-digit",
+		month: "long",
+		year: "numeric",
+	});
 
 	// Render state
 	let page = pdfDoc.addPage(PageSizes.A4);
@@ -195,7 +232,12 @@ day: "2-digit", month: "long", year: "numeric",
 		const logoRes = await fetch("/logo.png");
 		const logoBuf = await logoRes.arrayBuffer();
 		const logoImg = await pdfDoc.embedPng(logoBuf);
-		page.drawImage(logoImg, { x: logoX, y: PH - HEADER_H + 12, width: logoSize, height: logoSize });
+		page.drawImage(logoImg, {
+			x: logoX,
+			y: PH - HEADER_H + 12,
+			width: logoSize,
+			height: logoSize,
+		});
 	} catch {
 		// Logo yüklenemezse indigo kare
 		drawRect(page, logoX, PH - HEADER_H + 12, logoSize, logoSize, C.indigo);
@@ -203,18 +245,41 @@ day: "2-digit", month: "long", year: "numeric",
 	}
 
 	// Brand
-	drawText(page, "NanoNet", ML + logoSize + 8, PH - HEADER_H + 32, fontBold, 11, C.white);
-	drawText(page, `Operasyonel Rapor  /  ${enc(report.period_label)}  /  ${now}`,
-		ML + logoSize + 8, PH - HEADER_H + 18, fontRegular, 7.5, C.gray400);
+	drawText(
+		page,
+		"NanoNet",
+		ML + logoSize + 8,
+		PH - HEADER_H + 32,
+		fontBold,
+		11,
+		C.white,
+	);
+	drawText(
+		page,
+		`Operasyonel Rapor  /  ${enc(report.period_label)}  /  ${now}`,
+		ML + logoSize + 8,
+		PH - HEADER_H + 18,
+		fontRegular,
+		7.5,
+		C.gray400,
+	);
 
 	// Score badge
-	const scoreColors = SCORE_COLORS[report.system_score] ?? SCORE_COLORS["DIKKAT"];
+	const scoreColors = SCORE_COLORS[report.system_score] ?? SCORE_COLORS.DIKKAT;
 	const scoreText = enc(report.system_score);
 	const scoreW = measureText(scoreText, fontBold, 8) + 16;
 	const scoreBadgeX = PW - MR - scoreW;
 	const scoreBadgeY = PH - HEADER_H + 18;
 	drawRect(page, scoreBadgeX, scoreBadgeY, scoreW, 16, scoreColors.bg);
-	drawText(page, scoreText, scoreBadgeX + 8, scoreBadgeY + 5, fontBold, 8, scoreColors.fg);
+	drawText(
+		page,
+		scoreText,
+		scoreBadgeX + 8,
+		scoreBadgeY + 5,
+		fontBold,
+		8,
+		scoreColors.fg,
+	);
 
 	y = PH - HEADER_H - 28;
 
@@ -231,9 +296,17 @@ day: "2-digit", month: "long", year: "numeric",
 
 	// Stat chips
 	const chips = [
-		{ text: `${report.critical_events} kritik olay`, fg: C.red700,   bg: C.red100   },
-		{ text: `${report.resolved_events} cozuldu`,      fg: C.green700, bg: C.green100 },
-		{ text: enc(report.period_label),                 fg: C.gray600,  bg: C.gray100  },
+		{
+			text: `${report.critical_events} kritik olay`,
+			fg: C.red700,
+			bg: C.red100,
+		},
+		{
+			text: `${report.resolved_events} cozuldu`,
+			fg: C.green700,
+			bg: C.green100,
+		},
+		{ text: enc(report.period_label), fg: C.gray600, bg: C.gray100 },
 	];
 	let cx = ML;
 	for (const chip of chips) {
@@ -246,7 +319,12 @@ day: "2-digit", month: "long", year: "numeric",
 	y -= 22;
 
 	// Divider
-	page.drawLine({ start: { x: ML, y }, end: { x: ML + CW, y }, thickness: 0.5, color: C.gray100 });
+	page.drawLine({
+		start: { x: ML, y },
+		end: { x: ML + CW, y },
+		thickness: 0.5,
+		color: C.gray100,
+	});
 	y -= 20;
 
 	// ═══════════════════════════════════════════════════════════
@@ -259,10 +337,18 @@ day: "2-digit", month: "long", year: "numeric",
 
 		for (const ev of report.events) {
 			// Estimate card height
-			const obsH = splitLines(enc(ev.observation), fontBold, 10, CW - 20).length * LH;
-			const detailFields = [ev.root_cause, ev.impact, ev.action, ev.outcome].filter(Boolean);
+			const obsH =
+				splitLines(enc(ev.observation), fontBold, 10, CW - 20).length * LH;
+			const detailFields = [
+				ev.root_cause,
+				ev.impact,
+				ev.action,
+				ev.outcome,
+			].filter(Boolean);
 			const detailH = detailFields.reduce((acc, val) => {
-				return acc + splitLines(enc(val), fontRegular, 8, CW - 90).length * 12 + 2;
+				return (
+					acc + splitLines(enc(val), fontRegular, 8, CW - 90).length * 12 + 2
+				);
 			}, 0);
 			const cardH = 28 + obsH + detailH + 16;
 
@@ -276,7 +362,7 @@ day: "2-digit", month: "long", year: "numeric",
 
 			// Left accent bar
 			const catKey = ev.category.toLowerCase().replace(/[\s-]/g, "_");
-			const catC = CAT_COLORS[catKey] ?? CAT_COLORS["izleniyor"];
+			const catC = CAT_COLORS[catKey] ?? CAT_COLORS.izleniyor;
 			drawRect(page, cardX, cardY, 4, cardH, catC.fg);
 
 			// Card head background
@@ -286,16 +372,37 @@ day: "2-digit", month: "long", year: "numeric",
 			const catLabel = enc(CAT_LABEL[catKey] ?? ev.category);
 			const catW = measureText(catLabel, fontBold, 7) + 12;
 			drawRect(page, cardX + 10, cardY + cardH - 19, catW, 13, catC.bg);
-			drawText(page, catLabel, cardX + 16, cardY + cardH - 13, fontBold, 7, catC.fg);
+			drawText(
+				page,
+				catLabel,
+				cardX + 16,
+				cardY + cardH - 13,
+				fontBold,
+				7,
+				catC.fg,
+			);
 
 			// Service / time (right)
 			const metaText = `${enc(ev.service)}  /  ${enc(ev.time)}`;
 			const metaW = measureText(metaText, fontBold, 7.5);
-			drawText(page, metaText, cardX + CW - metaW - 8, cardY + cardH - 13, fontBold, 7.5, C.gray400);
+			drawText(
+				page,
+				metaText,
+				cardX + CW - metaW - 8,
+				cardY + cardH - 13,
+				fontBold,
+				7.5,
+				C.gray400,
+			);
 
 			// Separator
 			let iy = cardY + cardH - 25;
-			page.drawLine({ start: { x: cardX + 10, y: iy }, end: { x: cardX + CW - 8, y: iy }, thickness: 0.4, color: C.gray100 });
+			page.drawLine({
+				start: { x: cardX + 10, y: iy },
+				end: { x: cardX + CW - 8, y: iy },
+				thickness: 0.4,
+				color: C.gray100,
+			});
 
 			// Observation
 			iy -= 4;
@@ -307,22 +414,42 @@ day: "2-digit", month: "long", year: "numeric",
 			iy -= 6;
 
 			// Separator
-			page.drawLine({ start: { x: cardX + 10, y: iy }, end: { x: cardX + CW - 8, y: iy }, thickness: 0.4, color: C.gray100 });
+			page.drawLine({
+				start: { x: cardX + 10, y: iy },
+				end: { x: cardX + CW - 8, y: iy },
+				thickness: 0.4,
+				color: C.gray100,
+			});
 			iy -= 10;
 
 			// Detail rows
-			const rows: Array<{ lbl: string; val: string; valColor?: ReturnType<typeof rgb> }> = [
-				{ lbl: "Neden:", val: enc(ev.root_cause) },
-			];
-			if (ev.impact)  rows.push({ lbl: "Etki:",    val: enc(ev.impact) });
-			if (ev.action)  rows.push({ lbl: "Aksiyon:", val: enc(ev.action) });
-			if (ev.outcome) rows.push({ lbl: "Sonuc:",   val: enc(ev.outcome), valColor: C.green700 });
+			const rows: Array<{
+				lbl: string;
+				val: string;
+				valColor?: ReturnType<typeof rgb>;
+			}> = [{ lbl: "Neden:", val: enc(ev.root_cause) }];
+			if (ev.impact) rows.push({ lbl: "Etki:", val: enc(ev.impact) });
+			if (ev.action) rows.push({ lbl: "Aksiyon:", val: enc(ev.action) });
+			if (ev.outcome)
+				rows.push({
+					lbl: "Sonuc:",
+					val: enc(ev.outcome),
+					valColor: C.green700,
+				});
 
 			for (const row of rows) {
 				drawText(page, row.lbl, cardX + 10, iy, fontBold, 7.5, C.gray400);
 				const valLines = splitLines(row.val, fontRegular, 8, CW - 90);
 				for (const vl of valLines) {
-					drawText(page, vl, cardX + 80, iy, fontRegular, 8, row.valColor ?? C.gray600);
+					drawText(
+						page,
+						vl,
+						cardX + 80,
+						iy,
+						fontRegular,
+						8,
+						row.valColor ?? C.gray600,
+					);
 					iy -= 12;
 				}
 				iy -= 2;
@@ -338,7 +465,12 @@ day: "2-digit", month: "long", year: "numeric",
 	// ═══════════════════════════════════════════════════════════
 	if (report.actions.length > 0) {
 		newPageIfNeeded(30);
-		page.drawLine({ start: { x: ML, y }, end: { x: ML + CW, y }, thickness: 0.5, color: C.gray100 });
+		page.drawLine({
+			start: { x: ML, y },
+			end: { x: ML + CW, y },
+			thickness: 0.5,
+			color: C.gray100,
+		});
 		y -= 16;
 		drawText(page, "ONERILEN AKSIYONLAR", ML, y, fontBold, 7.5, C.gray400);
 		y -= 14;
@@ -351,7 +483,7 @@ day: "2-digit", month: "long", year: "numeric",
 			const rowH = (actionLines.length + impactLines.length) * 12 + 16;
 			newPageIfNeeded(rowH);
 
-			const priC = PRI_COLORS[action.priority] ?? PRI_COLORS["medium"];
+			const priC = PRI_COLORS[action.priority] ?? PRI_COLORS.medium;
 			const priLabel = enc(PRI_LABEL[action.priority] ?? action.priority);
 
 			// Index
@@ -375,7 +507,12 @@ day: "2-digit", month: "long", year: "numeric",
 			}
 
 			y = Math.min(y - rowH, ay - 4);
-			page.drawLine({ start: { x: ML, y: y + 2 }, end: { x: ML + CW, y: y + 2 }, thickness: 0.4, color: C.gray100 });
+			page.drawLine({
+				start: { x: ML, y: y + 2 },
+				end: { x: ML + CW, y: y + 2 },
+				thickness: 0.4,
+				color: C.gray100,
+			});
 			y -= 8;
 		});
 	}
@@ -384,7 +521,12 @@ day: "2-digit", month: "long", year: "numeric",
 	// RISK FORECAST
 	// ═══════════════════════════════════════════════════════════
 	if (report.risk_forecast) {
-		const rLines = splitLines(enc(report.risk_forecast), fontRegular, 9, CW - 20);
+		const rLines = splitLines(
+			enc(report.risk_forecast),
+			fontRegular,
+			9,
+			CW - 20,
+		);
 		const boxH = rLines.length * LH + 30;
 		newPageIfNeeded(boxH + 16);
 		y -= 8;
@@ -394,7 +536,15 @@ day: "2-digit", month: "long", year: "numeric",
 		// Indigo left accent
 		drawRect(page, ML, boxY, 4, boxH, C.indigo);
 
-		drawText(page, "7 GUNLUK RISK TAHMINI", ML + 12, y - 8, fontBold, 7.5, C.indigo);
+		drawText(
+			page,
+			"7 GUNLUK RISK TAHMINI",
+			ML + 12,
+			y - 8,
+			fontBold,
+			7.5,
+			C.indigo,
+		);
 		let ry = y - 22;
 		for (const line of rLines) {
 			drawText(page, line, ML + 12, ry, fontRegular, 9, C.gray600);

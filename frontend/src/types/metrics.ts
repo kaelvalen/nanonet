@@ -8,4 +8,3 @@ export interface ServiceMetrics {
 	status: "up" | "down" | "degraded" | "unknown";
 	disk_used_gb?: number;
 }
-

@@ -22,16 +22,16 @@ import ReactMarkdown from "react-markdown";
 import { useLocation, useParams } from "react-router";
 import remarkGfm from "remark-gfm";
 import {
-	TIME_RANGE_LABELS,
-	type TimeRange,
 	aiChatApi,
 	aiReportApi,
 	type ChatMessage,
 	type ReportEvent,
 	type ReportResult,
+	TIME_RANGE_LABELS,
+	type TimeRange,
 } from "@/api/metrics";
-import { downloadReportPDF } from "./ReportPDF";
 import { useServiceStore } from "@/store/serviceStore";
+import { downloadReportPDF } from "./ReportPDF";
 import { Input } from "./ui/input";
 
 type PanelMode = "chat" | "report";
@@ -91,7 +91,6 @@ const PRIORITY_COLOR: Record<string, string> = {
 	low: "var(--status-up-text)",
 };
 
-
 function ReportView({
 	report,
 	onClose,
@@ -99,7 +98,7 @@ function ReportView({
 	report: ReportResult;
 	onClose: () => void;
 }) {
-	const scoreConfig = SCORE_CONFIG[report.system_score] ?? SCORE_CONFIG["DİKKAT"];
+	const scoreConfig = SCORE_CONFIG[report.system_score] ?? SCORE_CONFIG.DİKKAT;
 	const [isExporting, setIsExporting] = useState(false);
 
 	const handleExport = async () => {
@@ -115,223 +114,234 @@ function ReportView({
 	};
 
 	return (
-			<div className="flex flex-col h-full">
+		<div className="flex flex-col h-full">
 			<div className="flex-1 overflow-y-auto">
-			<div>
-			{/* Period + score banner */}
-			<div
-				className="mx-3 mt-3 rounded-xl px-3.5 py-3 shrink-0"
-				style={{
-					background: scoreConfig.bg,
-					border: `1px solid ${scoreConfig.border}`,
-				}}
-			>
-				<div className="flex items-center justify-between mb-1">
-					<span
-						className="text-[10px] font-bold tracking-widest uppercase"
-						style={{ color: scoreConfig.text }}
+				<div>
+					{/* Period + score banner */}
+					<div
+						className="mx-3 mt-3 rounded-xl px-3.5 py-3 shrink-0"
+						style={{
+							background: scoreConfig.bg,
+							border: `1px solid ${scoreConfig.border}`,
+						}}
 					>
-						{report.system_score}
-					</span>
-					<span
-						className="text-[10px] font-medium"
-						style={{ color: "var(--text-faint)" }}
-					>
-						{report.period_label}
-					</span>
-				</div>
-				<p
-					className="text-sm font-semibold leading-snug"
-					style={{ color: "var(--text-primary)" }}
-				>
-					{report.headline}
-				</p>
-				<div className="flex items-center gap-3 mt-2">
-					<span
-						className="text-[11px] flex items-center gap-1"
-						style={{ color: "var(--status-down-text)" }}
-					>
-						<AlertTriangle className="w-3 h-3" />
-						{report.critical_events} kritik
-					</span>
-					<span
-						className="text-[11px] flex items-center gap-1"
-						style={{ color: "var(--status-up-text)" }}
-					>
-						<CheckCircle2 className="w-3 h-3" />
-						{report.resolved_events} çözüldü
-					</span>
-				</div>
-			</div>
-
-			<div className="px-3 py-2.5 space-y-2">
-				{/* Events */}
-				{report.events.length > 0 && (
-					<div>
+						<div className="flex items-center justify-between mb-1">
+							<span
+								className="text-[10px] font-bold tracking-widest uppercase"
+								style={{ color: scoreConfig.text }}
+							>
+								{report.system_score}
+							</span>
+							<span
+								className="text-[10px] font-medium"
+								style={{ color: "var(--text-faint)" }}
+							>
+								{report.period_label}
+							</span>
+						</div>
 						<p
-							className="text-[10px] font-bold tracking-widest uppercase px-0.5 mb-1.5"
-							style={{ color: "var(--text-faint)" }}
+							className="text-sm font-semibold leading-snug"
+							style={{ color: "var(--text-primary)" }}
 						>
-							Tespit Edilen Olaylar
+							{report.headline}
 						</p>
-						<div className="space-y-2">
-							{report.events.map((event, i) => {
-								const cat =
-									CATEGORY_CONFIG[event.category] ??
-									CATEGORY_CONFIG["izleniyor"];
-								return (
-									<div
-										key={`evt-${i}`}
-										className="rounded-xl px-3 py-2.5"
-										style={{
-											background: "var(--surface-sunken)",
-											border: "1px solid var(--border-subtle)",
-										}}
-									>
-										<div className="flex items-start justify-between gap-2 mb-1.5">
-											<div className="flex items-center gap-1.5 min-w-0">
-												<span
-													className="font-semibold text-xs truncate"
-													style={{ color: "var(--text-primary)" }}
-												>
-													{event.service}
-												</span>
-												<span
-													className="text-[10px]"
-													style={{ color: "var(--text-faint)" }}
-												>
-													{event.time}
-												</span>
-											</div>
-											<span
-												className="flex items-center gap-1 text-[10px] font-semibold shrink-0 px-1.5 py-0.5 rounded-full"
+						<div className="flex items-center gap-3 mt-2">
+							<span
+								className="text-[11px] flex items-center gap-1"
+								style={{ color: "var(--status-down-text)" }}
+							>
+								<AlertTriangle className="w-3 h-3" />
+								{report.critical_events} kritik
+							</span>
+							<span
+								className="text-[11px] flex items-center gap-1"
+								style={{ color: "var(--status-up-text)" }}
+							>
+								<CheckCircle2 className="w-3 h-3" />
+								{report.resolved_events} çözüldü
+							</span>
+						</div>
+					</div>
+
+					<div className="px-3 py-2.5 space-y-2">
+						{/* Events */}
+						{report.events.length > 0 && (
+							<div>
+								<p
+									className="text-[10px] font-bold tracking-widest uppercase px-0.5 mb-1.5"
+									style={{ color: "var(--text-faint)" }}
+								>
+									Tespit Edilen Olaylar
+								</p>
+								<div className="space-y-2">
+									{report.events.map((event, i) => {
+										const cat =
+											CATEGORY_CONFIG[event.category] ??
+											CATEGORY_CONFIG.izleniyor;
+										return (
+											<div
+												key={`evt-${i}`}
+												className="rounded-xl px-3 py-2.5"
 												style={{
-													color: cat.color,
+													background: "var(--surface-sunken)",
+													border: "1px solid var(--border-subtle)",
+												}}
+											>
+												<div className="flex items-start justify-between gap-2 mb-1.5">
+													<div className="flex items-center gap-1.5 min-w-0">
+														<span
+															className="font-semibold text-xs truncate"
+															style={{ color: "var(--text-primary)" }}
+														>
+															{event.service}
+														</span>
+														<span
+															className="text-[10px]"
+															style={{ color: "var(--text-faint)" }}
+														>
+															{event.time}
+														</span>
+													</div>
+													<span
+														className="flex items-center gap-1 text-[10px] font-semibold shrink-0 px-1.5 py-0.5 rounded-full"
+														style={{
+															color: cat.color,
+															background: "var(--surface-raised)",
+															border: "1px solid var(--border-subtle)",
+														}}
+													>
+														{cat.icon}
+														{cat.label}
+													</span>
+												</div>
+												<p
+													className="text-xs leading-relaxed mb-1"
+													style={{ color: "var(--text-secondary)" }}
+												>
+													{event.observation}
+												</p>
+												<div
+													className="text-[11px] space-y-0.5 pt-1.5"
+													style={{
+														borderTop: "1px solid var(--border-subtle)",
+														color: "var(--text-faint)",
+													}}
+												>
+													<p>
+														<span
+															className="font-medium"
+															style={{ color: "var(--text-secondary)" }}
+														>
+															Kök neden:
+														</span>{" "}
+														{event.root_cause}
+													</p>
+													<p>
+														<span
+															className="font-medium"
+															style={{ color: "var(--text-secondary)" }}
+														>
+															Müdahale:
+														</span>{" "}
+														{event.action}
+													</p>
+													{event.outcome && (
+														<p>
+															<span
+																className="font-medium"
+																style={{ color: "var(--status-up-text)" }}
+															>
+																Sonuç:
+															</span>{" "}
+															{event.outcome}
+														</p>
+													)}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						)}
+
+						{/* Actions */}
+						{report.actions.length > 0 && (
+							<div>
+								<p
+									className="text-[10px] font-bold tracking-widest uppercase px-0.5 mb-1.5"
+									style={{ color: "var(--text-faint)" }}
+								>
+									Önerilen Aksiyonlar
+								</p>
+								<div className="space-y-1.5">
+									{report.actions.map((action, i) => (
+										<div
+											key={`act-${i}`}
+											className="flex items-start gap-2.5 rounded-lg px-3 py-2"
+											style={{
+												background: "var(--surface-sunken)",
+												border: "1px solid var(--border-subtle)",
+											}}
+										>
+											<span
+												className="text-[10px] font-bold uppercase mt-0.5 shrink-0 px-1.5 py-0.5 rounded"
+												style={{
+													color:
+														PRIORITY_COLOR[action.priority] ??
+														"var(--text-faint)",
 													background: "var(--surface-raised)",
 													border: "1px solid var(--border-subtle)",
 												}}
 											>
-												{cat.icon}
-												{cat.label}
+												{action.priority}
 											</span>
-										</div>
-										<p
-											className="text-xs leading-relaxed mb-1"
-											style={{ color: "var(--text-secondary)" }}
-										>
-											{event.observation}
-										</p>
-										<div
-											className="text-[11px] space-y-0.5 pt-1.5"
-											style={{
-												borderTop: "1px solid var(--border-subtle)",
-												color: "var(--text-faint)",
-											}}
-										>
-											<p>
-												<span className="font-medium" style={{ color: "var(--text-secondary)" }}>
-													Kök neden:
-												</span>{" "}
-												{event.root_cause}
-											</p>
-											<p>
-												<span className="font-medium" style={{ color: "var(--text-secondary)" }}>
-													Müdahale:
-												</span>{" "}
-												{event.action}
-											</p>
-											{event.outcome && (
-												<p>
-													<span className="font-medium" style={{ color: "var(--status-up-text)" }}>
-														Sonuç:
-													</span>{" "}
-													{event.outcome}
+											<div className="min-w-0">
+												<p
+													className="text-xs font-medium"
+													style={{ color: "var(--text-primary)" }}
+												>
+													{action.action}
 												</p>
-											)}
+												{action.estimated_impact && (
+													<p
+														className="text-[11px] mt-0.5"
+														style={{ color: "var(--text-faint)" }}
+													>
+														{action.estimated_impact}
+													</p>
+												)}
+											</div>
 										</div>
-									</div>
-								);
-							})}
-						</div>
-					</div>
-				)}
-
-				{/* Actions */}
-				{report.actions.length > 0 && (
-					<div>
-						<p
-							className="text-[10px] font-bold tracking-widest uppercase px-0.5 mb-1.5"
-							style={{ color: "var(--text-faint)" }}
-						>
-							Önerilen Aksiyonlar
-						</p>
-						<div className="space-y-1.5">
-							{report.actions.map((action, i) => (
-								<div
-									key={`act-${i}`}
-									className="flex items-start gap-2.5 rounded-lg px-3 py-2"
-									style={{
-										background: "var(--surface-sunken)",
-										border: "1px solid var(--border-subtle)",
-									}}
-								>
-									<span
-										className="text-[10px] font-bold uppercase mt-0.5 shrink-0 px-1.5 py-0.5 rounded"
-										style={{
-											color: PRIORITY_COLOR[action.priority] ?? "var(--text-faint)",
-											background: "var(--surface-raised)",
-											border: "1px solid var(--border-subtle)",
-										}}
-									>
-										{action.priority}
-									</span>
-									<div className="min-w-0">
-										<p
-											className="text-xs font-medium"
-											style={{ color: "var(--text-primary)" }}
-										>
-											{action.action}
-										</p>
-										{action.estimated_impact && (
-											<p
-												className="text-[11px] mt-0.5"
-												style={{ color: "var(--text-faint)" }}
-											>
-												{action.estimated_impact}
-											</p>
-										)}
-									</div>
+									))}
 								</div>
-							))}
-						</div>
-					</div>
-				)}
+							</div>
+						)}
 
-				{/* Risk forecast */}
-				{report.risk_forecast && (
-					<div
-						className="rounded-xl px-3 py-2.5"
-						style={{
-							background: "var(--color-lavender-subtle)",
-							border: "1px solid var(--color-lavender-border)",
-						}}
-					>
-						<p
-							className="text-[10px] font-bold tracking-widest uppercase mb-1"
-							style={{ color: "var(--color-lavender)" }}
-						>
-							Önümüzdeki 7 Gün Riski
-						</p>
-						<p
-							className="text-xs leading-relaxed"
-							style={{ color: "var(--text-secondary)" }}
-						>
-							{report.risk_forecast}
-						</p>
+						{/* Risk forecast */}
+						{report.risk_forecast && (
+							<div
+								className="rounded-xl px-3 py-2.5"
+								style={{
+									background: "var(--color-lavender-subtle)",
+									border: "1px solid var(--color-lavender-border)",
+								}}
+							>
+								<p
+									className="text-[10px] font-bold tracking-widest uppercase mb-1"
+									style={{ color: "var(--color-lavender)" }}
+								>
+									Önümüzdeki 7 Gün Riski
+								</p>
+								<p
+									className="text-xs leading-relaxed"
+									style={{ color: "var(--text-secondary)" }}
+								>
+									{report.risk_forecast}
+								</p>
+							</div>
+						)}
 					</div>
-				)}
-			</div>
-			</div>
+				</div>
 			</div>
 
 			<div className="px-3 pb-3 pt-1 shrink-0 flex gap-2">
@@ -416,7 +426,7 @@ export function AIAssistant() {
 		if (isOpen && !isMinimized && mode === "chat") {
 			messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 		}
-	}, [chatMessages, isOpen, isMinimized, mode]);
+	}, [isOpen, isMinimized, mode]);
 
 	const now = () =>
 		new Date().toLocaleTimeString("tr-TR", {
@@ -499,7 +509,10 @@ export function AIAssistant() {
 			icon: <AlertTriangle className="w-3.5 h-3.5" />,
 			label: "Son anomalileri analiz et",
 		},
-		{ icon: <Zap className="w-3.5 h-3.5" />, label: "Performans önerileri ver" },
+		{
+			icon: <Zap className="w-3.5 h-3.5" />,
+			label: "Performans önerileri ver",
+		},
 	];
 
 	return (
@@ -520,7 +533,9 @@ export function AIAssistant() {
 						}}
 					>
 						<Sparkles className="w-4 h-4 text-white" />
-						<span className="text-white text-xs font-bold tracking-wide">AI</span>
+						<span className="text-white text-xs font-bold tracking-wide">
+							AI
+						</span>
 					</motion.button>
 				)}
 			</AnimatePresence>
@@ -687,11 +702,9 @@ export function AIAssistant() {
 																			borderRadius: "0 1.25rem 1.25rem 1.25rem",
 																		}
 																	: {
-																			background:
-																				"var(--gradient-btn-primary)",
+																			background: "var(--gradient-btn-primary)",
 																			color: "#fff",
-																			borderRadius:
-																				"1.25rem 1.25rem 0 1.25rem",
+																			borderRadius: "1.25rem 1.25rem 0 1.25rem",
 																		}
 															}
 														>
@@ -788,7 +801,8 @@ export function AIAssistant() {
 															className="rounded-xl px-3 py-2.5 flex items-center justify-between"
 															style={{
 																background: "var(--color-lavender-subtle)",
-																border: "1px solid var(--color-lavender-border)",
+																border:
+																	"1px solid var(--color-lavender-border)",
 															}}
 														>
 															<div>
@@ -906,7 +920,8 @@ export function AIAssistant() {
 																	? {
 																			background:
 																				"var(--color-lavender-subtle)",
-																			border: "1.5px solid var(--color-lavender)",
+																			border:
+																				"1.5px solid var(--color-lavender)",
 																			color: "var(--color-lavender)",
 																		}
 																	: {

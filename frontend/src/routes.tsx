@@ -8,13 +8,13 @@ import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { KubernetesPage } from "@/pages/KubernetesPage";
 import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { LogsPage } from "@/pages/LogsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
 import { ServiceMapPage } from "@/pages/ServiceMapPage";
 import { ServicesPage } from "@/pages/ServicesPage";
-import { LogsPage } from "@/pages/LogsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { useAuthStore } from "@/store/authStore";
 

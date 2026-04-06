@@ -194,10 +194,11 @@ func (mb *MetricsBroadcaster) writeAgentLog(svcID uuid.UUID, metric *metrics.Met
 		}
 	}
 
-	if metric.Status == "down" {
+	switch metric.Status {
+	case "down":
 		level = "error"
 		message = "Servis erişilemiyor"
-	} else if metric.Status == "degraded" {
+	case "degraded":
 		if level != "error" {
 			level = "warn"
 		}
