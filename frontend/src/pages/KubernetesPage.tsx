@@ -106,43 +106,31 @@ function StatCard({
 	sub?: string;
 }) {
 	return (
-		<Card
-			className="p-4 rounded"
+		<div
+			className="relative overflow-hidden px-4 py-3.5 rounded-xl"
 			style={{
-				background: "var(--surface-card)",
-				border: `1px solid color-mix(in srgb, ${color} 30%, var(--border-default))`,
+				background: `color-mix(in srgb, ${color} 8%, var(--surface-card))`,
+				border: `1.5px solid color-mix(in srgb, ${color} 28%, var(--border-default))`,
 			}}
 		>
-			<div className="flex items-center gap-3">
+			<div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full" style={{ background: color }} />
+			<div className="flex items-center justify-between">
+				<div className="min-w-0">
+					<p className="text-[11px] font-medium mb-1" style={{ color: "var(--text-faint)" }}>{label}</p>
+					<p className="text-2xl font-bold tabular-nums leading-none" style={{ color }}>{value}</p>
+					{sub && <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>{sub}</p>}
+				</div>
 				<div
-					className="w-9 h-9 rounded flex items-center justify-center shrink-0"
+					className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
 					style={{
-						backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+						background: "var(--surface-card)",
+						border: `1px solid color-mix(in srgb, ${color} 30%, var(--border-default))`,
 					}}
 				>
 					<Icon className="w-4 h-4" style={{ color }} />
 				</div>
-				<div className="min-w-0">
-					<p
-						className="text-[10px] uppercase tracking-wider truncate"
-						style={{ color: "var(--text-faint)" }}
-					>
-						{label}
-					</p>
-					<p className="text-xl font-bold leading-tight" style={{ color }}>
-						{value}
-					</p>
-					{sub && (
-						<p
-							className="text-[10px] truncate"
-							style={{ color: "var(--text-faint)" }}
-						>
-							{sub}
-						</p>
-					)}
-				</div>
 			</div>
-		</Card>
+		</div>
 	);
 }
 
@@ -755,115 +743,73 @@ export function KubernetesPage() {
 			)}
 
 			{/* Başlık */}
-			<motion.div
-				initial={{ opacity: 0, y: 16 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4 }}
-			>
-				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-					<div>
-						<h1
-							className="text-xl font-bold"
-							style={{ color: "var(--text-primary)" }}
-						>
-							Kubernetes
-						</h1>
-						<p
-							className="text-xs mt-0.5"
-							style={{ color: "var(--text-muted)" }}
-						>
-							Cluster yönetimi · pod izleme · auto-scaling
-						</p>
-					</div>
-					<div className="flex items-center gap-2">
-						{isAvailable && (
-							<button
-								type="button"
-								onClick={() => {
-									refetchNodes();
-									refetchAllPods();
-									refetchDeployments();
-								}}
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border transition-all"
-								style={{
-									borderColor: "var(--border-subtle)",
-									color: "var(--text-muted)",
-								}}
-							>
-								{nodesLoading || allPodsLoading || deploymentsLoading ? (
-									<Loader2 className="w-3 h-3 animate-spin" />
-								) : (
-									<RefreshCw className="w-3 h-3" />
-								)}
-								Yenile
-							</button>
-						)}
-						<div
-							className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border"
-							style={
-								isAvailable
-									? {
-											background: "var(--status-up-subtle)",
-											borderColor: "var(--status-up-border)",
-											color: "var(--status-up-text)",
-										}
-									: {
-											background: "var(--status-down-subtle)",
-											borderColor: "var(--status-down-border)",
-											color: "var(--status-down-text)",
-										}
-							}
-						>
-							{statusLoading ? (
-								<>
-									<Loader2 className="w-3 h-3 animate-spin" /> Kontrol ediliyor
-								</>
-							) : isAvailable ? (
-								<>
-									<Cloud className="w-3 h-3" /> Aktif · {k8sStatus?.namespace}
-								</>
-							) : (
-								<>
-									<CloudOff className="w-3 h-3" /> Bağlantısız
-								</>
+			<motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+				<div className="flex flex-col gap-3">
+					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+						<div className="flex items-center gap-3">
+							<div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--color-teal-subtle)", border: "1px solid var(--color-teal-border)" }}>
+								<Cloud className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
+							</div>
+							<div>
+								<h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Kubernetes</h1>
+								<p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Cluster yönetimi · pod izleme · auto-scaling</p>
+							</div>
+						</div>
+						<div className="flex items-center gap-2">
+							{isAvailable && (
+								<button
+									type="button"
+									onClick={() => { refetchNodes(); refetchAllPods(); refetchDeployments(); }}
+									className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all hover:opacity-80"
+									style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)", background: "var(--surface-card)" }}
+								>
+									{nodesLoading || allPodsLoading || deploymentsLoading
+										? <Loader2 className="w-3 h-3 animate-spin" />
+										: <RefreshCw className="w-3 h-3" />}
+									Yenile
+								</button>
 							)}
+							<div
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border"
+								style={isAvailable
+									? { background: "var(--status-up-subtle)", borderColor: "var(--status-up-border)", color: "var(--status-up-text)" }
+									: { background: "var(--status-down-subtle)", borderColor: "var(--status-down-border)", color: "var(--status-down-text)" }
+								}
+							>
+								{statusLoading ? <><Loader2 className="w-3 h-3 animate-spin" /> Kontrol ediliyor</>
+									: isAvailable ? <><Cloud className="w-3 h-3" /> Aktif · {k8sStatus?.namespace}</>
+									: <><CloudOff className="w-3 h-3" /> Bağlantısız</>}
+							</div>
 						</div>
 					</div>
+					{/* Cluster summary strip */}
+					{isAvailable && !statusLoading && (
+						<div className="flex flex-wrap gap-2">
+							{([
+								{ label: "Nodes", value: `${readyNodes}/${nodes.length}`, color: "var(--color-teal)", icon: Server },
+								{ label: "Pods", value: `${runningPods}/${pods.length}`, color: "var(--color-blue)", icon: Box },
+								{ label: "Deployments", value: `${readyDeployments}/${deployments.length}`, color: "var(--color-lavender)", icon: Layers },
+								{ label: "Namespace", value: k8sStatus?.namespace ?? "—", color: "var(--color-pink)", icon: GitBranch },
+							] as const).map(({ label, value, color, icon: Icon }) => (
+								<div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: `color-mix(in srgb, ${color} 10%, var(--surface-card))`, border: `1px solid color-mix(in srgb, ${color} 25%, var(--border-default))` }}>
+									<Icon className="w-3 h-3" style={{ color }} />
+									<span style={{ color: "var(--text-faint)" }}>{label}:</span>
+									<span className="font-semibold" style={{ color }}>{value}</span>
+								</div>
+							))}
+						</div>
+					)}
 				</div>
 			</motion.div>
 
 			{/* Bağlanamadı */}
 			{!statusLoading && !isAvailable && (
 				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-					<Card
-						className="p-8 rounded text-center"
-						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--status-warn-border)",
-						}}
-					>
-						<CloudOff
-							className="w-10 h-10 mx-auto mb-3"
-							style={{ color: "var(--status-warn)" }}
-						/>
-						<h3
-							className="text-sm font-semibold mb-1"
-							style={{ color: "var(--text-secondary)" }}
-						>
-							Kubernetes Entegrasyonu Aktif Değil
-						</h3>
-						<p
-							className="text-xs max-w-sm mx-auto"
-							style={{ color: "var(--text-muted)" }}
-						>
-							Backend'de{" "}
-							<code
-								className="px-1 py-0.5 rounded"
-								style={{ background: "var(--surface-sunken)" }}
-							>
-								K8S_NAMESPACE
-							</code>{" "}
-							değişkenini tanımlayın ve backend container'ını yeniden başlatın.
+					<Card className="p-8 rounded text-center" style={{ background: "var(--surface-card)", border: "1px solid var(--status-warn-border)" }}>
+						<CloudOff className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--status-warn)" }} />
+						<h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Kubernetes Entegrasyonu Aktif Değil</h3>
+						<p className="text-xs max-w-sm mx-auto" style={{ color: "var(--text-muted)" }}>
+							Backend'de <code className="px-1 py-0.5 rounded" style={{ background: "var(--surface-sunken)" }}>K8S_NAMESPACE</code> değişkenini tanımlayın ve backend container'ını yeniden başlatın.
 						</p>
 					</Card>
 				</motion.div>
@@ -872,43 +818,23 @@ export function KubernetesPage() {
 			{isAvailable && (
 				<>
 					{/* Tabs */}
-					<motion.div
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.05 }}
-					>
-						<div className="flex items-center gap-1.5 flex-wrap">
+					<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+						<div className="flex items-center gap-0.5 p-0.5 rounded-xl overflow-x-auto" style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>
 							{tabs.map((tab) => (
 								<button
 									type="button"
 									key={tab.key}
 									onClick={() => setActiveTab(tab.key)}
-									className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all"
-									style={
-										activeTab === tab.key
-											? {
-													background: `color-mix(in srgb, ${tab.colorVar} 14%, transparent)`,
-													borderColor: `color-mix(in srgb, ${tab.colorVar} 35%, transparent)`,
-													color: tab.colorVar,
-												}
-											: {
-													color: "var(--text-muted)",
-													borderColor: "transparent",
-													background: "transparent",
-												}
+									className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0"
+									style={activeTab === tab.key
+										? { background: "var(--surface-raised)", color: tab.colorVar, boxShadow: "var(--btn-shadow)" }
+										: { color: "var(--text-muted)", background: "transparent" }
 									}
 								>
 									<tab.icon className="w-3.5 h-3.5" />
 									{tab.label}
 									{tab.badge !== undefined && tab.badge > 0 && (
-										<span
-											className="ml-0.5 min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
-											style={{
-												background: "var(--status-warn-subtle)",
-												color: "var(--status-warn-text)",
-												border: "1px solid var(--status-warn-border)",
-											}}
-										>
+										<span className="ml-0.5 min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center" style={{ background: "var(--status-warn-subtle)", color: "var(--status-warn-text)", border: "1px solid var(--status-warn-border)" }}>
 											{tab.badge}
 										</span>
 									)}
@@ -929,146 +855,69 @@ export function KubernetesPage() {
 							>
 								{/* Summary Stats */}
 								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-									<StatCard
-										label="Node'lar"
-										value={`${readyNodes}/${nodes.length}`}
-										icon={Server}
-										color="var(--color-teal)"
-										sub="Ready / Total"
-									/>
-									<StatCard
-										label="Pod'lar"
-										value={`${runningPods}/${pods.length}`}
-										icon={Box}
-										color="var(--color-blue)"
-										sub="Running / Total"
-									/>
-									<StatCard
-										label="Deployment'lar"
-										value={`${readyDeployments}/${deployments.length}`}
-										icon={Layers}
-										color="var(--color-lavender)"
-										sub="Ready / Total"
-									/>
-									<StatCard
-										label="Namespace"
-										value={k8sStatus?.namespace ?? "—"}
-										icon={GitBranch}
-										color="var(--color-pink)"
-									/>
+									<StatCard label="Node'lar" value={`${readyNodes}/${nodes.length}`} icon={Server} color="var(--color-teal)" sub="Ready / Total" />
+									<StatCard label="Pod'lar" value={`${runningPods}/${pods.length}`} icon={Box} color="var(--color-blue)" sub="Running / Total" />
+									<StatCard label="Deployment'lar" value={`${readyDeployments}/${deployments.length}`} icon={Layers} color="var(--color-lavender)" sub="Ready / Total" />
+									<StatCard label="Namespace" value={k8sStatus?.namespace ?? "—"} icon={GitBranch} color="var(--color-pink)" />
 								</div>
 
 								{/* Nodes */}
 								<div>
-									<p
-										className="text-[10px] uppercase tracking-wider mb-2"
-										style={{ color: "var(--text-muted)" }}
-									>
-										Nodes
-									</p>
+									<div className="flex items-center justify-between mb-2">
+										<p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Nodes</p>
+										<span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{readyNodes}/{nodes.length} hazır</span>
+									</div>
 									{nodesLoading ? (
-										<div
-											className="flex items-center gap-2 py-4"
-											style={{ color: "var(--text-faint)" }}
-										>
+										<div className="flex items-center gap-2 py-4" style={{ color: "var(--text-faint)" }}>
 											<Loader2 className="w-4 h-4 animate-spin" />
 											<span className="text-xs">Yükleniyor...</span>
 										</div>
 									) : nodes.length === 0 ? (
-										<Card
-											className="p-5 text-center rounded"
-											style={{
-												background: "var(--surface-card)",
-												border: "1px solid var(--border-default)",
-											}}
-										>
-											<p
-												className="text-xs"
-												style={{ color: "var(--text-faint)" }}
-											>
-												Node bulunamadı
-											</p>
+										<Card className="p-5 text-center rounded" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)" }}>
+											<p className="text-xs" style={{ color: "var(--text-faint)" }}>Node bulunamadı</p>
 										</Card>
 									) : (
 										<div className="space-y-2">
 											{nodes.map((node) => (
 												<Card
 													key={node.name}
-													className="rounded overflow-hidden"
+													className="overflow-hidden"
 													style={{
 														background: "var(--surface-card)",
 														border: `1px solid ${node.ready ? "var(--color-teal-border)" : "var(--status-down-border)"}`,
+														borderLeft: `3px solid ${node.ready ? "var(--status-up)" : "var(--status-down)"}`,
 													}}
 												>
 													<button
 														type="button"
 														className="w-full p-4 flex items-center gap-3 text-left"
-														onClick={() =>
-															setExpandedNode(
-																expandedNode === node.name ? null : node.name,
-															)
-														}
+														onClick={() => setExpandedNode(expandedNode === node.name ? null : node.name)}
 													>
 														<StatusDot ready={node.ready} size="md" />
 														<div className="flex-1 min-w-0">
-															<p
-																className="text-xs font-semibold truncate"
-																style={{ color: "var(--text-secondary)" }}
-															>
-																{node.name}
-															</p>
-															<p
-																className="text-[10px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																{node.roles.join(", ")} · {node.version}
-															</p>
+															<p className="text-xs font-semibold truncate" style={{ color: "var(--text-secondary)" }}>{node.name}</p>
+															<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{node.roles.join(", ")} · {node.version}</p>
 														</div>
 														<div className="flex items-center gap-3 shrink-0">
-															<div
-																className="hidden sm:flex items-center gap-1.5 text-[10px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																<Cpu className="w-3 h-3" />
-																{node.cpu} CPU
+															<div className="hidden sm:flex items-center gap-1.5 text-[10px]" style={{ color: "var(--text-faint)" }}>
+																<Cpu className="w-3 h-3" />{node.cpu} CPU
 															</div>
-															<div
-																className="hidden sm:flex items-center gap-1.5 text-[10px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																<MemoryStick className="w-3 h-3" />
-																{MemoryToGB(node.memory)}
+															<div className="hidden sm:flex items-center gap-1.5 text-[10px]" style={{ color: "var(--text-faint)" }}>
+																<MemoryStick className="w-3 h-3" />{MemoryToGB(node.memory)}
 															</div>
 															<Badge
 																className="text-[9px] px-2 py-0.5 rounded-full border"
-																style={
-																	node.ready
-																		? {
-																				background: "var(--status-up-subtle)",
-																				color: "var(--status-up-text)",
-																				borderColor: "var(--status-up-border)",
-																			}
-																		: {
-																				background: "var(--status-down-subtle)",
-																				color: "var(--status-down-text)",
-																				borderColor:
-																					"var(--status-down-border)",
-																			}
+																style={node.ready
+																	? { background: "var(--status-up-subtle)", color: "var(--status-up-text)", borderColor: "var(--status-up-border)" }
+																	: { background: "var(--status-down-subtle)", color: "var(--status-down-text)", borderColor: "var(--status-down-border)" }
 																}
 															>
 																{node.status}
 															</Badge>
-															{expandedNode === node.name ? (
-																<ChevronDown
-																	className="w-3.5 h-3.5"
-																	style={{ color: "var(--text-faint)" }}
-																/>
-															) : (
-																<ChevronRight
-																	className="w-3.5 h-3.5"
-																	style={{ color: "var(--text-faint)" }}
-																/>
-															)}
+															{expandedNode === node.name
+																? <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+																: <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+															}
 														</div>
 													</button>
 													<AnimatePresence>
@@ -1080,36 +929,16 @@ export function KubernetesPage() {
 																transition={{ duration: 0.2 }}
 																className="overflow-hidden"
 															>
-																<div
-																	className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t"
-																	style={{
-																		borderColor: "var(--border-subtle)",
-																	}}
-																>
+																<div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
 																	{[
 																		{ label: "OS", value: node.os },
 																		{ label: "Arch", value: node.arch },
 																		{ label: "CPU", value: node.cpu },
-																		{
-																			label: "Memory",
-																			value: MemoryToGB(node.memory),
-																		},
+																		{ label: "Memory", value: MemoryToGB(node.memory) },
 																	].map(({ label, value }) => (
 																		<div key={label} className="pt-3">
-																			<p
-																				className="text-[9px] uppercase tracking-wider"
-																				style={{ color: "var(--text-faint)" }}
-																			>
-																				{label}
-																			</p>
-																			<p
-																				className="text-xs font-medium mt-0.5"
-																				style={{
-																					color: "var(--text-secondary)",
-																				}}
-																			>
-																				{value}
-																			</p>
+																			<p className="text-[9px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>{label}</p>
+																			<p className="text-xs font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>{value}</p>
 																		</div>
 																	))}
 																</div>
@@ -1125,58 +954,36 @@ export function KubernetesPage() {
 								{/* Recent deployments summary */}
 								{deployments.length > 0 && (
 									<div>
-										<p
-											className="text-[10px] uppercase tracking-wider mb-2"
-											style={{ color: "var(--text-muted)" }}
-										>
-											Deployment'lar
-										</p>
+										<div className="flex items-center justify-between mb-2">
+											<p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Deployment'lar</p>
+											<span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{deployments.length} toplam</span>
+										</div>
 										<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
 											{deployments.slice(0, 6).map((dep) => {
-												const healthy =
-													dep.ready_replicas === dep.replicas &&
-													dep.replicas > 0;
+												const healthy = dep.ready_replicas === dep.replicas && dep.replicas > 0;
+												const pct = dep.replicas > 0 ? Math.round((dep.ready_replicas / dep.replicas) * 100) : 0;
 												return (
 													<Card
 														key={dep.name}
-														className="p-3 rounded flex items-center gap-3"
+														className="overflow-hidden"
 														style={{
 															background: "var(--surface-card)",
 															border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+															borderLeft: `3px solid ${healthy ? "var(--status-up)" : "var(--status-warn)"}`,
 														}}
 													>
-														<StatusDot ready={healthy} />
-														<div className="flex-1 min-w-0">
-															<p
-																className="text-xs font-medium truncate"
-																style={{ color: "var(--text-secondary)" }}
-															>
-																{dep.name}
-															</p>
-															<p
-																className="text-[10px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																{dep.strategy || "RollingUpdate"}
-															</p>
+														<div className="px-3 pt-2.5 pb-2 flex items-center gap-2.5">
+															<div className="flex-1 min-w-0">
+																<p className="text-xs font-semibold truncate" style={{ color: "var(--text-secondary)" }}>{dep.name}</p>
+																<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{dep.strategy || "RollingUpdate"} · {dep.namespace}</p>
+															</div>
+															<div className="text-right shrink-0">
+																<p className="text-sm font-bold tabular-nums" style={{ color: healthy ? "var(--status-up)" : "var(--status-warn)" }}>{dep.ready_replicas}/{dep.replicas}</p>
+																<p className="text-[9px]" style={{ color: "var(--text-faint)" }}>hazır · {pct}%</p>
+															</div>
 														</div>
-														<div className="text-right shrink-0">
-															<p
-																className="text-sm font-bold"
-																style={{
-																	color: healthy
-																		? "var(--status-up)"
-																		: "var(--status-warn)",
-																}}
-															>
-																{dep.ready_replicas}/{dep.replicas}
-															</p>
-															<p
-																className="text-[9px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																hazır
-															</p>
+														<div className="h-0.5" style={{ background: "var(--surface-sunken)" }}>
+															<div className="h-full transition-all" style={{ width: `${pct}%`, background: healthy ? "var(--status-up)" : "var(--status-warn)" }} />
 														</div>
 													</Card>
 												);
