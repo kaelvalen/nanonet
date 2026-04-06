@@ -56,6 +56,14 @@ export function DashboardPage() {
 		staleTime: 30_000,
 	});
 
+	const { data: bulkUptime } = useQuery({
+		queryKey: ["dashBulkUptime"],
+		queryFn: () => metricsApi.getBulkUptime("24h"),
+		enabled: services.length > 0,
+		refetchInterval: 120_000,
+		staleTime: 60_000,
+	});
+
 	const totalServices = services.length;
 	const onlineServices = services.filter((s) => s.status === "up").length;
 	const degradedServices = services.filter(
@@ -365,6 +373,19 @@ export function DashboardPage() {
 											<span className="text-[11px] font-mono hidden sm:block" style={{ color: "var(--text-faint)" }}>
 												{service.host}:{service.port}
 											</span>
+											{bulkUptime?.[service.id] != null && (
+												<span
+													className="text-[11px] font-mono hidden lg:block shrink-0"
+													style={{
+														color:
+															(bulkUptime[service.id] ?? 0) >= 99 ? "var(--status-up-text)"
+															: (bulkUptime[service.id] ?? 0) >= 95 ? "var(--status-warn-text)"
+															: "var(--status-down-text)",
+													}}
+												>
+													{(bulkUptime[service.id] ?? 0).toFixed(1)}%
+												</span>
+											)}
 											<Badge
 												className="text-[10px] px-1.5 shrink-0"
 												style={{

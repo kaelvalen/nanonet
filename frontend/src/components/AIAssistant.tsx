@@ -1,4 +1,4 @@
-import { Maximize2, Minimize2, Send, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Bot, ChevronRight, Maximize2, Minimize2, Send, Sparkles, X, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -6,7 +6,6 @@ import { useLocation, useParams } from "react-router";
 import remarkGfm from "remark-gfm";
 import { aiChatApi, type ChatMessage } from "@/api/metrics";
 import { useServiceStore } from "@/store/serviceStore";
-import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
 const SUGGESTIONS = [
@@ -96,6 +95,14 @@ export function AIAssistant() {
 		}
 	};
 
+	const onlineServices = services.filter((s) => s.status === "up").length;
+
+	const SUGGESTION_ITEMS = [
+		{ icon: <Sparkles className="w-4 h-4" />, label: "Sistem durumu nedir?" },
+		{ icon: <AlertTriangle className="w-4 h-4" />, label: "Son anomalileri analiz et" },
+		{ icon: <Zap className="w-4 h-4" />, label: "Performans önerileri ver" },
+	];
+
 	return (
 		<>
 			{/* Trigger button */}
@@ -107,14 +114,14 @@ export function AIAssistant() {
 						animate={{ scale: 1, opacity: 1 }}
 						exit={{ scale: 0, opacity: 0 }}
 						onClick={() => setIsOpen(true)}
-						className="fixed bottom-20 right-4 md:bottom-8 md:right-6 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+						className="fixed bottom-20 right-4 md:bottom-8 md:right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
 						style={{
 							background: "var(--gradient-logo)",
-							boxShadow: "0 4px 16px rgba(79,70,229,0.3)",
+							boxShadow: "0 4px 20px rgba(79,70,229,0.35)",
 						}}
 					>
 						<Sparkles className="w-4 h-4 text-white" />
-						<span className="text-white text-xs font-semibold">AI</span>
+						<span className="text-white text-xs font-bold tracking-wide">AI</span>
 					</motion.button>
 				)}
 			</AnimatePresence>
@@ -123,120 +130,111 @@ export function AIAssistant() {
 			<AnimatePresence>
 				{isOpen && (
 					<motion.div
-						initial={{ opacity: 0, y: 20, scale: 0.95 }}
+						initial={{ opacity: 0, y: 24, scale: 0.94 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
-						exit={{ opacity: 0, y: 16, scale: 0.95 }}
-						transition={{ type: "spring", stiffness: 420, damping: 34 }}
+						exit={{ opacity: 0, y: 20, scale: 0.94 }}
+						transition={{ type: "spring", stiffness: 400, damping: 32 }}
 						className={`fixed z-50 flex flex-col rounded-2xl overflow-hidden
-							bottom-20 right-4 left-4
-							md:bottom-8 md:right-6 md:left-auto md:w-95
-							${isMinimized ? "h-14" : "h-[72vh] max-h-145"}`}
+						bottom-20 right-4 left-4
+						md:bottom-8 md:right-6 md:left-auto md:w-80
+						${isMinimized ? "h-14" : "h-[72vh] max-h-130"}`}
 						style={{
-							background: "var(--surface-raised)",
+							background: "var(--surface-card)",
 							border: "1px solid var(--border-default)",
-							boxShadow: "0 16px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)",
+							boxShadow: "0 24px 64px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)",
 						}}
 					>
-						{/* Header — gradient accent strip + clean layout */}
-						<div className="shrink-0 relative">
-							{/* Top gradient line */}
-							<div
-								className="absolute inset-x-0 top-0 h-0.5"
-								style={{ background: "var(--gradient-btn-primary)" }}
-							/>
-							<div
-								className="flex items-center gap-3 px-4 h-14"
-								style={{ borderBottom: "1px solid var(--border-default)" }}
-							>
-								{/* Avatar */}
-								<div
-									className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-									style={{ background: "var(--gradient-logo)" }}
-								>
-									<Sparkles className="w-4 h-4 text-white" />
+						{/* Header */}
+						<div
+							className="flex items-center justify-between px-4 py-3 shrink-0"
+							style={{
+								background: "var(--surface-raised)",
+								borderBottom: "1px solid var(--border-default)",
+							}}
+						>
+							<div className="flex items-center gap-2.5">
+								{/* Avatar with online dot */}
+								<div className="relative shrink-0">
+									<div
+										className="w-8 h-8 rounded-full flex items-center justify-center"
+										style={{ background: "var(--color-lavender-subtle)", border: "1px solid var(--color-lavender-border)" }}
+									>
+										<Bot className="w-4 h-4" style={{ color: "var(--color-lavender)" }} />
+									</div>
+									<span
+										className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
+										style={{
+											background: isAnalyzing ? "var(--status-warn)" : "var(--status-up)",
+											borderColor: "var(--surface-raised)",
+										}}
+									/>
 								</div>
-								<div className="flex-1 min-w-0">
-									<p className="text-sm font-semibold leading-none mb-0.5" style={{ color: "var(--text-primary)" }}>
+								<div>
+									<p className="text-sm font-bold leading-none" style={{ color: "var(--text-primary)" }}>
 										AI Asistan
 									</p>
-									<div className="flex items-center gap-1.5">
-										<span
-											className="w-1.5 h-1.5 rounded-full"
-											style={{
-												background: isAnalyzing ? "var(--status-warn)" : "var(--status-up)",
-												boxShadow: isAnalyzing ? "none" : "0 0 5px var(--status-up)",
-											}}
-										/>
-										<p className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>
-											{isAnalyzing ? "Analiz ediliyor..." : contextServiceName ? contextServiceName : "Tüm servisler"}
-										</p>
-									</div>
-								</div>
-								<div className="flex items-center gap-0.5">
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-7 w-7 rounded-lg"
-										style={{ color: "var(--text-faint)" }}
-										onClick={() => setIsMinimized(!isMinimized)}
+									<p
+										className="text-[10px] font-semibold tracking-wider uppercase mt-0.5"
+										style={{ color: isAnalyzing ? "var(--status-warn-text)" : "var(--status-up-text)" }}
 									>
-										{isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
-									</Button>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-7 w-7 rounded-lg"
-										style={{ color: "var(--text-faint)" }}
-										onClick={() => setIsOpen(false)}
-									>
-										<X className="w-3.5 h-3.5" />
-									</Button>
+										{isAnalyzing ? "Analiz ediliyor..." : contextServiceName ? contextServiceName : "Çevrimiçi"}
+									</p>
 								</div>
+							</div>
+							<div className="flex items-center gap-1">
+								<button
+									type="button"
+									onClick={() => setIsMinimized(!isMinimized)}
+									className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70"
+									style={{ color: "var(--text-faint)" }}
+								>
+									{isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
+								</button>
+								<button
+									type="button"
+									onClick={() => setIsOpen(false)}
+									className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70"
+									style={{ color: "var(--text-faint)" }}
+								>
+									<X className="w-3.5 h-3.5" />
+								</button>
 							</div>
 						</div>
 
 						{!isMinimized && (
 							<>
 								{/* Messages */}
-								<div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+								<div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
 									{chatMessages.map((msg) => (
 										<div
 											key={msg.id}
-											className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "items-start"}`}
+											className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
 										>
-											{msg.role === "ai" && (
+											<div className={msg.role === "user" ? "max-w-[80%]" : "max-w-[88%]"}>
 												<div
-													className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-													style={{ background: "var(--gradient-logo)" }}
-												>
-													<Sparkles className="w-3.5 h-3.5 text-white" />
-												</div>
-											)}
-											<div className={msg.role === "user" ? "max-w-[78%]" : "flex-1 min-w-0"}>
-												<div
-													className="rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed"
+													className="px-3.5 py-2.5 text-sm leading-relaxed"
 													style={
 														msg.role === "ai"
 															? {
 																background: "var(--surface-sunken)",
 																color: "var(--text-secondary)",
-																borderBottomLeftRadius: "6px",
+																borderRadius: "0 1.25rem 1.25rem 1.25rem",
 															}
 															: {
 																background: "var(--gradient-btn-primary)",
 																color: "#fff",
-																borderBottomRightRadius: "6px",
+																borderRadius: "1.25rem 1.25rem 0 1.25rem",
 															}
 													}
 												>
-													<div className="prose prose-sm max-w-none prose-p:my-0 prose-p:leading-relaxed prose-headings:font-semibold prose-invert:text-white">
+													<div className="prose prose-sm max-w-none prose-p:my-0 prose-p:leading-relaxed prose-headings:font-semibold">
 														<ReactMarkdown remarkPlugins={[remarkGfm]}>
 															{msg.text}
 														</ReactMarkdown>
 													</div>
 												</div>
 												<p
-													className={`text-[10px] mt-1 px-1 ${msg.role === "user" ? "text-right" : ""}`}
+													className={`text-[10px] mt-1.5 px-1 ${msg.role === "user" ? "text-right" : ""}`}
 													style={{ color: "var(--text-faint)" }}
 												>
 													{msg.time}
@@ -246,21 +244,18 @@ export function AIAssistant() {
 									))}
 
 									{isAnalyzing && (
-										<div className="flex gap-2.5 items-start">
+										<div className="flex justify-start">
 											<div
-												className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-												style={{ background: "var(--gradient-logo)" }}
-											>
-												<Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
-											</div>
-											<div
-												className="rounded-2xl px-4 py-3 flex items-center gap-1.5"
-												style={{ background: "var(--surface-sunken)", borderBottomLeftRadius: "6px" }}
+												className="px-4 py-2.5 flex items-center gap-1.5"
+												style={{
+													background: "var(--surface-sunken)",
+													borderRadius: "0 1.25rem 1.25rem 1.25rem",
+												}}
 											>
 												{[0, 0.15, 0.3].map((d) => (
 													<span
 														key={d}
-														className="w-1.5 h-1.5 rounded-full animate-bounce"
+														className="w-2 h-2 rounded-full animate-bounce"
 														style={{ background: "var(--text-faint)", animationDelay: `${d}s` }}
 													/>
 												))}
@@ -268,29 +263,67 @@ export function AIAssistant() {
 										</div>
 									)}
 
-									{/* Suggestions */}
+									{/* Suggestions + system health card */}
 									{chatMessages.length <= 1 && !isAnalyzing && (
-										<div className="pt-1">
-											<p className="text-[11px] font-medium px-1 mb-2" style={{ color: "var(--text-faint)" }}>
-												Önerilen sorular
-											</p>
-											<div className="flex flex-col gap-1.5">
-												{SUGGESTIONS.map((s) => (
+										<div className="space-y-2.5">
+											{/* Suggestion chips */}
+											<div className="space-y-1.5">
+												<p
+													className="text-[10px] font-bold tracking-widest uppercase px-1"
+													style={{ color: "var(--text-faint)" }}
+												>
+													Önerilen Sorgular
+												</p>
+												{SUGGESTION_ITEMS.map(({ icon, label }) => (
 													<button
-														key={s}
+														key={label}
 														type="button"
-														onClick={() => setMessage(s)}
-														className="w-full text-left px-3.5 py-2.5 rounded-xl text-sm transition-all hover:scale-[1.01]"
+														onClick={() => setMessage(label)}
+														className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all group"
 														style={{
 															background: "var(--surface-sunken)",
-															color: "var(--text-secondary)",
-															border: "1px solid var(--border-default)",
+															border: "1px solid var(--border-subtle)",
 														}}
 													>
-														{s}
+														<div className="flex items-center gap-2.5">
+															<div
+																className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+																style={{
+																	background: "var(--surface-raised)",
+																	color: "var(--color-lavender)",
+																	border: "1px solid var(--border-default)",
+																}}
+															>
+																<span className="w-3 h-3 [&>svg]:w-3 [&>svg]:h-3">{icon}</span>
+															</div>
+															<span className="text-xs" style={{ color: "var(--text-secondary)" }}>{label}</span>
+														</div>
+														<ChevronRight
+															className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
+															style={{ color: "var(--color-lavender)" }}
+														/>
 													</button>
 												))}
 											</div>
+
+											{/* System health mini-card */}
+											{services.length > 0 && (
+												<div
+													className="rounded-xl px-3 py-2.5 flex items-center justify-between"
+													style={{
+														background: "var(--color-lavender-subtle)",
+														border: "1px solid var(--color-lavender-border)",
+													}}
+												>
+													<div>
+														<p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--color-lavender)" }}>Sistem Sağlığı</p>
+														<p className="text-xs font-medium mt-0.5" style={{ color: "var(--text-faint)" }}>{contextServiceName ?? "Tüm servisler"}</p>
+													</div>
+													<p className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+														{onlineServices}/{services.length}
+													</p>
+												</div>
+											)}
 										</div>
 									)}
 
@@ -298,10 +331,7 @@ export function AIAssistant() {
 								</div>
 
 								{/* Input */}
-								<div
-									className="px-3 pb-3 pt-2.5"
-									style={{ borderTop: "1px solid var(--border-default)" }}
-								>
+								<div className="px-3 pb-3 pt-2 shrink-0">
 									<div
 										className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
 										style={{
@@ -313,9 +343,9 @@ export function AIAssistant() {
 											placeholder="Bir şey sorun..."
 											value={message}
 											onChange={(e) => setMessage(e.target.value)}
-											onKeyDown={(e) => e.key === "Enter" && handleSend()}
+											onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
 											disabled={isAnalyzing}
-											className="text-sm flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-8"
+											className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-8 text-sm"
 											style={{ color: "var(--text-primary)" }}
 										/>
 										<motion.button
@@ -323,8 +353,11 @@ export function AIAssistant() {
 											onClick={handleSend}
 											disabled={isAnalyzing || !message.trim()}
 											className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 disabled:opacity-40"
-											style={{ background: "var(--gradient-btn-primary)" }}
-											whileHover={{ scale: 1.05 }}
+											style={{
+												background: "var(--gradient-btn-primary)",
+												boxShadow: "0 3px 8px rgba(79,70,229,0.28)",
+											}}
+											whileHover={{ scale: 1.06 }}
 											whileTap={{ scale: 0.92 }}
 										>
 											<Send className="w-3.5 h-3.5 text-white" />
