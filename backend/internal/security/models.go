@@ -24,11 +24,11 @@ type Scan struct {
 	TLSDaysLeft     *int       `                                                     json:"tls_days_left,omitempty"`
 	TLSIssuer       string     `gorm:"type:text;not null;default:''"                 json:"tls_issuer"`
 	TLSVersion      string     `gorm:"type:text;not null;default:''"                 json:"tls_version"`
-	MissingHeaders  []string   `gorm:"type:jsonb;serializer:json"                    json:"missing_headers"`
+	MissingHeaders  []string   `gorm:"-"                                             json:"missing_headers"`
 	ServerHeader    string     `gorm:"type:text;not null;default:''"                 json:"server_header"`
 	RedirectToHTTPS bool       `gorm:"not null;default:false"                        json:"redirect_to_https"`
 	RiskScore       float64    `gorm:"not null;default:0"                            json:"risk_score"`
-	Findings        []Finding  `gorm:"type:jsonb;serializer:json"                    json:"findings"`
+	Findings        []Finding  `gorm:"-"                                             json:"findings"`
 	CreatedAt       time.Time  `gorm:"not null;default:now()"                        json:"created_at"`
 }
 
