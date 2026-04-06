@@ -203,6 +203,7 @@ func main() {
 		aiGroup := v1.Group("/ai", authMiddleware.Required())
 		{
 			aiGroup.POST("/chat", strictLimiter, aiHandler.Chat)
+			aiGroup.POST("/report", strictLimiter, aiHandler.GenerateReport)
 		}
 
 		svcGroup := v1.Group("/services", authMiddleware.Required())

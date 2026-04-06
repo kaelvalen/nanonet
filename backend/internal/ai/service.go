@@ -385,6 +385,181 @@ func (s *Service) GetAllInsights(ctx context.Context, userID uuid.UUID, limit, o
 	return s.repo.GetByUserID(ctx, userID, limit, offset)
 }
 
+// GenerateReport kullanıcının seçtiği zaman aralığı için proaktif SRE raporu üretir.
+// Tek servis veya tüm servisler (serviceID="" ise global) için çalışır.
+func (s *Service) GenerateReport(ctx context.Context, userID uuid.UUID, req ReportRequest) (*ReportResult, error) {
+	if !s.rateLimiter.Allow(userID.String()) {
+		return nil, ErrRateLimitExceeded
+	}
+
+	windowMinutes := req.TimeRange.ToMinutes()
+	duration := time.Duration(windowMinutes) * time.Minute
+	periodLabel := req.TimeRange.Label()
+
+	type svcInfo struct {
+		ID     uuid.UUID `gorm:"column:id"`
+		Name   string    `gorm:"column:name"`
+		Host   string    `gorm:"column:host"`
+		Port   int       `gorm:"column:port"`
+		Status string    `gorm:"column:status"`
+	}
+
+	var services []svcInfo
+	query := s.db.WithContext(ctx).Table("services").Where("user_id = ?", userID)
+	if req.ServiceID != "" {
+		query = query.Where("id = ?", req.ServiceID)
+	}
+	if err := query.Find(&services).Error; err != nil || len(services) == 0 {
+		return nil, fmt.Errorf("servis bulunamadı")
+	}
+
+	var svcListText strings.Builder
+	for _, svc := range services {
+		fmt.Fprintf(&svcListText, "- %s (%s:%d) — durum: %s\n",
+			SanitizeForPrompt(svc.Name), SanitizeForPrompt(svc.Host), svc.Port, svc.Status)
+	}
+
+	var statsText strings.Builder
+	var trendParts []string
+
+	for _, svc := range services {
+		dbStats, err := s.metricsRepo.GetStatsSummary(ctx, svc.ID, duration)
+		if err != nil || dbStats.SampleCount == 0 {
+			fmt.Fprintf(&statsText, "### %s\nBu dönemde veri yok.\n\n", svc.Name)
+			continue
+		}
+		recentData, _ := s.metricsRepo.GetHistory(ctx, svc.ID, duration, 50)
+		summary := buildSummaryFromDB(dbStats, recentData, windowMinutes)
+		summaryJSON, _ := json.Marshal(summary)
+		fmt.Fprintf(&statsText, "### %s\n%s\n\n", SanitizeForPrompt(svc.Name), string(summaryJSON))
+		trendParts = append(trendParts, fmt.Sprintf("%s: %s", svc.Name, buildTrendText(recentData)))
+	}
+
+	trendText := strings.Join(trendParts, "\n")
+	if trendText == "" {
+		trendText = "Yeterli trend verisi yok."
+	}
+
+	var alertsText strings.Builder
+	svcIDs := make([]string, 0, len(services))
+	for _, svc := range services {
+		svcIDs = append(svcIDs, svc.ID.String())
+	}
+
+	var recentAlerts []struct {
+		ServiceID   string     `gorm:"column:service_id"`
+		Type        string     `gorm:"column:type"`
+		Severity    string     `gorm:"column:severity"`
+		Message     string     `gorm:"column:message"`
+		TriggeredAt time.Time  `gorm:"column:triggered_at"`
+		ResolvedAt  *time.Time `gorm:"column:resolved_at"`
+	}
+	s.db.WithContext(ctx).Table("alerts").
+		Select("service_id, type, severity, message, triggered_at, resolved_at").
+		Where("service_id IN ? AND triggered_at > NOW() - INTERVAL '1 second' * ?", svcIDs, windowMinutes*60).
+		Order("triggered_at DESC").
+		Limit(20).
+		Find(&recentAlerts)
+
+	if len(recentAlerts) == 0 {
+		alertsText.WriteString("Bu dönemde alert bulunmuyor.")
+	} else {
+		for _, a := range recentAlerts {
+			resolved := "aktif"
+			if a.ResolvedAt != nil {
+				resolved = "çözüldü"
+			}
+			fmt.Fprintf(&alertsText, "- [%s][%s] %s: %s (%s)\n",
+				a.Severity, resolved, a.Type, SanitizeForPrompt(a.Message), a.TriggeredAt.Format("02 Jan 15:04"))
+		}
+	}
+
+	now := time.Now()
+	startTime := now.Add(-duration)
+	timeFrom := startTime.Format("02 Jan 15:04")
+	timeTo := now.Format("02 Jan 15:04")
+
+	prompt := fmt.Sprintf(ProactiveReportPromptTemplate,
+		svcListText.String(),
+		timeFrom, timeTo,
+		statsText.String(),
+		trendText,
+		alertsText.String(),
+		periodLabel,
+	)
+
+	result, err := s.callClaudeReport(prompt)
+	if err != nil {
+		return nil, fmt.Errorf("AI raporu başarısız: %w", err)
+	}
+
+	return result, nil
+}
+
+func (s *Service) callClaudeReport(prompt string) (*ReportResult, error) {
+	reqBody := ClaudeRequest{
+		Model:     ModelSonnet,
+		MaxTokens: 4096,
+		Messages: []Message{
+			{Role: "user", Content: prompt},
+		},
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", "https://api.anthropic.com/v1/messages", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", s.apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("[Claude Report API] HTTP %d (body: %.200s)", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("claude API hatası (HTTP %d)", resp.StatusCode)
+	}
+
+	var claudeResp ClaudeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&claudeResp); err != nil {
+		return nil, err
+	}
+
+	if len(claudeResp.Content) == 0 {
+		return nil, fmt.Errorf("claude boş yanıt döndü")
+	}
+
+	if claudeResp.StopReason == "max_tokens" {
+		return nil, fmt.Errorf("AI yanıtı token limitinde kesildi")
+	}
+
+	rawText := strings.TrimSpace(claudeResp.Content[0].Text)
+	if idx := strings.Index(rawText, "{"); idx > 0 {
+		rawText = rawText[idx:]
+	}
+	if idx := strings.LastIndex(rawText, "}"); idx >= 0 && idx < len(rawText)-1 {
+		rawText = rawText[:idx+1]
+	}
+
+	var result ReportResult
+	if err := json.Unmarshal([]byte(rawText), &result); err != nil {
+		return nil, fmt.Errorf("rapor parse edilemedi (raw: %.200s): %w", rawText, err)
+	}
+
+	return &result, nil
+}
+
 // IsServiceOwner servisin belirtilen kullanıcıya ait olup olmadığını kontrol eder.
 func (s *Service) IsServiceOwner(ctx context.Context, serviceID, userID uuid.UUID) bool {
 	var count int64

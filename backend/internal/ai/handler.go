@@ -125,6 +125,42 @@ func (h *Handler) GetInsights(c *gin.Context) {
 	})
 }
 
+// GenerateReport — POST /api/v1/ai/report
+// Seçilen zaman aralığı için proaktif SRE raporu üretir.
+func (h *Handler) GenerateReport(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+
+	var req ReportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "geçersiz istek: time_range zorunlu (1h/24h/7d/30d)")
+		return
+	}
+
+	switch req.TimeRange {
+	case TimeRange1h, TimeRange24h, TimeRange7d, TimeRange30d:
+	default:
+		response.BadRequest(c, "geçersiz time_range: 1h, 24h, 7d veya 30d olmalı")
+		return
+	}
+
+	result, err := h.service.GenerateReport(c.Request.Context(), userID, req)
+	if err != nil {
+		if errors.Is(err, ErrRateLimitExceeded) {
+			response.Error(c, 429, err.Error())
+			return
+		}
+		log.Printf("[AI Report ERROR] user=%s: %v", userID, err)
+		response.InternalError(c, "rapor oluşturulamıyor")
+		return
+	}
+
+	response.Success(c, gin.H{"report": result})
+}
+
 // GetAllInsights — GET /api/v1/insights?limit=20&page=1
 // Returns recent AI insights across all services owned by the authenticated user.
 func (h *Handler) GetAllInsights(c *gin.Context) {

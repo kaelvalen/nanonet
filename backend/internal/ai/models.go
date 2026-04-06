@@ -26,6 +26,77 @@ type AnalyzeRequest struct {
 	DeepAnalysis  bool `json:"deep_analysis"`
 }
 
+// TimeRange kullanıcının seçtiği raporlama zaman aralığı.
+type TimeRange string
+
+const (
+	TimeRange1h  TimeRange = "1h"
+	TimeRange24h TimeRange = "24h"
+	TimeRange7d  TimeRange = "7d"
+	TimeRange30d TimeRange = "30d"
+)
+
+func (tr TimeRange) ToMinutes() int {
+	switch tr {
+	case TimeRange1h:
+		return 60
+	case TimeRange24h:
+		return 1440
+	case TimeRange7d:
+		return 10080
+	case TimeRange30d:
+		return 43200
+	default:
+		return 1440
+	}
+}
+
+func (tr TimeRange) Label() string {
+	switch tr {
+	case TimeRange1h:
+		return "Son 1 Saat"
+	case TimeRange24h:
+		return "Son 24 Saat"
+	case TimeRange7d:
+		return "Son 7 Gün"
+	case TimeRange30d:
+		return "Son 30 Gün"
+	default:
+		return "Son 24 Saat"
+	}
+}
+
+type ReportRequest struct {
+	TimeRange TimeRange `json:"time_range" binding:"required"`
+	ServiceID string    `json:"service_id"`
+}
+
+// ReportEvent tek bir tespit edilen olay.
+type ReportEvent struct {
+	Service    string `json:"service"`
+	Time       string `json:"time"`
+	Observation string `json:"observation"`
+	RootCause  string `json:"root_cause"`
+	Impact     string `json:"impact"`
+	Action     string `json:"action"`
+	Outcome    string `json:"outcome"`
+	Category   string `json:"category"` // tamamlandı / müdahale_gerekli / izleniyor / trend
+}
+
+// ReportResult proaktif AI raporunun tam yapısı.
+type ReportResult struct {
+	PeriodLabel     string        `json:"period_label"`
+	SystemScore     string        `json:"system_score"` // SAĞLIKLI / DİKKAT / KRİTİK
+	Headline        string        `json:"headline"`
+	TotalRequests   string        `json:"total_requests,omitempty"`
+	CriticalEvents  int           `json:"critical_events"`
+	ResolvedEvents  int           `json:"resolved_events"`
+	Events          []ReportEvent `json:"events"`
+	Actions         []Recommendation `json:"actions"`
+	RiskForecast    string        `json:"risk_forecast"`
+	Confidence      float64       `json:"confidence,omitempty"`
+}
+
 type MetricsSummary struct {
 	SampleCount int `json:"sample_count"`
 	WindowMin   int `json:"window_minutes"`
