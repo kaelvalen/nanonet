@@ -13,20 +13,20 @@ export default defineConfig({
 	server: {
 		port: 3000,
 		host: true,
-		allowedHosts: ["all"],
+		allowedHosts: true,
 		watch: {
 			usePolling: true,
 		},
 		hmr: {
-			port: 3000,
+			clientPort: 443,
 		},
 		proxy: {
 			"/api": {
-				target: "http://localhost:8080",
+				target: process.env.VITE_API_TARGET ?? "http://localhost:8080",
 				changeOrigin: true,
 			},
 			"/ws": {
-				target: "ws://localhost:8080",
+				target: process.env.VITE_WS_TARGET ?? "ws://localhost:8080",
 				ws: true,
 			},
 		},
