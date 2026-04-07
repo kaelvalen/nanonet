@@ -172,7 +172,7 @@ func checkTLS(ctx context.Context, host string, port int) tlsCheckResult {
 	if err != nil {
 		return tlsCheckResult{}
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	tlsConn, ok := conn.(*tls.Conn)
 	if !ok {
@@ -223,7 +223,7 @@ func checkHeaders(ctx context.Context, targetURL string) (headerCheckResult, err
 	if err != nil {
 		return headerCheckResult{}, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	var res headerCheckResult
 

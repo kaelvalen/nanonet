@@ -64,7 +64,7 @@ func (r *Repository) GetLatestPerService(ctx context.Context, userID uuid.UUID) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 	return scanRows(rows)
 }
 
@@ -86,7 +86,7 @@ func (r *Repository) GetForService(ctx context.Context, serviceID uuid.UUID, lim
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 	return scanRows(rows)
 }
 
