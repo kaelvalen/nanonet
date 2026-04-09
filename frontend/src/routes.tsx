@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate, useParams } from "react-router";
-import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { AIInsightsPage } from "@/pages/AIInsightsPage";
 import { AlertsPage } from "@/pages/AlertsPage";
 import { DashboardPage } from "@/pages/DashboardPage";

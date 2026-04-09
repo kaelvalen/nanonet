@@ -79,7 +79,10 @@ export function serializeMap(nodes: Node[], edges: Edge[]): SerializedMap {
 }
 
 export function saveMapToStorage(nodes: Node[], edges: Edge[]) {
-	localStorage.setItem(MAP_STORAGE_KEY, JSON.stringify(serializeMap(nodes, edges)));
+	localStorage.setItem(
+		MAP_STORAGE_KEY,
+		JSON.stringify(serializeMap(nodes, edges)),
+	);
 }
 
 export function serializeForBackend(nodes: Node[], edges: Edge[]) {

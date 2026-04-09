@@ -205,16 +205,11 @@ function ServiceRow({
 				}}
 			>
 				{/* Ad / host */}
-				<div
-					className="min-w-0 cursor-pointer"
-					role="button"
-					tabIndex={0}
+				<button
+					type="button"
+					className="min-w-0 text-left"
 					onClick={() => findings.length > 0 && setOpen((v) => !v)}
-					onKeyDown={(e) =>
-						(e.key === "Enter" || e.key === " ") &&
-						findings.length > 0 &&
-						setOpen((v) => !v)
-					}
+					disabled={findings.length === 0}
 				>
 					<p
 						className="font-medium truncate text-xs"
@@ -228,7 +223,7 @@ function ServiceRow({
 					>
 						{summary.service_host}:{summary.service_port}
 					</p>
-				</div>
+				</button>
 
 				{/* TLS */}
 				<div>

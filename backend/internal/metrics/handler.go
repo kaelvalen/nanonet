@@ -24,7 +24,6 @@ func NewHandler(db *gorm.DB) *Handler {
 	}
 }
 
-
 func (h *Handler) GetHistory(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {

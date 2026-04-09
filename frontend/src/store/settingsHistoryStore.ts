@@ -22,7 +22,7 @@ interface SettingsHistoryStore {
 
 export const useSettingsHistoryStore = create<SettingsHistoryStore>()(
 	persist(
-		(set, get) => ({
+		(set, _get) => ({
 			history: [],
 
 			addEntry: (entry) => {

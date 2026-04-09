@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Component, type ReactNode, useEffect } from "react";
-import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { RouterProvider } from "react-router";
+import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { Toaster } from "@/components/ui/sonner";
 import { authApi } from "./api/auth";
 import { LiveRegionProvider } from "./context/LiveRegionContext";
@@ -122,7 +122,15 @@ function AppInit() {
 			// We have both tokens, don't need to refresh
 			setInitializing(false);
 		}
-	}, [accessToken, clearAuth, refreshToken, setAuth, setInitializing, updateUser, user]);
+	}, [
+		accessToken,
+		clearAuth,
+		refreshToken,
+		setAuth,
+		setInitializing,
+		updateUser,
+		user,
+	]);
 
 	if (isInitializing) {
 		return <FullScreenSpinner />;

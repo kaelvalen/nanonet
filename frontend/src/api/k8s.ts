@@ -216,7 +216,9 @@ export const k8sApi = {
 	},
 
 	getEvents: async (kind?: string) => {
-		const { data } = await apiClient.get("/k8s/events", { params: kind ? { kind } : undefined });
+		const { data } = await apiClient.get("/k8s/events", {
+			params: kind ? { kind } : undefined,
+		});
 		return data.data as { events: EventInfo[]; count: number };
 	},
 
