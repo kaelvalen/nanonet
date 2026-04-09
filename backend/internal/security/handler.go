@@ -2,9 +2,11 @@ package security
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"time"
+
+	"nanonet-backend/pkg/ownership"
+	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -28,7 +30,7 @@ func NewHandler(db *gorm.DB) *Handler {
 func (h *Handler) GetOverview(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "yetkisiz"})
+		response.Unauthorized(c, "yetkisiz")
 		return
 	}
 
@@ -47,13 +49,13 @@ func (h *Handler) GetOverview(c *gin.Context) {
 		Select("id, name, host, port").
 		Where("user_id = ?", userID).
 		Scan(&svcs).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "servisler alınamadı"})
+		response.InternalError(c, "servisler alınamadı")
 		return
 	}
 
 	latestScans, err := h.repo.GetLatestPerService(ctx, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "taramalar alınamadı"})
+		response.InternalError(c, "taramalar alınamadı")
 		return
 	}
 
@@ -90,14 +92,11 @@ func (h *Handler) GetOverview(c *gin.Context) {
 		avg = totalScore / float64(scoredCount)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data": OverviewResponse{
-			SecurityScore: avg,
-			TLSWarnings:   tlsWarnings,
-			HeaderIssues:  headerIssues,
-			Services:      summaries,
-		},
+	response.Success(c, OverviewResponse{
+		SecurityScore: avg,
+		TLSWarnings:   tlsWarnings,
+		HeaderIssues:  headerIssues,
+		Services:      summaries,
 	})
 }
 
@@ -105,48 +104,49 @@ func (h *Handler) GetOverview(c *gin.Context) {
 func (h *Handler) GetServiceScans(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "yetkisiz"})
+		response.Unauthorized(c, "yetkisiz")
 		return
 	}
 
 	serviceID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "geçersiz servis id"})
+		response.BadRequest(c, "geçersiz servis id")
 		return
 	}
 
-	var count int64
-	h.db.Table("services").Where("id = ? AND user_id = ?", serviceID, userID).Count(&count)
-	if count == 0 {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": "erişim reddedildi"})
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
+		response.Forbidden(c, "erişim reddedildi")
 		return
 	}
 
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if limit <= 0 || limit > 200 {
+		limit = 20
+	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	scans, err := h.repo.GetForService(ctx, serviceID, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "taramalar alınamadı"})
+		response.InternalError(c, "taramalar alınamadı")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{"scans": scans}})
+	response.Success(c, gin.H{"scans": scans})
 }
 
 // TriggerScan POST /api/v1/services/:id/security/scan
 func (h *Handler) TriggerScan(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "yetkisiz"})
+		response.Unauthorized(c, "yetkisiz")
 		return
 	}
 
 	serviceID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "geçersiz servis id"})
+		response.BadRequest(c, "geçersiz servis id")
 		return
 	}
 
@@ -160,7 +160,7 @@ func (h *Handler) TriggerScan(c *gin.Context) {
 		Select("id, host, port, health_endpoint").
 		Where("id = ? AND user_id = ?", serviceID, userID).
 		First(&svc).Error; err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": "servis bulunamadı"})
+		response.Forbidden(c, "servis bulunamadı")
 		return
 	}
 
@@ -174,14 +174,14 @@ func (h *Handler) TriggerScan(c *gin.Context) {
 		HealthEndpoint: svc.HealthEndpoint,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "tarama başarısız"})
+		response.InternalError(c, "tarama başarısız")
 		return
 	}
 
 	if err := h.repo.Save(ctx, scan); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "tarama kaydedilemedi"})
+		response.InternalError(c, "tarama kaydedilemedi")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{"scan": scan}})
+	response.Success(c, gin.H{"scan": scan})
 }

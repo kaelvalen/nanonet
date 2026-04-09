@@ -28,6 +28,21 @@ var securityHeaders = []struct {
 	{"Referrer-Policy", 3, "low"},
 }
 
+// securityHeaderPenalty and securityHeaderSeverity allow O(1) lookups by header name.
+var (
+	securityHeaderPenalty  map[string]float64
+	securityHeaderSeverity map[string]string
+)
+
+func init() {
+	securityHeaderPenalty = make(map[string]float64, len(securityHeaders))
+	securityHeaderSeverity = make(map[string]string, len(securityHeaders))
+	for _, h := range securityHeaders {
+		securityHeaderPenalty[h.name] = h.penalty
+		securityHeaderSeverity[h.name] = h.severity
+	}
+}
+
 type serviceRow struct {
 	ID             uuid.UUID
 	Host           string
@@ -125,12 +140,9 @@ func scanService(ctx context.Context, svc serviceRow) (*Scan, error) {
 	}
 
 	for _, h := range hRes.missingHeaders {
-		sev := "medium"
-		for _, def := range securityHeaders {
-			if def.name == h {
-				sev = def.severity
-				break
-			}
+		sev := securityHeaderSeverity[h]
+		if sev == "" {
+			sev = "medium"
 		}
 		findings = append(findings, Finding{
 			Type:        "missing_header",
@@ -261,12 +273,9 @@ func calculateScore(isHTTPS, tlsEnabled, tlsValid bool, tlsDaysLeft *int, missin
 		}
 	}
 
-	for _, h := range securityHeaders {
-		for _, m := range missingHeaders {
-			if m == h.name {
-				score -= h.penalty
-				break
-			}
+	for _, m := range missingHeaders {
+		if penalty, ok := securityHeaderPenalty[m]; ok {
+			score -= penalty
 		}
 	}
 
@@ -310,6 +319,7 @@ func tlsVersionName(v uint16) string {
 }
 
 // ScanAllServices DB'deki tüm servisleri tarar ve sonuçları kaydeder.
+// En fazla 10 eşzamanlı tarama yapılır.
 func ScanAllServices(ctx context.Context, db *gorm.DB) {
 	var rows []serviceRow
 	if err := db.WithContext(ctx).
@@ -320,9 +330,15 @@ func ScanAllServices(ctx context.Context, db *gorm.DB) {
 		return
 	}
 
+	repo := NewRepository(db)
+	sem := make(chan struct{}, 10)
+
 	for _, svc := range rows {
 		svc := svc
+		sem <- struct{}{}
 		go func() {
+			defer func() { <-sem }()
+
 			scanCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 			defer cancel()
 
@@ -332,7 +348,7 @@ func ScanAllServices(ctx context.Context, db *gorm.DB) {
 				return
 			}
 
-			if err := db.WithContext(ctx).Create(scan).Error; err != nil {
+			if err := repo.Save(scanCtx, scan); err != nil {
 				log.Printf("[security] Tarama kaydedilemedi [service=%s]: %v", svc.ID, err)
 			}
 		}()

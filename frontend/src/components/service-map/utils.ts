@@ -62,24 +62,7 @@ export function loadMapFromStorage(): SerializedMap | null {
 	}
 }
 
-export function saveMapToStorage(nodes: Node[], edges: Edge[]) {
-	const serialized: SerializedMap = {
-		nodes: nodes.map((n) => ({
-			id: n.id,
-			type: n.type ?? "serviceNode",
-			position: n.position,
-		})),
-		edges: edges.map((e) => ({
-			id: e.id,
-			source: e.source,
-			target: e.target,
-			label: typeof e.label === "string" ? e.label : undefined,
-		})),
-	};
-	localStorage.setItem(MAP_STORAGE_KEY, JSON.stringify(serialized));
-}
-
-export function serializeForBackend(nodes: Node[], edges: Edge[]) {
+export function serializeMap(nodes: Node[], edges: Edge[]): SerializedMap {
 	return {
 		nodes: nodes.map((n) => ({
 			id: n.id,
@@ -93,4 +76,12 @@ export function serializeForBackend(nodes: Node[], edges: Edge[]) {
 			label: typeof e.label === "string" ? e.label : undefined,
 		})),
 	};
+}
+
+export function saveMapToStorage(nodes: Node[], edges: Edge[]) {
+	localStorage.setItem(MAP_STORAGE_KEY, JSON.stringify(serializeMap(nodes, edges)));
+}
+
+export function serializeForBackend(nodes: Node[], edges: Edge[]) {
+	return serializeMap(nodes, edges);
 }

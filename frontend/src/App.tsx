@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Component, type ReactNode, useEffect } from "react";
+import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { RouterProvider } from "react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { authApi } from "./api/auth";
@@ -121,22 +122,10 @@ function AppInit() {
 			// We have both tokens, don't need to refresh
 			setInitializing(false);
 		}
-	}, [
-		accessToken, // No refresh token, clear auth and complete initialization immediately
-		clearAuth,
-		refreshToken, // If no user in store, fetch it from /auth/me
-		setAuth, // We have both tokens, don't need to refresh
-		setInitializing,
-		updateUser,
-		user,
-	]);
+	}, [accessToken, clearAuth, refreshToken, setAuth, setInitializing, updateUser, user]);
 
 	if (isInitializing) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-			</div>
-		);
+		return <FullScreenSpinner />;
 	}
 
 	return null;

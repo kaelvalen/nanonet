@@ -71,7 +71,7 @@ function formatRelativeTime(timestamp: string, language: string): string {
 export function SettingsHistory() {
 	const { t, i18n } = useTranslation();
 	const history = useSettingsHistoryStore((state) =>
-		state.getRecentHistory(50),
+		state.history.slice(0, 50),
 	);
 	const clearHistory = useSettingsHistoryStore((state) => state.clearHistory);
 

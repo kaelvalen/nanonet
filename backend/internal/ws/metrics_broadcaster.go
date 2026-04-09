@@ -252,6 +252,9 @@ func (mb *MetricsBroadcaster) writeAgentLog(svcID uuid.UUID, metric *metrics.Met
 }
 
 func (mb *MetricsBroadcaster) broadcastLatestMetrics(ctx context.Context) {
+	if mb.hub.GetConnectedDashboardCount() == 0 {
+		return
+	}
 	latestMetrics, err := mb.metricsRepo.GetLatestPerService(ctx)
 	if err != nil {
 		log.Printf("Son metrikler alınamadı: %v", err)

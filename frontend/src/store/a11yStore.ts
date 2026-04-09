@@ -31,12 +31,6 @@ const defaultPreferences: A11yPreferences = {
 	reducedMotion: false,
 };
 
-const _lineHeightValues = {
-	1.5: "line-height-1.5",
-	1.75: "line-height-1.75",
-	2.0: "line-height-2.0",
-};
-
 const letterSpacingValues = {
 	normal: "0px",
 	wide: "0.05em",
@@ -52,47 +46,47 @@ export const useA11yStore = create<A11yStore>()(
 				set((state) => ({
 					preferences: { ...state.preferences, language: lang },
 				}));
-				setTimeout(() => get().applyPreferences(), 0);
+				get().applyPreferences();
 			},
 
 			setFontSize: (size) => {
 				set((state) => ({
 					preferences: { ...state.preferences, fontSize: size },
 				}));
-				setTimeout(() => get().applyPreferences(), 0);
+				get().applyPreferences();
 			},
 
 			setLineHeight: (height) => {
 				set((state) => ({
 					preferences: { ...state.preferences, lineHeight: height },
 				}));
-				setTimeout(() => get().applyPreferences(), 0);
+				get().applyPreferences();
 			},
 
 			setLetterSpacing: (spacing) => {
 				set((state) => ({
 					preferences: { ...state.preferences, letterSpacing: spacing },
 				}));
-				setTimeout(() => get().applyPreferences(), 0);
+				get().applyPreferences();
 			},
 
 			setHighContrast: (enabled) => {
 				set((state) => ({
 					preferences: { ...state.preferences, highContrast: enabled },
 				}));
-				setTimeout(() => get().applyPreferences(), 0);
+				get().applyPreferences();
 			},
 
 			setReducedMotion: (enabled) => {
 				set((state) => ({
 					preferences: { ...state.preferences, reducedMotion: enabled },
 				}));
-				setTimeout(() => get().applyPreferences(), 0);
+				get().applyPreferences();
 			},
 
 			resetToDefaults: () => {
 				set({ preferences: defaultPreferences });
-				setTimeout(() => get().applyPreferences(), 0);
+				get().applyPreferences();
 			},
 
 			applyPreferences: () => {

@@ -5,6 +5,11 @@ import { authApi } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import type { LoginRequest, RegisterRequest } from "../types/auth";
 
+function extractApiError(error: unknown): string {
+	const err = error as { response?: { data?: { error?: string } } };
+	return err?.response?.data?.error ?? "";
+}
+
 export function useAuth() {
 	const navigate = useNavigate();
 	const { setAuth, clearAuth } = useAuthStore();
@@ -21,8 +26,7 @@ export function useAuth() {
 			navigate("/");
 		},
 		onError: (error: unknown) => {
-			const err = error as { response?: { data?: { error?: string } } };
-			toast.error(err?.response?.data?.error || "Giriş başarısız");
+			toast.error(extractApiError(error) || "Giriş başarısız");
 		},
 	});
 
@@ -38,8 +42,7 @@ export function useAuth() {
 			navigate("/");
 		},
 		onError: (error: unknown) => {
-			const err = error as { response?: { data?: { error?: string } } };
-			toast.error(err?.response?.data?.error || "Kayıt başarısız");
+			toast.error(extractApiError(error) || "Kayıt başarısız");
 		},
 	});
 

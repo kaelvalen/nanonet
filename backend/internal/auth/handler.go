@@ -21,7 +21,7 @@ type Handler struct {
 	blacklist   tokenblacklist.Blacklist
 	mailer      *mailer.Mailer
 	frontendURL string
-	db          *gorm.DB
+	audit       *audit.Logger
 }
 
 func NewHandler(db *gorm.DB, jwtSecret string, m *mailer.Mailer, frontendURL string, bl tokenblacklist.Blacklist) *Handler {
@@ -30,7 +30,7 @@ func NewHandler(db *gorm.DB, jwtSecret string, m *mailer.Mailer, frontendURL str
 		blacklist:   bl,
 		mailer:      m,
 		frontendURL: frontendURL,
-		db:          db,
+		audit:       audit.New(db),
 	}
 }
 
@@ -58,7 +58,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+	h.audit.Record(c.Request.Context(), audit.Entry{
 		UserID:       &user.ID,
 		Action:       audit.ActionRegister,
 		ResourceType: "user",
@@ -93,7 +93,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+	h.audit.Record(c.Request.Context(), audit.Entry{
 		UserID:       &user.ID,
 		Action:       audit.ActionLogin,
 		ResourceType: "user",
@@ -229,7 +229,7 @@ func (h *Handler) Logout(c *gin.Context) {
 
 	if userIDStr := c.GetString("user_id"); userIDStr != "" {
 		if userID, err := uuid.Parse(userIDStr); err == nil {
-			audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+			h.audit.Record(c.Request.Context(), audit.Entry{
 				UserID:       &userID,
 				Action:       audit.ActionLogout,
 				ResourceType: "user",
@@ -346,7 +346,7 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 	}
 
 	// Şifre değişikliğini audit log'a yaz
-	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+	h.audit.Record(c.Request.Context(), audit.Entry{
 		UserID:       &userID,
 		Action:       audit.ActionPasswordChanged,
 		ResourceType: "user",

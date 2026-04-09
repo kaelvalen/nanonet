@@ -19,6 +19,7 @@ type Handler struct {
 	hub        *ws.Hub
 	cmdService *commands.Service
 	db         *gorm.DB
+	audit      *audit.Logger
 }
 
 func NewHandler(db *gorm.DB, hub *ws.Hub) *Handler {
@@ -27,7 +28,35 @@ func NewHandler(db *gorm.DB, hub *ws.Hub) *Handler {
 		hub:        hub,
 		cmdService: commands.NewService(db),
 		db:         db,
+		audit:      audit.New(db),
 	}
+}
+
+// sendCommand creates a command, logs it, sends it to the agent, and writes the response.
+// Returns false if LogCommand failed (response already written).
+func (h *Handler) sendCommand(c *gin.Context, id, userID uuid.UUID, action string, payload map[string]interface{}) (commandID, status string, sent bool, ok bool) {
+	commandID = uuid.New().String()
+	command := map[string]interface{}{
+		"type":       "command",
+		"command_id": commandID,
+		"action":     action,
+	}
+	for k, v := range payload {
+		command[k] = v
+	}
+
+	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, action, command); err != nil {
+		response.InternalError(c, "komut kaydedilemedi")
+		return "", "", false, false
+	}
+
+	sent = h.hub.SendCommandToAgent(id.String(), command)
+	if sent {
+		status = "sent"
+	} else {
+		status = "queued"
+	}
+	return commandID, status, sent, true
 }
 
 func (h *Handler) Create(c *gin.Context) {
@@ -49,7 +78,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+	h.audit.Record(c.Request.Context(), audit.Entry{
 		UserID:       &userID,
 		Action:       audit.ActionServiceCreate,
 		ResourceType: "service",
@@ -168,7 +197,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	audit.New(h.db).Record(c.Request.Context(), audit.Entry{
+	h.audit.Record(c.Request.Context(), audit.Entry{
 		UserID:       &userID,
 		Action:       audit.ActionServiceDelete,
 		ResourceType: "service",
@@ -215,27 +244,12 @@ func (h *Handler) Restart(c *gin.Context) {
 		req.TimeoutSec = 30
 	}
 
-	commandID := uuid.New().String()
-	command := map[string]interface{}{
-		"type":        "command",
-		"command_id":  commandID,
-		"action":      "restart",
-		"timeout_sec": req.TimeoutSec,
-	}
-
-	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "restart", command); err != nil {
-		response.InternalError(c, "komut kaydedilemedi")
+	cmdID, status, sent, ok := h.sendCommand(c, id, userID, "restart", map[string]interface{}{"timeout_sec": req.TimeoutSec})
+	if !ok {
 		return
 	}
-
-	sent := h.hub.SendCommandToAgent(id.String(), command)
-	status := "sent"
-	if !sent {
-		status = "queued"
-	}
-
 	response.Success(c, gin.H{
-		"command_id":      commandID,
+		"command_id":      cmdID,
 		"status":          status,
 		"queued_at":       time.Now(),
 		"agent_connected": sent,
@@ -278,27 +292,12 @@ func (h *Handler) Stop(c *gin.Context) {
 		req.Graceful = &defaultGraceful
 	}
 
-	commandID := uuid.New().String()
-	command := map[string]interface{}{
-		"type":       "command",
-		"command_id": commandID,
-		"action":     "stop",
-		"graceful":   *req.Graceful,
-	}
-
-	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "stop", command); err != nil {
-		response.InternalError(c, "komut kaydedilemedi")
+	cmdID, status, sent, ok := h.sendCommand(c, id, userID, "stop", map[string]interface{}{"graceful": *req.Graceful})
+	if !ok {
 		return
 	}
-
-	sent := h.hub.SendCommandToAgent(id.String(), command)
-	status := "sent"
-	if !sent {
-		status = "queued"
-	}
-
 	response.Success(c, gin.H{
-		"command_id":      commandID,
+		"command_id":      cmdID,
 		"status":          status,
 		"queued_at":       time.Now(),
 		"agent_connected": sent,
@@ -339,28 +338,15 @@ func (h *Handler) Exec(c *gin.Context) {
 		req.TimeoutSec = 300
 	}
 
-	commandID := uuid.New().String()
-	command := map[string]interface{}{
-		"type":        "command",
-		"command_id":  commandID,
-		"action":      "exec",
+	cmdID, status, sent, ok := h.sendCommand(c, id, userID, "exec", map[string]interface{}{
 		"command":     req.Command,
 		"timeout_sec": req.TimeoutSec,
-	}
-
-	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "exec", command); err != nil {
-		response.InternalError(c, "komut kaydedilemedi")
+	})
+	if !ok {
 		return
 	}
-
-	sent := h.hub.SendCommandToAgent(id.String(), command)
-	status := "sent"
-	if !sent {
-		status = "queued"
-	}
-
 	response.Success(c, gin.H{
-		"command_id":      commandID,
+		"command_id":      cmdID,
 		"status":          status,
 		"queued_at":       time.Now(),
 		"agent_connected": sent,
@@ -385,26 +371,12 @@ func (h *Handler) Start(c *gin.Context) {
 		return
 	}
 
-	commandID := uuid.New().String()
-	command := map[string]interface{}{
-		"type":       "command",
-		"command_id": commandID,
-		"action":     "start",
-	}
-
-	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "start", command); err != nil {
-		response.InternalError(c, "komut kaydedilemedi")
+	cmdID, status, sent, ok := h.sendCommand(c, id, userID, "start", nil)
+	if !ok {
 		return
 	}
-
-	sent := h.hub.SendCommandToAgent(id.String(), command)
-	status := "sent"
-	if !sent {
-		status = "queued"
-	}
-
 	response.Success(c, gin.H{
-		"command_id":      commandID,
+		"command_id":      cmdID,
 		"status":          status,
 		"queued_at":       time.Now(),
 		"agent_connected": sent,
@@ -453,29 +425,16 @@ func (h *Handler) Scale(c *gin.Context) {
 		return
 	}
 
-	commandID := uuid.New().String()
-	command := map[string]interface{}{
-		"type":          "command",
-		"command_id":    commandID,
-		"action":        "scale",
+	cmdID, status, sent, ok := h.sendCommand(c, id, userID, "scale", map[string]interface{}{
 		"instances":     req.Instances,
 		"strategy":      req.Strategy,
 		"weight_config": req.WeightJSON,
-	}
-
-	if err := h.cmdService.LogCommand(c.Request.Context(), id, userID, commandID, "scale", command); err != nil {
-		response.InternalError(c, "komut kaydedilemedi")
+	})
+	if !ok {
 		return
 	}
-
-	sent := h.hub.SendCommandToAgent(id.String(), command)
-	status := "sent"
-	if !sent {
-		status = "queued"
-	}
-
 	response.Success(c, gin.H{
-		"command_id":      commandID,
+		"command_id":      cmdID,
 		"status":          status,
 		"instances":       req.Instances,
 		"strategy":        req.Strategy,

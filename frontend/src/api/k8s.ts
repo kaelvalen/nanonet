@@ -99,9 +99,7 @@ export const k8sApi = {
 	},
 
 	getPods: async (selector: string) => {
-		const { data } = await apiClient.get(
-			`/k8s/pods?selector=${encodeURIComponent(selector)}`,
-		);
+		const { data } = await apiClient.get("/k8s/pods", { params: { selector } });
 		return data.data as { pods: PodInfo[]; count: number };
 	},
 
@@ -112,7 +110,8 @@ export const k8sApi = {
 
 	getPodLogs: async (name: string, lines = 100) => {
 		const { data } = await apiClient.get(
-			`/k8s/pods/${encodeURIComponent(name)}/logs?lines=${lines}`,
+			`/k8s/pods/${encodeURIComponent(name)}/logs`,
+			{ params: { lines } },
 		);
 		return data.data as { pod: string; lines: number; logs: string };
 	},
@@ -217,8 +216,7 @@ export const k8sApi = {
 	},
 
 	getEvents: async (kind?: string) => {
-		const params = kind ? `?kind=${encodeURIComponent(kind)}` : "";
-		const { data } = await apiClient.get(`/k8s/events${params}`);
+		const { data } = await apiClient.get("/k8s/events", { params: kind ? { kind } : undefined });
 		return data.data as { events: EventInfo[]; count: number };
 	},
 

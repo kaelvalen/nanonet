@@ -1,10 +1,10 @@
 package metrics
 
 import (
-	"context"
 	"fmt"
 	"time"
 
+	"nanonet-backend/pkg/ownership"
 	"nanonet-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -24,15 +24,6 @@ func NewHandler(db *gorm.DB) *Handler {
 	}
 }
 
-// checkServiceOwnership servisin kimlik doğrulama yapan kullanıcıya ait olup olmadığını kontrol eder.
-func (h *Handler) checkServiceOwnership(ctx context.Context, serviceID, userID uuid.UUID) bool {
-	var count int64
-	h.db.WithContext(ctx).
-		Table("services").
-		Where("id = ? AND user_id = ?", serviceID, userID).
-		Count(&count)
-	return count > 0
-}
 
 func (h *Handler) GetHistory(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
@@ -47,7 +38,7 @@ func (h *Handler) GetHistory(c *gin.Context) {
 		return
 	}
 
-	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "service not found")
 		return
 	}
@@ -103,7 +94,7 @@ func (h *Handler) GetAggregated(c *gin.Context) {
 		return
 	}
 
-	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "service not found")
 		return
 	}
@@ -162,7 +153,7 @@ func (h *Handler) InsertMetric(c *gin.Context) {
 	}
 
 	// Servisin var olduğunu VE mevcut kullanıcıya ait olduğunu doğrula
-	if !h.checkServiceOwnership(c.Request.Context(), metric.ServiceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, metric.ServiceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}
@@ -210,7 +201,7 @@ func (h *Handler) GetRollup(c *gin.Context) {
 		return
 	}
 
-	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}
@@ -279,7 +270,7 @@ func (h *Handler) GetUptime(c *gin.Context) {
 		return
 	}
 
-	if !h.checkServiceOwnership(c.Request.Context(), serviceID, userID) {
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
 		response.NotFound(c, "servis bulunamadı")
 		return
 	}

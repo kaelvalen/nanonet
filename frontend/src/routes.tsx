@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, useParams } from "react-router";
+import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AIInsightsPage } from "@/pages/AIInsightsPage";
 import { AlertsPage } from "@/pages/AlertsPage";
@@ -24,11 +25,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 	const isInitializing = useAuthStore((s) => s.isInitializing);
 
 	if (isInitializing) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-			</div>
-		);
+		return <FullScreenSpinner />;
 	}
 
 	if (!isAuthenticated) {
@@ -43,11 +40,7 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
 	const isInitializing = useAuthStore((s) => s.isInitializing);
 
 	if (isInitializing) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-			</div>
-		);
+		return <FullScreenSpinner />;
 	}
 
 	if (isAuthenticated) {
@@ -55,10 +48,6 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
 	}
 
 	return <>{children}</>;
-}
-
-function LandingRoute() {
-	return <LandingPage />;
 }
 
 function ServicesRedirect() {
@@ -69,7 +58,7 @@ function ServicesRedirect() {
 export const router = createBrowserRouter([
 	{
 		path: "/",
-		element: <LandingRoute />,
+		element: <LandingPage />,
 		errorElement: <ErrorPage />,
 	},
 	{

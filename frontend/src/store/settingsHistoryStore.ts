@@ -18,8 +18,6 @@ interface SettingsHistoryStore {
 		entry: Omit<SettingsHistoryEntry, "id" | "timestamp" | "timestamp_ms">,
 	) => void;
 	clearHistory: () => void;
-	getHistory: () => SettingsHistoryEntry[];
-	getRecentHistory: (limit?: number) => SettingsHistoryEntry[];
 }
 
 export const useSettingsHistoryStore = create<SettingsHistoryStore>()(
@@ -49,14 +47,6 @@ export const useSettingsHistoryStore = create<SettingsHistoryStore>()(
 
 			clearHistory: () => {
 				set({ history: [] });
-			},
-
-			getHistory: () => {
-				return get().history;
-			},
-
-			getRecentHistory: (limit = 20) => {
-				return get().history.slice(0, limit);
 			},
 		}),
 		{

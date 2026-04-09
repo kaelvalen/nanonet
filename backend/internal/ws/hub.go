@@ -269,33 +269,33 @@ func (h *Hub) HandleDashboardMessage(client *Client, rawMessage []byte) {
 	}
 }
 
-func (h *Hub) BroadcastToDashboards(serviceID string, data interface{}) {
-	message := map[string]interface{}{
-		"type":       "metric_update",
-		"service_id": serviceID,
-		"data":       data,
-	}
-
-	jsonData, err := json.Marshal(message)
-	if err != nil {
-		log.Printf("Metrik serialize hatası: %v", err)
-		return
-	}
-
+// broadcastJSON publishes data to Redis when configured, otherwise sends it to the local broadcast channel.
+func (h *Hub) broadcastJSON(serviceID string, data []byte) {
 	if h.redisClient != nil {
-		// Publish to Redis; StartRedis subscriber fans out to local clients.
 		ctx := context.Background()
-		if err := h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(jsonData)).Err(); err != nil {
+		if err := h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(data)).Err(); err != nil {
 			log.Printf("Redis broadcast publish hatası: %v", err)
 		}
 		return
 	}
+	h.broadcast <- data
+}
 
-	h.broadcast <- jsonData
+func (h *Hub) BroadcastToDashboards(serviceID string, data interface{}) {
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"type":       "metric_update",
+		"service_id": serviceID,
+		"data":       data,
+	})
+	if err != nil {
+		log.Printf("Metrik serialize hatası: %v", err)
+		return
+	}
+	h.broadcastJSON(serviceID, jsonData)
 }
 
 func (h *Hub) BroadcastAlert(serviceID, alertType, severity, message string) {
-	alertMsg := map[string]interface{}{
+	jsonData, err := json.Marshal(map[string]interface{}{
 		"type":       "alert",
 		"service_id": serviceID,
 		"data": map[string]interface{}{
@@ -303,21 +303,12 @@ func (h *Hub) BroadcastAlert(serviceID, alertType, severity, message string) {
 			"severity":   severity,
 			"message":    message,
 		},
-	}
-
-	jsonData, err := json.Marshal(alertMsg)
+	})
 	if err != nil {
 		log.Printf("Alert serialize hatası: %v", err)
 		return
 	}
-
-	if h.redisClient != nil {
-		ctx := context.Background()
-		h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(jsonData))
-		return
-	}
-
-	h.broadcast <- jsonData
+	h.broadcastJSON(serviceID, jsonData)
 }
 
 func (h *Hub) BroadcastCommandStatus(serviceID, commandID, status string) {
@@ -343,13 +334,7 @@ func (h *Hub) BroadcastCommandResult(serviceID, commandID, status string, output
 		return
 	}
 
-	if h.redisClient != nil {
-		ctx := context.Background()
-		h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(jsonData))
-		return
-	}
-
-	h.broadcast <- jsonData
+	h.broadcastJSON(serviceID, jsonData)
 }
 
 // SendCommandToAgent — komutu servise bağlı TÜM agent'lara gönderir (multi-instance).
