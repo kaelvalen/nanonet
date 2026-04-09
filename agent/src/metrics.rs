@@ -184,8 +184,12 @@ fn read_proc_diskstats() -> (u64, u64) {
         {
             // Olası NVMe aygıt formatı: nvme0n1 (partition değil)
             // Alan[2] içeren 'p' varsa partition say.
-            if dev_name.contains('p') && dev_name[dev_name.rfind('p').unwrap()..].len() > 1 {
-                continue; // nvme0n1p1 gibi partition
+            if dev_name.contains('p') {
+                if let Some(p_idx) = dev_name.rfind('p') {
+                    if dev_name[p_idx..].len() > 1 {
+                        continue; // nvme0n1p1 gibi partition
+                    }
+                }
             }
         }
 
@@ -345,8 +349,9 @@ mod tests {
             app_memory_used_mb: Some(512.0),
         };
 
-        let json = serde_json::to_string(&snap).unwrap();
-        let back: MetricSnapshot = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&snap).expect("serde başarısız olmamalı");
+        let back: MetricSnapshot =
+            serde_json::from_str(&json).expect("serde deserialize başarısız olmamalı");
         assert!((back.cpu_percent - snap.cpu_percent).abs() < 0.001);
         assert_eq!(back.net_rx_bytes, snap.net_rx_bytes);
         assert_eq!(back.app_memory_used_mb, snap.app_memory_used_mb);

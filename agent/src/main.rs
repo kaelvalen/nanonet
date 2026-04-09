@@ -257,16 +257,18 @@ async fn main() -> error::Result<()> {
 
             // Process-level metrikler varsa ekle
             if let Some(ref pm) = process_metrics {
-                message.as_object_mut().unwrap().insert(
-                    "target_process".to_string(),
-                    json!({
-                        "pid": pm.pid,
-                        "name": pm.name,
-                        "cpu_percent": pm.cpu_percent,
-                        "memory_mb": pm.memory_mb,
-                        "status": pm.status,
-                    }),
-                );
+                if let Some(obj) = message.as_object_mut() {
+                    obj.insert(
+                        "target_process".to_string(),
+                        json!({
+                            "pid": pm.pid,
+                            "name": pm.name,
+                            "cpu_percent": pm.cpu_percent,
+                            "memory_mb": pm.memory_mb,
+                            "status": pm.status,
+                        }),
+                    );
+                }
             }
 
             let msg_str = message.to_string();

@@ -11,7 +11,9 @@ use crate::config::Config;
 /// Yasaklanan: ; | & && || $ ` \ " ' < > * ? ! ( ) [ ] { } #
 fn safe_input_regex() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| Regex::new(r"^[a-zA-Z0-9_./=\-: \t&]+$").unwrap())
+    RE.get_or_init(|| {
+        Regex::new(r"^[a-zA-Z0-9_./=\-: \t&]+$").expect("safe_input_regex pattern is valid")
+    })
 }
 
 /// Kullanıcı girdisini shell injection'a karşı doğrular.

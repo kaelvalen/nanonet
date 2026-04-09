@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,7 +21,10 @@ func NewService(db *gorm.DB) *Service {
 }
 
 func (s *Service) LogCommand(ctx context.Context, serviceID, userID uuid.UUID, commandID, action string, payload interface{}) error {
-	payloadJSON, _ := json.Marshal(payload)
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("payload serialization failed: %w", err)
+	}
 
 	log := &CommandLog{
 		ServiceID: serviceID,
