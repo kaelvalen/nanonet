@@ -1,8 +1,29 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 use std::time::Duration;
 use tokio::process::Command as TokioCommand;
 
 use crate::config::Config;
+
+/// Shell injection riskine karşı güvenli karakter regex'i.
+/// İzin verilen: alfanumerik, boşluk, /, -, _, ., =, & (argüman ayırıcı için)
+/// Yasaklanan: ; | & && || $ ` \ " ' < > * ? ! ( ) [ ] { } #
+fn safe_input_regex() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"^[a-zA-Z0-9_./=\-: \t&]+$").unwrap())
+}
+
+/// Kullanıcı girdisini shell injection'a karşı doğrular.
+fn validate_safe_input(input: &str) -> Result<(), String> {
+    if input.len() > 256 {
+        return Err("input çok uzun (max 256 karakter)".to_string());
+    }
+    if !safe_input_regex().is_match(input) {
+        return Err(r"input içerisinde yasak karakterler var. sadece şu karakterlere izin verilir: a-zA-Z0-9_./=\-: <bosluk> <tab> &".to_string());
+    }
+    Ok(())
+}
 
 /// Backend'den gelen düz JSON komut yapısı.
 /// Backend şu formatı gönderiyor:
@@ -150,6 +171,13 @@ pub async fn execute(cmd: &IncomingCommand, config: &Config) -> Result<Option<St
                 Some(c) if !c.trim().is_empty() => c.trim().to_string(),
                 _ => return Err("exec: command alanı eksik".to_string()),
             };
+
+            // Shell injection önleme - kullanıcı girdisini doğrula
+            if let Err(e) = validate_safe_input(&raw) {
+                tracing::warn!("[{}] exec komutu reddedildi: {}", cmd.command_id, e);
+                return Err(format!("güvenlik hatası: {}", e));
+            }
+
             let timeout = cmd.timeout_sec.unwrap_or(30);
 
             let shell_cmd = build_service_command(&raw, config);

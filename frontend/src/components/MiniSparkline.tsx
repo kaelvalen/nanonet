@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Line, LineChart, ResponsiveContainer } from "recharts";
 
 interface MiniSparklineProps {
@@ -6,12 +7,15 @@ interface MiniSparklineProps {
 	trend?: "up" | "down" | "stable";
 }
 
-export function MiniSparkline({
+export const MiniSparkline = function MiniSparkline({
 	data,
 	color = "#39c5bb",
 	trend = "stable",
 }: MiniSparklineProps) {
-	const chartData = data.map((value, index) => ({ value, index }));
+	const chartData = useMemo(
+		() => data.map((value, index) => ({ value, index })),
+		[data],
+	);
 
 	return (
 		<div className="relative h-12 w-full">
@@ -34,4 +38,4 @@ export function MiniSparkline({
 			</div>
 		</div>
 	);
-}
+};

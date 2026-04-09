@@ -1,5 +1,6 @@
 import { Handle, Position } from "@xyflow/react";
 import { Activity, AlertTriangle, Server, Trash2 } from "lucide-react";
+import { memo } from "react";
 import {
 	STATUS_BG,
 	STATUS_BORDER,
@@ -9,7 +10,11 @@ import {
 import { StatusIcon } from "./StatusIcon";
 import type { ServiceNodeData } from "./types";
 
-export function ServiceNode({ data }: { data: ServiceNodeData }) {
+export const ServiceNode = memo(function ServiceNode({
+	data,
+}: {
+	data: ServiceNodeData;
+}) {
 	const { service, onDelete, onSelect, selected, extra } = data;
 	const color = STATUS_COLOR[service.status] ?? STATUS_COLOR.unknown;
 	const bg = STATUS_BG[service.status] ?? STATUS_BG.unknown;
@@ -141,4 +146,4 @@ export function ServiceNode({ data }: { data: ServiceNodeData }) {
 			</div>
 		</div>
 	);
-}
+});
