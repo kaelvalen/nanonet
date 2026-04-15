@@ -312,6 +312,7 @@
 			}
 		},
 		"setup": {
+			"badge": "Hızlı Başlangıç",
 			"title": "30 Saniyede Kurulum",
 			"step1": {
 				"title": "Hesap Oluşturun",
@@ -329,6 +330,7 @@
 		"ai": {
 			"badge": "NanoNet AI Motoru",
 			"title": "Saniyeler İçinde Kök Neden Analizi.",
+			"desc": "Saatler hata ayıklamakla geçirmeyi bırakın. NanoNet'in AI'ı kök nedeni tespit eder ve sonraki adımı otomatik olarak önerir.",
 			"alert": {
 				"title": "Anomali Tespit Edildi",
 				"desc": "'Auth-v2' servisinde beklenmedik trafik artışı",
@@ -348,5 +350,8 @@
 				"success": "BAŞARILI: NanoNet Agent aktif."
 			}
 		}
+	},
+	"cta": {
+		"title": "Saniyeler İçinde İzlemeye Başlayın."
 	}
 }

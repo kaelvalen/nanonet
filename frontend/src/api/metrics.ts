@@ -16,6 +16,7 @@ export type {
 	AnalysisResult,
 	ChatMessage,
 	ChatResponse,
+	ReportEvent,
 	ReportResult,
 	TimeRange,
 } from "../types/ai";

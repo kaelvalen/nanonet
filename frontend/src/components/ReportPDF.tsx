@@ -29,7 +29,7 @@ function hex(h: string) {
 
 const C = {
 	dark: hex("#0f172a"),
-	indigo: hex("#4f46e5"),
+	teal: hex("#0d9488"),
 	white: hex("#ffffff"),
 	gray900: hex("#111827"),
 	gray600: hex("#4b5563"),
@@ -42,10 +42,10 @@ const C = {
 	red100: hex("#fee2e2"),
 	amber700: hex("#b45309"),
 	amber100: hex("#fef3c7"),
-	violet700: hex("#6d28d9"),
-	violet100: hex("#ede9fe"),
-	indigoBg: hex("#eef2ff"),
-	indigoBorder: hex("#c7d2fe"),
+	teal700: hex("#0f766e"),
+	teal100: hex("#ccfbf1"),
+	tealBg: hex("#f0fdfa"),
+	tealBorder: hex("#99f6e4"),
 };
 
 const CAT_COLORS: Record<
@@ -55,7 +55,7 @@ const CAT_COLORS: Record<
 	tamamlandi: { fg: C.green700, bg: C.green100 },
 	mudahale_gerekli: { fg: C.red700, bg: C.red100 },
 	izleniyor: { fg: C.amber700, bg: C.amber100 },
-	trend: { fg: C.violet700, bg: C.violet100 },
+	trend: { fg: C.teal700, bg: C.teal100 },
 };
 const CAT_LABEL: Record<string, string> = {
 	tamamlandi: "Tamamlandı",
@@ -239,8 +239,8 @@ export async function downloadReportPDF(report: ReportResult): Promise<void> {
 			height: logoSize,
 		});
 	} catch {
-		// Logo yüklenemezse indigo kare
-		drawRect(page, logoX, PH - HEADER_H + 12, logoSize, logoSize, C.indigo);
+		// Logo yüklenemezse teal kare
+		drawRect(page, logoX, PH - HEADER_H + 12, logoSize, logoSize, C.teal);
 		drawText(page, "N", logoX + 8, PH - HEADER_H + 22, fontBold, 12, C.white);
 	}
 
@@ -532,9 +532,9 @@ export async function downloadReportPDF(report: ReportResult): Promise<void> {
 		y -= 8;
 
 		const boxY = y - boxH;
-		drawRect(page, ML, boxY, CW, boxH, C.indigoBg, C.indigoBorder, 0.8);
-		// Indigo left accent
-		drawRect(page, ML, boxY, 4, boxH, C.indigo);
+		drawRect(page, ML, boxY, CW, boxH, C.tealBg, C.tealBorder, 0.8);
+		// Teal left accent
+		drawRect(page, ML, boxY, 4, boxH, C.teal);
 
 		drawText(
 			page,
@@ -543,7 +543,7 @@ export async function downloadReportPDF(report: ReportResult): Promise<void> {
 			y - 8,
 			fontBold,
 			7.5,
-			C.indigo,
+			C.teal,
 		);
 		let ry = y - 22;
 		for (const line of rLines) {
@@ -566,7 +566,7 @@ export async function downloadReportPDF(report: ReportResult): Promise<void> {
 
 	// ─── İndir ──────────────────────────────────────────────────
 	const bytes = await pdfDoc.save();
-	const blob = new Blob([bytes], { type: "application/pdf" });
+	const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" });
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	a.href = url;

@@ -59,7 +59,7 @@ const CATEGORY_CONFIG: Record<
 	},
 	trend: {
 		label: "Trend",
-		color: "var(--color-lavender)",
+		color: "var(--color-teal)",
 		icon: <TrendingUp className="w-3 h-3" />,
 	},
 };
@@ -322,13 +322,13 @@ function ReportView({
 							<div
 								className="rounded-xl px-3 py-2.5"
 								style={{
-									background: "var(--color-lavender-subtle)",
-									border: "1px solid var(--color-lavender-border)",
+									background: "var(--color-teal-subtle)",
+									border: "1px solid var(--color-teal-border)",
 								}}
 							>
 								<p
 									className="text-[10px] font-bold tracking-widest uppercase mb-1"
-									style={{ color: "var(--color-lavender)" }}
+									style={{ color: "var(--color-teal)" }}
 								>
 									Önümüzdeki 7 Gün Riski
 								</p>
@@ -365,7 +365,7 @@ function ReportView({
 					style={{
 						background: "var(--gradient-btn-primary)",
 						color: "#fff",
-						boxShadow: "0 3px 8px rgba(79,70,229,0.25)",
+						boxShadow: "0 3px 8px rgba(13,148,136,0.25)",
 					}}
 					whileHover={{ scale: isExporting ? 1 : 1.02 }}
 					whileTap={{ scale: 0.97 }}
@@ -529,7 +529,7 @@ export function AIAssistant() {
 						className="fixed bottom-20 right-4 md:bottom-8 md:right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
 						style={{
 							background: "var(--gradient-logo)",
-							boxShadow: "0 4px 20px rgba(79,70,229,0.35)",
+							boxShadow: "0 4px 20px rgba(13,148,136,0.35)",
 						}}
 					>
 						<Sparkles className="w-4 h-4 text-white" />
@@ -572,13 +572,13 @@ export function AIAssistant() {
 									<div
 										className="w-8 h-8 rounded-full flex items-center justify-center"
 										style={{
-											background: "var(--color-lavender-subtle)",
-											border: "1px solid var(--color-lavender-border)",
+											background: "var(--color-teal-subtle)",
+											border: "1px solid var(--color-teal-border)",
 										}}
 									>
 										<Bot
 											className="w-4 h-4"
-											style={{ color: "var(--color-lavender)" }}
+											style={{ color: "var(--color-teal)" }}
 										/>
 									</div>
 									<span
@@ -656,8 +656,8 @@ export function AIAssistant() {
 											style={
 												mode === m
 													? {
-															color: "var(--color-lavender)",
-															borderBottom: "2px solid var(--color-lavender)",
+															color: "var(--color-teal)",
+															borderBottom: "2px solid var(--color-teal)",
 															background: "var(--surface-card)",
 														}
 													: {
@@ -773,7 +773,7 @@ export function AIAssistant() {
 																		className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
 																		style={{
 																			background: "var(--surface-raised)",
-																			color: "var(--color-lavender)",
+																			color: "var(--color-teal)",
 																			border: "1px solid var(--border-default)",
 																		}}
 																	>
@@ -790,7 +790,7 @@ export function AIAssistant() {
 																</div>
 																<ChevronRight
 																	className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
-																	style={{ color: "var(--color-lavender)" }}
+																	style={{ color: "var(--color-teal)" }}
 																/>
 															</button>
 														))}
@@ -800,15 +800,15 @@ export function AIAssistant() {
 														<div
 															className="rounded-xl px-3 py-2.5 flex items-center justify-between"
 															style={{
-																background: "var(--color-lavender-subtle)",
+																background: "var(--color-teal-subtle)",
 																border:
-																	"1px solid var(--color-lavender-border)",
+																	"1px solid var(--color-teal-border)",
 															}}
 														>
 															<div>
 																<p
 																	className="text-[10px] font-bold uppercase tracking-wider"
-																	style={{ color: "var(--color-lavender)" }}
+																	style={{ color: "var(--color-teal)" }}
 																>
 																	Sistem Sağlığı
 																</p>
@@ -859,7 +859,7 @@ export function AIAssistant() {
 													className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 disabled:opacity-40"
 													style={{
 														background: "var(--gradient-btn-primary)",
-														boxShadow: "0 3px 8px rgba(79,70,229,0.28)",
+														boxShadow: "0 3px 8px rgba(13,148,136,0.28)",
 													}}
 													whileHover={{ scale: 1.06 }}
 													whileTap={{ scale: 0.92 }}
@@ -881,13 +881,13 @@ export function AIAssistant() {
 													<div
 														className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
 														style={{
-															background: "var(--color-lavender-subtle)",
-															border: "1px solid var(--color-lavender-border)",
+															background: "var(--color-teal-subtle)",
+															border: "1px solid var(--color-teal-border)",
 														}}
 													>
 														<FileText
 															className="w-6 h-6"
-															style={{ color: "var(--color-lavender)" }}
+															style={{ color: "var(--color-teal)" }}
 														/>
 													</div>
 													<p
@@ -919,10 +919,10 @@ export function AIAssistant() {
 																selectedRange === range
 																	? {
 																			background:
-																				"var(--color-lavender-subtle)",
+																				"var(--color-teal-subtle)",
 																			border:
-																				"1.5px solid var(--color-lavender)",
-																			color: "var(--color-lavender)",
+																				"1.5px solid var(--color-teal)",
+																			color: "var(--color-teal)",
 																		}
 																	: {
 																			background: "var(--surface-sunken)",
@@ -936,7 +936,7 @@ export function AIAssistant() {
 																style={{
 																	color:
 																		selectedRange === range
-																			? "var(--color-lavender)"
+																			? "var(--color-teal)"
 																			: "var(--text-faint)",
 																}}
 															/>
@@ -954,7 +954,7 @@ export function AIAssistant() {
 													style={{
 														background: "var(--gradient-btn-primary)",
 														color: "#fff",
-														boxShadow: "0 4px 12px rgba(79,70,229,0.3)",
+														boxShadow: "0 4px 12px rgba(13,148,136,0.3)",
 													}}
 													whileHover={{ scale: 1.02 }}
 													whileTap={{ scale: 0.97 }}
@@ -971,8 +971,8 @@ export function AIAssistant() {
 												<div
 													className="w-14 h-14 rounded-2xl flex items-center justify-center"
 													style={{
-														background: "var(--color-lavender-subtle)",
-														border: "1px solid var(--color-lavender-border)",
+														background: "var(--color-teal-subtle)",
+														border: "1px solid var(--color-teal-border)",
 													}}
 												>
 													<motion.div
@@ -985,7 +985,7 @@ export function AIAssistant() {
 													>
 														<Sparkles
 															className="w-6 h-6"
-															style={{ color: "var(--color-lavender)" }}
+															style={{ color: "var(--color-teal)" }}
 														/>
 													</motion.div>
 												</div>
@@ -1010,7 +1010,7 @@ export function AIAssistant() {
 															key={d}
 															className="w-2 h-2 rounded-full animate-bounce"
 															style={{
-																background: "var(--color-lavender)",
+																background: "var(--color-teal)",
 																animationDelay: `${d}s`,
 															}}
 														/>

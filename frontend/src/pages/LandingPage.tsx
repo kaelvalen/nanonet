@@ -90,7 +90,7 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
 							<Button
 								className={`h-9 px-5 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${
 									dark
-										? "bg-slate-900 text-white hover:bg-indigo-600"
+										? "bg-teal-600 text-white hover:bg-teal-700"
 										: "bg-white text-slate-900 hover:bg-slate-100"
 								}`}
 							>
@@ -159,7 +159,7 @@ function Hero({
 			/>
 
 			{/* Radial glow */}
-			<div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-600/10 blur-[120px] rounded-full pointer-events-none" />
+			<div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-150 h-150 bg-teal-600/10 blur-[120px] rounded-full pointer-events-none" />
 
 			<motion.div
 				style={{ opacity, y: textY }}
@@ -226,29 +226,19 @@ function Hero({
 					>
 						{isAuthenticated ? (
 							<Link to="/app">
-								<Button
-									className={`h-11 px-7 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-sm transition-all active:scale-[0.98]`}
-								>
+								<Button className="h-11 px-7 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-black text-sm transition-all active:scale-[0.98] shadow-[0_0_30px_rgba(13,148,136,0.4)]">
 									{t("landing.hero.cta.launch")} →
 								</Button>
 							</Link>
 						) : (
 							<>
 								<Link to="/register">
-									<Button
-										className={`h-11 px-7 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-sm transition-all active:scale-[0.98]`}
-									>
+									<Button className="h-11 px-7 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-black text-sm transition-all active:scale-[0.98] shadow-[0_0_30px_rgba(13,148,136,0.4)]">
 										{t("landing.hero.cta.start")} →
 									</Button>
 								</Link>
-								<Link to="/login">
-									<Button
-										variant="ghost"
-										className="h-11 px-5 rounded-xl transition-all font-bold text-sm"
-										style={{ color: "rgba(255, 255, 255, 0.7)" }}
-									>
-										{t("auth.login")}
-									</Button>
+								<Link to="/login" className="h-11 px-5 rounded-xl flex items-center text-sm font-bold transition-colors hover:text-white" style={{ color: "rgba(255,255,255,0.55)" }}>
+									{t("auth.login")} →
 								</Link>
 							</>
 						)}
@@ -268,11 +258,11 @@ function Hero({
 					{/* Card frame */}
 					<div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
 						{/* Chrome bar */}
-						<div className="flex items-center gap-1.5 px-4 py-2.5 bg-white/[0.04] border-b border-white/5">
+						<div className="flex items-center gap-1.5 px-4 py-2.5 bg-white/4 border-b border-white/5">
 							<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
 							<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
 							<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-							<div className="flex-1 mx-3 h-5 bg-white/[0.04] rounded-md" />
+							<div className="flex-1 mx-3 h-5 bg-white/4 rounded-md" />
 							<span className="text-[9px] font-mono text-white/15 uppercase tracking-widest">
 								NanoNet Console
 							</span>
@@ -290,7 +280,7 @@ function Hero({
 						</video>
 
 						{/* Bottom gradient fade */}
-						<div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-[#060810]/60 to-transparent pointer-events-none" />
+						<div className="absolute bottom-0 inset-x-0 h-12 bg-linear-to-t from-[#060810]/60 to-transparent pointer-events-none" />
 					</div>
 				</motion.div>
 			</motion.div>
@@ -442,9 +432,9 @@ export function LandingPage() {
 					{/* Steps */}
 					<div>
 						<p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-400 mb-4">
-							{t("landing.setup.title")}
+							{t("landing.setup.badge")}
 						</p>
-						<h2 className="text-4xl font-black text-white tracking-tighter mb-14">
+						<h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-14">
 							{t("landing.setup.title")}
 						</h2>
 						<div className="space-y-10">
@@ -483,7 +473,7 @@ export function LandingPage() {
 					>
 						<div className="absolute -inset-6 bg-teal-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 						<div className="relative rounded-2xl border border-white/5 overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.5)]">
-							<div className="flex items-center gap-1.5 px-4 py-3 bg-white/[0.03] border-b border-white/5">
+							<div className="flex items-center gap-1.5 px-4 py-3 bg-white/3 border-b border-white/5">
 								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
 								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
 								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
@@ -502,8 +492,8 @@ export function LandingPage() {
 			</section>
 
 			{/* ── AI Insights ── */}
-			<section className="py-28 bg-slate-50">
-				<div className="max-w-3xl mx-auto px-6 text-center">
+			<section id="ai" className="py-28 bg-slate-50">
+				<div className="max-w-4xl mx-auto px-6 text-center">
 					<motion.div
 						initial={{ opacity: 0, y: 20 }}
 						whileInView={{ opacity: 1, y: 0 }}
@@ -515,10 +505,12 @@ export function LandingPage() {
 								{t("landing.ai.badge")}
 							</span>
 						</div>
-						<h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-12">
+						<h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-4">
 							{t("landing.ai.title")}
 						</h2>
-
+						<p className="text-slate-500 text-base leading-relaxed mb-12 max-w-2xl mx-auto">
+							{t("landing.ai.desc")}
+						</p>
 						<div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-xl text-left">
 							<div className="flex items-start gap-5">
 								<div className="w-10 h-10 bg-red-50 border border-red-100 rounded-xl flex items-center justify-center shrink-0">
@@ -600,7 +592,7 @@ export function LandingPage() {
 							<p className="text-white/30">
 								# {t("landing.devs.install.comment")}
 							</p>
-							<div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 px-4 py-3.5 rounded-xl group relative">
+							<div className="flex items-center gap-3 bg-white/3 border border-white/5 px-4 py-3.5 rounded-xl group relative">
 								<span className="text-teal-400 font-bold select-none">$</span>
 								<code className="text-white/80 flex-1">
 									curl -sSL https://get.nanonet.dev | bash
@@ -635,27 +627,43 @@ export function LandingPage() {
 			</section>
 
 			{/* ── CTA Banner ── */}
-			<section id="cta" className="py-24 bg-[#060810]">
+			<section id="cta" className="py-32 bg-[#060810] relative overflow-hidden">
+				<div className="absolute inset-0 pointer-events-none">
+					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-teal-600/8 blur-[120px] rounded-full" />
+				</div>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true }}
-					className="max-w-3xl mx-auto px-6 text-center"
+					className="relative max-w-3xl mx-auto px-6 text-center"
 				>
-					<h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-6">
-						Start monitoring in seconds.
+					<div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 px-4 py-1.5 rounded-full mb-8">
+						<span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+						<span className="text-[10px] font-black uppercase tracking-widest text-teal-400">
+							Free to start
+						</span>
+					</div>
+					<h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-6 leading-[1.1]">
+						{t("landing.cta.title")}
 					</h2>
-					<p className="text-white/40 text-base mb-10 leading-relaxed">
+					<p className="text-white/40 text-base mb-12 leading-relaxed">
 						{t("landing.hero.description")}
 					</p>
-					<Link to={isAuthenticated ? "/app" : "/register"}>
-						<Button className="h-13 px-10 py-4 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-sm tracking-wide transition-all active:scale-[0.98] shadow-[0_0_60px_rgba(255,255,255,0.1)]">
-							{isAuthenticated
-								? t("landing.hero.cta.launch")
-								: t("landing.hero.cta.start")}{" "}
-							→
-						</Button>
-					</Link>
+					<div className="flex items-center justify-center gap-4 flex-wrap">
+						<Link to={isAuthenticated ? "/app" : "/register"}>
+							<Button className="h-12 px-10 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-black text-sm tracking-wide transition-all active:scale-[0.98] shadow-[0_0_40px_rgba(13,148,136,0.35)]">
+								{isAuthenticated
+									? t("landing.hero.cta.launch")
+									: t("landing.hero.cta.start")}{" "}
+								→
+							</Button>
+						</Link>
+						{!isAuthenticated && (
+							<Link to="/login" className="text-sm font-semibold text-white/40 hover:text-white/70 transition-colors">
+								{t("auth.login")} →
+							</Link>
+						)}
+					</div>
 				</motion.div>
 			</section>
 
@@ -663,11 +671,11 @@ export function LandingPage() {
 			<footer className="border-t border-slate-100 bg-white">
 				<div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
 					<div className="flex items-center gap-2.5">
-						<img src={logo} alt="Logo" className="w-5 h-5 opacity-40" />
-						<span className="text-sm font-black text-slate-300 tracking-tight">
+						<img src={logo} alt="Logo" className="w-5 h-5 opacity-50" />
+						<span className="text-sm font-black text-slate-600 tracking-tight">
 							NanoNet
 						</span>
-						<span className="text-xs text-slate-300 ml-2 font-mono">
+						<span className="text-xs text-slate-400 ml-2 font-mono">
 							v2.0 · {t("footer.tagline")}
 						</span>
 					</div>
@@ -680,7 +688,7 @@ export function LandingPage() {
 							<Link
 								key={link.key}
 								to={link.path}
-								className="text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-slate-600 transition-colors"
+								className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors"
 							>
 								{t(link.key)}
 							</Link>

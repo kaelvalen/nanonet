@@ -312,6 +312,7 @@
 			}
 		},
 		"setup": {
+			"badge": "Quick Start",
 			"title": "Setup in 30 seconds",
 			"step1": {
 				"title": "Create an account",
@@ -329,6 +330,7 @@
 		"ai": {
 			"badge": "NanoNet AI Engine",
 			"title": "Root Cause Analysis in Seconds.",
+			"desc": "Stop spending hours debugging. NanoNet's AI pinpoints the root cause and suggests the next action — automatically.",
 			"alert": {
 				"title": "Anomaly Detected",
 				"desc": "Unexpected traffic spike in 'Auth-v2' service",
@@ -348,6 +350,9 @@
 				"success": "SUCCESS: NanoNet Agent is active."
 			}
 		}
+	},
+	"cta": {
+		"title": "Start monitoring in seconds."
 	},
 	"footer": {
 		"tagline": "The grid never rests"
