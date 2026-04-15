@@ -1,6 +1,6 @@
-import { createBrowserRouter, Navigate, useParams } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { FullScreenSpinner } from "@/components/FullScreenSpinner";
+import { AuthGuard, GuestGuard, ServicesRedirect } from "@/components/guards";
 import { AIInsightsPage } from "@/pages/AIInsightsPage";
 import { AlertsPage } from "@/pages/AlertsPage";
 import { DashboardPage } from "@/pages/DashboardPage";
@@ -18,42 +18,6 @@ import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
 import { ServiceMapPage } from "@/pages/ServiceMapPage";
 import { ServicesPage } from "@/pages/ServicesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
-import { useAuthStore } from "@/store/authStore";
-
-function AuthGuard({ children }: { children: React.ReactNode }) {
-	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-	const isInitializing = useAuthStore((s) => s.isInitializing);
-
-	if (isInitializing) {
-		return <FullScreenSpinner />;
-	}
-
-	if (!isAuthenticated) {
-		return <Navigate to="/login" replace />;
-	}
-
-	return <>{children}</>;
-}
-
-function GuestGuard({ children }: { children: React.ReactNode }) {
-	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-	const isInitializing = useAuthStore((s) => s.isInitializing);
-
-	if (isInitializing) {
-		return <FullScreenSpinner />;
-	}
-
-	if (isAuthenticated) {
-		return <Navigate to="/app" replace />;
-	}
-
-	return <>{children}</>;
-}
-
-function ServicesRedirect() {
-	const { serviceId } = useParams();
-	return <Navigate to={`/app/services/${serviceId}`} replace />;
-}
 
 export const router = createBrowserRouter([
 	{

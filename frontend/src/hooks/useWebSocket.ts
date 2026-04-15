@@ -17,7 +17,6 @@ export function useWebSocket() {
 	const queryClient = useQueryClient();
 	const {
 		setConnected,
-		setWS,
 		incrementReconnect,
 		resetReconnect,
 		setLastMessageTime,
@@ -60,7 +59,6 @@ export function useWebSocket() {
 							authAckTimeoutRef.current = undefined;
 						}
 						setConnected(true);
-						setWS(activeWS);
 						setLastError(null);
 						resetReconnect();
 						reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
@@ -159,7 +157,6 @@ export function useWebSocket() {
 			updateServiceStatus,
 			setLastMessageTime,
 			queryClient,
-			setWS,
 			startHeartbeat,
 			setLastError,
 			setConnected,
@@ -231,7 +228,6 @@ export function useWebSocket() {
 				ws.onclose = (e) => {
 					if (!mountedRef.current) return;
 					setConnected(false);
-					setWS(null);
 					stopHeartbeat();
 
 					// Don't reconnect if closed intentionally or auth failed
@@ -299,7 +295,6 @@ export function useWebSocket() {
 		};
 	}, [
 		setConnected,
-		setWS,
 		handleMessage,
 		stopHeartbeat,
 		incrementReconnect,

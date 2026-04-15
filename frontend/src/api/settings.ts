@@ -1,4 +1,7 @@
+import type { AuditLog } from "../types/logs";
 import apiClient from "./client";
+
+export type { AuditLog } from "../types/logs";
 
 export interface UserSettings {
 	user_id: string;
@@ -61,14 +64,3 @@ export const settingsApi = {
 		return response.data.data;
 	},
 };
-
-export interface AuditLog {
-	id: string;
-	user_id: string;
-	action: string;
-	resource_type: string;
-	resource_id: string;
-	details?: string;
-	ip_address?: string;
-	created_at: string;
-}

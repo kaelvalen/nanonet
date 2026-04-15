@@ -88,40 +88,38 @@ function AppInit() {
 	} = useAuthStore();
 
 	useEffect(() => {
-		// Sayfa yenilendiğinde access token memory'de olmaz; refresh token ile yenile
-		if (refreshToken && !accessToken) {
-			authApi
-				.refresh(refreshToken)
-				.then((res) => {
-					// Use the stored user from localStorage, not empty fallback
-					if (user) {
-						setAuth(user, res.access_token, refreshToken);
-					} else {
-						// If no user in store, fetch it from /auth/me
-						setAuth(
-							{ id: "", email: "", created_at: "", updated_at: "" },
-							res.access_token,
-							refreshToken,
-						);
-					}
-					return authApi.me().then((fetchedUser) => {
-						updateUser(fetchedUser);
-					});
-				})
-				.catch(() => {
-					clearAuth();
-				})
-				.finally(() => {
-					setInitializing(false);
-				});
-		} else if (!refreshToken) {
-			// No refresh token, clear auth and complete initialization immediately
+		if (!refreshToken) {
 			clearAuth();
 			setInitializing(false);
-		} else {
-			// We have both tokens, don't need to refresh
-			setInitializing(false);
+			return;
 		}
+
+		if (accessToken) {
+			setInitializing(false);
+			return;
+		}
+
+		// Sayfa yenilendiğinde access token memory'de olmaz; refresh token ile yenile
+		const token = refreshToken;
+		async function restoreSession() {
+			try {
+				const res = await authApi.refresh(token);
+				const newRefresh = res.refresh_token ?? token;
+				setAuth(
+					user ?? { id: "", email: "", created_at: "", updated_at: "" },
+					res.access_token,
+					newRefresh,
+				);
+				const fetchedUser = await authApi.me();
+				updateUser(fetchedUser);
+			} catch {
+				clearAuth();
+			} finally {
+				setInitializing(false);
+			}
+		}
+
+		restoreSession();
 	}, [
 		accessToken,
 		clearAuth,

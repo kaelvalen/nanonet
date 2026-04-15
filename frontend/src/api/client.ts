@@ -1,6 +1,26 @@
 import axios from "axios";
 import { useAuthStore } from "../store/authStore";
 
+async function refreshAccessToken(refreshToken: string): Promise<string> {
+	const response = await axios.post(
+		`${import.meta.env.VITE_API_URL}/auth/refresh`,
+		{ refresh_token: refreshToken },
+	);
+	const data = response.data?.data;
+	if (!data?.access_token) {
+		throw new Error("Geçersiz token yenileme yanıtı");
+	}
+	const store = useAuthStore.getState();
+	if (store.user) {
+		store.setAuth(
+			store.user,
+			data.access_token,
+			data.refresh_token ?? refreshToken,
+		);
+	}
+	return data.access_token as string;
+}
+
 const apiClient = axios.create({
 	baseURL: import.meta.env.VITE_API_URL,
 	timeout: 15000,
@@ -54,18 +74,7 @@ apiClient.interceptors.response.use(
 			isRefreshing = true;
 
 			try {
-				const response = await axios.post(
-					`${import.meta.env.VITE_API_URL}/auth/refresh`,
-					{ refresh_token: refreshToken },
-				);
-				const access_token = response.data?.data?.access_token;
-				if (!access_token) {
-					throw new Error("Geçersiz token yenileme yanıtı");
-				}
-				const store = useAuthStore.getState();
-				if (store.user) {
-					store.setAuth(store.user, access_token, refreshToken);
-				}
+				const access_token = await refreshAccessToken(refreshToken);
 
 				pendingRequests.forEach(({ resolve }) => {
 					resolve(access_token);

@@ -1,14 +1,32 @@
+import type {
+	AIInsight,
+	AnalysisResult,
+	ChatMessage,
+	ChatResponse,
+	ReportResult,
+	TimeRange,
+} from "../types/ai";
+import type { Alert, AlertRules } from "../types/alerts";
+import type { LogQueryParams, LogsResponse } from "../types/logs";
 import type { ServiceMetrics } from "../types/metrics";
 import apiClient from "./client";
 
-export interface AlertRules {
-	service_id?: string;
-	cpu_threshold: number;
-	memory_threshold_mb: number;
-	latency_threshold_ms: number;
-	error_rate_threshold: number;
-	is_default?: boolean;
-}
+export type {
+	AIInsight,
+	AnalysisResult,
+	ChatMessage,
+	ChatResponse,
+	ReportResult,
+	TimeRange,
+} from "../types/ai";
+export type { Alert, AlertRules } from "../types/alerts";
+export type {
+	AuditLog,
+	LogQueryParams,
+	LogsResponse,
+	ServiceLog,
+} from "../types/logs";
+export { TIME_RANGE_LABELS } from "../types/ai";
 
 export interface AggregatedMetric {
 	bucket: string;
@@ -16,33 +34,6 @@ export interface AggregatedMetric {
 	avg_latency: number | null;
 	max_latency: number | null;
 	avg_memory: number | null;
-}
-
-export interface Alert {
-	id: string;
-	service_id: string;
-	type: string;
-	severity: "info" | "warn" | "crit";
-	message: string;
-	triggered_at: string;
-	resolved_at?: string;
-}
-
-export interface AIInsight {
-	id: string;
-	alert_id: string;
-	model: string;
-	summary: string;
-	root_cause?: string;
-	recommendations?: { action: string; priority: string }[];
-	created_at: string;
-}
-
-export interface AnalysisResult {
-	summary: string;
-	root_cause: string;
-	recommendations: { action: string; priority: string }[];
-	confidence?: number;
 }
 
 export const metricsApi = {
@@ -208,39 +199,6 @@ export const metricsApi = {
 	},
 };
 
-export type TimeRange = "1h" | "24h" | "7d" | "30d";
-
-export const TIME_RANGE_LABELS: Record<TimeRange, string> = {
-	"1h": "Son 1 Saat",
-	"24h": "Son 24 Saat",
-	"7d": "Son 7 Gün",
-	"30d": "Son 30 Gün",
-};
-
-export interface ReportEvent {
-	service: string;
-	time: string;
-	observation: string;
-	root_cause: string;
-	impact: string;
-	action: string;
-	outcome: string;
-	category: "tamamlandı" | "müdahale_gerekli" | "izleniyor" | "trend";
-}
-
-export interface ReportResult {
-	period_label: string;
-	system_score: "SAĞLIKLI" | "DİKKAT" | "KRİTİK";
-	headline: string;
-	total_requests?: string;
-	critical_events: number;
-	resolved_events: number;
-	events: ReportEvent[];
-	actions: { action: string; priority: string; estimated_impact?: string }[];
-	risk_forecast: string;
-	confidence?: number;
-}
-
 export const aiReportApi = {
 	generate: async (
 		timeRange: TimeRange,
@@ -254,44 +212,6 @@ export const aiReportApi = {
 		return response.data.data?.report;
 	},
 };
-
-export interface ChatMessage {
-	role: "user" | "assistant";
-	content: string;
-}
-
-export interface ChatResponse {
-	reply: string;
-	model: string;
-	tokens_used?: number;
-}
-
-export interface ServiceLog {
-	time: string;
-	id: string;
-	service_id: string;
-	level: "debug" | "info" | "warn" | "error";
-	source: "agent" | "system" | "k8s" | "health_check" | "command";
-	message: string;
-	fields?: Record<string, unknown>;
-}
-
-export interface LogsResponse {
-	logs: ServiceLog[];
-	total: number;
-	limit: number;
-	offset: number;
-}
-
-export interface LogQueryParams {
-	level?: string;
-	source?: string;
-	search?: string;
-	from?: string;
-	to?: string;
-	limit?: number;
-	offset?: number;
-}
 
 export const logsApi = {
 	getServiceLogs: async (

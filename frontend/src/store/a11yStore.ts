@@ -94,8 +94,7 @@ export const useA11yStore = create<A11yStore>()(
 				const html = document.documentElement;
 
 				// Apply font size
-				const fontSizePercent = (prefs.fontSize / 100) * 100;
-				html.style.fontSize = `${fontSizePercent}%`;
+				html.style.fontSize = `${prefs.fontSize}%`;
 
 				// Apply line height
 				html.style.setProperty("--line-height", String(prefs.lineHeight));

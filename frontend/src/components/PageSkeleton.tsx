@@ -164,9 +164,9 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
 				))}
 			</div>
 			{/* Rows */}
-			{Array.from({ length: rows }).map((_, i) => (
+			{Array.from({ length: rows }, (_, i) => `row-${i}`).map((rowKey) => (
 				<Card
-					key={`skeleton-row-${i}`}
+					key={rowKey}
 					className="p-3 rounded"
 					style={{
 						background: "var(--surface-card)",
@@ -174,12 +174,12 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
 					}}
 				>
 					<div className="flex gap-2">
-						{[1, 2, 3, 4].map((j) => (
+						{["cell-1", "cell-2", "cell-3", "cell-4"].map((cellKey, j) => (
 							<div
-								key={`skeleton-cell-${i}-${j}`}
+								key={`${rowKey}-${cellKey}`}
 								className="h-3 rounded"
 								style={{
-									width: j === 1 ? "20%" : j === 2 ? "30%" : "15%",
+									width: j === 0 ? "20%" : j === 1 ? "30%" : "15%",
 									background: "var(--surface-sunken)",
 								}}
 							/>

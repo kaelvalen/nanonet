@@ -4,11 +4,7 @@ import { toast } from "sonner";
 import { authApi } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import type { LoginRequest, RegisterRequest } from "../types/auth";
-
-function extractApiError(error: unknown): string {
-	const err = error as { response?: { data?: { error?: string } } };
-	return err?.response?.data?.error ?? "";
-}
+import { extractApiError } from "../utils/apiError";
 
 export function useAuth() {
 	const navigate = useNavigate();

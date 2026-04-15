@@ -83,10 +83,7 @@ export function useServices(options: { enabled?: boolean } = {}) {
 	return {
 		services: servicesQuery.data || [],
 		isLoading: servicesQuery.isLoading,
-		createService: createMutation.mutate as (
-			data: CreateServiceRequest,
-			options?: { onSuccess?: (data: unknown) => void },
-		) => void,
+		createService: createMutation.mutate,
 		updateService: (id: string, data: UpdateServiceRequest) =>
 			updateMutation.mutate({ id, data }),
 		deleteService: deleteMutation.mutate,
