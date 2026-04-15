@@ -67,7 +67,7 @@ export function LoginPage() {
 								placeholder="you@company.com"
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
-								className="h-11 rounded-lg border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-colors"
+								className="h-11 rounded-lg border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-teal-500 focus-visible:border-teal-500 transition-colors"
 								required
 								disabled={isLoggingIn}
 							/>
@@ -83,7 +83,7 @@ export function LoginPage() {
 								</Label>
 								<Link
 									to="/forgot-password"
-									className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+									className="text-[11px] font-semibold text-teal-600 hover:text-teal-700 transition-colors"
 								>
 									{t("auth.forgotPassword")}
 								</Link>
@@ -96,7 +96,7 @@ export function LoginPage() {
 									placeholder="••••••••••••"
 									value={password}
 									onChange={(e) => setPassword(e.target.value)}
-									className="h-11 rounded-lg border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-colors pr-11"
+									className="h-11 rounded-lg border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-teal-500 focus-visible:border-teal-500 transition-colors pr-11"
 									required
 									disabled={isLoggingIn}
 								/>
@@ -118,7 +118,7 @@ export function LoginPage() {
 						<Button
 							type="submit"
 							disabled={isLoggingIn || !email || !password}
-							className="w-full h-11 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-sm font-black tracking-wide transition-all duration-200 active:scale-[0.99] disabled:opacity-40 mt-2 shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+							className="w-full h-11 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-black tracking-wide transition-all duration-200 active:scale-[0.99] disabled:opacity-40 mt-2 shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
 						>
 							{isLoggingIn ? (
 								<span className="flex items-center gap-2.5">
@@ -137,7 +137,7 @@ export function LoginPage() {
 						</span>
 						<Link
 							to="/register"
-							className="text-sm font-black text-slate-900 hover:text-indigo-600 transition-colors"
+							className="text-sm font-black text-slate-900 hover:text-teal-600 transition-colors"
 						>
 							{t("auth.register")} →
 						</Link>
