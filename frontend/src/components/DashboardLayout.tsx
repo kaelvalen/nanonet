@@ -22,7 +22,7 @@ export function DashboardLayout() {
 	}, []);
 
 	return (
-		<div className="min-h-screen bg-background text-foreground">
+		<div className="min-h-screen text-foreground">
 			{/* Floating dock — hidden on mobile */}
 			<HybridDock />
 

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Component, type ReactNode, useEffect } from "react";
 import { RouterProvider } from "react-router";
+import { DotMatrix } from "@/components/DotMatrix";
 import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { Toaster } from "@/components/ui/sonner";
 import { authApi } from "./api/auth";
@@ -161,6 +162,7 @@ export default function App() {
 					<ThemeInit />
 					<A11yInit />
 					<AppInit />
+					<DotMatrix />
 					<RouterProvider router={router} />
 					<Toaster
 						position="top-right"
