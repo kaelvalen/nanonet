@@ -1,6 +1,9 @@
 package services
 
 import (
+	"net"
+	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,10 +31,51 @@ type CreateServiceRequest struct {
 	PollIntervalSec int    `json:"poll_interval_sec" binding:"required,min=5,max=300"`
 }
 
+var hostnameRegex = regexp.MustCompile(`^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`)
+
+func (r *CreateServiceRequest) Validate() map[string]string {
+	errors := make(map[string]string)
+
+	// Validate host is either IP or valid hostname
+	if net.ParseIP(r.Host) == nil {
+		if !hostnameRegex.MatchString(r.Host) {
+			if _, err := url.Parse(r.Host); err != nil {
+				errors["host"] = "must be a valid IP address, hostname, or URL"
+			}
+		}
+	}
+
+	if len(r.HealthEndpoint) > 255 {
+		errors["health_endpoint"] = "must be less than 255 characters"
+	}
+
+	return errors
+}
+
 type UpdateServiceRequest struct {
 	Name            *string `json:"name,omitempty" binding:"omitempty,min=2,max=100"`
 	Host            *string `json:"host,omitempty"`
 	Port            *int    `json:"port,omitempty" binding:"omitempty,min=1,max=65535"`
 	HealthEndpoint  *string `json:"health_endpoint,omitempty"`
 	PollIntervalSec *int    `json:"poll_interval_sec,omitempty" binding:"omitempty,min=5,max=300"`
+}
+
+func (r *UpdateServiceRequest) Validate() map[string]string {
+	errors := make(map[string]string)
+
+	if r.Host != nil {
+		if net.ParseIP(*r.Host) == nil {
+			if !hostnameRegex.MatchString(*r.Host) {
+				if _, err := url.Parse(*r.Host); err != nil {
+					errors["host"] = "must be a valid IP address, hostname, or URL"
+				}
+			}
+		}
+	}
+
+	if r.HealthEndpoint != nil && len(*r.HealthEndpoint) > 255 {
+		errors["health_endpoint"] = "must be less than 255 characters"
+	}
+
+	return errors
 }

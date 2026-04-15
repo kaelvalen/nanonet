@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -26,11 +27,21 @@ type Config struct {
 	SMTPFrom     string
 
 	AllowedOrigins []string
+	Environment    string // "development", "staging", "production"
 }
 
 func Load() *Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: .env dosyası bulunamadı, ortam değişkenleri kullanılıyor")
+	}
+
+	environment := getEnv("ENVIRONMENT", "development")
+	if environment == "" {
+		if os.Getenv("GIN_MODE") == "release" {
+			environment = "production"
+		} else {
+			environment = "development"
+		}
 	}
 
 	cfg := &Config{
@@ -49,6 +60,7 @@ func Load() *Config {
 		SMTPPassword:   getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:       getEnv("SMTP_FROM", ""),
 		AllowedOrigins: parseAllowedOrigins(),
+		Environment:    environment,
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -63,6 +75,30 @@ func Load() *Config {
 	if cfg.ClaudeAPIKey == "" {
 		log.Println("Warning: CLAUDE_API_KEY ayarlanmamış, AI analiz özelliği devre dışı")
 	}
+
+	// Production-specific validations
+	if cfg.Environment == "production" {
+		if cfg.RedisURL == "" {
+			log.Fatal("Redis URL production için zorunludur")
+		}
+		if cfg.FrontendURL == "" || strings.Contains(cfg.FrontendURL, "localhost") {
+			log.Fatal("FRONTEND_URL production için geçerli bir domain olmalı")
+		}
+		if strings.Contains(cfg.DatabaseURL, "localhost") || strings.Contains(cfg.DatabaseURL, "127.0.0.1") {
+			log.Fatal("DATABASE_URL production için remote bir database olmalı")
+		}
+		if os.Getenv("GIN_MODE") != "release" {
+			log.Println("Warning: Production'da GIN_MODE=release ayarlanmalı")
+		}
+		// Check for secure defaults
+		if cfg.PollDefaultSec < 5 {
+			log.Println("Warning: Production'da POLL_DEFAULT_SEC en az 5 olmalı")
+		}
+	}
+
+	log.Printf("Environment: %s", cfg.Environment)
+	log.Printf("Go version: %s", runtime.Version())
+	log.Printf("OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
 
 	return cfg
 }
