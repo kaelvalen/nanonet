@@ -110,7 +110,7 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
 								<Button
 									className={`h-9 px-5 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${
 										dark
-											? "bg-slate-900 text-white hover:bg-indigo-600"
+											? "bg-teal-600 text-white hover:bg-teal-700"
 											: "bg-white text-slate-900 hover:bg-slate-100"
 									}`}
 								>
@@ -153,12 +153,13 @@ function Hero({
 			<div
 				className="absolute inset-0 opacity-[0.035]"
 				style={{
-					backgroundImage: "radial-gradient(#6366f1 1px, transparent 0)",
+					backgroundImage: "radial-gradient(rgba(13,148,136,0.18) 1px, transparent 0)",
 					backgroundSize: "32px 32px",
 				}}
 			/>
+
 			{/* Radial glow */}
-			<div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none" />
+			<div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-600/10 blur-[120px] rounded-full pointer-events-none" />
 
 			<motion.div
 				style={{ opacity, y: textY }}
@@ -190,8 +191,8 @@ function Hero({
 							transition={{ delay: 0.3 }}
 							className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full mb-8"
 						>
-							<Zap className="w-3 h-3 text-indigo-400" />
-							<span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+							<Zap className="w-3 h-3 text-teal-400" />
+							<span className="text-[10px] font-black text-teal-400/70 uppercase tracking-[0.2em]">
 								{t("landing.hero.badge")}
 							</span>
 						</motion.div>
@@ -225,14 +226,18 @@ function Hero({
 					>
 						{isAuthenticated ? (
 							<Link to="/app">
-								<Button className="h-11 px-7 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-sm transition-all active:scale-[0.98]">
+								<Button
+									className={`h-11 px-7 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-sm transition-all active:scale-[0.98]`}
+								>
 									{t("landing.hero.cta.launch")} →
 								</Button>
 							</Link>
 						) : (
 							<>
 								<Link to="/register">
-									<Button className="h-11 px-7 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-sm transition-all active:scale-[0.98]">
+									<Button
+										className={`h-11 px-7 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-sm transition-all active:scale-[0.98]`}
+									>
 										{t("landing.hero.cta.start")} →
 									</Button>
 								</Link>
@@ -258,7 +263,7 @@ function Hero({
 					className="hidden lg:block relative group"
 				>
 					{/* Ambient glow behind the card */}
-					<div className="absolute -inset-4 bg-indigo-500/10 blur-3xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+					<div className="absolute -inset-4 bg-teal-500/10 blur-3xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
 					{/* Card frame */}
 					<div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
@@ -279,7 +284,7 @@ function Hero({
 							muted
 							loop
 							playsInline
-							className="w-full aspect-video object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+							className="w-full aspect-video object-cover opacity-90 group-hover:opacity-100 blur-[2px] group-hover:blur-none transition-all duration-700"
 						>
 							<source src={landingVideo} type="video/mp4" />
 						</video>
@@ -327,10 +332,10 @@ function FeatureCard({
 			whileInView={{ opacity: 1, y: 0 }}
 			viewport={{ once: true, margin: "-60px" }}
 			transition={{ delay, duration: 0.5, ease: "easeOut" }}
-			className="group p-7 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-50 transition-all duration-300 cursor-default bg-white"
+			className="group p-7 rounded-2xl border border-slate-100 hover:border-teal-200 hover:shadow-xl hover:shadow-teal-50 transition-all duration-300 cursor-default bg-white"
 		>
-			<div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-indigo-50 border border-slate-100 group-hover:border-indigo-100 flex items-center justify-center mb-5 transition-colors">
-				<Icon className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+			<div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-teal-50 border border-slate-100 group-hover:border-teal-100 flex items-center justify-center mb-5 transition-colors">
+				<Icon className="w-5 h-5 text-slate-400 group-hover:text-teal-600 transition-colors" />
 			</div>
 			<h4 className="text-[15px] font-black text-slate-900 mb-2 tracking-tight">
 				{title}
@@ -416,7 +421,7 @@ export function LandingPage() {
 						viewport={{ once: true }}
 						className="mb-16"
 					>
-						<p className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-3">
+						<p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-600 mb-3">
 							{t("landing.features.badge")}
 						</p>
 						<h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter max-w-xl">
@@ -436,7 +441,7 @@ export function LandingPage() {
 				<div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center">
 					{/* Steps */}
 					<div>
-						<p className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-4">
+						<p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-400 mb-4">
 							{t("landing.setup.title")}
 						</p>
 						<h2 className="text-4xl font-black text-white tracking-tighter mb-14">
@@ -476,7 +481,7 @@ export function LandingPage() {
 						transition={{ duration: 0.6 }}
 						className="relative group"
 					>
-						<div className="absolute -inset-6 bg-indigo-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+						<div className="absolute -inset-6 bg-teal-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 						<div className="relative rounded-2xl border border-white/5 overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.5)]">
 							<div className="flex items-center gap-1.5 px-4 py-3 bg-white/[0.03] border-b border-white/5">
 								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
@@ -504,9 +509,9 @@ export function LandingPage() {
 						whileInView={{ opacity: 1, y: 0 }}
 						viewport={{ once: true }}
 					>
-						<div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full mb-8">
-							<Zap className="w-3 h-3 text-indigo-600" />
-							<span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
+						<div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 px-4 py-1.5 rounded-full mb-8">
+							<Zap className="w-3 h-3 text-teal-600" />
+							<span className="text-[10px] font-black uppercase tracking-widest text-teal-600">
 								{t("landing.ai.badge")}
 							</span>
 						</div>
@@ -532,8 +537,8 @@ export function LandingPage() {
 									<p className="font-black text-slate-900 text-[15px] mb-4 tracking-tight">
 										{t("landing.ai.alert.desc")}
 									</p>
-									<div className="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-xl flex items-start gap-3">
-										<ArrowRight className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+									<div className="bg-teal-50 border border-teal-100 px-4 py-3 rounded-xl flex items-start gap-3">
+										<ArrowRight className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
 										<p className="text-sm text-slate-600 leading-relaxed">
 											{t("landing.ai.alert.insight")}
 										</p>
@@ -596,7 +601,7 @@ export function LandingPage() {
 								# {t("landing.devs.install.comment")}
 							</p>
 							<div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 px-4 py-3.5 rounded-xl group relative">
-								<span className="text-indigo-400 font-bold select-none">$</span>
+								<span className="text-teal-400 font-bold select-none">$</span>
 								<code className="text-white/80 flex-1">
 									curl -sSL https://get.nanonet.dev | bash
 								</code>
