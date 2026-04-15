@@ -3,7 +3,7 @@ package ws
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -97,20 +97,20 @@ func (h *Hub) Run() {
 			h.mu.Lock()
 			totalConnections := len(h.dashboardClients) + len(h.agentClients)
 			if totalConnections >= h.maxConnections {
-				log.Printf("[WARN] Max bağlantı limiti aşıldı (%d), bağlantı reddedildi: %s", h.maxConnections, client.id)
+				slog.Warn("Max bağlantı limiti aşıldı", slog.Int("max", h.maxConnections), slog.String("client_id", client.id))
 				close(client.send)
 				h.mu.Unlock()
 				break
 			}
 			if client.clientType == AgentClient {
 				h.agentClients[client] = true
-				log.Printf("Agent bağlandı: %s (service: %s)", client.id, client.serviceID)
+				slog.Info("Agent bağlandı", slog.String("agent_id", client.id), slog.String("service_id", client.serviceID))
 				h.mu.Unlock()
 				// Bağlanan agent için bekleyen komutları ilet
 				h.deliverPendingCommands(client)
 			} else {
 				h.dashboardClients[client] = true
-				log.Printf("Dashboard client bağlandı: %s (user: %s)", client.id, client.userID)
+				slog.Info("Dashboard client bağlandı", slog.String("client_id", client.id), slog.String("user_id", client.userID))
 				h.mu.Unlock()
 			}
 
@@ -120,13 +120,13 @@ func (h *Hub) Run() {
 				if _, ok := h.agentClients[client]; ok {
 					delete(h.agentClients, client)
 					close(client.send)
-					log.Printf("Agent ayrıldı: %s (service: %s)", client.id, client.serviceID)
+					slog.Info("Agent ayrıldı", slog.String("agent_id", client.id), slog.String("service_id", client.serviceID))
 				}
 			} else {
 				if _, ok := h.dashboardClients[client]; ok {
 					delete(h.dashboardClients, client)
 					close(client.send)
-					log.Printf("Dashboard client ayrıldı: %s", client.id)
+					slog.Info("Dashboard client ayrıldı", slog.String("client_id", client.id))
 				}
 			}
 			h.mu.Unlock()
@@ -159,7 +159,7 @@ func (h *Hub) StartRedis(ctx context.Context) {
 	)
 	defer func() { _ = pubsub.Close() }()
 
-	log.Println("Redis pub/sub dinleyici başlatıldı")
+	slog.Info("Redis pub/sub dinleyici başlatıldı")
 
 	ch := pubsub.Channel()
 	for {
@@ -204,7 +204,7 @@ func (h *Hub) tryDeliverToLocalAgent(serviceID string, data []byte) {
 func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 	var msg AgentMessage
 	if err := json.Unmarshal(rawMessage, &msg); err != nil {
-		log.Printf("Agent mesaj parse hatası [%s]: %v", client.id, err)
+		slog.Warn("Agent mesaj parse hatası", slog.String("client_id", client.id), slog.String("error", err.Error()))
 		return
 	}
 
@@ -215,7 +215,7 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 			serviceID = client.serviceID
 		}
 		if serviceID == "" {
-			log.Printf("Agent %s: metrik mesajında service_id eksik", client.id)
+			slog.Warn("Agent metrik mesajında service_id eksik", slog.String("client_id", client.id))
 			return
 		}
 
@@ -228,11 +228,11 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 		}
 
 	case "ack":
-		log.Printf("Agent %s: komut ACK alındı (command_id: %s)", client.id, msg.CommandID)
+		slog.Debug("Agent komut ACK", slog.String("client_id", client.id), slog.String("command_id", msg.CommandID))
 		h.BroadcastCommandStatus(client.serviceID, msg.CommandID, "received")
 
 	case "result":
-		log.Printf("Agent %s: komut sonucu alındı (command_id: %s, status: %s)", client.id, msg.CommandID, msg.Status)
+		slog.Debug("Agent komut sonucu", slog.String("client_id", client.id), slog.String("command_id", msg.CommandID), slog.String("status", msg.Status))
 
 		h.mu.RLock()
 		fn := h.onCommandResult
@@ -245,7 +245,7 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 		h.BroadcastCommandResult(client.serviceID, msg.CommandID, msg.Status, msg.Output, msg.Error)
 
 	default:
-		log.Printf("Agent %s: bilinmeyen mesaj tipi: %s", client.id, msg.Type)
+		slog.Warn("Agent bilinmeyen mesaj tipi", slog.String("client_id", client.id), slog.String("type", msg.Type))
 	}
 }
 
@@ -265,7 +265,7 @@ func (h *Hub) HandleDashboardMessage(client *Client, rawMessage []byte) {
 		default:
 		}
 	default:
-		log.Printf("Dashboard client %s: bilinmeyen mesaj tipi: %s", client.id, msg.Type)
+		slog.Warn("Dashboard bilinmeyen mesaj tipi", slog.String("client_id", client.id), slog.String("type", msg.Type))
 	}
 }
 
@@ -274,7 +274,7 @@ func (h *Hub) broadcastJSON(serviceID string, data []byte) {
 	if h.redisClient != nil {
 		ctx := context.Background()
 		if err := h.redisClient.Publish(ctx, "nanonet:broadcast:"+serviceID, string(data)).Err(); err != nil {
-			log.Printf("Redis broadcast publish hatası: %v", err)
+			slog.Error("Redis broadcast publish hatası", slog.String("error", err.Error()))
 		}
 		return
 	}
@@ -288,7 +288,7 @@ func (h *Hub) BroadcastToDashboards(serviceID string, data interface{}) {
 		"data":       data,
 	})
 	if err != nil {
-		log.Printf("Metrik serialize hatası: %v", err)
+		slog.Error("Metrik serialize hatası", slog.String("error", err.Error()))
 		return
 	}
 	h.broadcastJSON(serviceID, jsonData)
@@ -305,7 +305,7 @@ func (h *Hub) BroadcastAlert(serviceID, alertType, severity, message string) {
 		},
 	})
 	if err != nil {
-		log.Printf("Alert serialize hatası: %v", err)
+		slog.Error("Alert serialize hatası", slog.String("error", err.Error()))
 		return
 	}
 	h.broadcastJSON(serviceID, jsonData)
@@ -342,7 +342,7 @@ func (h *Hub) BroadcastCommandResult(serviceID, commandID, status string, output
 func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{}) bool {
 	jsonData, err := json.Marshal(command)
 	if err != nil {
-		log.Printf("Komut serialize hatası: %v", err)
+		slog.Error("Komut serialize hatası", slog.String("error", err.Error()))
 		return false
 	}
 
@@ -364,7 +364,7 @@ func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{
 		}
 		// Also queue for durability (agent might not be connected anywhere yet).
 		h.queueCommand(serviceID, jsonData, cmdID)
-		log.Printf("Agent çevrimdışı, komut kuyruğa eklendi: service=%s, command_id=%s", serviceID, cmdID)
+		slog.Info("Agent çevrimdışı, komut kuyruğa eklendi", slog.String("service_id", serviceID), slog.String("command_id", cmdID))
 		return false
 	}
 
@@ -373,13 +373,13 @@ func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{
 		select {
 		case client.send <- jsonData:
 			sentCount++
-			log.Printf("Komut agent'a gönderildi: service=%s, agent=%s", serviceID, client.id)
+			slog.Debug("Komut agent'a gönderildi", slog.String("service_id", serviceID), slog.String("agent_id", client.id))
 		default:
-			log.Printf("Agent send buffer dolu: %s", client.id)
+			slog.Warn("Agent send buffer dolu", slog.String("agent_id", client.id))
 		}
 	}
 
-	log.Printf("Komut %d/%d agent'a iletildi: service=%s", sentCount, len(targets), serviceID)
+	slog.Debug("Komut agent'lara iletildi", slog.Int("sent", sentCount), slog.Int("total", len(targets)), slog.String("service_id", serviceID))
 	return sentCount > 0
 }
 
@@ -419,12 +419,12 @@ func (h *Hub) deliverPendingCommands(client *Client) {
 			return
 		}
 		h.redisClient.Del(ctx, key)
-		log.Printf("Redis'ten agent %s için %d bekleyen komut iletiliyor", client.id, len(cmds))
+		slog.Debug("Redis'ten bekleyen komutlar iletiliyor", slog.String("agent_id", client.id), slog.Int("count", len(cmds)))
 		for _, cmd := range cmds {
 			select {
 			case client.send <- []byte(cmd):
 			default:
-				log.Printf("Agent buffer dolu, Redis kuyruk komutu atlanıyor")
+				slog.Warn("Agent buffer dolu, Redis kuyruk komutu atlandı", slog.String("agent_id", client.id))
 			}
 		}
 		return
@@ -440,13 +440,13 @@ func (h *Hub) deliverPendingCommands(client *Client) {
 	delete(h.pendingCommands, client.serviceID)
 	h.pendingMu.Unlock()
 
-	log.Printf("Agent %s için %d bekleyen komut iletiliyor", client.id, len(queue))
+	slog.Debug("Bekleyen komutlar iletiliyor", slog.String("agent_id", client.id), slog.Int("count", len(queue)))
 	for _, cmd := range queue {
 		select {
 		case client.send <- cmd.Data:
-			log.Printf("Kuyruktan komut iletildi: command_id=%s", cmd.CommandID)
+			slog.Debug("Kuyruktan komut iletildi", slog.String("command_id", cmd.CommandID))
 		default:
-			log.Printf("Agent buffer dolu, kuyruk komutu atlanıyor: command_id=%s", cmd.CommandID)
+			slog.Warn("Agent buffer dolu, kuyruk komutu atlandı", slog.String("command_id", cmd.CommandID))
 		}
 	}
 }

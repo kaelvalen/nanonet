@@ -3,7 +3,7 @@ package ws
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"nanonet-backend/internal/alerts"
@@ -50,7 +50,7 @@ func (mb *MetricsBroadcaster) Start(ctx context.Context) {
 	secTicker := time.NewTicker(securityScanInterval)
 	defer secTicker.Stop()
 
-	log.Printf("MetricsBroadcaster başlatıldı (interval: %s, security: %s)", mb.pollInterval, securityScanInterval)
+	slog.Info("MetricsBroadcaster başlatıldı", slog.Duration("interval", mb.pollInterval), slog.Duration("security", securityScanInterval))
 
 	// İlk başlatmada bir tarama çalıştır
 	go security.ScanAllServices(ctx, mb.db)
@@ -58,7 +58,7 @@ func (mb *MetricsBroadcaster) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("MetricsBroadcaster durduruluyor...")
+			slog.Info("MetricsBroadcaster durduruluyor")
 			return
 		case <-ticker.C:
 			mb.broadcastLatestMetrics(ctx)
@@ -74,7 +74,7 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 
 	svcID, err := uuid.Parse(serviceID)
 	if err != nil {
-		log.Printf("Geçersiz service_id: %s", serviceID)
+		slog.Warn("Geçersiz service_id", slog.String("service_id", serviceID))
 		return
 	}
 
@@ -125,7 +125,7 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 	}
 
 	if err := mb.metricsRepo.Insert(ctx, metric); err != nil {
-		log.Printf("Metrik kayıt hatası [service=%s]: %v", serviceID, err)
+		slog.Error("Metrik kayıt hatası", slog.String("service_id", serviceID), slog.String("error", err.Error()))
 		return
 	}
 
@@ -169,7 +169,7 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 	mb.hub.BroadcastToDashboards(svcID.String(), broadcast)
 
 	if err := mb.alertService.CheckMetricAndCreateAlert(ctx, svcID, metric); err != nil {
-		log.Printf("Alert kontrol hatası [service=%s]: %v", serviceID, err)
+		slog.Warn("Alert kontrol hatası", slog.String("service_id", serviceID), slog.String("error", err.Error()))
 	}
 }
 
@@ -247,7 +247,7 @@ func (mb *MetricsBroadcaster) writeAgentLog(svcID uuid.UUID, metric *metrics.Met
 		Fields:    fields,
 	}
 	if err := mb.logsRepo.Insert(ctx, entry); err != nil {
-		log.Printf("[WARN] Agent log yazılamadı [service=%s]: %v", svcID, err)
+		slog.Warn("Agent log yazılamadı", slog.String("service_id", svcID.String()), slog.String("error", err.Error()))
 	}
 }
 
@@ -257,7 +257,7 @@ func (mb *MetricsBroadcaster) broadcastLatestMetrics(ctx context.Context) {
 	}
 	latestMetrics, err := mb.metricsRepo.GetLatestPerService(ctx)
 	if err != nil {
-		log.Printf("Son metrikler alınamadı: %v", err)
+		slog.Error("Son metrikler alınamadı", slog.String("error", err.Error()))
 		return
 	}
 

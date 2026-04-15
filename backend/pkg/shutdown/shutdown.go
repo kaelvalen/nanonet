@@ -2,7 +2,7 @@ package shutdown
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -45,7 +45,7 @@ func (m *Manager) Shutdown(server *http.Server) {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	slog.Info("Server kapatılıyor")
 
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
@@ -53,7 +53,7 @@ func (m *Manager) Shutdown(server *http.Server) {
 	// Shutdown HTTP server
 	if server != nil {
 		if err := server.Shutdown(ctx); err != nil {
-			log.Printf("Server shutdown error: %v", err)
+			slog.Error("Server shutdown hatası", slog.String("error", err.Error()))
 		}
 	}
 
@@ -64,13 +64,13 @@ func (m *Manager) Shutdown(server *http.Server) {
 		go func(f ShutdownFunc) {
 			defer wg.Done()
 			if err := f(ctx); err != nil {
-				log.Printf("Shutdown function error: %v", err)
+				slog.Error("Shutdown fonksiyon hatası", slog.String("error", err.Error()))
 			}
 		}(fn)
 	}
 
 	wg.Wait()
-	log.Println("Shutdown complete")
+	slog.Info("Shutdown tamamlandı")
 }
 
 // DefaultShutdown provides a default shutdown manager with 30s timeout

@@ -1,4 +1,5 @@
 use futures_util::{SinkExt, StreamExt};
+use rand::Rng;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -78,11 +79,7 @@ pub async fn run(
             Err(e) => {
                 WS_CONNECTED.store(false, Ordering::Relaxed);
 
-                let jitter_ms = (std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .subsec_millis() as u64)
-                    % JITTER_MAX_MS;
+                let jitter_ms = rand::thread_rng().gen_range(0..JITTER_MAX_MS);
                 let sleep = Duration::from_millis(delay_secs * 1000 + jitter_ms);
 
                 tracing::warn!(

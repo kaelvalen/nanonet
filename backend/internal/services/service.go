@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -74,4 +75,12 @@ func (s *ServiceLayer) Update(ctx context.Context, id, userID uuid.UUID, req Upd
 
 func (s *ServiceLayer) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	return s.repo.Delete(ctx, id, userID)
+}
+
+func (s *ServiceLayer) GetServiceMap(ctx context.Context, userID uuid.UUID) (json.RawMessage, error) {
+	return s.repo.GetServiceMap(ctx, userID)
+}
+
+func (s *ServiceLayer) SaveServiceMap(ctx context.Context, userID uuid.UUID, payload json.RawMessage) error {
+	return s.repo.SaveServiceMap(ctx, userID, payload)
 }

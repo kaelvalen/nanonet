@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -109,27 +109,23 @@ func (h *Handler) extractTokenType(tokenString string) string {
 	return typ
 }
 
-func (h *Handler) Dashboard(c *gin.Context) {
-	ip := c.ClientIP()
-	if !h.dashboardLimiter.Allow(ip) {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many WebSocket connections — please wait"})
-		return
-	}
-
+// performAuthHandshake upgrades the connection to WebSocket and authenticates the client
+// via the first JSON message ({"type":"auth","token":"..."}).
+// On success it returns the authenticated userID. On failure the connection is closed and false is returned.
+func (h *Handler) performAuthHandshake(c *gin.Context) (*websocket.Conn, string, bool) {
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade hatası: %v", err)
-		return
+		slog.Error("WebSocket upgrade hatası", slog.String("error", err.Error()))
+		return nil, "", false
 	}
 
-	// İlk mesaj ile kimlik doğrulama (token URL'de taşınmaz)
 	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	_, rawMsg, err := conn.ReadMessage()
 	if err != nil {
 		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "authentication required"))
 		_ = conn.Close()
-		return
+		return nil, "", false
 	}
 	_ = conn.SetReadDeadline(time.Time{})
 
@@ -141,7 +137,7 @@ func (h *Handler) Dashboard(c *gin.Context) {
 		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "invalid auth message"))
 		_ = conn.Close()
-		return
+		return nil, "", false
 	}
 
 	userID, err := h.validateUserToken(authMsg.Token)
@@ -149,12 +145,26 @@ func (h *Handler) Dashboard(c *gin.Context) {
 		_ = conn.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(4401, "unauthorized"))
 		_ = conn.Close()
+		return nil, "", false
+	}
+
+	if ackMsg, _ := json.Marshal(map[string]string{"type": "auth_ok"}); ackMsg != nil {
+		_ = conn.WriteMessage(websocket.TextMessage, ackMsg)
+	}
+
+	return conn, userID, true
+}
+
+func (h *Handler) Dashboard(c *gin.Context) {
+	ip := c.ClientIP()
+	if !h.dashboardLimiter.Allow(ip) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many WebSocket connections — please wait"})
 		return
 	}
 
-	// Acknowledge successful authentication before starting pumps.
-	if ackMsg, _ := json.Marshal(map[string]string{"type": "auth_ok"}); ackMsg != nil {
-		_ = conn.WriteMessage(websocket.TextMessage, ackMsg)
+	conn, userID, ok := h.performAuthHandshake(c)
+	if !ok {
+		return
 	}
 
 	clientID := uuid.New().String()
@@ -218,7 +228,7 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade hatası: %v", err)
+		slog.Error("WebSocket upgrade hatası", slog.String("error", err.Error()))
 		return
 	}
 
@@ -243,45 +253,9 @@ func (h *Handler) ServiceStream(c *gin.Context) {
 		return
 	}
 
-	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Printf("WebSocket upgrade hatası: %v", err)
+	conn, userID, ok := h.performAuthHandshake(c)
+	if !ok {
 		return
-	}
-
-	// İlk mesaj ile kimlik doğrulama
-	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	_, rawMsg, err := conn.ReadMessage()
-	if err != nil {
-		_ = conn.WriteMessage(websocket.CloseMessage,
-			websocket.FormatCloseMessage(4401, "authentication required"))
-		_ = conn.Close()
-		return
-	}
-	_ = conn.SetReadDeadline(time.Time{})
-
-	var authMsg struct {
-		Type  string `json:"type"`
-		Token string `json:"token"`
-	}
-	if jsonErr := json.Unmarshal(rawMsg, &authMsg); jsonErr != nil || authMsg.Type != "auth" || authMsg.Token == "" {
-		_ = conn.WriteMessage(websocket.CloseMessage,
-			websocket.FormatCloseMessage(4401, "invalid auth message"))
-		_ = conn.Close()
-		return
-	}
-
-	userID, err := h.validateUserToken(authMsg.Token)
-	if err != nil {
-		_ = conn.WriteMessage(websocket.CloseMessage,
-			websocket.FormatCloseMessage(4401, "unauthorized"))
-		_ = conn.Close()
-		return
-	}
-
-	// Acknowledge successful authentication before starting pumps.
-	if ackMsg, _ := json.Marshal(map[string]string{"type": "auth_ok"}); ackMsg != nil {
-		_ = conn.WriteMessage(websocket.TextMessage, ackMsg)
 	}
 
 	clientID := uuid.New().String()

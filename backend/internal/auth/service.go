@@ -223,6 +223,22 @@ func (s *Service) UpdatePasswordHash(userID uuid.UUID, hash string) error {
 	return s.db.Model(&User{}).Where("id = ?", userID).Update("password_hash", hash).Error
 }
 
+// ChangePassword verifies the current password and replaces it with a new bcrypt hash.
+func (s *Service) ChangePassword(userID uuid.UUID, currentPassword, newPassword string) error {
+	user, err := s.GetUserByID(userID)
+	if err != nil {
+		return errors.New("kullanıcı bulunamadı")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
+		return errors.New("mevcut şifre hatalı")
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
+	if err != nil {
+		return fmt.Errorf("şifre işlenemedi: %w", err)
+	}
+	return s.UpdatePasswordHash(userID, string(hash))
+}
+
 func (s *Service) ValidateToken(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if token.Method.Alg() != jwt.SigningMethodHS256.Alg() {

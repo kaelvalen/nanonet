@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -71,4 +72,35 @@ func (r *Repository) UpdateStatus(ctx context.Context, id uuid.UUID, status stri
 		Model(&Service{}).
 		Where("id = ?", id).
 		Update("status", status).Error
+}
+
+// GetServiceMap returns the stored service map layout for a user, or nil if none exists.
+func (r *Repository) GetServiceMap(ctx context.Context, userID uuid.UUID) (json.RawMessage, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var row struct {
+		ServiceMap *json.RawMessage `gorm:"column:service_map"`
+	}
+	err := r.db.WithContext(ctx).
+		Raw("SELECT service_map FROM user_settings WHERE user_id = ?", userID).
+		Scan(&row).Error
+	if err != nil || row.ServiceMap == nil {
+		return nil, err
+	}
+	return *row.ServiceMap, nil
+}
+
+// SaveServiceMap upserts the service map layout for a user.
+func (r *Repository) SaveServiceMap(ctx context.Context, userID uuid.UUID, payload json.RawMessage) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	return r.db.WithContext(ctx).Exec(`
+		INSERT INTO user_settings (user_id, service_map, updated_at)
+		VALUES (?, ?, NOW())
+		ON CONFLICT (user_id) DO UPDATE SET
+			service_map = EXCLUDED.service_map,
+			updated_at  = NOW()
+	`, userID, payload).Error
 }

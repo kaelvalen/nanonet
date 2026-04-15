@@ -3,10 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"nanonet-backend/internal/ai"
@@ -25,16 +24,23 @@ import (
 	"nanonet-backend/pkg/config"
 	"nanonet-backend/pkg/database"
 	"nanonet-backend/pkg/mailer"
+	"nanonet-backend/pkg/middleware"
 	"nanonet-backend/pkg/ratelimit"
 	"nanonet-backend/pkg/redisstore"
+	"nanonet-backend/pkg/shutdown"
 	"nanonet-backend/pkg/tokenblacklist"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 func main() {
 	cfg := config.Load()
+
+	// ── Structured Logger ──────────────────────────────────────────
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
 
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
@@ -44,13 +50,6 @@ func main() {
 	if err := database.RunMigrations(cfg.DatabaseURL); err != nil {
 		log.Fatalf("Migration başarısız: %v", err)
 	}
-
-	// Uygulama kapandığında DB bağlantı havuzunu temizle
-	defer func() {
-		if sqlDB, err := db.DB(); err == nil {
-			_ = sqlDB.Close()
-		}
-	}()
 
 	// ── Redis (optional) ───────────────────────────────────────────
 	var bl tokenblacklist.Blacklist
@@ -62,11 +61,11 @@ func main() {
 	if cfg.RedisURL != "" {
 		rdb, err := redisstore.New(cfg.RedisURL)
 		if err != nil {
-			log.Printf("[WARN] Redis bağlantısı başarısız (%v) — bellek içi mod kullanılıyor", err)
+			logger.Warn("Redis bağlantısı başarısız — bellek içi mod kullanılıyor", slog.String("error", err.Error()))
 			bl = tokenblacklist.NewInMemory()
 			hub = ws.NewHub(cfg.WSMaxConnections)
 		} else {
-			log.Printf("Redis bağlandı: %s", cfg.RedisURL)
+			logger.Info("Redis bağlandı", slog.String("url", cfg.RedisURL))
 			bl = tokenblacklist.NewRedis(rdb)
 			hub = ws.NewHubWithRedis(cfg.WSMaxConnections, rdb)
 			go hub.StartRedis(ctx)
@@ -90,18 +89,17 @@ func main() {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						log.Printf("[PANIC] Broadcaster panikledi: %v — 5s içinde yeniden başlıyor", r)
+						logger.Error("Broadcaster panikledi — 5s içinde yeniden başlıyor", slog.Any("panic", r))
 					}
 				}()
 				broadcaster.Start(ctx)
 			}()
-			// Context iptal edildiyse döngüden çık
 			select {
 			case <-ctx.Done():
-				log.Println("[INFO] Broadcaster durduruluyor (context iptal)")
+				logger.Info("Broadcaster durduruluyor (context iptal)")
 				return
 			case <-time.After(5 * time.Second):
-				log.Println("[INFO] Broadcaster yeniden başlatılıyor...")
+				logger.Info("Broadcaster yeniden başlatılıyor...")
 			}
 		}
 	}()
@@ -115,10 +113,10 @@ func main() {
 		From:     cfg.SMTPFrom,
 	})
 	if !m.Enabled() {
-		log.Println("Warning: SMTP yapılandırılmamış, şifre sıfırlama emaili gönderilmeyecek")
+		logger.Warn("SMTP yapılandırılmamış, şifre sıfırlama emaili gönderilmeyecek")
 	} else {
 		alertSvc.SetNotifier(m)
-		log.Println("Alert email bildirimleri aktif")
+		logger.Info("Alert email bildirimleri aktif")
 	}
 
 	// ── Handlers ──────────────────────────────────────────────────
@@ -144,22 +142,22 @@ func main() {
 		var err error
 		k8sClient, err = k8s.NewClient(ns)
 		if err != nil {
-			log.Printf("[WARN] Kubernetes client oluşturulamadı (devam ediliyor): %v", err)
+			logger.Warn("Kubernetes client oluşturulamadı (devam ediliyor)", slog.String("error", err.Error()))
 		} else {
-			log.Printf("Kubernetes entegrasyonu aktif (namespace: %s)", ns)
+			logger.Info("Kubernetes entegrasyonu aktif", slog.String("namespace", ns))
 		}
 	} else {
-		log.Println("K8S_NAMESPACE tanımlanmadı — Kubernetes entegrasyonu devre dışı")
+		logger.Info("K8S_NAMESPACE tanımlanmadı — Kubernetes entegrasyonu devre dışı")
 	}
 	k8sHandler := k8s.NewHandler(k8sClient)
 
 	// ── Router ────────────────────────────────────────────────────
 	router := gin.New()
 	router.Use(gin.Recovery())
-	router.Use(requestIDMiddleware())
-	router.Use(corsMiddleware(cfg.FrontendURL, cfg.AllowedOrigins))
-	router.Use(securityHeadersMiddleware())
-
+	router.Use(middleware.RequestContextMiddleware())
+	router.Use(middleware.StructuredLoggingMiddleware(logger))
+	router.Use(middleware.CORSMiddleware(cfg.FrontendURL, cfg.AllowedOrigins))
+	router.Use(middleware.SecurityHeadersMiddleware())
 	router.Use(ratelimit.Middleware(100, time.Minute))
 
 	strictLimiter := ratelimit.StrictMiddleware(10, time.Minute)
@@ -180,9 +178,9 @@ func main() {
 				threshold := time.Now().Add(-30 * 24 * time.Hour)
 				n, err := logsRepo.DeleteOlderThan(context.Background(), threshold)
 				if err != nil {
-					log.Printf("[WARN] Log retention temizleme hatası: %v", err)
+					logger.Warn("Log retention temizleme hatası", slog.String("error", err.Error()))
 				} else if n > 0 {
-					log.Printf("[INFO] Log retention: %d eski kayıt silindi", n)
+					logger.Info("Log retention: eski kayıtlar silindi", slog.Int64("count", n))
 				}
 			}
 		}
@@ -199,7 +197,7 @@ func main() {
 			case <-ticker.C:
 				threshold := time.Now().Add(-5 * time.Minute)
 				if err := cmdService.MarkStalledCommandsTimeout(context.Background(), threshold); err != nil {
-					log.Printf("[WARN] Komut timeout temizleme hatası: %v", err)
+					logger.Warn("Komut timeout temizleme hatası", slog.String("error", err.Error()))
 				}
 			}
 		}
@@ -352,91 +350,17 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Server %s portunda başlatılıyor...", cfg.Port)
+		logger.Info("Server başlatılıyor", slog.String("port", cfg.Port))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server başlatılamadı: %v", err)
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("Server kapatılıyor...")
-	cancel()
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer shutdownCancel()
-
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("Server kapatma hatası: %v", err)
-	}
-
-	log.Println("Server kapatıldı")
-}
-
-func securityHeadersMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("X-XSS-Protection", "1; mode=block")
-		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-		c.Next()
-	}
-}
-
-func requestIDMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		requestID := c.GetHeader("X-Request-Id")
-		if requestID == "" {
-			requestID = uuid.New().String()
-		}
-		c.Header("X-Request-Id", requestID)
-		c.Set("request_id", requestID)
-		c.Next()
-	}
-}
-
-func corsMiddleware(frontendURL string, extraOrigins []string) gin.HandlerFunc {
-	allowedOrigins := map[string]bool{}
-	if frontendURL != "" {
-		allowedOrigins[frontendURL] = true
-	}
-	for _, origin := range extraOrigins {
-		allowedOrigins[origin] = true
-	}
-	// Geliştirme ortamında ek origin belirtilmemişse localhost'lara varsayılan olarak izin ver
-	if len(extraOrigins) == 0 && gin.Mode() != gin.ReleaseMode {
-		allowedOrigins["http://localhost:3000"] = true
-		allowedOrigins["http://localhost:5173"] = true
-		allowedOrigins["http://localhost:4173"] = true
-	}
-
-	return func(c *gin.Context) {
-		origin := c.GetHeader("Origin")
-
-		if allowedOrigins[origin] {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-		} else if frontendURL != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", frontendURL)
-		}
-
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Request-Id")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, X-Request-Id")
-
-		if c.Request.Method == "OPTIONS" {
-			if allowedOrigins[origin] {
-				c.AbortWithStatus(204)
-			} else {
-				c.AbortWithStatus(403)
-			}
-			return
-		}
-
-		c.Next()
-	}
+	sm := shutdown.NewManager(30 * time.Second)
+	sm.Register(func(ctx context.Context) error {
+		cancel()
+		return nil
+	})
+	sm.Shutdown(srv)
+	logger.Info("Server kapatıldı")
 }

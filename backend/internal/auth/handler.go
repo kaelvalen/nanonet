@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -323,29 +322,18 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetUserByID(userID)
-	if err != nil {
-		response.NotFound(c, "kullanıcı bulunamadı")
+	if err := h.service.ChangePassword(userID, req.CurrentPassword, req.NewPassword); err != nil {
+		switch err.Error() {
+		case "mevcut şifre hatalı":
+			response.Unauthorized(c, err.Error())
+		case "kullanıcı bulunamadı":
+			response.NotFound(c, err.Error())
+		default:
+			response.InternalError(c, "şifre güncellenemedi")
+		}
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
-		response.Unauthorized(c, "mevcut şifre hatalı")
-		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), 12)
-	if err != nil {
-		response.InternalError(c, "şifre işlenemedi")
-		return
-	}
-
-	if err := h.service.UpdatePasswordHash(userID, string(hash)); err != nil {
-		response.InternalError(c, "şifre güncellenemedi")
-		return
-	}
-
-	// Şifre değişikliğini audit log'a yaz
 	h.audit.Record(c.Request.Context(), audit.Entry{
 		UserID:       &userID,
 		Action:       audit.ActionPasswordChanged,

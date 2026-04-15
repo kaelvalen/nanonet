@@ -309,27 +309,7 @@ func (h *Handler) GetGlobalSummary(c *gin.Context) {
 		duration = 24 * time.Hour
 	}
 
-	type summaryRow struct {
-		AvgLatency      *float64 `gorm:"column:avg_latency"`
-		P95Latency      *float64 `gorm:"column:p95_latency"`
-		AvgCPU          *float64 `gorm:"column:avg_cpu"`
-		AvgErrorRate    *float64 `gorm:"column:avg_error_rate"`
-		AvgMemoryUsedMB *float64 `gorm:"column:avg_memory_used_mb"`
-	}
-
-	var result summaryRow
-	err = h.db.WithContext(c.Request.Context()).Raw(`
-		SELECT
-			AVG(m.latency_ms)                                          AS avg_latency,
-			PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY m.latency_ms) AS p95_latency,
-			AVG(m.cpu_percent)                                         AS avg_cpu,
-			LEAST(AVG(m.error_rate), 100.0)                             AS avg_error_rate,
-			AVG(m.memory_used_mb)                                      AS avg_memory_used_mb
-		FROM metrics m
-		JOIN services s ON s.id = m.service_id
-		WHERE s.user_id = ?
-		  AND m.time > NOW() - make_interval(secs => ?)
-	`, userID, duration.Seconds()).Scan(&result).Error
+	result, err := h.service.GetGlobalSummary(c.Request.Context(), userID, duration)
 	if err != nil {
 		response.InternalError(c, "metrik özeti alınamadı")
 		return
@@ -362,26 +342,15 @@ func (h *Handler) GetBulkUptime(c *gin.Context) {
 		return
 	}
 
-	// Kullanıcının sahip olduğu tüm servis ID'lerini çek
-	type serviceRow struct {
-		ID uuid.UUID `gorm:"column:id"`
-	}
-	var rows []serviceRow
-	if err := h.db.WithContext(c.Request.Context()).
-		Raw("SELECT id FROM services WHERE user_id = ?", userID).
-		Scan(&rows).Error; err != nil {
+	serviceIDs, err := h.service.GetServiceIDsByUser(c.Request.Context(), userID)
+	if err != nil {
 		response.InternalError(c, "servis listesi alınamadı")
 		return
 	}
 
-	if len(rows) == 0 {
+	if len(serviceIDs) == 0 {
 		response.Success(c, gin.H{"uptime": map[string]float64{}, "duration": c.DefaultQuery("duration", "24h"), "count": 0})
 		return
-	}
-
-	serviceIDs := make([]uuid.UUID, 0, len(rows))
-	for _, r := range rows {
-		serviceIDs = append(serviceIDs, r.ID)
 	}
 
 	durationStr := c.DefaultQuery("duration", "24h")

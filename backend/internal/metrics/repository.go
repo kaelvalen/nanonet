@@ -217,6 +217,57 @@ func (r *Repository) GetUptime(ctx context.Context, serviceID uuid.UUID, duratio
 	return *result.UptimePercent, nil
 }
 
+// GlobalSummary tüm kullanıcı servislerinin ortalama metrik özeti.
+type GlobalSummary struct {
+	AvgLatency      *float64 `gorm:"column:avg_latency"`
+	P95Latency      *float64 `gorm:"column:p95_latency"`
+	AvgCPU          *float64 `gorm:"column:avg_cpu"`
+	AvgErrorRate    *float64 `gorm:"column:avg_error_rate"`
+	AvgMemoryUsedMB *float64 `gorm:"column:avg_memory_used_mb"`
+}
+
+// GetServiceIDsByUser returns all service IDs owned by userID.
+func (r *Repository) GetServiceIDsByUser(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	type row struct {
+		ID uuid.UUID `gorm:"column:id"`
+	}
+	var rows []row
+	if err := r.db.WithContext(ctx).
+		Raw("SELECT id FROM services WHERE user_id = ?", userID).
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	ids := make([]uuid.UUID, len(rows))
+	for i, r := range rows {
+		ids[i] = r.ID
+	}
+	return ids, nil
+}
+
+// GetGlobalSummary returns aggregated metrics across all services owned by userID.
+func (r *Repository) GetGlobalSummary(ctx context.Context, userID uuid.UUID, duration time.Duration) (*GlobalSummary, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var result GlobalSummary
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT
+			AVG(m.latency_ms)                                          AS avg_latency,
+			PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY m.latency_ms) AS p95_latency,
+			AVG(m.cpu_percent)                                         AS avg_cpu,
+			LEAST(AVG(m.error_rate), 100.0)                            AS avg_error_rate,
+			AVG(m.memory_used_mb)                                      AS avg_memory_used_mb
+		FROM metrics m
+		JOIN services s ON s.id = m.service_id
+		WHERE s.user_id = ?
+		  AND m.time > NOW() - make_interval(secs => ?)
+	`, userID, duration.Seconds()).Scan(&result).Error
+	return &result, err
+}
+
 // BulkUptimeResult tek servis için uptime sonucu.
 type BulkUptimeResult struct {
 	ServiceID string  `gorm:"column:service_id"`

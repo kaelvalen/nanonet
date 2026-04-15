@@ -18,7 +18,6 @@ type Handler struct {
 	service    *ServiceLayer
 	hub        *ws.Hub
 	cmdService *commands.Service
-	db         *gorm.DB
 	audit      *audit.Logger
 }
 
@@ -27,7 +26,6 @@ func NewHandler(db *gorm.DB, hub *ws.Hub) *Handler {
 		service:    NewServiceLayer(db),
 		hub:        hub,
 		cmdService: commands.NewService(db),
-		db:         db,
 		audit:      audit.New(db),
 	}
 }
@@ -497,18 +495,13 @@ func (h *Handler) GetMap(c *gin.Context) {
 		return
 	}
 
-	var row struct {
-		ServiceMap *json.RawMessage `gorm:"column:service_map"`
-	}
-	err = h.db.WithContext(c.Request.Context()).
-		Raw("SELECT service_map FROM user_settings WHERE user_id = ?", userID).
-		Scan(&row).Error
-	if err != nil || row.ServiceMap == nil {
+	data, err := h.service.GetServiceMap(c.Request.Context(), userID)
+	if err != nil || data == nil {
 		response.Success(c, nil)
 		return
 	}
 
-	response.Success(c, row.ServiceMap)
+	response.Success(c, data)
 }
 
 // SaveMap — PUT /api/v1/services/map
@@ -526,14 +519,7 @@ func (h *Handler) SaveMap(c *gin.Context) {
 		return
 	}
 
-	err = h.db.WithContext(c.Request.Context()).Exec(`
-		INSERT INTO user_settings (user_id, service_map, updated_at)
-		VALUES (?, ?, NOW())
-		ON CONFLICT (user_id) DO UPDATE SET
-			service_map = EXCLUDED.service_map,
-			updated_at  = NOW()
-	`, userID, payload).Error
-	if err != nil {
+	if err := h.service.SaveServiceMap(c.Request.Context(), userID, payload); err != nil {
 		response.InternalError(c, "harita kaydedilemedi")
 		return
 	}

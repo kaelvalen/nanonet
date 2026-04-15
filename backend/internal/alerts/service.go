@@ -3,7 +3,7 @@ package alerts
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -70,7 +70,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 	if s.maint != nil {
 		active, err := s.maint.IsActiveNow(ctx, serviceID)
 		if err != nil {
-			log.Printf("[WARN] Maintenance check failed for service %s: %v", serviceID, err)
+			slog.Warn("Maintenance check failed", slog.String("service_id", serviceID.String()), slog.String("error", err.Error()))
 		} else if active {
 			return nil
 		}
@@ -83,7 +83,7 @@ func (s *Service) CheckMetricAndCreateAlert(ctx context.Context, serviceID uuid.
 	errorRateThreshold := s.rules.ErrorRateThreshold
 
 	if rule, err := s.repo.GetAlertRule(ctx, serviceID); err != nil {
-		log.Printf("[WARN] Alert rule lookup failed for service %s: %v", serviceID, err)
+		slog.Warn("Alert rule lookup failed", slog.String("service_id", serviceID.String()), slog.String("error", err.Error()))
 	} else if rule != nil {
 		cpuThreshold = rule.CPUThreshold
 		memThreshold = rule.MemoryThresholdMB
@@ -239,11 +239,11 @@ func (s *Service) sendAlertEmail(serviceID uuid.UUID, alert Alert) {
 		WHERE sv.id = ?
 	`, serviceID).Scan(&row).Error
 	if err != nil || row.Email == "" {
-		log.Printf("[alerts] email lookup failed service=%s: %v", serviceID, err)
+		slog.Warn("Alert email lookup failed", slog.String("service_id", serviceID.String()), slog.Any("error", err))
 		return
 	}
 
 	if err := s.notifier.SendAlert(row.Email, row.ServiceName, alert.Type, alert.Message, alert.Severity); err != nil {
-		log.Printf("[alerts] email gönderilemedi service=%s type=%s: %v", serviceID, alert.Type, err)
+		slog.Warn("Alert email gönderilemedi", slog.String("service_id", serviceID.String()), slog.String("type", alert.Type), slog.String("error", err.Error()))
 	}
 }

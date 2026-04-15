@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -102,7 +102,7 @@ func scanService(ctx context.Context, svc serviceRow) (*Scan, error) {
 	hRes, err := checkHeaders(ctx, targetURL)
 	if err != nil {
 		// Ulaşılamayan servis — bulgusuz, skor hesaplanamaz
-		log.Printf("[security] %s ulaşılamadı: %v", targetURL, err)
+		slog.Debug("Security scan: servis ulaşılamadı", slog.String("url", targetURL), slog.String("error", err.Error()))
 		scan.RiskScore = 0
 		return scan, nil
 	}
@@ -326,7 +326,7 @@ func ScanAllServices(ctx context.Context, db *gorm.DB) {
 		Table("services").
 		Select("id, host, port, health_endpoint").
 		Scan(&rows).Error; err != nil {
-		log.Printf("[security] Servis listesi alınamadı: %v", err)
+		slog.Error("Security scan: servis listesi alınamadı", slog.String("error", err.Error()))
 		return
 	}
 
@@ -344,12 +344,12 @@ func ScanAllServices(ctx context.Context, db *gorm.DB) {
 
 			scan, err := scanService(scanCtx, svc)
 			if err != nil {
-				log.Printf("[security] Tarama hatası [service=%s]: %v", svc.ID, err)
+				slog.Warn("Security scan hatası", slog.String("service_id", svc.ID.String()), slog.String("error", err.Error()))
 				return
 			}
 
 			if err := repo.Save(scanCtx, scan); err != nil {
-				log.Printf("[security] Tarama kaydedilemedi [service=%s]: %v", svc.ID, err)
+				slog.Warn("Security scan kaydedilemedi", slog.String("service_id", svc.ID.String()), slog.String("error", err.Error()))
 			}
 		}()
 	}

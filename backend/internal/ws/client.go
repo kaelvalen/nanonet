@@ -3,7 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -60,7 +60,7 @@ func (c *Client) ReadPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNormalClosure) {
-				log.Printf("WebSocket hatası [%s/%s]: %v", c.clientType, c.id, err)
+				slog.Warn("WebSocket hatası", slog.String("client_type", string(c.clientType)), slog.String("id", c.id), slog.String("error", err.Error()))
 			}
 			break
 		}

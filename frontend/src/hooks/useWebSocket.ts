@@ -177,7 +177,7 @@ export function useWebSocket() {
 	useEffect(() => {
 		mountedRef.current = true;
 
-		const _connect = () => {
+		const connect = () => {
 			if (!mountedRef.current) return;
 
 			const wsUrl = import.meta.env.VITE_WS_URL;
@@ -273,7 +273,7 @@ export function useWebSocket() {
 							}
 						}
 
-						_connect();
+						connect();
 					}, delay);
 				};
 			} catch (err) {
@@ -282,7 +282,7 @@ export function useWebSocket() {
 			}
 		};
 
-		_connect();
+		connect();
 
 		return () => {
 			mountedRef.current = false;
