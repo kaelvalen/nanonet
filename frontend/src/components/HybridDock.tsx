@@ -63,6 +63,7 @@ function DockItem({
 }) {
 	const isAlert = item.badge === "alerts";
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: wrapper hosts tooltip; interactive child (NavLink) handles keyboard + focus
 		<div
 			className="relative"
 			onMouseEnter={() => onHover(true)}
@@ -221,6 +222,7 @@ export function HybridDock() {
 			/>
 
 			{/* User */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: wrapper hosts tooltip; interactive child (DropdownMenuTrigger button) handles keyboard + focus */}
 			<div
 				className="relative mt-1"
 				onMouseEnter={() => setHovered("user")}

@@ -358,8 +358,7 @@ export function ServiceDetailPage() {
 				initial={{ opacity: 0, y: -6 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.25 }}
-				className="pb-6 mb-6 border-b"
-				style={{ borderColor: "var(--border-subtle)" }}
+				className="pb-3 mb-4"
 			>
 				<div className="flex items-center gap-3">
 					<button

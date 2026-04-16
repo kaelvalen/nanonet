@@ -757,13 +757,14 @@ export function KubernetesPage() {
 	];
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill>
 			{/* Log Modal */}
 			{logPod && (
 				<PodLogModal podName={logPod} onClose={() => setLogPod(null)} />
 			)}
 
 			<PageHeader
+				compact
 				eyebrow="Altyapı"
 				title="Kubernetes"
 				description="Cluster yönetimi · pod izleme · auto-scaling"
@@ -827,7 +828,7 @@ export function KubernetesPage() {
 			/>
 			{/* Cluster summary strip */}
 			{isAvailable && !statusLoading && (
-				<div className="flex flex-wrap gap-2">
+				<div className="flex flex-wrap gap-2 mb-4 shrink-0">
 					{(
 						[
 							{
@@ -912,12 +913,13 @@ export function KubernetesPage() {
 			)}
 
 			{isAvailable && (
-				<>
+				<div className="flex-1 min-h-0 flex flex-col gap-4">
 					{/* Tabs */}
 					<motion.div
 						initial={{ opacity: 0, y: 8 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.05 }}
+						className="shrink-0"
 					>
 						<div
 							className="flex items-center gap-0.5 p-0.5 rounded-xl overflow-x-auto"
@@ -931,7 +933,7 @@ export function KubernetesPage() {
 									type="button"
 									key={tab.key}
 									onClick={() => setActiveTab(tab.key)}
-									className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0"
+									className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0"
 									style={
 										activeTab === tab.key
 											? {
@@ -964,64 +966,371 @@ export function KubernetesPage() {
 						</div>
 					</motion.div>
 
-					<AnimatePresence mode="wait">
-						{/* ── OVERVIEW TAB ── */}
-						{activeTab === "overview" && (
-							<motion.div
-								key="overview"
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0 }}
-								className="space-y-5"
-							>
-								{/* Summary Stats */}
-								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-									<StatCard
-										label="Node'lar"
-										value={`${readyNodes}/${nodes.length}`}
-										icon={Server}
-										color="var(--color-teal)"
-										sub="Ready / Total"
-									/>
-									<StatCard
-										label="Pod'lar"
-										value={`${runningPods}/${pods.length}`}
-										icon={Box}
-										color="var(--color-blue)"
-										sub="Running / Total"
-									/>
-									<StatCard
-										label="Deployment'lar"
-										value={`${readyDeployments}/${deployments.length}`}
-										icon={Layers}
-										color="var(--color-lavender)"
-										sub="Ready / Total"
-									/>
-									<StatCard
-										label="Namespace"
-										value={k8sStatus?.namespace ?? "—"}
-										icon={GitBranch}
-										color="var(--color-pink)"
-									/>
-								</div>
+					<div className="flex-1 min-h-0 overflow-y-auto -mx-2 px-2 pb-4">
+						<AnimatePresence mode="wait">
+							{/* ── OVERVIEW TAB ── */}
+							{activeTab === "overview" && (
+								<motion.div
+									key="overview"
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0 }}
+									className="space-y-5"
+								>
+									{/* Summary Stats */}
+									<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+										<StatCard
+											label="Node'lar"
+											value={`${readyNodes}/${nodes.length}`}
+											icon={Server}
+											color="var(--color-teal)"
+											sub="Ready / Total"
+										/>
+										<StatCard
+											label="Pod'lar"
+											value={`${runningPods}/${pods.length}`}
+											icon={Box}
+											color="var(--color-blue)"
+											sub="Running / Total"
+										/>
+										<StatCard
+											label="Deployment'lar"
+											value={`${readyDeployments}/${deployments.length}`}
+											icon={Layers}
+											color="var(--color-lavender)"
+											sub="Ready / Total"
+										/>
+										<StatCard
+											label="Namespace"
+											value={k8sStatus?.namespace ?? "—"}
+											icon={GitBranch}
+											color="var(--color-pink)"
+										/>
+									</div>
 
-								{/* Nodes */}
-								<div>
-									<div className="flex items-center justify-between mb-2">
+									{/* Nodes */}
+									<div>
+										<div className="flex items-center justify-between mb-2">
+											<p
+												className="text-[10px] uppercase tracking-wider font-semibold"
+												style={{ color: "var(--text-muted)" }}
+											>
+												Nodes
+											</p>
+											<span
+												className="text-[10px]"
+												style={{ color: "var(--text-faint)" }}
+											>
+												{readyNodes}/{nodes.length} hazır
+											</span>
+										</div>
+										{nodesLoading ? (
+											<div
+												className="flex items-center gap-2 py-4"
+												style={{ color: "var(--text-faint)" }}
+											>
+												<Loader2 className="w-4 h-4 animate-spin" />
+												<span className="text-xs">Yükleniyor...</span>
+											</div>
+										) : nodes.length === 0 ? (
+											<Card
+												className="p-5 text-center rounded"
+												style={{
+													background: "var(--surface-card)",
+													border: "1px solid var(--border-default)",
+												}}
+											>
+												<p
+													className="text-xs"
+													style={{ color: "var(--text-faint)" }}
+												>
+													Node bulunamadı
+												</p>
+											</Card>
+										) : (
+											<div className="space-y-2">
+												{nodes.map((node) => (
+													<Card
+														key={node.name}
+														className="overflow-hidden"
+														style={{
+															background: "var(--surface-card)",
+															border: `1px solid ${node.ready ? "var(--color-teal-border)" : "var(--status-down-border)"}`,
+															borderLeft: `3px solid ${node.ready ? "var(--status-up)" : "var(--status-down)"}`,
+														}}
+													>
+														<button
+															type="button"
+															className="w-full p-4 flex items-center gap-3 text-left"
+															onClick={() =>
+																setExpandedNode(
+																	expandedNode === node.name ? null : node.name,
+																)
+															}
+														>
+															<StatusDot ready={node.ready} size="md" />
+															<div className="flex-1 min-w-0">
+																<p
+																	className="text-xs font-semibold truncate"
+																	style={{ color: "var(--text-secondary)" }}
+																>
+																	{node.name}
+																</p>
+																<p
+																	className="text-[10px]"
+																	style={{ color: "var(--text-faint)" }}
+																>
+																	{node.roles.join(", ")} · {node.version}
+																</p>
+															</div>
+															<div className="flex items-center gap-3 shrink-0">
+																<div
+																	className="hidden sm:flex items-center gap-1.5 text-[10px]"
+																	style={{ color: "var(--text-faint)" }}
+																>
+																	<Cpu className="w-3 h-3" />
+																	{node.cpu} CPU
+																</div>
+																<div
+																	className="hidden sm:flex items-center gap-1.5 text-[10px]"
+																	style={{ color: "var(--text-faint)" }}
+																>
+																	<MemoryStick className="w-3 h-3" />
+																	{MemoryToGB(node.memory)}
+																</div>
+																<Badge
+																	className="text-[9px] px-2 py-0.5 rounded-full border"
+																	style={
+																		node.ready
+																			? {
+																					background: "var(--status-up-subtle)",
+																					color: "var(--status-up-text)",
+																					borderColor:
+																						"var(--status-up-border)",
+																				}
+																			: {
+																					background:
+																						"var(--status-down-subtle)",
+																					color: "var(--status-down-text)",
+																					borderColor:
+																						"var(--status-down-border)",
+																				}
+																	}
+																>
+																	{node.status}
+																</Badge>
+																{expandedNode === node.name ? (
+																	<ChevronDown
+																		className="w-3.5 h-3.5"
+																		style={{ color: "var(--text-faint)" }}
+																	/>
+																) : (
+																	<ChevronRight
+																		className="w-3.5 h-3.5"
+																		style={{ color: "var(--text-faint)" }}
+																	/>
+																)}
+															</div>
+														</button>
+														<AnimatePresence>
+															{expandedNode === node.name && (
+																<motion.div
+																	initial={{ height: 0, opacity: 0 }}
+																	animate={{ height: "auto", opacity: 1 }}
+																	exit={{ height: 0, opacity: 0 }}
+																	transition={{ duration: 0.2 }}
+																	className="overflow-hidden"
+																>
+																	<div
+																		className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t"
+																		style={{
+																			borderColor: "var(--border-subtle)",
+																		}}
+																	>
+																		{[
+																			{ label: "OS", value: node.os },
+																			{ label: "Arch", value: node.arch },
+																			{ label: "CPU", value: node.cpu },
+																			{
+																				label: "Memory",
+																				value: MemoryToGB(node.memory),
+																			},
+																		].map(({ label, value }) => (
+																			<div key={label} className="pt-3">
+																				<p
+																					className="text-[9px] uppercase tracking-wider"
+																					style={{ color: "var(--text-faint)" }}
+																				>
+																					{label}
+																				</p>
+																				<p
+																					className="text-xs font-medium mt-0.5"
+																					style={{
+																						color: "var(--text-secondary)",
+																					}}
+																				>
+																					{value}
+																				</p>
+																			</div>
+																		))}
+																	</div>
+																</motion.div>
+															)}
+														</AnimatePresence>
+													</Card>
+												))}
+											</div>
+										)}
+									</div>
+
+									{/* Recent deployments summary */}
+									{deployments.length > 0 && (
+										<div>
+											<div className="flex items-center justify-between mb-2">
+												<p
+													className="text-[10px] uppercase tracking-wider font-semibold"
+													style={{ color: "var(--text-muted)" }}
+												>
+													Deployment'lar
+												</p>
+												<span
+													className="text-[10px]"
+													style={{ color: "var(--text-faint)" }}
+												>
+													{deployments.length} toplam
+												</span>
+											</div>
+											<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+												{deployments.slice(0, 6).map((dep) => {
+													const healthy =
+														dep.ready_replicas === dep.replicas &&
+														dep.replicas > 0;
+													const pct =
+														dep.replicas > 0
+															? Math.round(
+																	(dep.ready_replicas / dep.replicas) * 100,
+																)
+															: 0;
+													return (
+														<Card
+															key={dep.name}
+															className="overflow-hidden"
+															style={{
+																background: "var(--surface-card)",
+																border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+																borderLeft: `3px solid ${healthy ? "var(--status-up)" : "var(--status-warn)"}`,
+															}}
+														>
+															<div className="px-3 pt-2.5 pb-2 flex items-center gap-2.5">
+																<div className="flex-1 min-w-0">
+																	<p
+																		className="text-xs font-semibold truncate"
+																		style={{ color: "var(--text-secondary)" }}
+																	>
+																		{dep.name}
+																	</p>
+																	<p
+																		className="text-[10px]"
+																		style={{ color: "var(--text-faint)" }}
+																	>
+																		{dep.strategy || "RollingUpdate"} ·{" "}
+																		{dep.namespace}
+																	</p>
+																</div>
+																<div className="text-right shrink-0">
+																	<p
+																		className="text-sm font-bold tabular-nums"
+																		style={{
+																			color: healthy
+																				? "var(--status-up)"
+																				: "var(--status-warn)",
+																		}}
+																	>
+																		{dep.ready_replicas}/{dep.replicas}
+																	</p>
+																	<p
+																		className="text-[9px]"
+																		style={{ color: "var(--text-faint)" }}
+																	>
+																		hazır · {pct}%
+																	</p>
+																</div>
+															</div>
+															<div
+																className="h-0.5"
+																style={{ background: "var(--surface-sunken)" }}
+															>
+																<div
+																	className="h-full transition-all"
+																	style={{
+																		width: `${pct}%`,
+																		background: healthy
+																			? "var(--status-up)"
+																			: "var(--status-warn)",
+																	}}
+																/>
+															</div>
+														</Card>
+													);
+												})}
+											</div>
+										</div>
+									)}
+								</motion.div>
+							)}
+
+							{/* ── PODS TAB ── */}
+							{activeTab === "pods" && (
+								<PodsTab
+									podFilter={podFilter}
+									setPodFilter={setPodFilter}
+									refetchAllPods={refetchAllPods}
+									allPodsLoading={allPodsLoading}
+									pods={pods}
+									filteredPods={filteredPods}
+									setLogPod={setLogPod}
+									deletePodMutation={deletePodMutation}
+									PodStatusBadge={PodStatusBadge}
+									StatusDot={StatusDot}
+								/>
+							)}
+
+							{/* ── DEPLOYMENTS TAB ── */}
+							{activeTab === "deployments" && (
+								<motion.div
+									key="deployments"
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0 }}
+									className="space-y-4"
+								>
+									<div className="flex items-center justify-between">
 										<p
-											className="text-[10px] uppercase tracking-wider font-semibold"
+											className="text-[10px] uppercase tracking-wider"
 											style={{ color: "var(--text-muted)" }}
 										>
-											Nodes
+											{deployments.length} dağıtım
 										</p>
-										<span
-											className="text-[10px]"
-											style={{ color: "var(--text-faint)" }}
+										<button
+											type="button"
+											onClick={() => refetchDeployments()}
+											disabled={deploymentsLoading}
+											className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
+											style={{
+												borderColor: "var(--color-lavender-border)",
+												color: "var(--color-lavender)",
+											}}
 										>
-											{readyNodes}/{nodes.length} hazır
-										</span>
+											{deploymentsLoading ? (
+												<Loader2 className="w-3.5 h-3.5 animate-spin" />
+											) : (
+												<RefreshCw className="w-3.5 h-3.5" />
+											)}
+											Yenile
+										</button>
 									</div>
-									{nodesLoading ? (
+
+									{deploymentsLoading && deployments.length === 0 ? (
 										<div
 											className="flex items-center gap-2 py-4"
 											style={{ color: "var(--text-faint)" }}
@@ -1029,7 +1338,7 @@ export function KubernetesPage() {
 											<Loader2 className="w-4 h-4 animate-spin" />
 											<span className="text-xs">Yükleniyor...</span>
 										</div>
-									) : nodes.length === 0 ? (
+									) : deployments.length === 0 ? (
 										<Card
 											className="p-5 text-center rounded"
 											style={{
@@ -1037,1008 +1346,711 @@ export function KubernetesPage() {
 												border: "1px solid var(--border-default)",
 											}}
 										>
+											<Layers
+												className="w-8 h-8 mx-auto mb-2 opacity-30"
+												style={{ color: "var(--color-lavender)" }}
+											/>
 											<p
 												className="text-xs"
 												style={{ color: "var(--text-faint)" }}
 											>
-												Node bulunamadı
+												Dağıtım bulunamadı
 											</p>
 										</Card>
 									) : (
-										<div className="space-y-2">
-											{nodes.map((node) => (
-												<Card
-													key={node.name}
-													className="overflow-hidden"
-													style={{
-														background: "var(--surface-card)",
-														border: `1px solid ${node.ready ? "var(--color-teal-border)" : "var(--status-down-border)"}`,
-														borderLeft: `3px solid ${node.ready ? "var(--status-up)" : "var(--status-down)"}`,
-													}}
-												>
-													<button
-														type="button"
-														className="w-full p-4 flex items-center gap-3 text-left"
-														onClick={() =>
-															setExpandedNode(
-																expandedNode === node.name ? null : node.name,
-															)
-														}
+										<div className="space-y-3">
+											{deployments.map((dep, i) => {
+												const depReplicas =
+													scaleReplicas[dep.name] ?? dep.replicas;
+												const healthy =
+													dep.ready_replicas === dep.replicas &&
+													dep.replicas > 0;
+												return (
+													<motion.div
+														key={dep.name}
+														initial={{ opacity: 0, y: 6 }}
+														animate={{ opacity: 1, y: 0 }}
+														transition={{ delay: i * 0.04 }}
 													>
-														<StatusDot ready={node.ready} size="md" />
-														<div className="flex-1 min-w-0">
-															<p
-																className="text-xs font-semibold truncate"
-																style={{ color: "var(--text-secondary)" }}
-															>
-																{node.name}
-															</p>
-															<p
-																className="text-[10px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																{node.roles.join(", ")} · {node.version}
-															</p>
-														</div>
-														<div className="flex items-center gap-3 shrink-0">
-															<div
-																className="hidden sm:flex items-center gap-1.5 text-[10px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																<Cpu className="w-3 h-3" />
-																{node.cpu} CPU
-															</div>
-															<div
-																className="hidden sm:flex items-center gap-1.5 text-[10px]"
-																style={{ color: "var(--text-faint)" }}
-															>
-																<MemoryStick className="w-3 h-3" />
-																{MemoryToGB(node.memory)}
-															</div>
-															<Badge
-																className="text-[9px] px-2 py-0.5 rounded-full border"
-																style={
-																	node.ready
-																		? {
-																				background: "var(--status-up-subtle)",
-																				color: "var(--status-up-text)",
-																				borderColor: "var(--status-up-border)",
-																			}
-																		: {
-																				background: "var(--status-down-subtle)",
-																				color: "var(--status-down-text)",
-																				borderColor:
-																					"var(--status-down-border)",
-																			}
-																}
-															>
-																{node.status}
-															</Badge>
-															{expandedNode === node.name ? (
-																<ChevronDown
-																	className="w-3.5 h-3.5"
-																	style={{ color: "var(--text-faint)" }}
-																/>
-															) : (
-																<ChevronRight
-																	className="w-3.5 h-3.5"
-																	style={{ color: "var(--text-faint)" }}
-																/>
-															)}
-														</div>
-													</button>
-													<AnimatePresence>
-														{expandedNode === node.name && (
-															<motion.div
-																initial={{ height: 0, opacity: 0 }}
-																animate={{ height: "auto", opacity: 1 }}
-																exit={{ height: 0, opacity: 0 }}
-																transition={{ duration: 0.2 }}
-																className="overflow-hidden"
-															>
+														<Card
+															className="p-5 rounded"
+															style={{
+																background: "var(--surface-card)",
+																border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+															}}
+														>
+															<div className="flex items-center gap-3 mb-4">
 																<div
-																	className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t"
+																	className="w-9 h-9 rounded flex items-center justify-center shrink-0"
 																	style={{
-																		borderColor: "var(--border-subtle)",
+																		background: "var(--color-lavender-subtle)",
 																	}}
 																>
-																	{[
-																		{ label: "OS", value: node.os },
-																		{ label: "Arch", value: node.arch },
-																		{ label: "CPU", value: node.cpu },
-																		{
-																			label: "Memory",
-																			value: MemoryToGB(node.memory),
-																		},
-																	].map(({ label, value }) => (
-																		<div key={label} className="pt-3">
-																			<p
-																				className="text-[9px] uppercase tracking-wider"
-																				style={{ color: "var(--text-faint)" }}
-																			>
-																				{label}
-																			</p>
-																			<p
-																				className="text-xs font-medium mt-0.5"
-																				style={{
-																					color: "var(--text-secondary)",
-																				}}
-																			>
-																				{value}
-																			</p>
-																		</div>
-																	))}
+																	<Layers
+																		className="w-4 h-4"
+																		style={{ color: "var(--color-lavender)" }}
+																	/>
 																</div>
-															</motion.div>
-														)}
-													</AnimatePresence>
+																<div className="flex-1 min-w-0">
+																	<p
+																		className="text-sm font-semibold truncate"
+																		style={{ color: "var(--text-secondary)" }}
+																	>
+																		{dep.name}
+																	</p>
+																	<p
+																		className="text-[10px]"
+																		style={{ color: "var(--text-faint)" }}
+																	>
+																		{dep.namespace} ·{" "}
+																		{dep.strategy || "RollingUpdate"}
+																	</p>
+																</div>
+																<ConfirmButton
+																	onConfirm={() =>
+																		rolloutRestartMutation.mutate(dep.name)
+																	}
+																	confirmLabel="Başlat"
+																	disabled={
+																		rolloutRestartMutation.isPending &&
+																		rolloutRestartMutation.variables ===
+																			dep.name
+																	}
+																	className="w-8 h-8 rounded flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
+																	style={{
+																		background:
+																			"color-mix(in srgb, var(--color-lavender) 12%, transparent)",
+																		border:
+																			"1px solid var(--color-lavender-border)",
+																		color: "var(--color-lavender)",
+																	}}
+																>
+																	{rolloutRestartMutation.isPending &&
+																	rolloutRestartMutation.variables ===
+																		dep.name ? (
+																		<Loader2 className="w-3.5 h-3.5 animate-spin" />
+																	) : (
+																		<RotateCcw className="w-3.5 h-3.5" />
+																	)}
+																</ConfirmButton>
+																<div className="text-right shrink-0">
+																	<p
+																		className="text-lg font-bold"
+																		style={{
+																			color: healthy
+																				? "var(--status-up)"
+																				: "var(--status-warn)",
+																		}}
+																	>
+																		{dep.ready_replicas}/{dep.replicas}
+																	</p>
+																	<p
+																		className="text-[9px]"
+																		style={{ color: "var(--text-faint)" }}
+																	>
+																		hazır
+																	</p>
+																</div>
+															</div>
+
+															{/* Replica bar */}
+															<div className="mb-4">
+																<div
+																	className="flex justify-between text-[9px] mb-1"
+																	style={{ color: "var(--text-faint)" }}
+																>
+																	<span>
+																		Kullanılabilir: {dep.available_replicas}
+																	</span>
+																	<span>
+																		Güncellenen: {dep.updated_replicas}
+																	</span>
+																</div>
+																<div
+																	className="h-1.5 rounded-full overflow-hidden"
+																	style={{
+																		background: "var(--surface-sunken)",
+																	}}
+																>
+																	<div
+																		className="h-full rounded-full transition-all"
+																		style={{
+																			width:
+																				dep.replicas > 0
+																					? `${(dep.ready_replicas / dep.replicas) * 100}%`
+																					: "0%",
+																			background: healthy
+																				? "var(--status-up)"
+																				: "var(--status-warn)",
+																		}}
+																	/>
+																</div>
+															</div>
+
+															{/* Scale Controls */}
+															<div
+																className="p-3 rounded"
+																style={{
+																	background: "var(--surface-sunken)",
+																	border: "1px solid var(--border-subtle)",
+																}}
+															>
+																<p
+																	className="text-[9px] uppercase tracking-wider mb-2.5"
+																	style={{ color: "var(--text-faint)" }}
+																>
+																	Ölçekle
+																</p>
+																<div className="flex items-center gap-2">
+																	<button
+																		type="button"
+																		onClick={() =>
+																			setScaleReplicas((prev) => ({
+																				...prev,
+																				[dep.name]: Math.max(
+																					0,
+																					(prev[dep.name] ?? dep.replicas) - 1,
+																				),
+																			}))
+																		}
+																		aria-label="Replica azalt"
+																		className="w-7 h-7 rounded-lg flex items-center justify-center"
+																		style={{
+																			border:
+																				"1px solid var(--color-lavender-border)",
+																			color: "var(--color-lavender)",
+																		}}
+																	>
+																		<Minus className="w-3 h-3" />
+																	</button>
+																	<span
+																		className="text-base font-bold w-6 text-center"
+																		style={{ color: "var(--text-secondary)" }}
+																	>
+																		{depReplicas}
+																	</span>
+																	<button
+																		type="button"
+																		onClick={() =>
+																			setScaleReplicas((prev) => ({
+																				...prev,
+																				[dep.name]: Math.min(
+																					32,
+																					(prev[dep.name] ?? dep.replicas) + 1,
+																				),
+																			}))
+																		}
+																		aria-label="Replica artır"
+																		className="w-7 h-7 rounded-lg flex items-center justify-center"
+																		style={{
+																			border:
+																				"1px solid var(--color-lavender-border)",
+																			color: "var(--color-lavender)",
+																		}}
+																	>
+																		<Plus className="w-3 h-3" />
+																	</button>
+																	<div className="flex gap-1 ml-1">
+																		{[0, 1, 2, 3, 5, 10].map((n) => (
+																			<button
+																				type="button"
+																				key={n}
+																				onClick={() =>
+																					setScaleReplicas((prev) => ({
+																						...prev,
+																						[dep.name]: n,
+																					}))
+																				}
+																				className="px-2 py-0.5 rounded-lg text-[9px] font-medium border"
+																				style={
+																					depReplicas === n
+																						? {
+																								background:
+																									"var(--color-lavender-subtle)",
+																								color: "var(--color-lavender)",
+																								borderColor:
+																									"var(--color-lavender-border)",
+																							}
+																						: {
+																								color: "var(--text-muted)",
+																								borderColor:
+																									"var(--border-subtle)",
+																							}
+																				}
+																			>
+																				{n}
+																			</button>
+																		))}
+																	</div>
+																	<Button
+																		onClick={() =>
+																			scaleMutation.mutate({
+																				name: dep.name,
+																				replicas: depReplicas,
+																			})
+																		}
+																		disabled={scaleMutation.isPending}
+																		className="ml-auto text-white rounded-lg text-[10px] h-7 px-3"
+																		style={{
+																			background: "var(--color-lavender)",
+																		}}
+																	>
+																		{scaleMutation.isPending ? (
+																			<Loader2 className="w-3 h-3 animate-spin" />
+																		) : (
+																			<>
+																				<Zap className="w-3 h-3 mr-1" />
+																				Uygula
+																			</>
+																		)}
+																	</Button>
+																</div>
+															</div>
+														</Card>
+													</motion.div>
+												);
+											})}
+										</div>
+									)}
+								</motion.div>
+							)}
+
+							{/* ── HPA TAB ── */}
+							{activeTab === "hpa" && (
+								<motion.div
+									key="hpa"
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0 }}
+									className="space-y-4"
+								>
+									{/* Existing HPAs list */}
+									<div className="flex items-center justify-between">
+										<p
+											className="text-[10px] uppercase tracking-wider"
+											style={{ color: "var(--text-muted)" }}
+										>
+											{hpas.length} HPA{" "}
+											{hpasLoading && (
+												<Loader2 className="w-3 h-3 inline animate-spin ml-1" />
+											)}
+										</p>
+										<button
+											type="button"
+											onClick={() => refetchHPAs()}
+											disabled={hpasLoading}
+											className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
+											style={{
+												borderColor: "var(--color-pink-border)",
+												color: "var(--color-pink)",
+											}}
+										>
+											<RefreshCw className="w-3.5 h-3.5" />
+											Yenile
+										</button>
+									</div>
+
+									{hpas.length > 0 && (
+										<div className="space-y-2">
+											{hpas.map((hpa) => (
+												<Card
+													key={hpa.name}
+													className="p-4 rounded"
+													style={{
+														background: "var(--surface-card)",
+														border: "1px solid var(--color-pink-border)",
+													}}
+												>
+													<div className="flex items-start justify-between gap-3 mb-3">
+														<div className="flex items-center gap-2">
+															<Gauge
+																className="w-4 h-4 shrink-0"
+																style={{ color: "var(--color-pink)" }}
+															/>
+															<div>
+																<p
+																	className="text-xs font-semibold"
+																	style={{
+																		color: "var(--text-secondary)",
+																		fontFamily: "var(--font-mono)",
+																	}}
+																>
+																	{hpa.name}
+																</p>
+																{hpa.deployment_name && (
+																	<p
+																		className="text-[10px]"
+																		style={{ color: "var(--text-faint)" }}
+																	>
+																		→ {hpa.deployment_name}
+																	</p>
+																)}
+															</div>
+														</div>
+														<div className="flex items-center gap-1.5 shrink-0">
+															<button
+																type="button"
+																onClick={() => {
+																	setHpaDeployment(
+																		hpa.deployment_name ?? hpa.name,
+																	);
+																	setHpaMin(hpa.min_replicas);
+																	setHpaMax(hpa.max_replicas);
+																	setHpaCpu(hpa.cpu_target_percent ?? 70);
+																}}
+																title="Düzenle"
+																aria-label="HPA ayarlarını forma yükle"
+																className="w-7 h-7 rounded-lg flex items-center justify-center"
+																style={{
+																	background: "var(--color-pink-subtle)",
+																	border: "1px solid var(--color-pink-border)",
+																	color: "var(--color-pink)",
+																}}
+															>
+																<Settings2 className="w-3.5 h-3.5" />
+															</button>
+															<ConfirmButton
+																onConfirm={() =>
+																	deleteHPAMutation.mutate(
+																		hpa.deployment_name ?? hpa.name,
+																	)
+																}
+																confirmLabel="Sil"
+																disabled={deleteHPAMutation.isPending}
+																className="w-7 h-7 rounded-lg flex items-center justify-center"
+																style={{
+																	background:
+																		"color-mix(in srgb, var(--status-down) 10%, transparent)",
+																	border: "1px solid var(--status-down-border)",
+																	color: "var(--status-down-text)",
+																}}
+															>
+																{deleteHPAMutation.isPending ? (
+																	<Loader2 className="w-3 h-3 animate-spin" />
+																) : (
+																	<Trash2 className="w-3.5 h-3.5" />
+																)}
+															</ConfirmButton>
+														</div>
+													</div>
+													<div className="grid grid-cols-4 gap-2 mb-3">
+														{[
+															{ label: "Min", value: hpa.min_replicas },
+															{ label: "Max", value: hpa.max_replicas },
+															{ label: "Mevcut", value: hpa.current_replicas },
+															{ label: "İstenen", value: hpa.desired_replicas },
+														].map((s) => (
+															<div
+																key={s.label}
+																className="p-3 rounded text-center"
+																style={{
+																	background: "var(--surface-sunken)",
+																	border: "1px solid var(--border-default)",
+																}}
+															>
+																<p
+																	className="text-[10px] uppercase tracking-wider mb-1"
+																	style={{ color: "var(--text-muted)" }}
+																>
+																	{s.label}
+																</p>
+																<p
+																	className="text-xl font-bold tabular-nums"
+																	style={{ color: "var(--color-pink)" }}
+																>
+																	{s.value}
+																</p>
+															</div>
+														))}
+													</div>
+													{hpa.cpu_target_percent && (
+														<div
+															className="text-[10px]"
+															style={{ color: "var(--text-faint)" }}
+														>
+															CPU hedef:{" "}
+															<strong style={{ color: "var(--color-pink)" }}>
+																%{hpa.cpu_target_percent}
+															</strong>
+															{hpa.cpu_current_percent !== undefined && (
+																<>
+																	{" "}
+																	· mevcut:{" "}
+																	<span
+																		style={{
+																			color:
+																				hpa.cpu_current_percent >
+																				hpa.cpu_target_percent
+																					? "var(--status-down-text)"
+																					: "var(--status-up)",
+																		}}
+																	>
+																		%{hpa.cpu_current_percent}
+																	</span>
+																</>
+															)}
+														</div>
+													)}
+													{hpa.max_replicas > 0 && (
+														<div
+															className="h-1.5 rounded-full overflow-hidden"
+															style={{ background: "var(--surface-sunken)" }}
+														>
+															<div
+																className="h-full rounded-full transition-all"
+																style={{
+																	width: `${Math.min(100, (hpa.current_replicas / hpa.max_replicas) * 100)}%`,
+																	background: "var(--color-pink)",
+																}}
+															/>
+														</div>
+													)}
 												</Card>
 											))}
 										</div>
 									)}
-								</div>
 
-								{/* Recent deployments summary */}
-								{deployments.length > 0 && (
-									<div>
-										<div className="flex items-center justify-between mb-2">
-											<p
-												className="text-[10px] uppercase tracking-wider font-semibold"
-												style={{ color: "var(--text-muted)" }}
-											>
-												Deployment'lar
-											</p>
-											<span
-												className="text-[10px]"
-												style={{ color: "var(--text-faint)" }}
-											>
-												{deployments.length} toplam
-											</span>
-										</div>
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-											{deployments.slice(0, 6).map((dep) => {
-												const healthy =
-													dep.ready_replicas === dep.replicas &&
-													dep.replicas > 0;
-												const pct =
-													dep.replicas > 0
-														? Math.round(
-																(dep.ready_replicas / dep.replicas) * 100,
-															)
-														: 0;
-												return (
-													<Card
-														key={dep.name}
-														className="overflow-hidden"
-														style={{
-															background: "var(--surface-card)",
-															border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
-															borderLeft: `3px solid ${healthy ? "var(--status-up)" : "var(--status-warn)"}`,
-														}}
-													>
-														<div className="px-3 pt-2.5 pb-2 flex items-center gap-2.5">
-															<div className="flex-1 min-w-0">
-																<p
-																	className="text-xs font-semibold truncate"
-																	style={{ color: "var(--text-secondary)" }}
-																>
-																	{dep.name}
-																</p>
-																<p
-																	className="text-[10px]"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	{dep.strategy || "RollingUpdate"} ·{" "}
-																	{dep.namespace}
-																</p>
-															</div>
-															<div className="text-right shrink-0">
-																<p
-																	className="text-sm font-bold tabular-nums"
-																	style={{
-																		color: healthy
-																			? "var(--status-up)"
-																			: "var(--status-warn)",
-																	}}
-																>
-																	{dep.ready_replicas}/{dep.replicas}
-																</p>
-																<p
-																	className="text-[9px]"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	hazır · {pct}%
-																</p>
-															</div>
-														</div>
-														<div
-															className="h-0.5"
-															style={{ background: "var(--surface-sunken)" }}
-														>
-															<div
-																className="h-full transition-all"
-																style={{
-																	width: `${pct}%`,
-																	background: healthy
-																		? "var(--status-up)"
-																		: "var(--status-warn)",
-																}}
-															/>
-														</div>
-													</Card>
-												);
-											})}
-										</div>
-									</div>
-								)}
-							</motion.div>
-						)}
-
-						{/* ── PODS TAB ── */}
-						{activeTab === "pods" && (
-							<PodsTab
-								podFilter={podFilter}
-								setPodFilter={setPodFilter}
-								refetchAllPods={refetchAllPods}
-								allPodsLoading={allPodsLoading}
-								pods={pods}
-								filteredPods={filteredPods}
-								setLogPod={setLogPod}
-								deletePodMutation={deletePodMutation}
-								PodStatusBadge={PodStatusBadge}
-								StatusDot={StatusDot}
-							/>
-						)}
-
-						{/* ── DEPLOYMENTS TAB ── */}
-						{activeTab === "deployments" && (
-							<motion.div
-								key="deployments"
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0 }}
-								className="space-y-4"
-							>
-								<div className="flex items-center justify-between">
-									<p
-										className="text-[10px] uppercase tracking-wider"
-										style={{ color: "var(--text-muted)" }}
-									>
-										{deployments.length} dağıtım
-									</p>
-									<button
-										type="button"
-										onClick={() => refetchDeployments()}
-										disabled={deploymentsLoading}
-										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
-										style={{
-											borderColor: "var(--color-lavender-border)",
-											color: "var(--color-lavender)",
-										}}
-									>
-										{deploymentsLoading ? (
-											<Loader2 className="w-3.5 h-3.5 animate-spin" />
-										) : (
-											<RefreshCw className="w-3.5 h-3.5" />
-										)}
-										Yenile
-									</button>
-								</div>
-
-								{deploymentsLoading && deployments.length === 0 ? (
-									<div
-										className="flex items-center gap-2 py-4"
-										style={{ color: "var(--text-faint)" }}
-									>
-										<Loader2 className="w-4 h-4 animate-spin" />
-										<span className="text-xs">Yükleniyor...</span>
-									</div>
-								) : deployments.length === 0 ? (
+									{/* Create / Update HPA form */}
 									<Card
-										className="p-5 text-center rounded"
+										className="p-5 rounded"
 										style={{
 											background: "var(--surface-card)",
-											border: "1px solid var(--border-default)",
+											border: "1px solid var(--color-pink-border)",
 										}}
 									>
-										<Layers
-											className="w-8 h-8 mx-auto mb-2 opacity-30"
-											style={{ color: "var(--color-lavender)" }}
-										/>
-										<p
-											className="text-xs"
-											style={{ color: "var(--text-faint)" }}
-										>
-											Dağıtım bulunamadı
-										</p>
-									</Card>
-								) : (
-									<div className="space-y-3">
-										{deployments.map((dep, i) => {
-											const depReplicas =
-												scaleReplicas[dep.name] ?? dep.replicas;
-											const healthy =
-												dep.ready_replicas === dep.replicas && dep.replicas > 0;
-											return (
-												<motion.div
-													key={dep.name}
-													initial={{ opacity: 0, y: 6 }}
-													animate={{ opacity: 1, y: 0 }}
-													transition={{ delay: i * 0.04 }}
+										<div className="flex items-center gap-2 mb-4">
+											<Settings2
+												className="w-4 h-4"
+												style={{ color: "var(--color-pink)" }}
+											/>
+											<h3
+												className="text-sm font-semibold"
+												style={{ color: "var(--text-secondary)" }}
+											>
+												HPA Oluştur / Güncelle
+											</h3>
+										</div>
+
+										<div className="mb-4">
+											<p
+												className="text-[10px] uppercase tracking-wider mb-2"
+												style={{ color: "var(--text-muted)" }}
+											>
+												Deployment Seç
+											</p>
+											{deployments.length > 0 ? (
+												<Select
+													value={hpaDeployment}
+													onValueChange={setHpaDeployment}
 												>
-													<Card
-														className="p-5 rounded"
+													<SelectTrigger
+														className="rounded-lg text-xs h-9"
 														style={{
-															background: "var(--surface-card)",
-															border: `1px solid ${healthy ? "var(--color-lavender-border)" : "var(--status-warn-border)"}`,
+															background: "var(--input-bg)",
+															borderColor: "var(--input-border)",
+															color: "var(--text-secondary)",
 														}}
 													>
-														<div className="flex items-center gap-3 mb-4">
-															<div
-																className="w-9 h-9 rounded flex items-center justify-center shrink-0"
-																style={{
-																	background: "var(--color-lavender-subtle)",
-																}}
-															>
-																<Layers
-																	className="w-4 h-4"
-																	style={{ color: "var(--color-lavender)" }}
-																/>
-															</div>
-															<div className="flex-1 min-w-0">
-																<p
-																	className="text-sm font-semibold truncate"
-																	style={{ color: "var(--text-secondary)" }}
-																>
-																	{dep.name}
-																</p>
-																<p
-																	className="text-[10px]"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	{dep.namespace} ·{" "}
-																	{dep.strategy || "RollingUpdate"}
-																</p>
-															</div>
-															<ConfirmButton
-																onConfirm={() =>
-																	rolloutRestartMutation.mutate(dep.name)
-																}
-																confirmLabel="Başlat"
-																disabled={
-																	rolloutRestartMutation.isPending &&
-																	rolloutRestartMutation.variables === dep.name
-																}
-																className="w-8 h-8 rounded flex items-center justify-center shrink-0 transition-opacity hover:opacity-80"
-																style={{
-																	background:
-																		"color-mix(in srgb, var(--color-lavender) 12%, transparent)",
-																	border:
-																		"1px solid var(--color-lavender-border)",
-																	color: "var(--color-lavender)",
-																}}
-															>
-																{rolloutRestartMutation.isPending &&
-																rolloutRestartMutation.variables ===
-																	dep.name ? (
-																	<Loader2 className="w-3.5 h-3.5 animate-spin" />
-																) : (
-																	<RotateCcw className="w-3.5 h-3.5" />
-																)}
-															</ConfirmButton>
-															<div className="text-right shrink-0">
-																<p
-																	className="text-lg font-bold"
-																	style={{
-																		color: healthy
-																			? "var(--status-up)"
-																			: "var(--status-warn)",
-																	}}
-																>
-																	{dep.ready_replicas}/{dep.replicas}
-																</p>
-																<p
-																	className="text-[9px]"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	hazır
-																</p>
-															</div>
-														</div>
-
-														{/* Replica bar */}
-														<div className="mb-4">
-															<div
-																className="flex justify-between text-[9px] mb-1"
-																style={{ color: "var(--text-faint)" }}
-															>
-																<span>
-																	Kullanılabilir: {dep.available_replicas}
-																</span>
-																<span>Güncellenen: {dep.updated_replicas}</span>
-															</div>
-															<div
-																className="h-1.5 rounded-full overflow-hidden"
-																style={{ background: "var(--surface-sunken)" }}
-															>
-																<div
-																	className="h-full rounded-full transition-all"
-																	style={{
-																		width:
-																			dep.replicas > 0
-																				? `${(dep.ready_replicas / dep.replicas) * 100}%`
-																				: "0%",
-																		background: healthy
-																			? "var(--status-up)"
-																			: "var(--status-warn)",
-																	}}
-																/>
-															</div>
-														</div>
-
-														{/* Scale Controls */}
-														<div
-															className="p-3 rounded"
-															style={{
-																background: "var(--surface-sunken)",
-																border: "1px solid var(--border-subtle)",
-															}}
-														>
-															<p
-																className="text-[9px] uppercase tracking-wider mb-2.5"
-																style={{ color: "var(--text-faint)" }}
-															>
-																Ölçekle
-															</p>
-															<div className="flex items-center gap-2">
-																<button
-																	type="button"
-																	onClick={() =>
-																		setScaleReplicas((prev) => ({
-																			...prev,
-																			[dep.name]: Math.max(
-																				0,
-																				(prev[dep.name] ?? dep.replicas) - 1,
-																			),
-																		}))
-																	}
-																	aria-label="Replica azalt"
-																	className="w-7 h-7 rounded-lg flex items-center justify-center"
-																	style={{
-																		border:
-																			"1px solid var(--color-lavender-border)",
-																		color: "var(--color-lavender)",
-																	}}
-																>
-																	<Minus className="w-3 h-3" />
-																</button>
-																<span
-																	className="text-base font-bold w-6 text-center"
-																	style={{ color: "var(--text-secondary)" }}
-																>
-																	{depReplicas}
-																</span>
-																<button
-																	type="button"
-																	onClick={() =>
-																		setScaleReplicas((prev) => ({
-																			...prev,
-																			[dep.name]: Math.min(
-																				32,
-																				(prev[dep.name] ?? dep.replicas) + 1,
-																			),
-																		}))
-																	}
-																	aria-label="Replica artır"
-																	className="w-7 h-7 rounded-lg flex items-center justify-center"
-																	style={{
-																		border:
-																			"1px solid var(--color-lavender-border)",
-																		color: "var(--color-lavender)",
-																	}}
-																>
-																	<Plus className="w-3 h-3" />
-																</button>
-																<div className="flex gap-1 ml-1">
-																	{[0, 1, 2, 3, 5, 10].map((n) => (
-																		<button
-																			type="button"
-																			key={n}
-																			onClick={() =>
-																				setScaleReplicas((prev) => ({
-																					...prev,
-																					[dep.name]: n,
-																				}))
-																			}
-																			className="px-2 py-0.5 rounded-lg text-[9px] font-medium border"
-																			style={
-																				depReplicas === n
-																					? {
-																							background:
-																								"var(--color-lavender-subtle)",
-																							color: "var(--color-lavender)",
-																							borderColor:
-																								"var(--color-lavender-border)",
-																						}
-																					: {
-																							color: "var(--text-muted)",
-																							borderColor:
-																								"var(--border-subtle)",
-																						}
-																			}
-																		>
-																			{n}
-																		</button>
-																	))}
-																</div>
-																<Button
-																	onClick={() =>
-																		scaleMutation.mutate({
-																			name: dep.name,
-																			replicas: depReplicas,
-																		})
-																	}
-																	disabled={scaleMutation.isPending}
-																	className="ml-auto text-white rounded-lg text-[10px] h-7 px-3"
-																	style={{
-																		background: "var(--color-lavender)",
-																	}}
-																>
-																	{scaleMutation.isPending ? (
-																		<Loader2 className="w-3 h-3 animate-spin" />
-																	) : (
-																		<>
-																			<Zap className="w-3 h-3 mr-1" />
-																			Uygula
-																		</>
-																	)}
-																</Button>
-															</div>
-														</div>
-													</Card>
-												</motion.div>
-											);
-										})}
-									</div>
-								)}
-							</motion.div>
-						)}
-
-						{/* ── HPA TAB ── */}
-						{activeTab === "hpa" && (
-							<motion.div
-								key="hpa"
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0 }}
-								className="space-y-4"
-							>
-								{/* Existing HPAs list */}
-								<div className="flex items-center justify-between">
-									<p
-										className="text-[10px] uppercase tracking-wider"
-										style={{ color: "var(--text-muted)" }}
-									>
-										{hpas.length} HPA{" "}
-										{hpasLoading && (
-											<Loader2 className="w-3 h-3 inline animate-spin ml-1" />
-										)}
-									</p>
-									<button
-										type="button"
-										onClick={() => refetchHPAs()}
-										disabled={hpasLoading}
-										className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
-										style={{
-											borderColor: "var(--color-pink-border)",
-											color: "var(--color-pink)",
-										}}
-									>
-										<RefreshCw className="w-3.5 h-3.5" />
-										Yenile
-									</button>
-								</div>
-
-								{hpas.length > 0 && (
-									<div className="space-y-2">
-										{hpas.map((hpa) => (
-											<Card
-												key={hpa.name}
-												className="p-4 rounded"
-												style={{
-													background: "var(--surface-card)",
-													border: "1px solid var(--color-pink-border)",
-												}}
-											>
-												<div className="flex items-start justify-between gap-3 mb-3">
-													<div className="flex items-center gap-2">
-														<Gauge
-															className="w-4 h-4 shrink-0"
-															style={{ color: "var(--color-pink)" }}
-														/>
-														<div>
-															<p
-																className="text-xs font-semibold"
-																style={{
-																	color: "var(--text-secondary)",
-																	fontFamily: "var(--font-mono)",
-																}}
-															>
-																{hpa.name}
-															</p>
-															{hpa.deployment_name && (
-																<p
-																	className="text-[10px]"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	→ {hpa.deployment_name}
-																</p>
-															)}
-														</div>
-													</div>
-													<div className="flex items-center gap-1.5 shrink-0">
-														<button
-															type="button"
-															onClick={() => {
-																setHpaDeployment(
-																	hpa.deployment_name ?? hpa.name,
-																);
-																setHpaMin(hpa.min_replicas);
-																setHpaMax(hpa.max_replicas);
-																setHpaCpu(hpa.cpu_target_percent ?? 70);
-															}}
-															title="Düzenle"
-															aria-label="HPA ayarlarını forma yükle"
-															className="w-7 h-7 rounded-lg flex items-center justify-center"
-															style={{
-																background: "var(--color-pink-subtle)",
-																border: "1px solid var(--color-pink-border)",
-																color: "var(--color-pink)",
-															}}
-														>
-															<Settings2 className="w-3.5 h-3.5" />
-														</button>
-														<ConfirmButton
-															onConfirm={() =>
-																deleteHPAMutation.mutate(
-																	hpa.deployment_name ?? hpa.name,
-																)
-															}
-															confirmLabel="Sil"
-															disabled={deleteHPAMutation.isPending}
-															className="w-7 h-7 rounded-lg flex items-center justify-center"
-															style={{
-																background:
-																	"color-mix(in srgb, var(--status-down) 10%, transparent)",
-																border: "1px solid var(--status-down-border)",
-																color: "var(--status-down-text)",
-															}}
-														>
-															{deleteHPAMutation.isPending ? (
-																<Loader2 className="w-3 h-3 animate-spin" />
-															) : (
-																<Trash2 className="w-3.5 h-3.5" />
-															)}
-														</ConfirmButton>
-													</div>
-												</div>
-												<div className="grid grid-cols-4 gap-2 mb-3">
-													{[
-														{ label: "Min", value: hpa.min_replicas },
-														{ label: "Max", value: hpa.max_replicas },
-														{ label: "Mevcut", value: hpa.current_replicas },
-														{ label: "İstenen", value: hpa.desired_replicas },
-													].map((s) => (
-														<div
-															key={s.label}
-															className="p-3 rounded text-center"
-															style={{
-																background: "var(--surface-sunken)",
-																border: "1px solid var(--border-default)",
-															}}
-														>
-															<p
-																className="text-[10px] uppercase tracking-wider mb-1"
-																style={{ color: "var(--text-muted)" }}
-															>
-																{s.label}
-															</p>
-															<p
-																className="text-xl font-bold tabular-nums"
-																style={{ color: "var(--color-pink)" }}
-															>
-																{s.value}
-															</p>
-														</div>
-													))}
-												</div>
-												{hpa.cpu_target_percent && (
-													<div
-														className="text-[10px]"
-														style={{ color: "var(--text-faint)" }}
-													>
-														CPU hedef:{" "}
-														<strong style={{ color: "var(--color-pink)" }}>
-															%{hpa.cpu_target_percent}
-														</strong>
-														{hpa.cpu_current_percent !== undefined && (
-															<>
-																{" "}
-																· mevcut:{" "}
-																<span
-																	style={{
-																		color:
-																			hpa.cpu_current_percent >
-																			hpa.cpu_target_percent
-																				? "var(--status-down-text)"
-																				: "var(--status-up)",
-																	}}
-																>
-																	%{hpa.cpu_current_percent}
-																</span>
-															</>
-														)}
-													</div>
-												)}
-												{hpa.max_replicas > 0 && (
-													<div
-														className="h-1.5 rounded-full overflow-hidden"
-														style={{ background: "var(--surface-sunken)" }}
-													>
-														<div
-															className="h-full rounded-full transition-all"
-															style={{
-																width: `${Math.min(100, (hpa.current_replicas / hpa.max_replicas) * 100)}%`,
-																background: "var(--color-pink)",
-															}}
-														/>
-													</div>
-												)}
-											</Card>
-										))}
-									</div>
-								)}
-
-								{/* Create / Update HPA form */}
-								<Card
-									className="p-5 rounded"
-									style={{
-										background: "var(--surface-card)",
-										border: "1px solid var(--color-pink-border)",
-									}}
-								>
-									<div className="flex items-center gap-2 mb-4">
-										<Settings2
-											className="w-4 h-4"
-											style={{ color: "var(--color-pink)" }}
-										/>
-										<h3
-											className="text-sm font-semibold"
-											style={{ color: "var(--text-secondary)" }}
-										>
-											HPA Oluştur / Güncelle
-										</h3>
-									</div>
-
-									<div className="mb-4">
-										<p
-											className="text-[10px] uppercase tracking-wider mb-2"
-											style={{ color: "var(--text-muted)" }}
-										>
-											Deployment Seç
-										</p>
-										{deployments.length > 0 ? (
-											<Select
-												value={hpaDeployment}
-												onValueChange={setHpaDeployment}
-											>
-												<SelectTrigger
+														<SelectValue placeholder="Deployment seçin..." />
+													</SelectTrigger>
+													<SelectContent>
+														{deployments.map((d) => (
+															<SelectItem key={d.name} value={d.name}>
+																{d.name}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											) : (
+												<Input
+													placeholder="Deployment adı (örn: my-app)"
+													value={hpaDeployment}
+													onChange={(e) => setHpaDeployment(e.target.value)}
 													className="rounded-lg text-xs h-9"
 													style={{
 														background: "var(--input-bg)",
 														borderColor: "var(--input-border)",
 														color: "var(--text-secondary)",
 													}}
-												>
-													<SelectValue placeholder="Deployment seçin..." />
-												</SelectTrigger>
-												<SelectContent>
-													{deployments.map((d) => (
-														<SelectItem key={d.name} value={d.name}>
-															{d.name}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										) : (
-											<Input
-												placeholder="Deployment adı (örn: my-app)"
-												value={hpaDeployment}
-												onChange={(e) => setHpaDeployment(e.target.value)}
-												className="rounded-lg text-xs h-9"
-												style={{
-													background: "var(--input-bg)",
-													borderColor: "var(--input-border)",
-													color: "var(--text-secondary)",
-												}}
-											/>
-										)}
-									</div>
+												/>
+											)}
+										</div>
 
-									<div className="grid grid-cols-3 gap-4 mb-4">
-										{[
-											{
-												label: "Min Replica",
-												val: hpaMin,
-												set: setHpaMin,
-												min: 1,
-												max: 99,
-											},
-											{
-												label: "Max Replica",
-												val: hpaMax,
-												set: setHpaMax,
-												min: hpaMin,
-												max: 100,
-											},
-										].map(({ label, val, set, min, max }) => (
-											<div key={label}>
+										<div className="grid grid-cols-3 gap-4 mb-4">
+											{[
+												{
+													label: "Min Replica",
+													val: hpaMin,
+													set: setHpaMin,
+													min: 1,
+													max: 99,
+												},
+												{
+													label: "Max Replica",
+													val: hpaMax,
+													set: setHpaMax,
+													min: hpaMin,
+													max: 100,
+												},
+											].map(({ label, val, set, min, max }) => (
+												<div key={label}>
+													<p
+														className="text-[10px] uppercase tracking-wider mb-2"
+														style={{ color: "var(--text-muted)" }}
+													>
+														{label}
+													</p>
+													<div className="flex items-center gap-2">
+														<button
+															type="button"
+															onClick={() => set(Math.max(min, val - 1))}
+															className="w-7 h-7 rounded-lg flex items-center justify-center"
+															style={{
+																border: "1px solid var(--color-pink-border)",
+																color: "var(--color-pink)",
+															}}
+														>
+															<Minus className="w-3 h-3" />
+														</button>
+														<span
+															className="text-lg font-bold w-6 text-center"
+															style={{ color: "var(--text-secondary)" }}
+														>
+															{val}
+														</span>
+														<button
+															type="button"
+															onClick={() => set(Math.min(max, val + 1))}
+															className="w-7 h-7 rounded-lg flex items-center justify-center"
+															style={{
+																border: "1px solid var(--color-pink-border)",
+																color: "var(--color-pink)",
+															}}
+														>
+															<Plus className="w-3 h-3" />
+														</button>
+													</div>
+												</div>
+											))}
+											<div>
 												<p
 													className="text-[10px] uppercase tracking-wider mb-2"
 													style={{ color: "var(--text-muted)" }}
 												>
-													{label}
+													CPU Hedef (%)
 												</p>
-												<div className="flex items-center gap-2">
-													<button
-														type="button"
-														onClick={() => set(Math.max(min, val - 1))}
-														className="w-7 h-7 rounded-lg flex items-center justify-center"
-														style={{
-															border: "1px solid var(--color-pink-border)",
-															color: "var(--color-pink)",
-														}}
-													>
-														<Minus className="w-3 h-3" />
-													</button>
-													<span
-														className="text-lg font-bold w-6 text-center"
-														style={{ color: "var(--text-secondary)" }}
-													>
-														{val}
-													</span>
-													<button
-														type="button"
-														onClick={() => set(Math.min(max, val + 1))}
-														className="w-7 h-7 rounded-lg flex items-center justify-center"
-														style={{
-															border: "1px solid var(--color-pink-border)",
-															color: "var(--color-pink)",
-														}}
-													>
-														<Plus className="w-3 h-3" />
-													</button>
-												</div>
+												<Input
+													type="number"
+													value={hpaCpu}
+													onChange={(e) => setHpaCpu(Number(e.target.value))}
+													min={10}
+													max={95}
+													className="rounded-lg text-xs h-9"
+													style={{
+														background: "var(--input-bg)",
+														borderColor: "var(--input-border)",
+														color: "var(--text-secondary)",
+													}}
+												/>
 											</div>
-										))}
-										<div>
-											<p
-												className="text-[10px] uppercase tracking-wider mb-2"
-												style={{ color: "var(--text-muted)" }}
-											>
-												CPU Hedef (%)
-											</p>
-											<Input
-												type="number"
-												value={hpaCpu}
-												onChange={(e) => setHpaCpu(Number(e.target.value))}
-												min={10}
-												max={95}
-												className="rounded-lg text-xs h-9"
-												style={{
-													background: "var(--input-bg)",
-													borderColor: "var(--input-border)",
-													color: "var(--text-secondary)",
-												}}
-											/>
 										</div>
-									</div>
 
-									<div
-										className="p-3 rounded text-[10px] leading-relaxed mb-4"
-										style={{
-											background:
-												"color-mix(in srgb, var(--color-pink) 8%, transparent)",
-											border: "1px solid var(--color-pink-border)",
-											color: "var(--text-muted)",
-										}}
-									>
-										CPU kullanımı{" "}
-										<strong style={{ color: "var(--color-pink)" }}>
-											%{hpaCpu}
-										</strong>
-										'in üzerine çıktığında replica sayısı otomatik olarak{" "}
-										<strong>{hpaMin}</strong>–<strong>{hpaMax}</strong> arasında
-										ayarlanır.
-									</div>
+										<div
+											className="p-3 rounded text-[10px] leading-relaxed mb-4"
+											style={{
+												background:
+													"color-mix(in srgb, var(--color-pink) 8%, transparent)",
+												border: "1px solid var(--color-pink-border)",
+												color: "var(--text-muted)",
+											}}
+										>
+											CPU kullanımı{" "}
+											<strong style={{ color: "var(--color-pink)" }}>
+												%{hpaCpu}
+											</strong>
+											'in üzerine çıktığında replica sayısı otomatik olarak{" "}
+											<strong>{hpaMin}</strong>–<strong>{hpaMax}</strong>{" "}
+											arasında ayarlanır.
+										</div>
 
-									<Button
-										onClick={() => hpaMutation.mutate()}
-										disabled={hpaMutation.isPending || !hpaDeployment}
-										className="w-full text-white rounded h-9 text-sm"
-										style={{ background: "var(--color-pink)" }}
-									>
-										{hpaMutation.isPending ? (
-											<>
-												<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-												Oluşturuluyor...
-											</>
-										) : (
-											<>
-												<Gauge className="w-4 h-4 mr-2" />
-												HPA Uygula
-											</>
-										)}
-									</Button>
-								</Card>
-							</motion.div>
-						)}
+										<Button
+											onClick={() => hpaMutation.mutate()}
+											disabled={hpaMutation.isPending || !hpaDeployment}
+											className="w-full text-white rounded h-9 text-sm"
+											style={{ background: "var(--color-pink)" }}
+										>
+											{hpaMutation.isPending ? (
+												<>
+													<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+													Oluşturuluyor...
+												</>
+											) : (
+												<>
+													<Gauge className="w-4 h-4 mr-2" />
+													HPA Uygula
+												</>
+											)}
+										</Button>
+									</Card>
+								</motion.div>
+							)}
 
-						{/* ── SERVICES TAB ── */}
-						{activeTab === "services" && (
-							<ServicesTab
-								services={services}
-								servicesLoading={servicesLoading}
-								refetchServices={refetchServices}
-								ServiceTypeBadge={ServiceTypeBadge}
-							/>
-						)}
+							{/* ── SERVICES TAB ── */}
+							{activeTab === "services" && (
+								<ServicesTab
+									services={services}
+									servicesLoading={servicesLoading}
+									refetchServices={refetchServices}
+									ServiceTypeBadge={ServiceTypeBadge}
+								/>
+							)}
 
-						{/* ── ENDPOINTS TAB ── */}
-						{activeTab === "endpoints" && (
-							<EndpointsTab
-								endpointName={endpointName}
-								setEndpointName={setEndpointName}
-								services={services}
-								endpointsLoading={endpointsLoading}
-								endpointsData={endpointsData}
-								refetchEndpoints={refetchEndpoints}
-							/>
-						)}
+							{/* ── ENDPOINTS TAB ── */}
+							{activeTab === "endpoints" && (
+								<EndpointsTab
+									endpointName={endpointName}
+									setEndpointName={setEndpointName}
+									services={services}
+									endpointsLoading={endpointsLoading}
+									endpointsData={endpointsData}
+									refetchEndpoints={refetchEndpoints}
+								/>
+							)}
 
-						{/* ── EVENTS TAB ── */}
-						{activeTab === "events" && (
-							<EventsTab
-								eventKindFilter={eventKindFilter}
-								setEventKindFilter={setEventKindFilter}
-								eventTypeFilter={eventTypeFilter}
-								setEventTypeFilter={setEventTypeFilter}
-								filteredEvents={filteredEvents}
-								warningCount={warningCount}
-								eventsLoading={eventsLoading}
-								allEvents={allEvents}
-								refetchEvents={refetchEvents}
-							/>
-						)}
+							{/* ── EVENTS TAB ── */}
+							{activeTab === "events" && (
+								<EventsTab
+									eventKindFilter={eventKindFilter}
+									setEventKindFilter={setEventKindFilter}
+									eventTypeFilter={eventTypeFilter}
+									setEventTypeFilter={setEventTypeFilter}
+									filteredEvents={filteredEvents}
+									warningCount={warningCount}
+									eventsLoading={eventsLoading}
+									allEvents={allEvents}
+									refetchEvents={refetchEvents}
+								/>
+							)}
 
-						{/* ── NANONET SERVİSLERİ → K8S ── */}
-						{activeTab === "nanonet" && (
-							<NanonetTab
-								nanonetServicesLoading={nanonetServicesLoading}
-								nanonetServices={nanonetServices}
-								deployments={deployments}
-								isAvailable={!!isAvailable}
-								deployForms={deployForms}
-								setDeployForms={setDeployForms}
-								deployMutation={deployMutation}
-								undeployMutation={undeployMutation}
-								refetchNanonetServices={refetchNanonetServices}
-								refetchDeployments={refetchDeployments}
-								slugifyForK8s={slugifyForK8s}
-							/>
-						)}
-					</AnimatePresence>
-				</>
+							{/* ── NANONET SERVİSLERİ → K8S ── */}
+							{activeTab === "nanonet" && (
+								<NanonetTab
+									nanonetServicesLoading={nanonetServicesLoading}
+									nanonetServices={nanonetServices}
+									deployments={deployments}
+									isAvailable={!!isAvailable}
+									deployForms={deployForms}
+									setDeployForms={setDeployForms}
+									deployMutation={deployMutation}
+									undeployMutation={undeployMutation}
+									refetchNanonetServices={refetchNanonetServices}
+									refetchDeployments={refetchDeployments}
+									slugifyForK8s={slugifyForK8s}
+								/>
+							)}
+						</AnimatePresence>
+					</div>
+				</div>
 			)}
 		</PageShell>
 	);

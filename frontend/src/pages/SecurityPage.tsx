@@ -511,8 +511,9 @@ export function SecurityPage() {
 	}
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill>
 			<PageHeader
+				compact
 				eyebrow="Güvenlik"
 				title="Güvenlik Taraması"
 				description="TLS durumu, açık port'lar, header'lar ve risk skoru"
@@ -579,7 +580,7 @@ export function SecurityPage() {
 
 			{/* ── Stat kartları ────────────────────────────────────────── */}
 			<motion.div
-				className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+				className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 shrink-0"
 				initial={{ opacity: 0, y: 8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3, delay: 0.05 }}
@@ -622,145 +623,25 @@ export function SecurityPage() {
 				/>
 			</motion.div>
 
-			{/* ── Servis tablosu ───────────────────────────────────────── */}
-			<motion.div
-				initial={{ opacity: 0, y: 8 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.3, delay: 0.1 }}
-				className="rounded-xl overflow-hidden"
-				style={{
-					background: "var(--surface-raised)",
-					border: "1px solid var(--border-default)",
-				}}
-			>
-				{/* Tablo başlığı */}
-				<div
-					className="flex items-center gap-2 px-4 py-3"
-					style={{ borderBottom: "1px solid var(--border-default)" }}
-				>
-					<ShieldCheck
-						className="w-3.5 h-3.5"
-						style={{ color: "var(--text-faint)" }}
-					/>
-					<span
-						className="text-xs font-semibold"
-						style={{ color: "var(--text-primary)" }}
-					>
-						Servis Güvenlik Durumu
-					</span>
-					<span
-						className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
-						style={{
-							background: "var(--surface-sunken)",
-							color: "var(--text-faint)",
-						}}
-					>
-						{services.length} servis
-					</span>
-				</div>
-
-				{/* Kolon başlıkları */}
-				<div
-					className="grid items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider"
-					style={{
-						gridTemplateColumns: "1fr 90px 60px 56px 36px",
-						color: "var(--text-faint)",
-						borderBottom: "1px solid var(--border-subtle)",
-					}}
-				>
-					<span>Servis</span>
-					<span>TLS</span>
-					<span className="text-center">Başlık</span>
-					<span className="text-center">Skor</span>
-					<span />
-				</div>
-
-				{services.length === 0 ? (
-					<div
-						className="flex flex-col items-center justify-center py-10 gap-2"
-						style={{ color: "var(--text-faint)" }}
-					>
-						<Shield className="w-7 h-7" />
-						<p className="text-xs">Henüz taranmış servis yok</p>
-						<p className="text-[11px]">Tarama 6 saatte bir otomatik çalışır</p>
-					</div>
-				) : (
-					services.map((s) => (
-						<ServiceRow
-							key={s.service_id}
-							summary={s}
-							onScan={() => triggerMutation.mutate(s.service_id)}
-							scanning={scanningIds.has(s.service_id)}
-						/>
-					))
-				)}
-			</motion.div>
-
-			{/* ── AI sonucu ────────────────────────────────────────────── */}
-			<AnimatePresence>
-				{aiMutation.data && (
-					<motion.div
-						initial={{ opacity: 0, y: 6 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0 }}
-						className="rounded-xl p-4 space-y-1.5"
-						style={{
-							background: "var(--color-ai-subtle)",
-							border: "1px solid var(--color-ai-border)",
-						}}
-					>
-						<div className="flex items-center gap-2">
-							<Sparkles
-								className="w-3.5 h-3.5"
-								style={{ color: "var(--color-ai)" }}
-							/>
-							<span
-								className="text-xs font-semibold"
-								style={{ color: "var(--color-ai)" }}
-							>
-								AI Güvenlik İçgörüsü
-							</span>
-							{aiMutation.data.system_score && (
-								<span
-									className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
-									style={{
-										background: "var(--surface-sunken)",
-										color: "var(--text-faint)",
-									}}
-								>
-									{aiMutation.data.system_score}
-								</span>
-							)}
-						</div>
-						<p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-							{aiMutation.data.headline}
-						</p>
-						{aiMutation.data.risk_forecast && (
-							<p className="text-[11px]" style={{ color: "var(--text-faint)" }}>
-								{aiMutation.data.risk_forecast}
-							</p>
-						)}
-					</motion.div>
-				)}
-			</AnimatePresence>
-
-			{/* ── Auth olayları ─────────────────────────────────────────── */}
-			{authLogs.length > 0 && (
+			{/* Scrollable body */}
+			<div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 -mx-2 px-2 pb-4">
+				{/* ── Servis tablosu ───────────────────────────────────────── */}
 				<motion.div
 					initial={{ opacity: 0, y: 8 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.3, delay: 0.15 }}
+					transition={{ duration: 0.3, delay: 0.1 }}
 					className="rounded-xl overflow-hidden"
 					style={{
 						background: "var(--surface-raised)",
 						border: "1px solid var(--border-default)",
 					}}
 				>
+					{/* Tablo başlığı */}
 					<div
 						className="flex items-center gap-2 px-4 py-3"
 						style={{ borderBottom: "1px solid var(--border-default)" }}
 					>
-						<CheckCircle2
+						<ShieldCheck
 							className="w-3.5 h-3.5"
 							style={{ color: "var(--text-faint)" }}
 						/>
@@ -768,26 +649,154 @@ export function SecurityPage() {
 							className="text-xs font-semibold"
 							style={{ color: "var(--text-primary)" }}
 						>
-							Son Auth Olayları
+							Servis Güvenlik Durumu
 						</span>
-						{(blockedCount > 0 || failedCount > 0) && (
-							<span
-								className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
-								style={{
-									background: "var(--status-down-subtle)",
-									color: "var(--status-down-text)",
-									border: "1px solid var(--status-down-border)",
-								}}
-							>
-								{blockedCount} engel · {failedCount} hata
-							</span>
-						)}
+						<span
+							className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
+							style={{
+								background: "var(--surface-sunken)",
+								color: "var(--text-faint)",
+							}}
+						>
+							{services.length} servis
+						</span>
 					</div>
-					{authLogs.map((log, i) => (
-						<AuditRow key={log.ID ?? log.id ?? i} log={log} />
-					))}
+
+					{/* Kolon başlıkları */}
+					<div
+						className="grid items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider"
+						style={{
+							gridTemplateColumns: "1fr 90px 60px 56px 36px",
+							color: "var(--text-faint)",
+							borderBottom: "1px solid var(--border-subtle)",
+						}}
+					>
+						<span>Servis</span>
+						<span>TLS</span>
+						<span className="text-center">Başlık</span>
+						<span className="text-center">Skor</span>
+						<span />
+					</div>
+
+					{services.length === 0 ? (
+						<div
+							className="flex flex-col items-center justify-center py-10 gap-2"
+							style={{ color: "var(--text-faint)" }}
+						>
+							<Shield className="w-7 h-7" />
+							<p className="text-xs">Henüz taranmış servis yok</p>
+							<p className="text-[11px]">
+								Tarama 6 saatte bir otomatik çalışır
+							</p>
+						</div>
+					) : (
+						services.map((s) => (
+							<ServiceRow
+								key={s.service_id}
+								summary={s}
+								onScan={() => triggerMutation.mutate(s.service_id)}
+								scanning={scanningIds.has(s.service_id)}
+							/>
+						))
+					)}
 				</motion.div>
-			)}
+
+				{/* ── AI sonucu ────────────────────────────────────────────── */}
+				<AnimatePresence>
+					{aiMutation.data && (
+						<motion.div
+							initial={{ opacity: 0, y: 6 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0 }}
+							className="rounded-xl p-4 space-y-1.5"
+							style={{
+								background: "var(--color-ai-subtle)",
+								border: "1px solid var(--color-ai-border)",
+							}}
+						>
+							<div className="flex items-center gap-2">
+								<Sparkles
+									className="w-3.5 h-3.5"
+									style={{ color: "var(--color-ai)" }}
+								/>
+								<span
+									className="text-xs font-semibold"
+									style={{ color: "var(--color-ai)" }}
+								>
+									AI Güvenlik İçgörüsü
+								</span>
+								{aiMutation.data.system_score && (
+									<span
+										className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
+										style={{
+											background: "var(--surface-sunken)",
+											color: "var(--text-faint)",
+										}}
+									>
+										{aiMutation.data.system_score}
+									</span>
+								)}
+							</div>
+							<p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+								{aiMutation.data.headline}
+							</p>
+							{aiMutation.data.risk_forecast && (
+								<p
+									className="text-[11px]"
+									style={{ color: "var(--text-faint)" }}
+								>
+									{aiMutation.data.risk_forecast}
+								</p>
+							)}
+						</motion.div>
+					)}
+				</AnimatePresence>
+
+				{/* ── Auth olayları ─────────────────────────────────────────── */}
+				{authLogs.length > 0 && (
+					<motion.div
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.3, delay: 0.15 }}
+						className="rounded-xl overflow-hidden"
+						style={{
+							background: "var(--surface-raised)",
+							border: "1px solid var(--border-default)",
+						}}
+					>
+						<div
+							className="flex items-center gap-2 px-4 py-3"
+							style={{ borderBottom: "1px solid var(--border-default)" }}
+						>
+							<CheckCircle2
+								className="w-3.5 h-3.5"
+								style={{ color: "var(--text-faint)" }}
+							/>
+							<span
+								className="text-xs font-semibold"
+								style={{ color: "var(--text-primary)" }}
+							>
+								Son Auth Olayları
+							</span>
+							{(blockedCount > 0 || failedCount > 0) && (
+								<span
+									className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
+									style={{
+										background: "var(--status-down-subtle)",
+										color: "var(--status-down-text)",
+										border: "1px solid var(--status-down-border)",
+									}}
+								>
+									{blockedCount} engel · {failedCount} hata
+								</span>
+							)}
+						</div>
+						{authLogs.map((log, i) => (
+							<AuditRow key={log.ID ?? log.id ?? i} log={log} />
+						))}
+					</motion.div>
+				)}
+			</div>
 		</PageShell>
 	);
 }

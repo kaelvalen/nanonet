@@ -175,16 +175,17 @@ export function AIInsightsPage() {
 	const confOffset = circ - (confPct / 100) * circ;
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill>
 			<PageHeader
+				compact
 				eyebrow="AI"
 				title="AI İçgörüler"
-				description="Claude destekli servis analizi, kök-neden tespiti ve çözüm önerileri"
+				description="Claude destekli servis analizi · kök-neden · öneri"
 			/>
 
 			{/* ── Stat tiles ─────────────────────────────────────────── */}
 			<motion.div
-				className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+				className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 shrink-0"
 				initial={{ opacity: 0, y: 8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3 }}
@@ -263,17 +264,17 @@ export function AIInsightsPage() {
 				))}
 			</motion.div>
 
-			{/* ── 2-column layout ────────────────────────────────────── */}
-			<div className="grid grid-cols-12 gap-4">
+			{/* ── 2-column layout — fills viewport ───────────────────── */}
+			<div className="flex-1 min-h-0 grid grid-cols-12 gap-4">
 				{/* ── LEFT: Analyze panel ──────────────────────────── */}
 				<motion.div
-					className="col-span-12 lg:col-span-4"
+					className="col-span-12 lg:col-span-4 flex flex-col min-h-0 overflow-hidden"
 					initial={{ opacity: 0, x: -10 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ duration: 0.35, delay: 0.1 }}
 				>
 					<Card
-						className="flex flex-col overflow-hidden"
+						className="flex flex-col min-h-0 h-full overflow-hidden"
 						style={{
 							background: "var(--surface-card)",
 							border: "1px solid var(--color-lavender-border)",
@@ -285,7 +286,7 @@ export function AIInsightsPage() {
 							style={{ background: "var(--gradient-btn-primary)" }}
 						/>
 
-						<div className="p-5 space-y-5 flex flex-col">
+						<div className="p-5 space-y-5 flex flex-col flex-1 min-h-0 overflow-y-auto">
 							{/* Panel title */}
 							<div className="flex items-center gap-2.5">
 								<div
@@ -678,7 +679,7 @@ export function AIInsightsPage() {
 
 				{/* ── RIGHT: Insights feed ─────────────────────────── */}
 				<motion.div
-					className="col-span-12 lg:col-span-8 flex flex-col gap-3"
+					className="col-span-12 lg:col-span-8 flex flex-col gap-3 min-h-0 overflow-y-auto"
 					initial={{ opacity: 0, x: 10 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ duration: 0.35, delay: 0.15 }}

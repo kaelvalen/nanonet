@@ -19,7 +19,6 @@ import { servicesApi } from "@/api/services";
 import { AlertRulesPanel } from "@/components/alerts/AlertRulesPanel";
 import { Button } from "@/components/ui/button";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
-import { SectionCard } from "@/components/ui/section-card";
 import { type Severity, SeverityBadge } from "@/components/ui/status-atoms";
 import type { Alert } from "@/types/alerts";
 
@@ -404,14 +403,15 @@ export function AlertsPage() {
 	};
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill>
 			<PageHeader
+				compact
 				eyebrow="Uyarılar"
 				title="Uyarı merkezi"
 				description={
 					activeCount > 0
-						? `${activeCount} aktif uyarı var · eşikleri özelleştirin`
-						: "Tüm sistemler normal · threshold'ları dilediğiniz zaman ayarlayın"
+						? `${activeCount} aktif uyarı`
+						: "Tüm sistemler normal"
 				}
 				actions={
 					<Button
@@ -426,8 +426,8 @@ export function AlertsPage() {
 				}
 			/>
 
-			{/* Severity tiles */}
-			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+			{/* Severity tiles — compact */}
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 shrink-0">
 				{(["all", "crit", "warn", "info"] as const).map((sev) => (
 					<SeverityTile
 						key={sev}
@@ -441,36 +441,81 @@ export function AlertsPage() {
 				))}
 			</div>
 
-			{/* 2-column layout */}
-			<div className="grid grid-cols-1 lg:grid-cols-12 gap-4" ref={panelRef}>
+			{/* 2-column layout — fills viewport */}
+			<div
+				className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4"
+				ref={panelRef}
+			>
 				{/* Feed */}
-				<motion.div
-					className="lg:col-span-8"
-					initial={{ opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.25 }}
+				<div
+					className="lg:col-span-8 flex flex-col min-h-0 overflow-hidden"
+					style={{
+						background: "var(--surface-card)",
+						border: "1px solid var(--border-default)",
+						borderRadius: "var(--radius)",
+					}}
 				>
-					<SectionCard
-						icon={Bell}
-						iconTone={activeCount > 0 ? "danger" : "success"}
-						title="Akış"
-						description={`${filtered.length} uyarı gösteriliyor`}
-						actions={
-							<button
-								type="button"
-								onClick={() => setShowResolved(!showResolved)}
-								className="text-xs font-medium transition-colors"
+					{/* Feed header */}
+					<div
+						className="flex items-center justify-between gap-3 px-4 py-3 shrink-0"
+						style={{ borderBottom: "1px solid var(--border-subtle)" }}
+					>
+						<div className="flex items-center gap-2.5 min-w-0">
+							<div
+								className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
 								style={{
-									color: showResolved
-										? "var(--status-up-text)"
-										: "var(--text-muted)",
+									background:
+										activeCount > 0
+											? "var(--status-down-subtle)"
+											: "var(--status-up-subtle)",
+									border: `1px solid ${
+										activeCount > 0
+											? "var(--status-down-border)"
+											: "var(--status-up-border)"
+									}`,
 								}}
 							>
-								{showResolved ? "✓ Çözülmüş dahil" : "Çözülmüşleri göster"}
-							</button>
-						}
-						bodyClassName="p-3"
-					>
+								<Bell
+									className="w-3.5 h-3.5"
+									style={{
+										color:
+											activeCount > 0
+												? "var(--status-down)"
+												: "var(--status-up)",
+									}}
+								/>
+							</div>
+							<div className="min-w-0">
+								<h3
+									className="text-sm font-semibold leading-none"
+									style={{ color: "var(--text-primary)" }}
+								>
+									Akış
+								</h3>
+								<p
+									className="text-[11px] mt-1"
+									style={{ color: "var(--text-faint)" }}
+								>
+									{filtered.length} uyarı gösteriliyor
+								</p>
+							</div>
+						</div>
+						<button
+							type="button"
+							onClick={() => setShowResolved(!showResolved)}
+							className="text-xs font-medium transition-colors shrink-0"
+							style={{
+								color: showResolved
+									? "var(--status-up-text)"
+									: "var(--text-muted)",
+							}}
+						>
+							{showResolved ? "✓ Çözülmüş dahil" : "Çözülmüşleri göster"}
+						</button>
+					</div>
+
+					{/* Scrollable feed body */}
+					<div className="flex-1 min-h-0 overflow-y-auto p-3">
 						{isLoading ? (
 							<div className="flex flex-col gap-2">
 								{[1, 2, 3].map((i) => (
@@ -499,7 +544,7 @@ export function AlertsPage() {
 								))}
 							</div>
 						) : filtered.length === 0 ? (
-							<div className="flex flex-col items-center gap-3 py-12 text-center">
+							<div className="flex flex-col items-center gap-3 h-full justify-center py-12 text-center">
 								<div
 									className="w-14 h-14 rounded-xl flex items-center justify-center"
 									style={{
@@ -556,27 +601,22 @@ export function AlertsPage() {
 								</AnimatePresence>
 							</ul>
 						)}
-					</SectionCard>
-				</motion.div>
+					</div>
+				</div>
 
 				{/* Rules panel */}
-				<motion.div
-					className="lg:col-span-4"
-					initial={{ opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.25, delay: 0.08 }}
+				<div
+					className="lg:col-span-4 flex flex-col min-h-0 overflow-hidden"
+					style={{
+						background: "var(--surface-card)",
+						border: "1px solid var(--border-default)",
+						borderRadius: "var(--radius)",
+					}}
 				>
-					<div
-						className="p-4"
-						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--border-default)",
-							borderRadius: "var(--radius)",
-						}}
-					>
+					<div className="flex-1 min-h-0 overflow-y-auto p-4">
 						<AlertRulesPanel />
 					</div>
-				</motion.div>
+				</div>
 			</div>
 		</PageShell>
 	);

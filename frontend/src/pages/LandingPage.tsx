@@ -361,6 +361,8 @@ function MockSparkGraph() {
 			viewBox="0 0 240 60"
 			className="w-full h-16"
 			preserveAspectRatio="none"
+			role="img"
+			aria-label="Latency time series — mock preview"
 		>
 			<defs>
 				<linearGradient id="mock-area" x1="0" y1="0" x2="0" y2="1">

@@ -922,8 +922,9 @@ export function LogsPage() {
 	];
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill>
 			<PageHeader
+				compact
 				eyebrow="Observability"
 				title="Log merkezi"
 				description="Servis logları, denetim kayıtları ve Kubernetes pod logları"
@@ -931,7 +932,7 @@ export function LogsPage() {
 
 			{/* Tabs */}
 			<div
-				className="flex gap-1 p-1 rounded-xl"
+				className="flex gap-1 p-1 rounded-xl mb-3 shrink-0"
 				style={{
 					background: "var(--surface-sunken)",
 					border: "1px solid var(--border-default)",
@@ -965,7 +966,7 @@ export function LogsPage() {
 
 			{/* Retention bilgisi */}
 			<div
-				className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs"
+				className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs mb-3 shrink-0"
 				style={{
 					background: "var(--surface-card)",
 					border: "1px solid var(--border-default)",
@@ -983,10 +984,12 @@ export function LogsPage() {
 				</span>
 			</div>
 
-			{/* Tab içeriği */}
-			{activeTab === "service" && <ServiceLogsTab />}
-			{activeTab === "audit" && <AuditLogsTab />}
-			{activeTab === "k8s" && <K8sLogsTab />}
+			{/* Tab içeriği — scrollable */}
+			<div className="flex-1 min-h-0 overflow-y-auto -mx-2 px-2 pb-4">
+				{activeTab === "service" && <ServiceLogsTab />}
+				{activeTab === "audit" && <AuditLogsTab />}
+				{activeTab === "k8s" && <K8sLogsTab />}
+			</div>
 		</PageShell>
 	);
 }

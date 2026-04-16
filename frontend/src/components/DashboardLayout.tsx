@@ -31,7 +31,7 @@ export function DashboardLayout() {
 
 	return (
 		<div
-			className="min-h-screen"
+			className="h-screen overflow-hidden flex flex-col"
 			style={{ background: "var(--background)", color: "var(--text-primary)" }}
 		>
 			{/* Floating dock — desktop only */}
@@ -41,13 +41,15 @@ export function DashboardLayout() {
 			<FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
 			<div
-				className={`flex flex-col min-h-screen ${fullBleed ? "" : "md:pl-20"}`}
+				className={`flex flex-col flex-1 min-h-0 ${
+					fullBleed ? "" : "md:pl-20"
+				}`}
 			>
 				<main
 					className={
 						fullBleed
 							? "flex-1 flex flex-col min-h-0"
-							: "flex-1 flex flex-col min-h-0 pt-16 pb-24 md:pb-10 px-4 sm:px-6 lg:px-10"
+							: "flex-1 flex flex-col min-h-0 pt-16 pb-20 md:pb-6 px-4 sm:px-6 lg:px-8 overflow-hidden"
 					}
 				>
 					<ErrorBoundary key={pathname}>

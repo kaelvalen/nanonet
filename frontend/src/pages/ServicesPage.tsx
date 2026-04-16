@@ -347,8 +347,9 @@ export function ServicesPage() {
 	}, [services]);
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill>
 			<PageHeader
+				compact
 				eyebrow="Servisler"
 				title="Tüm servisler"
 				description={
@@ -362,7 +363,7 @@ export function ServicesPage() {
 			/>
 
 			{/* Toolbar */}
-			<div className="flex flex-col md:flex-row gap-2 mb-5">
+			<div className="flex flex-col md:flex-row gap-2 mb-4 shrink-0">
 				{/* Search */}
 				<div className="relative flex-1 min-w-0">
 					<Search
@@ -447,46 +448,51 @@ export function ServicesPage() {
 				</div>
 			</div>
 
-			{/* Results */}
-			{isLoading ? (
-				<LoadingGrid />
-			) : filtered.length === 0 ? (
-				<EmptyResults hasServices={services.length > 0} />
-			) : viewMode === "grid" ? (
-				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-					<AnimatePresence mode="popLayout">
+			{/* Results — scrollable viewport-fit container */}
+			<div className="flex-1 min-h-0 overflow-y-auto -mx-2 px-2 pb-4">
+				{isLoading ? (
+					<LoadingGrid />
+				) : filtered.length === 0 ? (
+					<EmptyResults hasServices={services.length > 0} />
+				) : viewMode === "grid" ? (
+					<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+						<AnimatePresence mode="popLayout">
+							{filtered.map((service, i) => (
+								<motion.div
+									key={service.id}
+									layout
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, scale: 0.96 }}
+									transition={{ duration: 0.2, delay: Math.min(i, 8) * 0.025 }}
+								>
+									<ServiceCard
+										service={service}
+										uptime={uptimeMap[service.id]}
+									/>
+								</motion.div>
+							))}
+						</AnimatePresence>
+					</div>
+				) : (
+					<div
+						className="overflow-hidden rounded-lg"
+						style={{
+							background: "var(--surface-card)",
+							border: "1px solid var(--border-default)",
+						}}
+					>
 						{filtered.map((service, i) => (
-							<motion.div
+							<ServiceRow
 								key={service.id}
-								layout
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, scale: 0.96 }}
-								transition={{ duration: 0.2, delay: Math.min(i, 8) * 0.025 }}
-							>
-								<ServiceCard service={service} uptime={uptimeMap[service.id]} />
-							</motion.div>
+								service={service}
+								uptime={uptimeMap[service.id]}
+								isLast={i === filtered.length - 1}
+							/>
 						))}
-					</AnimatePresence>
-				</div>
-			) : (
-				<div
-					className="overflow-hidden rounded-lg"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-					}}
-				>
-					{filtered.map((service, i) => (
-						<ServiceRow
-							key={service.id}
-							service={service}
-							uptime={uptimeMap[service.id]}
-							isLast={i === filtered.length - 1}
-						/>
-					))}
-				</div>
-			)}
+					</div>
+				)}
+			</div>
 		</PageShell>
 	);
 }

@@ -333,8 +333,9 @@ export function SettingsPage() {
 	const dividerStyle = { backgroundColor: "var(--border-divider)" };
 
 	return (
-		<PageShell className="max-w-3xl">
+		<PageShell className="max-w-3xl" fill>
 			<PageHeader
+				compact
 				eyebrow="Hesap"
 				title="Ayarlar"
 				description="Platform yapılandırması ve tercihler"
