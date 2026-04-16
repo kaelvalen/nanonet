@@ -82,7 +82,9 @@ function DockItem({
 						<span
 							className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold tabular-nums"
 							style={{
-								background: isAlert ? "var(--status-down)" : "var(--color-teal)",
+								background: isAlert
+									? "var(--status-down)"
+									: "var(--color-teal)",
 								color: "#fff",
 								border: "1.5px solid var(--surface-raised)",
 							}}
@@ -235,7 +237,9 @@ export function HybridDock() {
 							<span
 								className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
 								style={{
-									background: isConnected ? "var(--status-up)" : "var(--text-faint)",
+									background: isConnected
+										? "var(--status-up)"
+										: "var(--text-faint)",
 									border: "1.5px solid var(--surface-raised)",
 								}}
 							/>
@@ -283,7 +287,9 @@ export function HybridDock() {
 				</DropdownMenu>
 				<div
 					className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap pointer-events-none transition-all duration-150 ${
-						hovered === "user" ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-1"
+						hovered === "user"
+							? "opacity-100 translate-x-0"
+							: "opacity-0 -translate-x-1"
 					}`}
 					style={{
 						background: "var(--surface-overlay)",

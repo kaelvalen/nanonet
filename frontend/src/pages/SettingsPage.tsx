@@ -341,28 +341,28 @@ export function SettingsPage() {
 				actions={
 					anyDirty ? (
 						<button
-						type="button"
-						onClick={handleSaveAll}
-						disabled={saveMutation.isPending}
-						className="flex items-center gap-2 px-4 h-9 rounded text-xs font-semibold shrink-0 transition-opacity hover:opacity-80 disabled:opacity-50"
-						style={{
-							background: "var(--gradient-btn-primary)",
-							color: "white",
-							boxShadow: "var(--btn-shadow)",
-						}}
-					>
-						{saveMutation.isPending ? (
-							<>
-								<Loader2 className="w-3.5 h-3.5 animate-spin" />
-								Kaydediliyor...
-							</>
-						) : (
-							<>
-								<Save className="w-3.5 h-3.5" />
-								Değişiklikleri Kaydet
-							</>
-						)}
-					</button>
+							type="button"
+							onClick={handleSaveAll}
+							disabled={saveMutation.isPending}
+							className="flex items-center gap-2 px-4 h-9 rounded text-xs font-semibold shrink-0 transition-opacity hover:opacity-80 disabled:opacity-50"
+							style={{
+								background: "var(--gradient-btn-primary)",
+								color: "white",
+								boxShadow: "var(--btn-shadow)",
+							}}
+						>
+							{saveMutation.isPending ? (
+								<>
+									<Loader2 className="w-3.5 h-3.5 animate-spin" />
+									Kaydediliyor...
+								</>
+							) : (
+								<>
+									<Save className="w-3.5 h-3.5" />
+									Değişiklikleri Kaydet
+								</>
+							)}
+						</button>
 					) : null
 				}
 			/>

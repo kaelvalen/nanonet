@@ -19,7 +19,6 @@ import {
 	X,
 	Zap,
 } from "lucide-react";
-import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { type LogQueryParams, logsApi, type ServiceLog } from "@/api/metrics";
 import { servicesApi } from "@/api/services";

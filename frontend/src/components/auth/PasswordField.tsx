@@ -74,11 +74,7 @@ export function PasswordField({
 					tabIndex={-1}
 					aria-label={show ? "Şifreyi gizle" : "Şifreyi göster"}
 				>
-					{show ? (
-						<EyeOff className="w-4 h-4" />
-					) : (
-						<Eye className="w-4 h-4" />
-					)}
+					{show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
 				</button>
 			</div>
 			{error && (

@@ -770,109 +770,109 @@ export function KubernetesPage() {
 				actions={
 					isAvailable ? (
 						<button
-									type="button"
-									onClick={() => {
-										refetchNodes();
-										refetchAllPods();
-										refetchDeployments();
-									}}
-									className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all hover:opacity-80"
-									style={{
-										borderColor: "var(--border-subtle)",
-										color: "var(--text-muted)",
-										background: "var(--surface-card)",
-									}}
-								>
-									{nodesLoading || allPodsLoading || deploymentsLoading ? (
-										<Loader2 className="w-3 h-3 animate-spin" />
-									) : (
-										<RefreshCw className="w-3 h-3" />
-									)}
-									Yenile
-								</button>
-							) : null
+							type="button"
+							onClick={() => {
+								refetchNodes();
+								refetchAllPods();
+								refetchDeployments();
+							}}
+							className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all hover:opacity-80"
+							style={{
+								borderColor: "var(--border-subtle)",
+								color: "var(--text-muted)",
+								background: "var(--surface-card)",
+							}}
+						>
+							{nodesLoading || allPodsLoading || deploymentsLoading ? (
+								<Loader2 className="w-3 h-3 animate-spin" />
+							) : (
+								<RefreshCw className="w-3 h-3" />
+							)}
+							Yenile
+						</button>
+					) : null
+				}
+				meta={
+					<div
+						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium border"
+						style={
+							isAvailable
+								? {
+										background: "var(--status-up-subtle)",
+										borderColor: "var(--status-up-border)",
+										color: "var(--status-up-text)",
+									}
+								: {
+										background: "var(--status-down-subtle)",
+										borderColor: "var(--status-down-border)",
+										color: "var(--status-down-text)",
+									}
 						}
-						meta={
-							<div
-								className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium border"
-								style={
-									isAvailable
-										? {
-												background: "var(--status-up-subtle)",
-												borderColor: "var(--status-up-border)",
-												color: "var(--status-up-text)",
-											}
-										: {
-												background: "var(--status-down-subtle)",
-												borderColor: "var(--status-down-border)",
-												color: "var(--status-down-text)",
-											}
-								}
-							>
-								{statusLoading ? (
-									<>
-										<Loader2 className="w-3 h-3 animate-spin" /> Kontrol ediliyor
-									</>
-								) : isAvailable ? (
-									<>
-										<Cloud className="w-3 h-3" /> Aktif · {k8sStatus?.namespace}
-									</>
-								) : (
-									<>
-										<CloudOff className="w-3 h-3" /> Bağlantısız
-									</>
-								)}
-							</div>
-						}
-					/>
-					{/* Cluster summary strip */}
-					{isAvailable && !statusLoading && (
-						<div className="flex flex-wrap gap-2">
-							{(
-								[
-									{
-										label: "Nodes",
-										value: `${readyNodes}/${nodes.length}`,
-										color: "var(--color-teal)",
-										icon: Server,
-									},
-									{
-										label: "Pods",
-										value: `${runningPods}/${pods.length}`,
-										color: "var(--color-blue)",
-										icon: Box,
-									},
-									{
-										label: "Deployments",
-										value: `${readyDeployments}/${deployments.length}`,
-										color: "var(--color-lavender)",
-										icon: Layers,
-									},
-									{
-										label: "Namespace",
-										value: k8sStatus?.namespace ?? "—",
-										color: "var(--color-pink)",
-										icon: GitBranch,
-									},
-								] as const
-							).map(({ label, value, color, icon: Icon }) => (
-								<div
-									key={label}
-									className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
-									style={{
-										background: `color-mix(in srgb, ${color} 10%, var(--surface-card))`,
-										border: `1px solid color-mix(in srgb, ${color} 25%, var(--border-default))`,
-									}}
-								>
-									<Icon className="w-3 h-3" style={{ color }} />
-									<span style={{ color: "var(--text-faint)" }}>{label}:</span>
-									<span className="font-semibold" style={{ color }}>
-										{value}
-									</span>
-								</div>
-							))}
+					>
+						{statusLoading ? (
+							<>
+								<Loader2 className="w-3 h-3 animate-spin" /> Kontrol ediliyor
+							</>
+						) : isAvailable ? (
+							<>
+								<Cloud className="w-3 h-3" /> Aktif · {k8sStatus?.namespace}
+							</>
+						) : (
+							<>
+								<CloudOff className="w-3 h-3" /> Bağlantısız
+							</>
+						)}
+					</div>
+				}
+			/>
+			{/* Cluster summary strip */}
+			{isAvailable && !statusLoading && (
+				<div className="flex flex-wrap gap-2">
+					{(
+						[
+							{
+								label: "Nodes",
+								value: `${readyNodes}/${nodes.length}`,
+								color: "var(--color-teal)",
+								icon: Server,
+							},
+							{
+								label: "Pods",
+								value: `${runningPods}/${pods.length}`,
+								color: "var(--color-blue)",
+								icon: Box,
+							},
+							{
+								label: "Deployments",
+								value: `${readyDeployments}/${deployments.length}`,
+								color: "var(--color-lavender)",
+								icon: Layers,
+							},
+							{
+								label: "Namespace",
+								value: k8sStatus?.namespace ?? "—",
+								color: "var(--color-pink)",
+								icon: GitBranch,
+							},
+						] as const
+					).map(({ label, value, color, icon: Icon }) => (
+						<div
+							key={label}
+							className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
+							style={{
+								background: `color-mix(in srgb, ${color} 10%, var(--surface-card))`,
+								border: `1px solid color-mix(in srgb, ${color} 25%, var(--border-default))`,
+							}}
+						>
+							<Icon className="w-3 h-3" style={{ color }} />
+							<span style={{ color: "var(--text-faint)" }}>{label}:</span>
+							<span className="font-semibold" style={{ color }}>
+								{value}
+							</span>
 						</div>
-					)}
+					))}
+				</div>
+			)}
 
 			{/* Bağlanamadı */}
 			{!statusLoading && !isAvailable && (

@@ -51,7 +51,8 @@ export function ResetPasswordPage() {
 					<div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-100">
 						<AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
 						<p className="text-sm text-slate-700">
-							Bağlantı geçersiz ya da süresi dolmuş olabilir. Yeni bir sıfırlama bağlantısı talep edin.
+							Bağlantı geçersiz ya da süresi dolmuş olabilir. Yeni bir sıfırlama
+							bağlantısı talep edin.
 						</p>
 					</div>
 					<Link
@@ -74,7 +75,8 @@ export function ResetPasswordPage() {
 				<div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-100">
 					<CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
 					<p className="text-sm text-slate-700">
-						Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.
+						Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş
+						yapabilirsiniz.
 					</p>
 				</div>
 			</AuthLayout>
@@ -119,9 +121,7 @@ export function ResetPasswordPage() {
 					autoComplete="new-password"
 					disabled={loading}
 					success={confirm.length > 0 && passwordsMatch}
-					error={
-						confirm && !passwordsMatch ? "Şifreler eşleşmiyor" : null
-					}
+					error={confirm && !passwordsMatch ? "Şifreler eşleşmiyor" : null}
 				/>
 
 				<AuthSubmitButton

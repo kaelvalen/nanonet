@@ -20,8 +20,8 @@ import {
 	StatusBadge,
 	StatusDot,
 } from "@/components/ui/status-atoms";
-import type { Service } from "@/types/service";
 import { useServices } from "@/hooks/useServices";
+import type { Service } from "@/types/service";
 
 type Filter = "all" | Status;
 type Range = "24h" | "7d" | "30d";
@@ -66,10 +66,7 @@ function SegmentedControl<T extends string>({
 					className="relative px-2.5 h-7 rounded-md text-xs font-medium transition-colors"
 					style={{
 						background: value === opt ? "var(--surface-raised)" : "transparent",
-						color:
-							value === opt
-								? "var(--color-teal)"
-								: "var(--text-muted)",
+						color: value === opt ? "var(--color-teal)" : "var(--text-muted)",
 						boxShadow: value === opt ? "var(--btn-shadow)" : undefined,
 					}}
 				>
@@ -109,12 +106,15 @@ function UptimeChip({ value }: { value: number }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Service grid card
 
-function ServiceCard({ service, uptime }: { service: Service; uptime?: number }) {
+function ServiceCard({
+	service,
+	uptime,
+}: {
+	service: Service;
+	uptime?: number;
+}) {
 	return (
-		<Link
-			to={`/app/services/${service.id}`}
-			className="group block h-full"
-		>
+		<Link to={`/app/services/${service.id}`} className="group block h-full">
 			<div
 				className="relative h-full p-4 transition-all overflow-hidden"
 				style={{
@@ -233,11 +233,7 @@ function ServiceRow({
 // ─────────────────────────────────────────────────────────────────────────────
 // Empty state
 
-function EmptyResults({
-	hasServices,
-}: {
-	hasServices: boolean;
-}) {
+function EmptyResults({ hasServices }: { hasServices: boolean }) {
 	return (
 		<div
 			className="p-12 text-center rounded-lg"
@@ -256,9 +252,7 @@ function EmptyResults({
 				className="text-sm font-semibold mb-1"
 				style={{ color: "var(--text-primary)" }}
 			>
-				{hasServices
-					? "Filtreye uygun servis yok"
-					: "Henüz servis eklenmedi"}
+				{hasServices ? "Filtreye uygun servis yok" : "Henüz servis eklenmedi"}
 			</p>
 			<p className="text-xs" style={{ color: "var(--text-muted)" }}>
 				{hasServices
@@ -331,8 +325,7 @@ export function ServicesPage() {
 				!q ||
 				s.name.toLowerCase().includes(q) ||
 				s.host.toLowerCase().includes(q);
-			const matchesStatus =
-				statusFilter === "all" || s.status === statusFilter;
+			const matchesStatus = statusFilter === "all" || s.status === statusFilter;
 			return matchesSearch && matchesStatus;
 		});
 	}, [services, search, statusFilter]);
@@ -431,9 +424,7 @@ export function ServicesPage() {
 							background:
 								viewMode === "grid" ? "var(--surface-raised)" : "transparent",
 							color:
-								viewMode === "grid"
-									? "var(--color-teal)"
-									: "var(--text-faint)",
+								viewMode === "grid" ? "var(--color-teal)" : "var(--text-faint)",
 							boxShadow: viewMode === "grid" ? "var(--btn-shadow)" : undefined,
 						}}
 					>
@@ -447,9 +438,7 @@ export function ServicesPage() {
 							background:
 								viewMode === "list" ? "var(--surface-raised)" : "transparent",
 							color:
-								viewMode === "list"
-									? "var(--color-teal)"
-									: "var(--text-faint)",
+								viewMode === "list" ? "var(--color-teal)" : "var(--text-faint)",
 							boxShadow: viewMode === "list" ? "var(--btn-shadow)" : undefined,
 						}}
 					>

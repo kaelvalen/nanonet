@@ -89,8 +89,7 @@ export function StatusDot({
 				background: s.dot,
 				width: size,
 				height: size,
-				boxShadow:
-					status === "up" && pulse ? `0 0 6px ${s.dot}` : undefined,
+				boxShadow: status === "up" && pulse ? `0 0 6px ${s.dot}` : undefined,
 			}}
 		/>
 	);

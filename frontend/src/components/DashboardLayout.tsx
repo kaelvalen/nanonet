@@ -41,9 +41,7 @@ export function DashboardLayout() {
 			<FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
 			<div
-				className={`flex flex-col min-h-screen ${
-					fullBleed ? "" : "md:pl-20"
-				}`}
+				className={`flex flex-col min-h-screen ${fullBleed ? "" : "md:pl-20"}`}
 			>
 				<main
 					className={

@@ -20,6 +20,7 @@ export type {
 	ReportResult,
 	TimeRange,
 } from "../types/ai";
+export { TIME_RANGE_LABELS } from "../types/ai";
 export type { Alert, AlertRules } from "../types/alerts";
 export type {
 	AuditLog,
@@ -27,7 +28,6 @@ export type {
 	LogsResponse,
 	ServiceLog,
 } from "../types/logs";
-export { TIME_RANGE_LABELS } from "../types/ai";
 
 export interface AggregatedMetric {
 	bucket: string;

@@ -192,8 +192,8 @@ function Hero({ authed, liveCount }: { authed: boolean; liveCount: number }) {
 					transition={{ duration: 0.6, delay: 0.1 }}
 					className="text-base md:text-lg text-white/50 max-w-2xl mx-auto leading-relaxed mb-10"
 				>
-					Gerçek zamanlı metrik, uyarı ve AI destekli kök-neden analizi.
-					Kendi altyapınızda çalışır, verileriniz hep sizde kalır.
+					Gerçek zamanlı metrik, uyarı ve AI destekli kök-neden analizi. Kendi
+					altyapınızda çalışır, verileriniz hep sizde kalır.
 				</motion.p>
 
 				{/* CTAs */}
@@ -253,7 +253,8 @@ function ProductMock() {
 			className="relative mx-auto max-w-4xl rounded-xl overflow-hidden border border-white/10"
 			style={{
 				background: INK_ELEVATED,
-				boxShadow: "0 32px 64px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)",
+				boxShadow:
+					"0 32px 64px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)",
 			}}
 		>
 			{/* Chrome */}
@@ -281,9 +282,7 @@ function ProductMock() {
 						<span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
 							Son 24 saat · Latency (p50)
 						</span>
-						<span className="text-[10px] font-mono text-white/30">
-							canlı
-						</span>
+						<span className="text-[10px] font-mono text-white/30">canlı</span>
 					</div>
 					<MockSparkGraph />
 				</div>
@@ -333,11 +332,7 @@ function MockTile({
 	accent: "teal" | "amber" | "rose";
 }) {
 	const color =
-		accent === "teal"
-			? "#2dd4bf"
-			: accent === "amber"
-				? "#fbbf24"
-				: "#fb7185";
+		accent === "teal" ? "#2dd4bf" : accent === "amber" ? "#fbbf24" : "#fb7185";
 	return (
 		<div className="rounded-lg border border-white/5 bg-white/[0.02] p-4 relative overflow-hidden">
 			<div
@@ -362,7 +357,11 @@ function MockSparkGraph() {
 	const range = max - min || 1;
 
 	return (
-		<svg viewBox="0 0 240 60" className="w-full h-16" preserveAspectRatio="none">
+		<svg
+			viewBox="0 0 240 60"
+			className="w-full h-16"
+			preserveAspectRatio="none"
+		>
 			<defs>
 				<linearGradient id="mock-area" x1="0" y1="0" x2="0" y2="1">
 					<stop offset="0%" stopColor={TEAL} stopOpacity="0.25" />
@@ -374,13 +373,19 @@ function MockSparkGraph() {
 				stroke={TEAL}
 				strokeWidth="1.5"
 				points={values
-					.map((v, i) => `${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`)
+					.map(
+						(v, i) =>
+							`${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`,
+					)
 					.join(" ")}
 			/>
 			<polygon
 				fill="url(#mock-area)"
 				points={`0,60 ${values
-					.map((v, i) => `${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`)
+					.map(
+						(v, i) =>
+							`${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`,
+					)
 					.join(" ")} 240,60`}
 			/>
 		</svg>
@@ -506,7 +511,11 @@ function HowItWorks() {
 	];
 
 	return (
-		<section id="how" className="py-28 px-6" style={{ background: INK_ELEVATED }}>
+		<section
+			id="how"
+			className="py-28 px-6"
+			style={{ background: INK_ELEVATED }}
+		>
 			<div className="max-w-6xl mx-auto">
 				<motion.div
 					initial={{ opacity: 0, y: 16 }}
@@ -541,9 +550,7 @@ function HowItWorks() {
 							<h3 className="text-lg font-semibold text-white mb-3 tracking-tight">
 								{s.title}
 							</h3>
-							<p className="text-sm text-white/45 leading-relaxed">
-								{s.desc}
-							</p>
+							<p className="text-sm text-white/45 leading-relaxed">{s.desc}</p>
 						</div>
 					))}
 				</div>
@@ -646,8 +653,11 @@ function AIExampleCard() {
 						Olası kök-neden
 					</p>
 					<p className="text-[13px] text-white/80 leading-relaxed">
-						Son deployment'ta değişen SQL sorgusu yeni bir index kullanıyor
-						gibi görünüyor. <code className="text-teal-400 text-xs bg-white/5 px-1 py-0.5 rounded">payments_by_user</code>{" "}
+						Son deployment'ta değişen SQL sorgusu yeni bir index kullanıyor gibi
+						görünüyor.{" "}
+						<code className="text-teal-400 text-xs bg-white/5 px-1 py-0.5 rounded">
+							payments_by_user
+						</code>{" "}
 						index'i RDS'te yok.
 					</p>
 				</div>
@@ -672,7 +682,11 @@ function AIExampleCard() {
 
 function DevSection() {
 	return (
-		<section id="devs" className="py-28 px-6" style={{ background: INK_ELEVATED }}>
+		<section
+			id="devs"
+			className="py-28 px-6"
+			style={{ background: INK_ELEVATED }}
+		>
 			<div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-start">
 				<motion.div
 					initial={{ opacity: 0, y: 16 }}
@@ -688,8 +702,8 @@ function DevSection() {
 						<span className="text-white/40"> sıfır sürpriz.</span>
 					</h2>
 					<p className="text-base text-white/50 leading-relaxed mb-8">
-						Rust ile yazılmış tek binary agent. Docker değil, daemon değil,
-						çok hafif. Alt yapınıza girmeden önce kaynak kodunu inceleyin.
+						Rust ile yazılmış tek binary agent. Docker değil, daemon değil, çok
+						hafif. Alt yapınıza girmeden önce kaynak kodunu inceleyin.
 					</p>
 					<div className="grid grid-cols-3 gap-4">
 						{[
@@ -734,17 +748,22 @@ function DevSection() {
 							{"\n"}
 							<span className="text-teal-400">$</span> ./agent-setup.sh{" "}
 							<span className="text-white/50">\</span>
-							{"\n"}    <span className="text-white/50">--backend</span> https://api.nanonet.dev{" "}
-							<span className="text-white/50">\</span>
-							{"\n"}    <span className="text-white/50">--token</span> $NANONET_TOKEN
+							{"\n"} <span className="text-white/50">--backend</span>{" "}
+							https://api.nanonet.dev <span className="text-white/50">\</span>
+							{"\n"} <span className="text-white/50">--token</span>{" "}
+							$NANONET_TOKEN
 							{"\n\n"}
 							<span className="text-white/40">→ Servis eşleniyor...</span>
 							{"\n"}
-							<span className="text-white/40">→ Binary doğrulanıyor (6.2 MB)</span>
+							<span className="text-white/40">
+								→ Binary doğrulanıyor (6.2 MB)
+							</span>
 							{"\n"}
 							<span className="text-white/40">→ systemd unit kuruldu</span>
 							{"\n"}
-							<span className="text-emerald-400">✓ nanonet-agent aktif · PID 12847</span>
+							<span className="text-emerald-400">
+								✓ nanonet-agent aktif · PID 12847
+							</span>
 						</code>
 					</pre>
 				</motion.div>
@@ -764,7 +783,10 @@ function StatsStrip() {
 		{ icon: Zap, label: "Alert SLA", value: "<10s" },
 	];
 	return (
-		<section className="py-16 px-6 border-y border-white/5" style={{ background: INK }}>
+		<section
+			className="py-16 px-6 border-y border-white/5"
+			style={{ background: INK }}
+		>
 			<div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5 rounded-xl overflow-hidden">
 				{stats.map((s) => (
 					<div
@@ -793,7 +815,10 @@ function StatsStrip() {
 
 function CTA({ authed }: { authed: boolean }) {
 	return (
-		<section className="py-32 px-6 relative overflow-hidden" style={{ background: INK }}>
+		<section
+			className="py-32 px-6 relative overflow-hidden"
+			style={{ background: INK }}
+		>
 			<div
 				className="absolute inset-0 pointer-events-none"
 				style={{
@@ -840,7 +865,10 @@ function CTA({ authed }: { authed: boolean }) {
 
 function Footer() {
 	return (
-		<footer className="border-t border-white/5 py-10 px-6" style={{ background: INK }}>
+		<footer
+			className="border-t border-white/5 py-10 px-6"
+			style={{ background: INK }}
+		>
 			<div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
 				<div className="flex items-center gap-2.5">
 					<img src={logo} alt="NanoNet" className="w-5 h-5 opacity-60" />

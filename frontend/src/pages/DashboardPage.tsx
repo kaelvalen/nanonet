@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import {
 	Activity,
-	AlertCircle,
 	ArrowRight,
 	Bell,
 	CheckCircle2,
@@ -59,10 +58,7 @@ function Onboarding() {
 						border: "1px solid var(--border-default)",
 					}}
 				>
-					<Server
-						className="w-6 h-6"
-						style={{ color: "var(--color-teal)" }}
-					/>
+					<Server className="w-6 h-6" style={{ color: "var(--color-teal)" }} />
 				</div>
 				<h1
 					className="text-2xl font-bold tracking-tight mb-2"
@@ -107,10 +103,7 @@ function Onboarding() {
 							>
 								{step.title}
 							</p>
-							<p
-								className="text-[10px]"
-								style={{ color: "var(--text-faint)" }}
-							>
+							<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
 								{step.desc}
 							</p>
 						</div>
@@ -151,9 +144,7 @@ function HealthBar({
 	totalServices: number;
 }) {
 	const healthPercent =
-		totalServices > 0
-			? Math.round((onlineServices / totalServices) * 100)
-			: 0;
+		totalServices > 0 ? Math.round((onlineServices / totalServices) * 100) : 0;
 
 	const segments = [
 		{ value: onlineServices, color: "var(--status-up)" },
@@ -171,10 +162,7 @@ function HealthBar({
 			}}
 		>
 			<div className="flex items-center gap-2.5 shrink-0">
-				<Activity
-					className="w-4 h-4"
-					style={{ color: "var(--color-teal)" }}
-				/>
+				<Activity className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
 				<span
 					className="text-xs font-semibold"
 					style={{ color: "var(--text-secondary)" }}
@@ -282,8 +270,7 @@ export function DashboardPage() {
 	}
 
 	const memoryValue =
-		globalSummary?.avg_memory_used_mb &&
-		globalSummary.avg_memory_used_mb > 1024
+		globalSummary?.avg_memory_used_mb && globalSummary.avg_memory_used_mb > 1024
 			? `${(globalSummary.avg_memory_used_mb / 1024).toFixed(1)} GB`
 			: fmt(globalSummary?.avg_memory_used_mb, " MB");
 
@@ -580,10 +567,7 @@ export function DashboardPage() {
 								>
 									Aktif uyarı yok
 								</p>
-								<p
-									className="text-xs"
-									style={{ color: "var(--text-faint)" }}
-								>
+								<p className="text-xs" style={{ color: "var(--text-faint)" }}>
 									Tüm sistemler normal
 								</p>
 							</div>
@@ -622,12 +606,13 @@ export function DashboardPage() {
 												>
 													<Clock className="w-3 h-3" />
 													{alert.triggered_at
-														? new Date(
-																alert.triggered_at,
-															).toLocaleTimeString("tr-TR", {
-																hour: "2-digit",
-																minute: "2-digit",
-															})
+														? new Date(alert.triggered_at).toLocaleTimeString(
+																"tr-TR",
+																{
+																	hour: "2-digit",
+																	minute: "2-digit",
+																},
+															)
 														: "—"}
 												</div>
 											</Link>

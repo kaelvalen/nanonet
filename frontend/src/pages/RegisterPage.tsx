@@ -102,7 +102,11 @@ export function RegisterPage() {
 						autoComplete="new-password"
 						disabled={isRegistering}
 						success={passwordsMatch}
-						error={passwordMismatch ? t("auth.passwordMismatch", "Şifreler eşleşmiyor") : null}
+						error={
+							passwordMismatch
+								? t("auth.passwordMismatch", "Şifreler eşleşmiyor")
+								: null
+						}
 					/>
 					{confirmIcon}
 				</div>
@@ -110,12 +114,7 @@ export function RegisterPage() {
 				<AuthSubmitButton
 					loading={isRegistering}
 					loadingLabel={t("auth.creatingAccount", "Creating account...")}
-					disabled={
-						passwordMismatch ||
-						!email ||
-						!password ||
-						!confirmPassword
-					}
+					disabled={passwordMismatch || !email || !password || !confirmPassword}
 				>
 					{t("auth.getStarted", "Get started")} →
 				</AuthSubmitButton>

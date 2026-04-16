@@ -20,10 +20,7 @@ import { AlertRulesPanel } from "@/components/alerts/AlertRulesPanel";
 import { Button } from "@/components/ui/button";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import { SectionCard } from "@/components/ui/section-card";
-import {
-	type Severity,
-	SeverityBadge,
-} from "@/components/ui/status-atoms";
+import { type Severity, SeverityBadge } from "@/components/ui/status-atoms";
 import type { Alert } from "@/types/alerts";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -150,7 +147,8 @@ function AlertRow({
 	const accent = SEVERITY_ACCENT[alert.severity];
 	const Icon = SEVERITY_ICON[alert.severity];
 	const svcName =
-		services.find((s) => s.id === alert.service_id)?.name ?? "Bilinmeyen servis";
+		services.find((s) => s.id === alert.service_id)?.name ??
+		"Bilinmeyen servis";
 	const resolved = !!alert.resolved_at;
 
 	return (
@@ -324,10 +322,7 @@ export function AlertsPage() {
 
 	useEffect(() => {
 		const handler = (e: MouseEvent) => {
-			if (
-				panelRef.current &&
-				!panelRef.current.contains(e.target as Node)
-			) {
+			if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
 				setSnoozeOpenId(null);
 			}
 		};
@@ -523,10 +518,7 @@ export function AlertsPage() {
 								>
 									Tüm sistemler normal
 								</p>
-								<p
-									className="text-xs"
-									style={{ color: "var(--text-faint)" }}
-								>
+								<p className="text-xs" style={{ color: "var(--text-faint)" }}>
 									{severityFilter !== "all"
 										? "Bu filtreye uygun uyarı yok"
 										: "Aktif uyarı yok"}

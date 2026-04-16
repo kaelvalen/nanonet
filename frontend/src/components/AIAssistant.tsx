@@ -801,8 +801,7 @@ export function AIAssistant() {
 															className="rounded-xl px-3 py-2.5 flex items-center justify-between"
 															style={{
 																background: "var(--color-teal-subtle)",
-																border:
-																	"1px solid var(--color-teal-border)",
+																border: "1px solid var(--color-teal-border)",
 															}}
 														>
 															<div>
@@ -918,10 +917,8 @@ export function AIAssistant() {
 															style={
 																selectedRange === range
 																	? {
-																			background:
-																				"var(--color-teal-subtle)",
-																			border:
-																				"1.5px solid var(--color-teal)",
+																			background: "var(--color-teal-subtle)",
+																			border: "1.5px solid var(--color-teal)",
 																			color: "var(--color-teal)",
 																		}
 																	: {

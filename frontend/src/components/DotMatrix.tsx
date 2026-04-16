@@ -11,9 +11,12 @@ const WAVE_WIDTH = 0.22;
 
 /** Signed distance from point (px,py) to segment (ax,ay)→(bx,by) */
 function distToSegment(
-	px: number, py: number,
-	ax: number, ay: number,
-	bx: number, by: number,
+	px: number,
+	py: number,
+	ax: number,
+	ay: number,
+	bx: number,
+	by: number,
 ): number {
 	const dx = bx - ax;
 	const dy = by - ay;
@@ -25,9 +28,12 @@ function distToSegment(
 
 /** Closest t ∈ [0,1] along segment for point projection */
 function projT(
-	px: number, py: number,
-	ax: number, ay: number,
-	bx: number, by: number,
+	px: number,
+	py: number,
+	ax: number,
+	ay: number,
+	bx: number,
+	by: number,
 ): number {
 	const dx = bx - ax;
 	const dy = by - ay;
@@ -136,7 +142,8 @@ export function DotMatrix() {
 					const y = row * DOT_SPACING;
 
 					// Ambient base pulse (very subtle)
-					const base = 0.06 + 0.02 * Math.sin(t * 0.0005 + col * 0.25 + row * 0.25);
+					const base =
+						0.06 + 0.02 * Math.sin(t * 0.0005 + col * 0.25 + row * 0.25);
 
 					let nGlow = 0;
 
@@ -145,7 +152,7 @@ export function DotMatrix() {
 						if (dist > STROKE_GLOW) continue;
 
 						// Proximity glow — soft falloff from stroke
-						const proximity = Math.pow(1 - dist / STROKE_GLOW, 2);
+						const proximity = (1 - dist / STROKE_GLOW) ** 2;
 
 						// Wave: bright band sweeping along the stroke
 						const tProj = projT(x, y, seg.ax, seg.ay, seg.bx, seg.by);
@@ -153,9 +160,10 @@ export function DotMatrix() {
 						let waveDist = Math.abs(tProj - wavePhase);
 						// wrap-around so wave loops seamlessly
 						if (waveDist > 0.5) waveDist = 1 - waveDist;
-						const waveBrightness = waveDist < WAVE_WIDTH
-							? Math.pow(1 - waveDist / WAVE_WIDTH, 1.5) * 0.9
-							: 0;
+						const waveBrightness =
+							waveDist < WAVE_WIDTH
+								? (1 - waveDist / WAVE_WIDTH) ** 1.5 * 0.9
+								: 0;
 
 						nGlow = Math.max(nGlow, proximity * (0.25 + waveBrightness));
 					}
@@ -186,7 +194,6 @@ export function DotMatrix() {
 	return (
 		<canvas
 			ref={canvasRef}
-			aria-hidden="true"
 			style={{
 				position: "fixed",
 				inset: 0,
