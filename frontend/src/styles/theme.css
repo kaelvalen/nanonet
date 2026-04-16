@@ -180,172 +180,11 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PRO THEME — Light
-   Industrial / neutral: slate blue-grays, clean indigo accent
+   Dark mode — Deep teal-black: #0a0f0f → teal-400/cyan accent
+   (Light tokens come from :root above; no separate [data-theme="pro"] block
+    needed since pro is the only theme.)
    ═══════════════════════════════════════════════════════════════════════════ */
-[data-theme="pro"] {
-	--font-size: 16px;
-	--font-weight-medium: 500;
-	--font-weight-normal: 400;
-	--radius: 0.5rem;
-
-	--background: #f8fafc;
-	--foreground: #0f172a;
-	--card: #ffffff;
-	--card-foreground: #0f172a;
-	--popover: #ffffff;
-	--popover-foreground: #0f172a;
-	--primary: #0d9488;
-	--primary-foreground: #ffffff;
-	--secondary: #f1f5f9;
-	--secondary-foreground: #334155;
-	--muted: #f1f5f9;
-	--muted-foreground: #64748b;
-	--accent: #ccfbf1;
-	--accent-foreground: #0f766e;
-	--destructive: #ef4444;
-	--destructive-foreground: #ffffff;
-	--border: rgba(15, 23, 42, 0.1);
-	--input: transparent;
-	--input-background: #f8fafc;
-	--switch-background: #cbd5e1;
-	--ring: #0d9488;
-	--chart-1: #0d9488;
-	--chart-2: #0891b2;
-	--chart-3: #6366f1;
-	--chart-4: #f43f5e;
-	--chart-5: #f59e0b;
-	--sidebar: #f8fafc;
-	--sidebar-foreground: #0f172a;
-	--sidebar-primary: #0d9488;
-	--sidebar-primary-foreground: #ffffff;
-	--sidebar-accent: #ccfbf1;
-	--sidebar-accent-foreground: #0f172a;
-	--sidebar-border: rgba(15, 23, 42, 0.08);
-	--sidebar-ring: #0d9488;
-
-	--surface-glass: rgba(255, 255, 255, 0.85);
-	--surface-glass-heavy: rgba(255, 255, 255, 0.97);
-	--surface-card: rgba(255, 255, 255, 0.9);
-	--surface-sunken: #f1f5f9;
-	--surface-raised: #ffffff;
-	--surface-overlay: rgba(255, 255, 255, 0.96);
-
-	--text-primary: #0f172a;
-	--text-secondary: #1e293b;
-	--text-muted: #64748b;
-	--text-faint: #94a3b8;
-	--text-placeholder: #94a3b8;
-	--text-link: #0d9488;
-	--text-link-hover: #0f766e;
-	--text-danger: #dc2626;
-	--text-success: #16a34a;
-	--text-warning: #d97706;
-
-	--border-subtle: rgba(15, 23, 42, 0.06);
-	--border-default: rgba(15, 23, 42, 0.1);
-	--border-strong: rgba(15, 23, 42, 0.2);
-	--border-divider: rgba(226, 232, 240, 0.8);
-	--border-focus: #0d9488;
-
-	--brand-primary: #0d9488;
-	--brand-primary-hover: #0f766e;
-	--brand-primary-subtle: rgba(13, 148, 136, 0.06);
-	--brand-primary-muted: rgba(13, 148, 136, 0.12);
-	--brand-secondary: #0891b2;
-	--brand-secondary-hover: #0e7490;
-	--brand-secondary-subtle: rgba(8, 145, 178, 0.08);
-	--brand-accent: #6366f1;
-	--brand-accent-subtle: rgba(99, 102, 241, 0.08);
-
-	--color-teal: #0d9488;
-	--color-teal-hover: #0f766e;
-	--color-teal-subtle: rgba(13, 148, 136, 0.06);
-	--color-teal-border: rgba(13, 148, 136, 0.15);
-	--color-teal-border-hover: rgba(13, 148, 136, 0.3);
-	--color-blue: #0891b2;
-	--color-blue-subtle: rgba(8, 145, 178, 0.08);
-	--color-blue-border: rgba(8, 145, 178, 0.15);
-	--color-lavender: #6366f1;
-	--color-lavender-subtle: rgba(99, 102, 241, 0.08);
-	--color-lavender-border: rgba(99, 102, 241, 0.15);
-	--color-pink: #f43f5e;
-	--color-pink-subtle: rgba(244, 63, 94, 0.08);
-	--color-pink-border: rgba(244, 63, 94, 0.15);
-	--color-pink-border-hover: rgba(244, 63, 94, 0.3);
-
-	--status-up: #22c55e;
-	--status-up-text: #16a34a;
-	--status-up-subtle: rgba(34, 197, 94, 0.08);
-	--status-up-border: rgba(34, 197, 94, 0.2);
-	--status-down: #ef4444;
-	--status-down-text: #dc2626;
-	--status-down-subtle: rgba(239, 68, 68, 0.08);
-	--status-down-border: rgba(239, 68, 68, 0.18);
-	--status-degraded: #f59e0b;
-	--status-degraded-text: #d97706;
-	--status-degraded-subtle: rgba(245, 158, 11, 0.08);
-	--status-degraded-border: rgba(245, 158, 11, 0.2);
-	--status-unknown: #94a3b8;
-	--status-unknown-text: #64748b;
-
-	--input-bg: #f8fafc;
-	--input-bg-alt: #f1f5f9;
-	--input-border: rgba(15, 23, 42, 0.14);
-	--input-border-focus: rgba(13, 148, 136, 0.5);
-
-	--gradient-bg: linear-gradient(135deg, #f8fafc 0%, #ccfbf1 100%);
-	--gradient-light: linear-gradient(135deg, #f8fafc 0%, #ccfbf1 100%);
-	--gradient-card: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-	--gradient-brand: linear-gradient(to right, #0d9488, #0891b2);
-	--gradient-brand-hover: linear-gradient(to right, #0f766e, #0e7490);
-	--gradient-logo: linear-gradient(to bottom right, #0d9488, #0891b2);
-	--gradient-text: linear-gradient(to right, #0d9488, #0891b2);
-	--gradient-heading: linear-gradient(to right, #0d9488, #0891b2);
-
-	--blob-1: transparent;
-	--blob-2: transparent;
-	--blob-3: transparent;
-	--dot-pattern: rgba(13, 148, 136, 0.18);
-	--dot-size: 28px;
-
-	--color-ai: #6366f1;
-	--color-ai-subtle: rgba(99, 102, 241, 0.08);
-	--color-ai-border: rgba(99, 102, 241, 0.18);
-
-	--scrollbar-thumb: #cbd5e1;
-	--scrollbar-thumb-hover: rgba(13, 148, 136, 0.25);
-
-	--shadow-brand: rgba(13, 148, 136, 0.15);
-	--shadow-card: rgba(15, 23, 42, 0.06);
-
-	--card-shadow:
-		0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
-	--btn-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
-	--btn-shadow-hover: 0 2px 4px rgba(15, 23, 42, 0.12);
-	--btn-shadow-active: 0 0px 1px rgba(15, 23, 42, 0.1);
-	--panel-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
-
-	--gradient-btn-primary: linear-gradient(to right, #0d9488, #0891b2);
-	--gradient-btn-primary-hover: linear-gradient(to right, #0f766e, #0e7490);
-
-	--border-track: rgba(226, 232, 240, 0.6);
-	--color-blue-text: #0369a1;
-	--status-warn: #f59e0b;
-	--status-warn-text: #d97706;
-	--status-warn-subtle: rgba(245, 158, 11, 0.08);
-	--status-warn-border: rgba(245, 158, 11, 0.2);
-
-	--toast-bg: rgba(255, 255, 255, 0.97);
-	--toast-border: rgba(15, 23, 42, 0.1);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRO THEME — Dark
-   Deep teal-black: #0a0f0f → teal-400/cyan accent
-   ═══════════════════════════════════════════════════════════════════════════ */
-[data-theme="pro"].dark,
-[data-theme="pro"] .dark {
+.dark {
 	--background: #0a0f0f;
 	--foreground: #e2e8f0;
 	--card: #0f1a1a;
@@ -1027,14 +866,14 @@
 	color: var(--text-placeholder);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRO THEME — Restore soft borders & shadows
-   Component inline styles write "2px solid" and hard shadows which leak into
-   the pro theme. Override them back to the pro aesthetic here.
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ═════════════════════════════════════════════════════════════════════════
+   Component aesthetic overrides (soft borders & shadows)
+   Some components apply inline 2px borders or hard shadows which we soften
+   to match the product design language.
+   ═════════════════════════════════════════════════════════════════════════ */
 
 /* Card: soft shadow, 1px border */
-[data-theme="pro"] [data-slot="card"] {
+[data-slot="card"] {
 	border-width: 1px;
 	border-style: solid;
 	border-color: var(--border-default);
@@ -1044,73 +883,67 @@
 }
 
 /* Inline-style borders on divs/cards set to 2px — restore to 1px */
-[data-theme="pro"] [style*="border: 2px solid"],
-[data-theme="pro"] [style*="border:2px solid"] {
-	border-width: 1px;
-}
-
-/* Inline border-2 Tailwind class */
-[data-theme="pro"] .border-2 {
+[style*="border: 2px solid"],
+[style*="border:2px solid"] {
 	border-width: 1px;
 }
 
 /* Buttons: soft shadow */
-[data-theme="pro"] [data-slot="button"],
-[data-theme="pro"] button {
+[data-slot="button"],
+button {
 	box-shadow: var(--btn-shadow);
 	border-radius: var(--radius);
 	transform: none;
 }
 
-[data-theme="pro"] [data-slot="button"]:hover,
-[data-theme="pro"] button:hover {
+[data-slot="button"]:hover,
+button:hover {
 	box-shadow: var(--btn-shadow-hover);
 	transform: none;
 }
 
-[data-theme="pro"] [data-slot="button"]:active,
-[data-theme="pro"] button:active {
+[data-slot="button"]:active,
+button:active {
 	box-shadow: var(--btn-shadow-active);
 	transform: none;
 }
 
-/* Rounded corners: restore pro's original radius */
-[data-theme="pro"] .rounded {
+/* Rounded corners scale */
+.rounded {
 	border-radius: 0.25rem;
 }
-[data-theme="pro"] .rounded-lg {
+.rounded-lg {
 	border-radius: var(--radius);
 }
-[data-theme="pro"] .rounded-xl {
+.rounded-xl {
 	border-radius: calc(var(--radius) + 4px);
 }
-[data-theme="pro"] .rounded-2xl {
+.rounded-2xl {
 	border-radius: calc(var(--radius) + 8px);
 }
-[data-theme="pro"] .rounded-full {
+.rounded-full {
 	border-radius: 9999px;
 }
 
 /* Tabs list */
-[data-theme="pro"] [role="tablist"] {
+[role="tablist"] {
 	border-width: 1px;
 	border-radius: var(--radius);
 }
 
 /* Dialog / popover */
-[data-theme="pro"] [data-slot="dialog-content"],
-[data-theme="pro"] [data-slot="popover-content"],
-[data-theme="pro"] [role="dialog"] {
+[data-slot="dialog-content"],
+[data-slot="popover-content"],
+[role="dialog"] {
 	border-width: 1px;
 	border-radius: calc(var(--radius) + 4px);
 	box-shadow: var(--panel-shadow);
 }
 
 /* Inputs */
-[data-theme="pro"]
-	input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
-[data-theme="pro"] textarea,
-[data-theme="pro"] select {
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
 	border-width: 1px;
 	border-radius: var(--radius);
 	box-shadow: none;

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
 import {
 	Activity,
 	AlertCircle,
@@ -16,52 +15,18 @@ import {
 	Server,
 	ShieldCheck,
 	Sparkles,
-	TrendingDown,
 	TrendingUp,
 	XCircle,
 	Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link, useNavigate } from "react-router";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { metricsApi } from "@/api/metrics";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useServices } from "@/hooks/useServices";
-
-/* ── Tiny sparkline for metric cards ───────────────────────────────── */
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-	const pts = data.map((v, _i) => ({ v }));
-	return (
-		<ResponsiveContainer width="100%" height={36}>
-			<AreaChart data={pts} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-				<defs>
-					<linearGradient
-						id={`sg-${color.replace(/[^a-z]/gi, "")}`}
-						x1="0"
-						y1="0"
-						x2="0"
-						y2="1"
-					>
-						<stop offset="5%" stopColor={color} stopOpacity={0.25} />
-						<stop offset="95%" stopColor={color} stopOpacity={0} />
-					</linearGradient>
-				</defs>
-				<Area
-					type="monotone"
-					dataKey="v"
-					stroke={color}
-					strokeWidth={1.5}
-					fill={`url(#sg-${color.replace(/[^a-z]/gi, "")})`}
-					dot={false}
-					isAnimationActive={false}
-				/>
-			</AreaChart>
-		</ResponsiveContainer>
-	);
-}
 
 function statusLabel(s: string) {
 	if (s === "up") return "Aktif";
@@ -114,12 +79,6 @@ function severityColors(sev: string) {
 		dot: "var(--color-teal)",
 		label: "Bilgi",
 	};
-}
-
-function genSparkline(base: number, variance: number): number[] {
-	return Array.from({ length: 12 }, () =>
-		Math.max(0, base + (Math.random() - 0.5) * variance * 2),
-	);
 }
 
 export function DashboardPage() {
@@ -191,36 +150,6 @@ export function DashboardPage() {
 		if (v == null || v <= 0) return "—";
 		return `${v.toFixed(v < 10 ? 1 : 0)}${unit}`;
 	};
-
-	/* ── Sparklines — memoised so they don't regenerate on every render ── */
-	const latencySparkline = useMemo(
-		() =>
-			globalSummary?.avg_latency_ms
-				? genSparkline(globalSummary.avg_latency_ms, globalSummary.avg_latency_ms * 0.3)
-				: Array(12).fill(0) as number[],
-		[globalSummary?.avg_latency_ms],
-	);
-	const cpuSparkline = useMemo(
-		() =>
-			globalSummary?.avg_cpu_percent
-				? genSparkline(globalSummary.avg_cpu_percent, 10)
-				: Array(12).fill(0) as number[],
-		[globalSummary?.avg_cpu_percent],
-	);
-	const memSparkline = useMemo(
-		() =>
-			globalSummary?.avg_memory_used_mb
-				? genSparkline(globalSummary.avg_memory_used_mb, 50)
-				: Array(12).fill(0) as number[],
-		[globalSummary?.avg_memory_used_mb],
-	);
-	const errSparkline = useMemo(
-		() =>
-			globalSummary?.avg_error_rate
-				? genSparkline(globalSummary.avg_error_rate, globalSummary.avg_error_rate * 0.5)
-				: Array(12).fill(0) as number[],
-		[globalSummary?.avg_error_rate],
-	);
 
 	/* ── Onboarding ──────────────────────────────────────────────── */
 	if (!isLoading && services.length === 0) {
@@ -507,34 +436,29 @@ export function DashboardPage() {
 					</motion.div>
 				))}
 
-				{/* ── Live metric cards (4 × 3-col) with sparklines ──── */}
+				{/* ── Live metric cards (4 × 3-col) with real values only ──── */}
 				{(
 					[
 						{
 							label: "Ort. Latency",
 							value: fmt(globalSummary?.avg_latency_ms, " ms"),
-							sub: `P95: ${fmt(globalSummary?.p95_latency_ms, " ms")}`,
+							sub: globalSummary?.p95_latency_ms
+								? `P95: ${fmt(globalSummary.p95_latency_ms, " ms")}`
+								: "Henüz veri yok",
 							icon: Gauge,
 							color: "var(--status-warn)",
-							sparkline: latencySparkline,
-							trend:
-								globalSummary?.avg_latency_ms &&
-								globalSummary.avg_latency_ms < 100,
 						},
 						{
 							label: "Ort. CPU",
 							value: fmt(globalSummary?.avg_cpu_percent, "%"),
 							sub:
-								globalSummary?.avg_cpu_percent &&
-								globalSummary.avg_cpu_percent > 80
-									? "Yüksek kullanım"
-									: "Normal",
+								globalSummary?.avg_cpu_percent != null
+									? globalSummary.avg_cpu_percent > 80
+										? "Yüksek kullanım"
+										: "Normal aralık"
+									: "Henüz veri yok",
 							icon: Cpu,
 							color: "var(--color-teal)",
-							sparkline: cpuSparkline,
-							trend: globalSummary?.avg_cpu_percent
-								? globalSummary.avg_cpu_percent < 70
-								: true,
 						},
 						{
 							label: "Bellek",
@@ -546,21 +470,17 @@ export function DashboardPage() {
 							sub: "Ortalama kullanım",
 							icon: MemoryStick,
 							color: "var(--color-lavender)",
-							sparkline: memSparkline,
-							trend: true,
 						},
 						{
 							label: "Hata Oranı",
 							value:
-								globalSummary?.avg_error_rate &&
+								globalSummary?.avg_error_rate != null &&
 								globalSummary.avg_error_rate > 0
 									? `${Math.min(globalSummary.avg_error_rate, 100).toFixed(1)}%`
 									: "0%",
 							sub: critAlerts > 0 ? `${critAlerts} kritik uyarı` : "Temiz",
 							icon: ShieldCheck,
 							color: critAlerts > 0 ? "var(--status-down)" : "var(--status-up)",
-							sparkline: errSparkline,
-							trend: critAlerts === 0,
 						},
 					] as const
 				).map((m, i) => (
@@ -572,22 +492,22 @@ export function DashboardPage() {
 						transition={{ duration: 0.28, delay: 0.18 + i * 0.05 }}
 					>
 						<Card
-							className="px-4 pt-3.5 pb-2 h-full"
+							className="px-4 py-3.5 h-full"
 							style={{
 								background: "var(--surface-card)",
 								border: "1px solid var(--border-default)",
 							}}
 						>
-							<div className="flex items-start justify-between mb-1">
-								<div>
+							<div className="flex items-start justify-between gap-2">
+								<div className="min-w-0">
 									<p
-										className="text-[11px] font-medium"
+										className="text-[11px] font-medium mb-1.5"
 										style={{ color: "var(--text-faint)" }}
 									>
 										{m.label}
 									</p>
 									<p
-										className="text-2xl font-bold tabular-nums font-mono leading-tight mt-0.5"
+										className="text-2xl font-bold tabular-nums font-mono leading-none"
 										style={{ color: "var(--text-primary)" }}
 									>
 										{globalSummary ? (
@@ -599,37 +519,23 @@ export function DashboardPage() {
 											/>
 										)}
 									</p>
-								</div>
-								<div className="flex flex-col items-end gap-1">
-									<div
-										className="w-7 h-7 rounded-lg flex items-center justify-center"
-										style={{ background: "var(--surface-sunken)" }}
+									<p
+										className="text-[10px] mt-1.5"
+										style={{ color: "var(--text-faint)" }}
 									>
-										<m.icon
-											className="w-3.5 h-3.5"
-											style={{ color: m.color }}
-										/>
-									</div>
-									{m.trend ? (
-										<TrendingUp
-											className="w-3 h-3"
-											style={{ color: "var(--status-up)" }}
-										/>
-									) : (
-										<TrendingDown
-											className="w-3 h-3"
-											style={{ color: "var(--status-down)" }}
-										/>
-									)}
+										{m.sub}
+									</p>
+								</div>
+								<div
+									className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+									style={{ background: "var(--surface-sunken)" }}
+								>
+									<m.icon
+										className="w-4 h-4"
+										style={{ color: m.color }}
+									/>
 								</div>
 							</div>
-							<Sparkline data={m.sparkline} color={m.color} />
-							<p
-								className="text-[10px] mt-0.5"
-								style={{ color: "var(--text-faint)" }}
-							>
-								{m.sub}
-							</p>
 						</Card>
 					</motion.div>
 				))}

@@ -159,7 +159,7 @@ function Hero({
 			/>
 
 			{/* Radial glow */}
-			<div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-150 h-150 bg-teal-600/10 blur-[120px] rounded-full pointer-events-none" />
+			<div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-teal-600/[0.06] blur-3xl rounded-full pointer-events-none" />
 
 			<motion.div
 				style={{ opacity, y: textY }}
@@ -250,10 +250,8 @@ function Hero({
 					initial={{ opacity: 0, x: 30 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-					className="hidden lg:block relative group"
+					className="hidden lg:block relative"
 				>
-					{/* Ambient glow behind the card */}
-					<div className="absolute -inset-4 bg-teal-500/10 blur-3xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
 					{/* Card frame */}
 					<div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
@@ -274,7 +272,7 @@ function Hero({
 							muted
 							loop
 							playsInline
-							className="w-full aspect-video object-cover opacity-90 group-hover:opacity-100 blur-[2px] group-hover:blur-none transition-all duration-700"
+							className="w-full aspect-video object-cover"
 						>
 							<source src={landingVideo} type="video/mp4" />
 						</video>
@@ -420,7 +418,7 @@ export function LandingPage() {
 					</motion.div>
 					<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
 						{features.map((f, i) => (
-							<FeatureCard key={f.title} {...f} delay={i * 0.07} />
+							<FeatureCard key={f.title} {...f} delay={Math.min(i, 3) * 0.05} />
 						))}
 					</div>
 				</div>
@@ -469,9 +467,8 @@ export function LandingPage() {
 						whileInView={{ opacity: 1, scale: 1 }}
 						viewport={{ once: true }}
 						transition={{ duration: 0.6 }}
-						className="relative group"
+						className="relative"
 					>
-						<div className="absolute -inset-6 bg-teal-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 						<div className="relative rounded-2xl border border-white/5 overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.5)]">
 							<div className="flex items-center gap-1.5 px-4 py-3 bg-white/3 border-b border-white/5">
 								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
@@ -484,7 +481,7 @@ export function LandingPage() {
 							<img
 								src={dashboardImage}
 								alt="Dashboard"
-								className="w-full h-auto opacity-80 group-hover:opacity-100 blur-[2px] group-hover:blur-none transition-all duration-700"
+								className="w-full h-auto opacity-90"
 							/>
 						</div>
 					</motion.div>
@@ -592,16 +589,16 @@ export function LandingPage() {
 							<p className="text-white/30">
 								# {t("landing.devs.install.comment")}
 							</p>
-							<div className="flex items-center gap-3 bg-white/3 border border-white/5 px-4 py-3.5 rounded-xl group relative">
+							<div className="flex items-center gap-3 bg-white/5 border border-white/5 px-4 py-3.5 rounded-xl group relative">
 								<span className="text-teal-400 font-bold select-none">$</span>
-								<code className="text-white/80 flex-1">
-									curl -sSL https://get.nanonet.dev | bash
+								<code className="text-white/80 flex-1 text-xs">
+									./agent-setup.sh --backend $BACKEND_URL
 								</code>
 								<button
 									type="button"
 									onClick={() =>
 										navigator.clipboard.writeText(
-											"curl -sSL https://get.nanonet.dev | bash",
+											"./agent-setup.sh --backend $BACKEND_URL",
 										)
 									}
 									className="opacity-0 group-hover:opacity-100 transition-opacity text-white/30 hover:text-white/60 p-1"
@@ -629,7 +626,7 @@ export function LandingPage() {
 			{/* ── CTA Banner ── */}
 			<section id="cta" className="py-32 bg-[#060810] relative overflow-hidden">
 				<div className="absolute inset-0 pointer-events-none">
-					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-teal-600/8 blur-[120px] rounded-full" />
+					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-teal-600/[0.05] blur-3xl rounded-full" />
 				</div>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -640,7 +637,7 @@ export function LandingPage() {
 					<div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 px-4 py-1.5 rounded-full mb-8">
 						<span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
 						<span className="text-[10px] font-black uppercase tracking-widest text-teal-400">
-							Free to start
+							Open source · self-hosted
 						</span>
 					</div>
 					<h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-6 leading-[1.1]">
