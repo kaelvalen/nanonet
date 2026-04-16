@@ -1,121 +1,108 @@
 import {
 	Activity,
-	AlertTriangle,
 	ArrowRight,
 	Bell,
+	Box,
 	Brain,
 	CheckCircle2,
-	ChevronDown,
-	GitFork,
-	LayoutGrid,
+	ChevronRight,
+	Cloud,
+	Cpu,
+	GitBranch,
+	Shield,
 	Terminal,
 	Zap,
 } from "lucide-react";
-import { motion, useScroll, useTransform } from "motion/react";
-import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import dashboardImage from "@/assets/image.png";
 import logo from "@/assets/logo.png";
-import landingVideo from "@/assets/video/landing.mp4";
-import { Button } from "@/components/ui/button";
 import { useServices } from "@/hooks/useServices";
 import { useAuthStore } from "@/store/authStore";
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Design tokens used on this page. Landing is self-contained dark — no theme
+// dependency so it's consistent whether signed in or not.
+const INK = "#060810";
+const INK_ELEVATED = "#0d1117";
+const TEAL = "#2dd4bf";
+const ACCENT_LINE = "rgba(45, 212, 191, 0.4)";
 
-function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
-	const { t } = useTranslation();
+// ─────────────────────────────────────────────────────────────────────────────
+// Nav
+
+function Nav({ authed }: { authed: boolean }) {
 	const [scrolled, setScrolled] = useState(false);
 
 	useEffect(() => {
-		const handleScroll = () => {
-			setScrolled(window.scrollY > 50);
-		};
-		handleScroll();
-		window.addEventListener("scroll", handleScroll, { passive: true });
-		return () => window.removeEventListener("scroll", handleScroll);
+		const onScroll = () => setScrolled(window.scrollY > 20);
+		onScroll();
+		window.addEventListener("scroll", onScroll, { passive: true });
+		return () => window.removeEventListener("scroll", onScroll);
 	}, []);
 
-	const scrollTo = (id: string) => {
+	const scrollTo = (id: string) =>
 		document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-	};
 
-	const dark = scrolled;
+	const links: { label: string; id: string }[] = [
+		{ label: "Özellikler", id: "features" },
+		{ label: "Nasıl çalışır", id: "how" },
+		{ label: "AI", id: "ai" },
+		{ label: "Geliştiriciler", id: "devs" },
+	];
+
 	return (
-		<div className="fixed top-6 inset-x-6 z-50 pointer-events-none">
-			<nav
-				className={`max-w-6xl mx-auto pointer-events-auto flex items-center justify-between px-6 py-3.5 backdrop-blur-2xl rounded-2xl transition-all duration-500 ${
-					dark
-						? "bg-white/95 border border-slate-200 shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
-						: "bg-white/5 border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.3)]"
-				}`}
-			>
-				{/* Logo */}
-				<div className="flex items-center gap-2.5">
-					<img src={logo} alt="NanoNet" className="w-7 h-7" />
-					<span
-						className={`font-black text-base tracking-tighter transition-colors duration-500 ${dark ? "text-slate-900" : "text-white"}`}
-					>
+		<div
+			className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+				scrolled
+					? "bg-[#060810]/80 backdrop-blur-xl border-b border-white/5"
+					: "bg-transparent"
+			}`}
+		>
+			<nav className="max-w-6xl mx-auto flex items-center justify-between h-14 px-6">
+				<Link to="/" className="flex items-center gap-2.5">
+					<img src={logo} alt="NanoNet" className="w-6 h-6" />
+					<span className="font-semibold text-[15px] text-white tracking-tight">
 						NanoNet
 					</span>
-				</div>
+				</Link>
 
-				{/* Nav links */}
-				<div className="hidden md:flex items-center gap-8">
-					{(
-						[
-							{ label: "Platform", id: "hero" },
-							{ label: "Observability", id: "features" },
-							{ label: "Docs", id: "setup" },
-							{ label: "Pricing", id: "cta" },
-						] as const
-					).map(({ label, id }) => (
+				<div className="hidden md:flex items-center gap-1">
+					{links.map((l) => (
 						<button
-							key={label}
+							key={l.id}
 							type="button"
-							onClick={() => scrollTo(id)}
-							className="text-[11px] font-bold uppercase tracking-widest transition-colors"
-							style={{ color: dark ? "#64748b" : "rgba(255, 255, 255, 0.7)" }}
+							onClick={() => scrollTo(l.id)}
+							className="px-3 py-1.5 text-[13px] text-white/60 hover:text-white transition-colors rounded-md"
 						>
-							{label}
+							{l.label}
 						</button>
 					))}
 				</div>
 
-				{/* CTA */}
-				<div className="flex items-center gap-4">
-					{isAuthenticated ? (
-						<Link to="/app">
-							<Button
-								className={`h-9 px-5 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${
-									dark
-										? "bg-teal-600 text-white hover:bg-teal-700"
-										: "bg-white text-slate-900 hover:bg-slate-100"
-								}`}
-							>
-								{t("landing.hero.cta.launch")}
-							</Button>
+				<div className="flex items-center gap-2">
+					{authed ? (
+						<Link
+							to="/app"
+							className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-white text-slate-900 text-[13px] font-semibold hover:bg-white/90 transition-colors"
+						>
+							Uygulamaya git
+							<ArrowRight className="w-3.5 h-3.5" />
 						</Link>
 					) : (
 						<>
 							<Link
 								to="/login"
-								className="text-[11px] font-bold uppercase tracking-widest transition-colors"
-								style={{ color: dark ? "#334155" : "#ffffff" }}
+								className="h-8 px-3 flex items-center text-[13px] text-white/70 hover:text-white transition-colors rounded-md"
 							>
-								{t("auth.login")}
+								Giriş
 							</Link>
-							<Link to="/register">
-								<Button
-									className={`h-9 px-5 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${
-										dark
-											? "bg-teal-600 text-white hover:bg-teal-700"
-											: "bg-white text-slate-900 hover:bg-slate-100"
-									}`}
-								>
-									{t("auth.register")}
-								</Button>
+							<Link
+								to="/register"
+								className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-white text-slate-900 text-[13px] font-semibold hover:bg-white/90 transition-colors"
+							>
+								Başla
+								<ArrowRight className="w-3.5 h-3.5" />
 							</Link>
 						</>
 					)}
@@ -125,574 +112,782 @@ function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
 	);
 }
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero
 
-function Hero({
-	isAuthenticated,
-	activeServicesCount,
-}: {
-	isAuthenticated: boolean;
-	activeServicesCount: number;
-}) {
-	const { t } = useTranslation();
-	const ref = useRef<HTMLDivElement>(null);
-	const { scrollYProgress } = useScroll({
-		target: ref,
-		offset: ["start start", "end start"],
-	});
-	const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-	const textY = useTransform(scrollYProgress, [0, 0.5], [0, -40]);
-
+function Hero({ authed, liveCount }: { authed: boolean; liveCount: number }) {
 	return (
 		<section
-			id="hero"
-			ref={ref}
-			className="relative min-h-screen w-full bg-[#060810] flex items-center overflow-hidden"
+			className="relative pt-32 pb-24 overflow-hidden"
+			style={{ background: INK }}
 		>
-			{/* Subtle background texture */}
+			{/* Grid texture */}
 			<div
-				className="absolute inset-0 opacity-[0.035]"
+				className="absolute inset-0 opacity-[0.04]"
 				style={{
-					backgroundImage: "radial-gradient(rgba(13,148,136,0.18) 1px, transparent 0)",
-					backgroundSize: "32px 32px",
+					backgroundImage:
+						"linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+					backgroundSize: "64px 64px",
 				}}
 			/>
 
-			{/* Radial glow */}
-			<div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-teal-600/[0.06] blur-3xl rounded-full pointer-events-none" />
+			{/* Top accent line */}
+			<div
+				className="absolute top-14 inset-x-0 h-px"
+				style={{
+					background: `linear-gradient(90deg, transparent, ${ACCENT_LINE}, transparent)`,
+				}}
+			/>
 
-			<motion.div
-				style={{ opacity, y: textY }}
-				className="relative z-10 w-full max-w-7xl mx-auto px-8 lg:px-14 grid lg:grid-cols-2 gap-16 items-center pt-28 pb-16"
-			>
-				{/* Left: Text */}
-				<div>
-					{/* Badge */}
-					{isAuthenticated ? (
-						<motion.div
-							initial={{ opacity: 0, y: -12 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ delay: 0.3 }}
-							className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full mb-8"
-						>
-							<motion.div
-								animate={{ opacity: [1, 0.4, 1] }}
-								transition={{ duration: 1.5, repeat: Infinity }}
-								className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-							/>
-							<span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">
-								{activeServicesCount} services running
-							</span>
-						</motion.div>
-					) : (
-						<motion.div
-							initial={{ opacity: 0, y: -12 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ delay: 0.3 }}
-							className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full mb-8"
-						>
-							<Zap className="w-3 h-3 text-teal-400" />
-							<span className="text-[10px] font-black text-teal-400/70 uppercase tracking-[0.2em]">
-								{t("landing.hero.badge")}
-							</span>
-						</motion.div>
-					)}
+			<div className="relative max-w-5xl mx-auto px-6 text-center">
+				{/* Badge */}
+				<motion.div
+					initial={{ opacity: 0, y: -8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.4 }}
+					className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white/5 border border-white/10 mb-8"
+				>
+					<span className="relative flex w-1.5 h-1.5">
+						<span
+							className="absolute inline-flex w-full h-full rounded-full animate-ping opacity-75"
+							style={{ background: TEAL }}
+						/>
+						<span
+							className="relative inline-flex w-1.5 h-1.5 rounded-full"
+							style={{ background: TEAL }}
+						/>
+					</span>
+					<span className="text-[11px] font-medium text-white/70">
+						{authed && liveCount > 0
+							? `${liveCount} servis canlı izleniyor`
+							: "Self-hosted · Açık kaynak"}
+					</span>
+				</motion.div>
 
-					{/* Title */}
-					<motion.h1
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.4, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-						className="text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tighter leading-[0.93] mb-6"
+				{/* Title */}
+				<motion.h1
+					initial={{ opacity: 0, y: 16 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+					className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.02] mb-6"
+				>
+					Mikroservislerinizi
+					<br />
+					<span
+						className="inline-block"
+						style={{
+							background: `linear-gradient(135deg, #f0fdfa 0%, ${TEAL} 100%)`,
+							WebkitBackgroundClip: "text",
+							WebkitTextFillColor: "transparent",
+							backgroundClip: "text",
+						}}
 					>
-						{t("landing.hero.title")}
-					</motion.h1>
+						sessizce izleyin
+					</span>
+				</motion.h1>
 
-					<motion.p
-						initial={{ opacity: 0, y: 16 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.55 }}
-						className="text-base md:text-lg text-white/45 font-medium leading-relaxed max-w-md"
-					>
-						{t("landing.hero.subtitle")}
-					</motion.p>
+				<motion.p
+					initial={{ opacity: 0, y: 12 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.6, delay: 0.1 }}
+					className="text-base md:text-lg text-white/50 max-w-2xl mx-auto leading-relaxed mb-10"
+				>
+					Gerçek zamanlı metrik, uyarı ve AI destekli kök-neden analizi.
+					Kendi altyapınızda çalışır, verileriniz hep sizde kalır.
+				</motion.p>
 
-					{/* CTAs */}
-					<motion.div
-						initial={{ opacity: 0, y: 12 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.7 }}
-						className="flex items-center gap-4 mt-10"
+				{/* CTAs */}
+				<motion.div
+					initial={{ opacity: 0, y: 12 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.6, delay: 0.2 }}
+					className="flex items-center justify-center gap-3 flex-wrap mb-16"
+				>
+					<Link
+						to={authed ? "/app" : "/register"}
+						className="inline-flex items-center gap-2 h-11 px-6 rounded-lg text-[14px] font-semibold text-slate-900 bg-white hover:bg-white/95 transition-colors"
 					>
-						{isAuthenticated ? (
-							<Link to="/app">
-								<Button className="h-11 px-7 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-black text-sm transition-all active:scale-[0.98] shadow-[0_0_30px_rgba(13,148,136,0.4)]">
-									{t("landing.hero.cta.launch")} →
-								</Button>
-							</Link>
-						) : (
-							<>
-								<Link to="/register">
-									<Button className="h-11 px-7 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-black text-sm transition-all active:scale-[0.98] shadow-[0_0_30px_rgba(13,148,136,0.4)]">
-										{t("landing.hero.cta.start")} →
-									</Button>
-								</Link>
-								<Link to="/login" className="h-11 px-5 rounded-xl flex items-center text-sm font-bold transition-colors hover:text-white" style={{ color: "rgba(255,255,255,0.55)" }}>
-									{t("auth.login")} →
-								</Link>
-							</>
-						)}
-					</motion.div>
+						{authed ? "Uygulamaya git" : "Ücretsiz başla"}
+						<ArrowRight className="w-4 h-4" />
+					</Link>
+					<button
+						type="button"
+						onClick={() =>
+							document
+								.getElementById("how")
+								?.scrollIntoView({ behavior: "smooth" })
+						}
+						className="inline-flex items-center gap-2 h-11 px-5 rounded-lg text-[14px] font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+					>
+						Nasıl çalışır
+						<ChevronRight className="w-4 h-4" />
+					</button>
+				</motion.div>
+
+				{/* Product mock */}
+				<motion.div
+					initial={{ opacity: 0, y: 32 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.8, delay: 0.3 }}
+					className="relative"
+				>
+					<div
+						className="absolute inset-x-0 -top-8 h-24 blur-3xl opacity-40"
+						style={{
+							background: `radial-gradient(ellipse at center, ${TEAL}30, transparent 70%)`,
+						}}
+					/>
+					<ProductMock />
+				</motion.div>
+			</div>
+		</section>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Product mock (browser chrome + mini dashboard preview)
+
+function ProductMock() {
+	return (
+		<div
+			className="relative mx-auto max-w-4xl rounded-xl overflow-hidden border border-white/10"
+			style={{
+				background: INK_ELEVATED,
+				boxShadow: "0 32px 64px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)",
+			}}
+		>
+			{/* Chrome */}
+			<div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+				<div className="flex items-center gap-1.5">
+					<span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+					<span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+					<span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+				</div>
+				<div className="mx-3 flex-1 h-6 rounded-md bg-white/[0.03] border border-white/5 flex items-center justify-center">
+					<span className="text-[10px] font-mono text-white/30 tracking-wider">
+						console.nanonet.dev / dashboard
+					</span>
+				</div>
+			</div>
+
+			{/* Content */}
+			<div className="p-6 grid grid-cols-3 gap-4">
+				<MockTile label="Toplam servis" value="28" accent="teal" />
+				<MockTile label="Ortalama latency" value="42 ms" accent="amber" />
+				<MockTile label="Aktif uyarı" value="2" accent="rose" />
+
+				<div className="col-span-3 rounded-lg border border-white/5 bg-white/[0.02] p-4">
+					<div className="flex items-center justify-between mb-4">
+						<span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
+							Son 24 saat · Latency (p50)
+						</span>
+						<span className="text-[10px] font-mono text-white/30">
+							canlı
+						</span>
+					</div>
+					<MockSparkGraph />
 				</div>
 
-				{/* Right: Video in frame */}
-				<motion.div
-					initial={{ opacity: 0, x: 30 }}
-					animate={{ opacity: 1, x: 0 }}
-					transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-					className="hidden lg:block relative"
-				>
-
-					{/* Card frame */}
-					<div className="relative rounded-2xl overflow-hidden border border-white/8 shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
-						{/* Chrome bar */}
-						<div className="flex items-center gap-1.5 px-4 py-2.5 bg-white/4 border-b border-white/5">
-							<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-							<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-							<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-							<div className="flex-1 mx-3 h-5 bg-white/4 rounded-md" />
-							<span className="text-[9px] font-mono text-white/15 uppercase tracking-widest">
-								NanoNet Console
+				<div className="col-span-3 grid grid-cols-3 gap-3">
+					{[
+						{ name: "api-gateway", status: "up", latency: "12 ms" },
+						{ name: "auth-service", status: "up", latency: "8 ms" },
+						{ name: "metrics-engine", status: "warn", latency: "340 ms" },
+					].map((svc) => (
+						<div
+							key={svc.name}
+							className="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5 flex items-center gap-2"
+						>
+							<span
+								className="w-1.5 h-1.5 rounded-full shrink-0"
+								style={{
+									background:
+										svc.status === "up"
+											? "#34d399"
+											: svc.status === "warn"
+												? "#fbbf24"
+												: "#fb7185",
+								}}
+							/>
+							<span className="text-xs font-mono text-white/70 flex-1 truncate">
+								{svc.name}
+							</span>
+							<span className="text-[10px] font-mono text-white/40 tabular-nums">
+								{svc.latency}
 							</span>
 						</div>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+}
 
-						{/* Video */}
-						<video
-							autoPlay
-							muted
-							loop
-							playsInline
-							className="w-full aspect-video object-cover"
+function MockTile({
+	label,
+	value,
+	accent,
+}: {
+	label: string;
+	value: string;
+	accent: "teal" | "amber" | "rose";
+}) {
+	const color =
+		accent === "teal"
+			? "#2dd4bf"
+			: accent === "amber"
+				? "#fbbf24"
+				: "#fb7185";
+	return (
+		<div className="rounded-lg border border-white/5 bg-white/[0.02] p-4 relative overflow-hidden">
+			<div
+				className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+				style={{ background: color }}
+			/>
+			<p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-2">
+				{label}
+			</p>
+			<p className="text-2xl font-mono font-semibold tabular-nums text-white leading-none">
+				{value}
+			</p>
+		</div>
+	);
+}
+
+function MockSparkGraph() {
+	// Static deterministic values — no fake randomness
+	const values = [24, 28, 26, 32, 30, 42, 38, 46, 42, 38, 36, 44];
+	const max = Math.max(...values);
+	const min = Math.min(...values);
+	const range = max - min || 1;
+
+	return (
+		<svg viewBox="0 0 240 60" className="w-full h-16" preserveAspectRatio="none">
+			<defs>
+				<linearGradient id="mock-area" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor={TEAL} stopOpacity="0.25" />
+					<stop offset="100%" stopColor={TEAL} stopOpacity="0" />
+				</linearGradient>
+			</defs>
+			<polyline
+				fill="none"
+				stroke={TEAL}
+				strokeWidth="1.5"
+				points={values
+					.map((v, i) => `${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`)
+					.join(" ")}
+			/>
+			<polygon
+				fill="url(#mock-area)"
+				points={`0,60 ${values
+					.map((v, i) => `${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`)
+					.join(" ")} 240,60`}
+			/>
+		</svg>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Features
+
+const FEATURES: {
+	icon: typeof Activity;
+	title: string;
+	desc: string;
+}[] = [
+	{
+		icon: Activity,
+		title: "Gerçek zamanlı sağlık",
+		desc: "Her servisin CPU, bellek, latency ve hata oranı 5 saniyede bir güncellenir.",
+	},
+	{
+		icon: Brain,
+		title: "AI kök-neden analizi",
+		desc: "Uyarı tetiklendiğinde olası nedenleri, etkilenen bileşenleri ve öneriyi tek tıkla al.",
+	},
+	{
+		icon: GitBranch,
+		title: "Bağımlılık haritası",
+		desc: "Servisler arası ilişkileri görselleştir, nokta arızaların domino etkisini önle.",
+	},
+	{
+		icon: Cloud,
+		title: "Kubernetes entegrasyonu",
+		desc: "Pod metrikleri, deployment durumu ve event stream aynı panelde.",
+	},
+	{
+		icon: Bell,
+		title: "Akıllı uyarılar",
+		desc: "Flapping kontrolü, snooze, slack/webhook entegrasyonu. Gürültü yok, sinyal var.",
+	},
+	{
+		icon: Terminal,
+		title: "Yapılandırılmış loglar",
+		desc: "Tüm servislerden log toplama, severity filtresi, tam metin arama.",
+	},
+];
+
+function Features() {
+	return (
+		<section id="features" className="py-28 px-6" style={{ background: INK }}>
+			<div className="max-w-6xl mx-auto">
+				<motion.div
+					initial={{ opacity: 0, y: 16 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-100px" }}
+					transition={{ duration: 0.5 }}
+					className="max-w-2xl mb-16"
+				>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-400 mb-3">
+						Her şey dahil
+					</p>
+					<h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
+						Tek platform,
+						<span className="text-white/40"> altı kritik yetenek.</span>
+					</h2>
+				</motion.div>
+
+				<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 rounded-xl overflow-hidden">
+					{FEATURES.map((f) => (
+						<div
+							key={f.title}
+							className="relative p-7 group transition-colors"
+							style={{ background: INK }}
 						>
-							<source src={landingVideo} type="video/mp4" />
-						</video>
+							<div
+								className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+								style={{
+									background:
+										"radial-gradient(400px circle at 50% 0%, rgba(45,212,191,0.05), transparent 70%)",
+								}}
+							/>
+							<div className="relative">
+								<div className="w-10 h-10 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center mb-5 group-hover:border-teal-500/30 transition-colors">
+									<f.icon className="w-4.5 h-4.5 text-white/60 group-hover:text-teal-400 transition-colors" />
+								</div>
+								<h3 className="text-[15px] font-semibold text-white mb-2 tracking-tight">
+									{f.title}
+								</h3>
+								<p className="text-[13px] text-white/45 leading-relaxed">
+									{f.desc}
+								</p>
+							</div>
+						</div>
+					))}
+				</div>
+			</div>
+		</section>
+	);
+}
 
-						{/* Bottom gradient fade */}
-						<div className="absolute bottom-0 inset-x-0 h-12 bg-linear-to-t from-[#060810]/60 to-transparent pointer-events-none" />
+// ─────────────────────────────────────────────────────────────────────────────
+// How it works
+
+function HowItWorks() {
+	const steps = [
+		{
+			n: "01",
+			icon: Box,
+			title: "Servisi kaydedin",
+			desc: "Dashboard'dan host, port ve health endpoint'ini girin. 30 saniyede tamam.",
+		},
+		{
+			n: "02",
+			icon: Terminal,
+			title: "Agent'ı kurun",
+			desc: "Tek satırlık setup script'i ile sunucuya dağıtın. Binary küçük, daemon hafif.",
+		},
+		{
+			n: "03",
+			icon: Zap,
+			title: "İzlemeye başlayın",
+			desc: "Metrikler canlı akmaya başlar. AI uyarıların nedenini açıklar, harita bağımlılıkları gösterir.",
+		},
+	];
+
+	return (
+		<section id="how" className="py-28 px-6" style={{ background: INK_ELEVATED }}>
+			<div className="max-w-6xl mx-auto">
+				<motion.div
+					initial={{ opacity: 0, y: 16 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-100px" }}
+					transition={{ duration: 0.5 }}
+					className="max-w-2xl mb-16"
+				>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-400 mb-3">
+						Nasıl çalışır
+					</p>
+					<h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
+						Üç adımda canlı.
+						<span className="text-white/40"> Karmaşa yok.</span>
+					</h2>
+				</motion.div>
+
+				<div className="grid md:grid-cols-3 gap-px bg-white/5 rounded-xl overflow-hidden">
+					{steps.map((s) => (
+						<div
+							key={s.n}
+							className="p-8 relative"
+							style={{ background: INK_ELEVATED }}
+						>
+							<div className="flex items-baseline gap-3 mb-5">
+								<span className="text-[10px] font-mono font-semibold text-teal-400 tracking-[0.2em]">
+									{s.n}
+								</span>
+								<span className="flex-1 h-px bg-white/5" />
+								<s.icon className="w-4 h-4 text-white/30" />
+							</div>
+							<h3 className="text-lg font-semibold text-white mb-3 tracking-tight">
+								{s.title}
+							</h3>
+							<p className="text-sm text-white/45 leading-relaxed">
+								{s.desc}
+							</p>
+						</div>
+					))}
+				</div>
+			</div>
+		</section>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI section
+
+function AISection() {
+	return (
+		<section id="ai" className="py-28 px-6" style={{ background: INK }}>
+			<div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+				<motion.div
+					initial={{ opacity: 0, y: 16 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-100px" }}
+					transition={{ duration: 0.5 }}
+				>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-400 mb-3">
+						AI kök-neden
+					</p>
+					<h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight mb-5">
+						Sadece
+						<span className="text-white/40"> "servis down"</span> demiyoruz.
+					</h2>
+					<p className="text-base text-white/50 leading-relaxed mb-8">
+						Claude destekli analiz motoru; metrik, log ve alert geçmişini
+						birleştirip olası kök-nedeni, etkilenen bileşenleri ve çözüm
+						önerisini çıkarır.
+					</p>
+					<ul className="space-y-3">
+						{[
+							"Metrik anomalisi + log pattern korelasyonu",
+							"Etkilenen servis ağı görselleştirmesi",
+							"Deployment penceresi ile olay eşleştirme",
+						].map((item) => (
+							<li key={item} className="flex items-start gap-3">
+								<CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+								<span className="text-sm text-white/70">{item}</span>
+							</li>
+						))}
+					</ul>
+				</motion.div>
+
+				<motion.div
+					initial={{ opacity: 0, scale: 0.96 }}
+					whileInView={{ opacity: 1, scale: 1 }}
+					viewport={{ once: true, margin: "-100px" }}
+					transition={{ duration: 0.6 }}
+				>
+					<AIExampleCard />
+				</motion.div>
+			</div>
+		</section>
+	);
+}
+
+function AIExampleCard() {
+	return (
+		<div
+			className="rounded-xl overflow-hidden border border-white/10"
+			style={{
+				background: INK_ELEVATED,
+				boxShadow: "0 24px 48px -12px rgba(0,0,0,0.4)",
+			}}
+		>
+			{/* Header */}
+			<div className="flex items-center gap-2.5 px-5 py-3 border-b border-white/5">
+				<Brain className="w-3.5 h-3.5 text-teal-400" />
+				<span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
+					AI analizi
+				</span>
+				<div className="flex-1" />
+				<span className="text-[10px] font-mono text-white/30">2s önce</span>
+			</div>
+
+			{/* Alert row */}
+			<div className="px-5 py-4 border-b border-white/5">
+				<div className="flex items-center gap-2 mb-2">
+					<span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+					<span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
+						Kritik
+					</span>
+					<span className="text-xs font-mono text-white/40 ml-auto">
+						payments-api · 12:44 UTC
+					</span>
+				</div>
+				<p className="text-[14px] text-white font-medium">
+					p95 latency 1.2s'ye yükseldi, hata oranı %8
+				</p>
+			</div>
+
+			{/* Analysis */}
+			<div className="px-5 py-4 space-y-3">
+				<div>
+					<p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1.5">
+						Olası kök-neden
+					</p>
+					<p className="text-[13px] text-white/80 leading-relaxed">
+						Son deployment'ta değişen SQL sorgusu yeni bir index kullanıyor
+						gibi görünüyor. <code className="text-teal-400 text-xs bg-white/5 px-1 py-0.5 rounded">payments_by_user</code>{" "}
+						index'i RDS'te yok.
+					</p>
+				</div>
+				<div>
+					<p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1.5">
+						Öneri
+					</p>
+					<div className="flex items-start gap-2 bg-teal-500/5 border border-teal-500/20 rounded-lg px-3 py-2.5">
+						<ArrowRight className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+						<code className="text-[12px] text-white/80 font-mono flex-1 leading-relaxed">
+							CREATE INDEX CONCURRENTLY payments_by_user ON payments(user_id);
+						</code>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Developer section
+
+function DevSection() {
+	return (
+		<section id="devs" className="py-28 px-6" style={{ background: INK_ELEVATED }}>
+			<div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-start">
+				<motion.div
+					initial={{ opacity: 0, y: 16 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-100px" }}
+					transition={{ duration: 0.5 }}
+				>
+					<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-400 mb-3">
+						Geliştiriciler için
+					</p>
+					<h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight mb-5">
+						Tek script,
+						<span className="text-white/40"> sıfır sürpriz.</span>
+					</h2>
+					<p className="text-base text-white/50 leading-relaxed mb-8">
+						Rust ile yazılmış tek binary agent. Docker değil, daemon değil,
+						çok hafif. Alt yapınıza girmeden önce kaynak kodunu inceleyin.
+					</p>
+					<div className="grid grid-cols-3 gap-4">
+						{[
+							{ label: "Binary", value: "6 MB" },
+							{ label: "RAM (avg)", value: "18 MB" },
+							{ label: "Poll", value: "5s" },
+						].map((m) => (
+							<div
+								key={m.label}
+								className="p-3 rounded-lg border border-white/5 bg-white/[0.02]"
+							>
+								<p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+									{m.label}
+								</p>
+								<p className="text-xl font-mono font-semibold text-white mt-1 tabular-nums">
+									{m.value}
+								</p>
+							</div>
+						))}
 					</div>
 				</motion.div>
-			</motion.div>
 
-			{/* Scroll cue */}
-			<motion.div
-				initial={{ opacity: 0 }}
-				animate={{ opacity: 1 }}
-				transition={{ delay: 1.2 }}
-				className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-			>
 				<motion.div
-					animate={{ y: [0, 6, 0] }}
-					transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+					initial={{ opacity: 0, y: 16 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-100px" }}
+					transition={{ duration: 0.6 }}
+					className="rounded-xl overflow-hidden border border-white/10"
+					style={{ background: "#050810" }}
 				>
-					<ChevronDown className="w-5 h-5 text-white/25" />
+					<div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/5">
+						<div className="w-2.5 h-2.5 rounded-full bg-rose-500/30" />
+						<div className="w-2.5 h-2.5 rounded-full bg-amber-500/30" />
+						<div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30" />
+						<span className="ml-auto text-[10px] font-mono text-white/20 tracking-wider">
+							bash
+						</span>
+					</div>
+					<pre className="p-5 font-mono text-[12px] leading-relaxed text-white/70 overflow-x-auto">
+						<code>
+							<span className="text-white/30"># Agent kurulumu</span>
+							{"\n"}
+							<span className="text-teal-400">$</span> ./agent-setup.sh{" "}
+							<span className="text-white/50">\</span>
+							{"\n"}    <span className="text-white/50">--backend</span> https://api.nanonet.dev{" "}
+							<span className="text-white/50">\</span>
+							{"\n"}    <span className="text-white/50">--token</span> $NANONET_TOKEN
+							{"\n\n"}
+							<span className="text-white/40">→ Servis eşleniyor...</span>
+							{"\n"}
+							<span className="text-white/40">→ Binary doğrulanıyor (6.2 MB)</span>
+							{"\n"}
+							<span className="text-white/40">→ systemd unit kuruldu</span>
+							{"\n"}
+							<span className="text-emerald-400">✓ nanonet-agent aktif · PID 12847</span>
+						</code>
+					</pre>
 				</motion.div>
+			</div>
+		</section>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stats strip
+
+function StatsStrip() {
+	const stats = [
+		{ icon: Cpu, label: "Agent overhead", value: "<1% CPU" },
+		{ icon: Shield, label: "Veri aktarımı", value: "TLS + mTLS" },
+		{ icon: Activity, label: "Poll interval", value: "5-300s" },
+		{ icon: Zap, label: "Alert SLA", value: "<10s" },
+	];
+	return (
+		<section className="py-16 px-6 border-y border-white/5" style={{ background: INK }}>
+			<div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5 rounded-xl overflow-hidden">
+				{stats.map((s) => (
+					<div
+						key={s.label}
+						className="p-6 flex items-center gap-4"
+						style={{ background: INK }}
+					>
+						<s.icon className="w-5 h-5 text-teal-400 shrink-0" />
+						<div>
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+								{s.label}
+							</p>
+							<p className="text-base font-mono font-semibold text-white mt-0.5 tabular-nums">
+								{s.value}
+							</p>
+						</div>
+					</div>
+				))}
+			</div>
+		</section>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CTA + Footer
+
+function CTA({ authed }: { authed: boolean }) {
+	return (
+		<section className="py-32 px-6 relative overflow-hidden" style={{ background: INK }}>
+			<div
+				className="absolute inset-0 pointer-events-none"
+				style={{
+					background:
+						"radial-gradient(ellipse at center, rgba(45,212,191,0.06), transparent 60%)",
+				}}
+			/>
+			<motion.div
+				initial={{ opacity: 0, y: 16 }}
+				whileInView={{ opacity: 1, y: 0 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.5 }}
+				className="relative max-w-3xl mx-auto text-center"
+			>
+				<h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight mb-5">
+					Bugün kurun,
+					<br />
+					<span className="text-white/40">yarın şüphe içinde olmayın.</span>
+				</h2>
+				<p className="text-base text-white/50 mb-10 max-w-xl mx-auto leading-relaxed">
+					Self-hosted, açık kaynak. İlk servisi dakikalar içinde bağlayın.
+				</p>
+				<div className="flex items-center justify-center gap-3 flex-wrap">
+					<Link
+						to={authed ? "/app" : "/register"}
+						className="inline-flex items-center gap-2 h-11 px-7 rounded-lg text-[14px] font-semibold text-slate-900 bg-white hover:bg-white/95 transition-colors"
+					>
+						{authed ? "Dashboard'a git" : "Ücretsiz başla"}
+						<ArrowRight className="w-4 h-4" />
+					</Link>
+					{!authed && (
+						<Link
+							to="/login"
+							className="inline-flex items-center gap-2 h-11 px-5 rounded-lg text-[14px] font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+						>
+							Giriş yap
+						</Link>
+					)}
+				</div>
 			</motion.div>
 		</section>
 	);
 }
 
-// ─── Feature Card ─────────────────────────────────────────────────────────────
-
-function FeatureCard({
-	icon: Icon,
-	title,
-	desc,
-	delay = 0,
-}: {
-	icon: React.ElementType;
-	title: string;
-	desc: string;
-	delay?: number;
-}) {
+function Footer() {
 	return (
-		<motion.div
-			initial={{ opacity: 0, y: 24 }}
-			whileInView={{ opacity: 1, y: 0 }}
-			viewport={{ once: true, margin: "-60px" }}
-			transition={{ delay, duration: 0.5, ease: "easeOut" }}
-			className="group p-7 rounded-2xl border border-slate-100 hover:border-teal-200 hover:shadow-xl hover:shadow-teal-50 transition-all duration-300 cursor-default bg-white"
-		>
-			<div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-teal-50 border border-slate-100 group-hover:border-teal-100 flex items-center justify-center mb-5 transition-colors">
-				<Icon className="w-5 h-5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+		<footer className="border-t border-white/5 py-10 px-6" style={{ background: INK }}>
+			<div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+				<div className="flex items-center gap-2.5">
+					<img src={logo} alt="NanoNet" className="w-5 h-5 opacity-60" />
+					<span className="text-sm font-semibold text-white/60">NanoNet</span>
+					<span className="text-xs text-white/30 font-mono">v2.0</span>
+				</div>
+				<div className="flex items-center gap-6">
+					{[
+						{ label: "Dashboard", to: "/app" },
+						{ label: "Servisler", to: "/app/services" },
+						{ label: "Uyarılar", to: "/app/alerts" },
+					].map((l) => (
+						<Link
+							key={l.to}
+							to={l.to}
+							className="text-xs text-white/40 hover:text-white/80 transition-colors"
+						>
+							{l.label}
+						</Link>
+					))}
+				</div>
 			</div>
-			<h4 className="text-[15px] font-black text-slate-900 mb-2 tracking-tight">
-				{title}
-			</h4>
-			<p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-		</motion.div>
+		</footer>
 	);
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Page
 
 export function LandingPage() {
-	const { t } = useTranslation();
-	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-	const { services } = useServices({ enabled: isAuthenticated });
-	const activeServicesCount = services.filter((s) => s.status === "up").length;
-
-	const features = [
-		{
-			icon: Activity,
-			title: t("landing.features.health.title"),
-			desc: t("landing.features.health.desc"),
-		},
-		{
-			icon: Brain,
-			title: t("landing.features.ai.title"),
-			desc: t("landing.features.ai.desc"),
-		},
-		{
-			icon: GitFork,
-			title: t("landing.features.serviceMap.title"),
-			desc: t("landing.features.serviceMap.desc"),
-		},
-		{
-			icon: LayoutGrid,
-			title: t("landing.features.k8s.title"),
-			desc: t("landing.features.k8s.desc"),
-		},
-		{
-			icon: Bell,
-			title: t("landing.features.alerts.title"),
-			desc: t("landing.features.alerts.desc"),
-		},
-		{
-			icon: Terminal,
-			title: t("landing.features.logs.title"),
-			desc: t("landing.features.logs.desc"),
-		},
-	];
-
-	const steps = [
-		{
-			n: "01",
-			title: t("landing.setup.step1.title"),
-			desc: t("landing.setup.step1.desc"),
-		},
-		{
-			n: "02",
-			title: t("landing.setup.step2.title"),
-			desc: t("landing.setup.step2.desc"),
-		},
-		{
-			n: "03",
-			title: t("landing.setup.step3.title"),
-			desc: t("landing.setup.step3.desc"),
-		},
-	];
+	const authed = useAuthStore((s) => s.isAuthenticated);
+	const { services } = useServices({ enabled: authed });
+	const liveCount = services.filter((s) => s.status === "up").length;
 
 	return (
-		<div className="bg-white text-slate-900 antialiased font-sans">
-			<Navbar isAuthenticated={isAuthenticated} />
-			<Hero
-				isAuthenticated={isAuthenticated}
-				activeServicesCount={activeServicesCount}
-			/>
-
-			{/* ── Features ── */}
-			<section id="features" className="py-28 bg-white">
-				<div className="max-w-6xl mx-auto px-6">
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						viewport={{ once: true }}
-						className="mb-16"
-					>
-						<p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-600 mb-3">
-							{t("landing.features.badge")}
-						</p>
-						<h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter max-w-xl">
-							{t("landing.features.title")}
-						</h2>
-					</motion.div>
-					<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-						{features.map((f, i) => (
-							<FeatureCard key={f.title} {...f} delay={Math.min(i, 3) * 0.05} />
-						))}
-					</div>
-				</div>
-			</section>
-
-			{/* ── Setup ── */}
-			<section id="setup" className="py-28 bg-[#060810]">
-				<div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center">
-					{/* Steps */}
-					<div>
-						<p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-400 mb-4">
-							{t("landing.setup.badge")}
-						</p>
-						<h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-14">
-							{t("landing.setup.title")}
-						</h2>
-						<div className="space-y-10">
-							{steps.map((step, i) => (
-								<motion.div
-									key={step.n}
-									initial={{ opacity: 0, x: -20 }}
-									whileInView={{ opacity: 1, x: 0 }}
-									viewport={{ once: true }}
-									transition={{ delay: i * 0.1 }}
-									className="flex gap-6"
-								>
-									<span className="text-3xl font-black text-white/5 leading-none select-none tabular-nums">
-										{step.n}
-									</span>
-									<div className="pt-0.5">
-										<h5 className="text-white font-black tracking-tight mb-1.5">
-											{step.title}
-										</h5>
-										<p className="text-sm text-white/40 leading-relaxed">
-											{step.desc}
-										</p>
-									</div>
-								</motion.div>
-							))}
-						</div>
-					</div>
-
-					{/* Dashboard preview */}
-					<motion.div
-						initial={{ opacity: 0, scale: 0.97 }}
-						whileInView={{ opacity: 1, scale: 1 }}
-						viewport={{ once: true }}
-						transition={{ duration: 0.6 }}
-						className="relative"
-					>
-						<div className="relative rounded-2xl border border-white/5 overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.5)]">
-							<div className="flex items-center gap-1.5 px-4 py-3 bg-white/3 border-b border-white/5">
-								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-								<div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-								<span className="ml-auto text-[9px] font-mono text-white/20 uppercase tracking-widest">
-									NanoNet Console
-								</span>
-							</div>
-							<img
-								src={dashboardImage}
-								alt="Dashboard"
-								className="w-full h-auto opacity-90"
-							/>
-						</div>
-					</motion.div>
-				</div>
-			</section>
-
-			{/* ── AI Insights ── */}
-			<section id="ai" className="py-28 bg-slate-50">
-				<div className="max-w-4xl mx-auto px-6 text-center">
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						viewport={{ once: true }}
-					>
-						<div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 px-4 py-1.5 rounded-full mb-8">
-							<Zap className="w-3 h-3 text-teal-600" />
-							<span className="text-[10px] font-black uppercase tracking-widest text-teal-600">
-								{t("landing.ai.badge")}
-							</span>
-						</div>
-						<h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-4">
-							{t("landing.ai.title")}
-						</h2>
-						<p className="text-slate-500 text-base leading-relaxed mb-12 max-w-2xl mx-auto">
-							{t("landing.ai.desc")}
-						</p>
-						<div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-xl text-left">
-							<div className="flex items-start gap-5">
-								<div className="w-10 h-10 bg-red-50 border border-red-100 rounded-xl flex items-center justify-center shrink-0">
-									<AlertTriangle className="w-5 h-5 text-red-500" />
-								</div>
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-3 mb-3">
-										<span className="text-xs font-black text-red-500 uppercase tracking-widest">
-											{t("landing.ai.alert.title")}
-										</span>
-										<div className="h-px flex-1 bg-slate-100" />
-										<span className="text-[10px] font-mono text-slate-400">
-											12:44:02 UTC
-										</span>
-									</div>
-									<p className="font-black text-slate-900 text-[15px] mb-4 tracking-tight">
-										{t("landing.ai.alert.desc")}
-									</p>
-									<div className="bg-teal-50 border border-teal-100 px-4 py-3 rounded-xl flex items-start gap-3">
-										<ArrowRight className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
-										<p className="text-sm text-slate-600 leading-relaxed">
-											{t("landing.ai.alert.insight")}
-										</p>
-									</div>
-								</div>
-							</div>
-						</div>
-					</motion.div>
-				</div>
-			</section>
-
-			{/* ── Developer ── */}
-			<section id="devs" className="py-28 bg-white">
-				<div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-start">
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						viewport={{ once: true }}
-					>
-						<h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-5">
-							{t("landing.devs.title")}
-						</h2>
-						<p className="text-slate-500 text-base leading-relaxed mb-10">
-							{t("landing.devs.desc")}
-						</p>
-						<ul className="space-y-4">
-							{[
-								t("landing.devs.feature1"),
-								t("landing.devs.feature2"),
-								t("landing.devs.feature3"),
-							].map((item) => (
-								<li key={item} className="flex items-center gap-3">
-									<CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-									<span className="text-sm font-semibold text-slate-700">
-										{item}
-									</span>
-								</li>
-							))}
-						</ul>
-					</motion.div>
-
-					{/* Terminal */}
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						viewport={{ once: true }}
-						transition={{ delay: 0.1 }}
-						className="bg-[#0d1117] rounded-2xl overflow-hidden border border-white/5 shadow-2xl"
-					>
-						<div className="flex items-center gap-1.5 px-5 py-3.5 border-b border-white/5">
-							<div className="w-3 h-3 rounded-full bg-red-500/40" />
-							<div className="w-3 h-3 rounded-full bg-amber-500/40" />
-							<div className="w-3 h-3 rounded-full bg-emerald-500/40" />
-							<span className="ml-auto text-[9px] font-mono text-white/20 uppercase tracking-widest">
-								bash
-							</span>
-						</div>
-						<div className="p-6 font-mono text-sm space-y-4">
-							<p className="text-white/30">
-								# {t("landing.devs.install.comment")}
-							</p>
-							<div className="flex items-center gap-3 bg-white/5 border border-white/5 px-4 py-3.5 rounded-xl group relative">
-								<span className="text-teal-400 font-bold select-none">$</span>
-								<code className="text-white/80 flex-1 text-xs">
-									./agent-setup.sh --backend $BACKEND_URL
-								</code>
-								<button
-									type="button"
-									onClick={() =>
-										navigator.clipboard.writeText(
-											"./agent-setup.sh --backend $BACKEND_URL",
-										)
-									}
-									className="opacity-0 group-hover:opacity-100 transition-opacity text-white/30 hover:text-white/60 p-1"
-									title="Copy"
-								>
-									<Terminal className="w-3.5 h-3.5" />
-								</button>
-							</div>
-							<div className="space-y-1.5 pt-1">
-								<p className="text-white/25 text-xs">
-									→ {t("landing.devs.install.step1")}
-								</p>
-								<p className="text-white/25 text-xs">
-									→ {t("landing.devs.install.step2")}
-								</p>
-								<p className="text-emerald-400 font-bold text-xs">
-									✓ {t("landing.devs.install.success")}
-								</p>
-							</div>
-						</div>
-					</motion.div>
-				</div>
-			</section>
-
-			{/* ── CTA Banner ── */}
-			<section id="cta" className="py-32 bg-[#060810] relative overflow-hidden">
-				<div className="absolute inset-0 pointer-events-none">
-					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-teal-600/[0.05] blur-3xl rounded-full" />
-				</div>
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					whileInView={{ opacity: 1, y: 0 }}
-					viewport={{ once: true }}
-					className="relative max-w-3xl mx-auto px-6 text-center"
-				>
-					<div className="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 px-4 py-1.5 rounded-full mb-8">
-						<span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-						<span className="text-[10px] font-black uppercase tracking-widest text-teal-400">
-							Open source · self-hosted
-						</span>
-					</div>
-					<h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-6 leading-[1.1]">
-						{t("landing.cta.title")}
-					</h2>
-					<p className="text-white/40 text-base mb-12 leading-relaxed">
-						{t("landing.hero.description")}
-					</p>
-					<div className="flex items-center justify-center gap-4 flex-wrap">
-						<Link to={isAuthenticated ? "/app" : "/register"}>
-							<Button className="h-12 px-10 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-black text-sm tracking-wide transition-all active:scale-[0.98] shadow-[0_0_40px_rgba(13,148,136,0.35)]">
-								{isAuthenticated
-									? t("landing.hero.cta.launch")
-									: t("landing.hero.cta.start")}{" "}
-								→
-							</Button>
-						</Link>
-						{!isAuthenticated && (
-							<Link to="/login" className="text-sm font-semibold text-white/40 hover:text-white/70 transition-colors">
-								{t("auth.login")} →
-							</Link>
-						)}
-					</div>
-				</motion.div>
-			</section>
-
-			{/* ── Footer ── */}
-			<footer className="border-t border-slate-100 bg-white">
-				<div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-					<div className="flex items-center gap-2.5">
-						<img src={logo} alt="Logo" className="w-5 h-5 opacity-50" />
-						<span className="text-sm font-black text-slate-600 tracking-tight">
-							NanoNet
-						</span>
-						<span className="text-xs text-slate-400 ml-2 font-mono">
-							v2.0 · {t("footer.tagline")}
-						</span>
-					</div>
-					<div className="flex items-center gap-8">
-						{[
-							{ key: "navigation.dashboard", path: "/app" },
-							{ key: "navigation.services", path: "/app/services" },
-							{ key: "navigation.alerts", path: "/app/alerts" },
-						].map((link) => (
-							<Link
-								key={link.key}
-								to={link.path}
-								className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors"
-							>
-								{t(link.key)}
-							</Link>
-						))}
-					</div>
-				</div>
-			</footer>
+		<div className="antialiased" style={{ background: INK, color: "#fff" }}>
+			<Nav authed={authed} />
+			<main>
+				<Hero authed={authed} liveCount={liveCount} />
+				<StatsStrip />
+				<Features />
+				<HowItWorks />
+				<AISection />
+				<DevSection />
+				<CTA authed={authed} />
+			</main>
+			<Footer />
 		</div>
 	);
 }

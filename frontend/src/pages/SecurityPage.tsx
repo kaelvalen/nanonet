@@ -25,6 +25,7 @@ import {
 	type ServiceScanSummary,
 	securityApi,
 } from "@/api/security";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
 
 // ── Yardımcılar ────────────────────────────────────────────────────────────
 
@@ -510,74 +511,71 @@ export function SecurityPage() {
 	}
 
 	return (
-		<div className="space-y-3">
-			{/* ── Başlık ──────────────────────────────────────────────── */}
-			<motion.div
-				className="flex items-center justify-between gap-3 flex-wrap"
-				initial={{ opacity: 0, y: -6 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.25 }}
-			>
-				<div className="flex items-center gap-2">
-					<span
-						className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold"
-						style={{
-							background:
-								score >= 80
-									? "var(--status-up-subtle)"
-									: score >= 60
-										? "var(--status-warn-subtle)"
-										: "var(--status-down-subtle)",
-							color:
-								score >= 80
-									? "var(--status-up-text)"
-									: score >= 60
-										? "var(--status-warn-text)"
-										: "var(--status-down-text)",
-							border: `1px solid ${score >= 80 ? "var(--status-up-border)" : score >= 60 ? "var(--status-warn-border)" : "var(--status-down-border)"}`,
-						}}
-					>
-						<Shield className="w-3 h-3" />
-						{services.length > 0
-							? `Güvenlik ${scoreLabel(score)}`
-							: "Güvenlik Taraması"}
-					</span>
-				</div>
-
-				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						onClick={() => refetch()}
-						className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-						style={{
-							background: "var(--surface-raised)",
-							color: "var(--text-muted)",
-							border: "1px solid var(--border-default)",
-						}}
-					>
-						<RefreshCw className="w-3 h-3" />
-						Yenile
-					</button>
-					<button
-						type="button"
-						onClick={() => aiMutation.mutate()}
-						disabled={aiMutation.isPending}
-						className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-						style={{
-							background: "var(--color-ai-subtle)",
-							color: "var(--color-ai)",
-							border: "1px solid var(--color-ai-border)",
-						}}
-					>
-						{aiMutation.isPending ? (
-							<Loader2 className="w-3 h-3 animate-spin" />
-						) : (
-							<Sparkles className="w-3 h-3" />
-						)}
-						AI Analizi
-					</button>
-				</div>
-			</motion.div>
+		<PageShell width="wide">
+			<PageHeader
+				eyebrow="Güvenlik"
+				title="Güvenlik Taraması"
+				description="TLS durumu, açık port'lar, header'lar ve risk skoru"
+				meta={
+					services.length > 0 ? (
+						<span
+							className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-semibold"
+							style={{
+								background:
+									score >= 80
+										? "var(--status-up-subtle)"
+										: score >= 60
+											? "var(--status-warn-subtle)"
+											: "var(--status-down-subtle)",
+								color:
+									score >= 80
+										? "var(--status-up-text)"
+										: score >= 60
+											? "var(--status-warn-text)"
+											: "var(--status-down-text)",
+							}}
+						>
+							<Shield className="w-3 h-3" />
+							{`Güvenlik ${scoreLabel(score)}`}
+						</span>
+					) : null
+				}
+				actions={
+					<>
+						<button
+							type="button"
+							onClick={() => refetch()}
+							className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium transition-colors"
+							style={{
+								background: "var(--surface-raised)",
+								color: "var(--text-muted)",
+								border: "1px solid var(--border-default)",
+							}}
+						>
+							<RefreshCw className="w-3 h-3" />
+							Yenile
+						</button>
+						<button
+							type="button"
+							onClick={() => aiMutation.mutate()}
+							disabled={aiMutation.isPending}
+							className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium transition-colors"
+							style={{
+								background: "var(--color-ai-subtle)",
+								color: "var(--color-ai)",
+								border: "1px solid var(--color-ai-border)",
+							}}
+						>
+							{aiMutation.isPending ? (
+								<Loader2 className="w-3 h-3 animate-spin" />
+							) : (
+								<Sparkles className="w-3 h-3" />
+							)}
+							AI Analizi
+						</button>
+					</>
+				}
+			/>
 
 			{/* ── Stat kartları ────────────────────────────────────────── */}
 			<motion.div
@@ -790,6 +788,6 @@ export function SecurityPage() {
 					))}
 				</motion.div>
 			)}
-		</div>
+		</PageShell>
 	);
 }

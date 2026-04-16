@@ -43,6 +43,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAuthStore } from "@/store/authStore";
@@ -332,27 +333,14 @@ export function SettingsPage() {
 	const dividerStyle = { backgroundColor: "var(--border-divider)" };
 
 	return (
-		<div className="space-y-6 max-w-3xl mx-auto">
-			{/* Header */}
-			<motion.div
-				initial={{ opacity: 0, y: -6 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.25 }}
-				className="flex items-start justify-between gap-4"
-			>
-				<div>
-					<h1
-						className="text-lg font-bold leading-none"
-						style={{ color: "var(--text-primary)" }}
-					>
-						Ayarlar
-					</h1>
-					<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-						Platform yapılandırması ve tercihler
-					</p>
-				</div>
-				{anyDirty && (
-					<button
+		<PageShell className="max-w-3xl">
+			<PageHeader
+				eyebrow="Hesap"
+				title="Ayarlar"
+				description="Platform yapılandırması ve tercihler"
+				actions={
+					anyDirty ? (
+						<button
 						type="button"
 						onClick={handleSaveAll}
 						disabled={saveMutation.isPending}
@@ -375,8 +363,9 @@ export function SettingsPage() {
 							</>
 						)}
 					</button>
-				)}
-			</motion.div>
+					) : null
+				}
+			/>
 
 			{/* Profile */}
 			<motion.div
@@ -1472,6 +1461,6 @@ export function SettingsPage() {
 					</div>
 				</Card>
 			</motion.div>
-		</div>
+		</PageShell>
 	);
 }

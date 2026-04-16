@@ -25,6 +25,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
 	Select,
 	SelectContent,
@@ -174,26 +175,12 @@ export function AIInsightsPage() {
 	const confOffset = circ - (confPct / 100) * circ;
 
 	return (
-		<div className="space-y-4">
-			{/* ── Page header ─────────────────────────────────────────── */}
-			<motion.div
-				className="flex items-start justify-between gap-4"
-				initial={{ opacity: 0, y: -6 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.25 }}
-			>
-				<div>
-					<h1
-						className="text-lg font-bold leading-none"
-						style={{ color: "var(--text-primary)" }}
-					>
-						AI İçgörüler
-					</h1>
-					<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-						Claude AI destekli servis analizi ve önerileri
-					</p>
-				</div>
-			</motion.div>
+		<PageShell width="wide">
+			<PageHeader
+				eyebrow="AI"
+				title="AI İçgörüler"
+				description="Claude destekli servis analizi, kök-neden tespiti ve çözüm önerileri"
+			/>
 
 			{/* ── Stat tiles ─────────────────────────────────────────── */}
 			<motion.div
@@ -1066,6 +1053,6 @@ export function AIInsightsPage() {
 					)}
 				</motion.div>
 			</div>
-		</div>
+		</PageShell>
 	);
 }

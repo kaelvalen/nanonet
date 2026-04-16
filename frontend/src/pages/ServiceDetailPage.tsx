@@ -61,6 +61,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PageShell } from "@/components/ui/page-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useServices } from "@/hooks/useServices";
 
@@ -351,14 +352,16 @@ export function ServiceDetailPage() {
 					};
 
 	return (
-		<div className="space-y-6">
+		<PageShell width="wide">
 			{/* Header */}
 			<motion.div
 				initial={{ opacity: 0, y: -6 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.25 }}
+				className="pb-6 mb-6 border-b"
+				style={{ borderColor: "var(--border-subtle)" }}
 			>
-				<div className="flex items-center gap-3 mb-4">
+				<div className="flex items-center gap-3">
 					<button
 						type="button"
 						onClick={() => navigate("/app/services")}
@@ -1982,6 +1985,6 @@ export function ServiceDetailPage() {
 				serviceId={serviceId}
 				serviceName={service?.name}
 			/>
-		</div>
+		</PageShell>
 	);
 }

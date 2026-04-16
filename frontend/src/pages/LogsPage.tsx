@@ -26,6 +26,7 @@ import { servicesApi } from "@/api/services";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import { useAuthStore } from "@/store/authStore";
 
 // ── Tipler ──────────────────────────────────────────────────────
@@ -922,40 +923,12 @@ export function LogsPage() {
 	];
 
 	return (
-		<motion.div
-			className="space-y-6"
-			initial={{ opacity: 0, y: 8 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.3 }}
-		>
-			{/* Header */}
-			<div className="flex items-start justify-between gap-4">
-				<div className="flex items-center gap-3">
-					<div
-						className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-						style={{
-							background: "var(--color-lavender-subtle)",
-							border: "1px solid var(--color-lavender-border)",
-						}}
-					>
-						<Terminal
-							className="w-4.5 h-4.5"
-							style={{ color: "var(--color-lavender)" }}
-						/>
-					</div>
-					<div>
-						<h1
-							className="text-lg font-bold leading-none"
-							style={{ color: "var(--text-primary)" }}
-						>
-							Log Merkezi
-						</h1>
-						<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-							Servis logları, denetim kayıtları ve Kubernetes pod loglarını görüntüleyin
-						</p>
-					</div>
-				</div>
-			</div>
+		<PageShell width="wide">
+			<PageHeader
+				eyebrow="Observability"
+				title="Log merkezi"
+				description="Servis logları, denetim kayıtları ve Kubernetes pod logları"
+			/>
 
 			{/* Tabs */}
 			<div
@@ -1015,6 +988,6 @@ export function LogsPage() {
 			{activeTab === "service" && <ServiceLogsTab />}
 			{activeTab === "audit" && <AuditLogsTab />}
 			{activeTab === "k8s" && <K8sLogsTab />}
-		</motion.div>
+		</PageShell>
 	);
 }

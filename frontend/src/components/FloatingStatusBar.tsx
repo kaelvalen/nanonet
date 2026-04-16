@@ -1,35 +1,40 @@
 import { AlertCircle, ChevronRight, Search, Server } from "lucide-react";
-import { motion } from "motion/react";
 import { Link, useLocation, useNavigate } from "react-router";
+import { KbdHint } from "@/components/ui/status-atoms";
 import { useServices } from "@/hooks/useServices";
 import { useWSStore } from "@/store/wsStore";
 
 type Crumb = { label: string; path: string };
 
-function buildBreadcrumbs(pathname: string, services: { id: string; name: string }[]): Crumb[] {
+const ROUTE_LABELS: Record<string, string> = {
+	"/app": "Genel Bakış",
+	"/app/services": "Servisler",
+	"/app/alerts": "Uyarılar",
+	"/app/ai-insights": "AI İçgörüler",
+	"/app/service-map": "Servis Haritası",
+	"/app/settings": "Ayarlar",
+	"/app/kubernetes": "Kubernetes",
+	"/app/logs": "Loglar",
+	"/app/security": "Güvenlik",
+};
+
+function buildBreadcrumbs(
+	pathname: string,
+	services: { id: string; name: string }[],
+): Crumb[] {
 	const crumbs: Crumb[] = [{ label: "Genel Bakış", path: "/app" }];
+
 	const serviceDetailMatch = pathname.match(/^\/app\/services\/(.+)$/);
 	if (serviceDetailMatch) {
 		const serviceId = serviceDetailMatch[1];
 		const svcName = services.find((s) => s.id === serviceId)?.name ?? "Detay";
 		crumbs.push({ label: "Servisler", path: "/app/services" });
 		crumbs.push({ label: svcName, path: pathname });
-	} else if (pathname === "/app/services") {
-		crumbs.push({ label: "Servisler", path: "/app/services" });
-	} else if (pathname === "/app/alerts") {
-		crumbs.push({ label: "Uyarılar", path: "/app/alerts" });
-	} else if (pathname === "/app/ai-insights") {
-		crumbs.push({ label: "AI İçgörüler", path: "/app/ai-insights" });
-	} else if (pathname === "/app/service-map") {
-		crumbs.push({ label: "Servis Haritası", path: "/app/service-map" });
-	} else if (pathname === "/app/settings") {
-		crumbs.push({ label: "Ayarlar", path: "/app/settings" });
-	} else if (pathname === "/app/kubernetes") {
-		crumbs.push({ label: "Kubernetes", path: "/app/kubernetes" });
-	} else if (pathname === "/app/logs") {
-		crumbs.push({ label: "Loglar", path: "/app/logs" });
-	} else if (pathname === "/app/security") {
-		crumbs.push({ label: "Güvenlik", path: "/app/security" });
+		return crumbs;
+	}
+
+	if (pathname !== "/app" && ROUTE_LABELS[pathname]) {
+		crumbs.push({ label: ROUTE_LABELS[pathname], path: pathname });
 	}
 	return crumbs;
 }
@@ -52,27 +57,20 @@ export function FloatingStatusBar({
 	const total = services.length;
 
 	return (
-		<motion.div
-			className="fixed z-40 hidden md:block"
-			style={{ top: 10, right: 12, left: "auto" }}
-			initial={{ opacity: 0, y: -8 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.25, ease: "easeOut" }}
+		<div
+			className="fixed top-3 right-3 z-40 hidden md:block"
+			style={{ maxWidth: "calc(100vw - 96px)" }}
 		>
 			<div
-				className="flex items-center h-9 px-1 gap-0.5 rounded-full"
+				className="flex items-center h-9 px-1 gap-1 rounded-lg"
 				style={{
-					background:
-						"color-mix(in srgb, var(--surface-raised) 90%, transparent)",
+					background: "var(--surface-raised)",
 					border: "1px solid var(--border-default)",
-					backdropFilter: "blur(12px)",
-					WebkitBackdropFilter: "blur(12px)",
-					boxShadow:
-						"0 2px 12px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04)",
+					boxShadow: "var(--card-shadow)",
 				}}
 			>
 				{/* Breadcrumbs */}
-				<nav className="flex items-center gap-0.5 px-2 min-w-0 flex-1">
+				<nav className="flex items-center px-2 min-w-0">
 					{crumbs.map((crumb, i) => (
 						<span
 							key={crumb.path}
@@ -80,7 +78,7 @@ export function FloatingStatusBar({
 						>
 							{i > 0 && (
 								<ChevronRight
-									className="w-3 h-3 shrink-0"
+									className="w-3 h-3 shrink-0 mx-0.5"
 									style={{ color: "var(--text-faint)" }}
 								/>
 							)}
@@ -94,7 +92,7 @@ export function FloatingStatusBar({
 							) : (
 								<Link
 									to={crumb.path}
-									className="text-xs truncate px-1 hover:underline"
+									className="text-xs truncate px-1 transition-colors hover:opacity-100"
 									style={{ color: "var(--text-muted)" }}
 								>
 									{crumb.label}
@@ -104,18 +102,17 @@ export function FloatingStatusBar({
 					))}
 				</nav>
 
-				{/* Divider */}
-				<div
-					className="w-px h-4 mx-1 shrink-0"
+				<span
+					className="w-px h-4 shrink-0"
 					style={{ background: "var(--border-default)" }}
 				/>
 
-				{/* Services health pill */}
+				{/* Service health pill */}
 				{total > 0 && (
 					<button
 						type="button"
 						onClick={() => navigate("/app/services")}
-						className="flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-medium transition-colors shrink-0"
+						className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium transition-colors shrink-0"
 						style={{
 							background:
 								downCount > 0
@@ -126,64 +123,58 @@ export function FloatingStatusBar({
 									? "var(--status-warn-text)"
 									: "var(--status-up-text)",
 						}}
+						title={`${upCount} sağlıklı / ${total} toplam`}
 					>
 						<Server className="w-3 h-3" />
-						{upCount}/{total}
+						<span className="tabular-nums">
+							{upCount}/{total}
+						</span>
 					</button>
 				)}
 
-				{/* Alert pill */}
 				{downCount > 0 && (
 					<button
 						type="button"
 						onClick={() => navigate("/app/alerts")}
-						className="flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-semibold transition-colors shrink-0 ml-0.5"
+						className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-semibold transition-colors shrink-0"
 						style={{
 							background: "var(--status-down-subtle)",
 							color: "var(--status-down-text)",
 						}}
 					>
 						<AlertCircle className="w-3 h-3" />
-						{downCount} sorun
+						<span className="tabular-nums">{downCount}</span>
 					</button>
 				)}
 
-				{/* Divider */}
-				<div
-					className="w-px h-4 mx-1 shrink-0"
+				<span
+					className="w-px h-4 shrink-0"
 					style={{ background: "var(--border-default)" }}
 				/>
 
-				{/* Search */}
+				{/* Search / Command palette */}
 				<button
 					type="button"
 					onClick={onOpenCommandPalette}
-					className="flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs transition-colors shrink-0"
-					style={{
-						color: "var(--text-muted)",
-					}}
+					className="flex items-center gap-2 px-2.5 h-7 rounded-md text-xs transition-colors shrink-0 hover:bg-[var(--surface-sunken)]"
+					style={{ color: "var(--text-muted)" }}
+					title="Komut paleti"
 				>
 					<Search className="w-3 h-3" />
 					<span className="hidden lg:inline">Ara</span>
-					<kbd
-						className="hidden lg:inline text-[10px] px-1 py-0.5 rounded ml-0.5"
-						style={{
-							background: "var(--surface-sunken)",
-							border: "1px solid var(--border-default)",
-							color: "var(--text-faint)",
-						}}
-					>
-						⌘K
-					</kbd>
+					<span className="hidden lg:flex items-center gap-0.5">
+						<KbdHint>⌘</KbdHint>
+						<KbdHint>K</KbdHint>
+					</span>
 				</button>
 
 				{/* WS status */}
-				<button
-					type="button"
-					className="flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-medium shrink-0"
+				<div
+					className="flex items-center gap-1.5 px-2.5 h-7 text-xs font-medium shrink-0"
 					style={{
 						color: isConnected ? "var(--status-up-text)" : "var(--text-faint)",
 					}}
+					title={isConnected ? "WebSocket bağlı" : "WebSocket kopuk"}
 				>
 					<span
 						className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -191,14 +182,13 @@ export function FloatingStatusBar({
 							background: isConnected
 								? "var(--status-up)"
 								: "var(--text-faint)",
-							boxShadow: isConnected ? "0 0 6px var(--status-up)" : "none",
 						}}
 					/>
 					<span className="hidden lg:inline">
 						{isConnected ? "Canlı" : "Kesik"}
 					</span>
-				</button>
+				</div>
 			</div>
-		</motion.div>
+		</div>
 	);
 }

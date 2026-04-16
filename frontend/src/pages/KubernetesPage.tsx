@@ -48,6 +48,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
 	Select,
 	SelectContent,
@@ -756,51 +757,19 @@ export function KubernetesPage() {
 	];
 
 	return (
-		<div className="space-y-5">
+		<PageShell width="wide">
 			{/* Log Modal */}
 			{logPod && (
 				<PodLogModal podName={logPod} onClose={() => setLogPod(null)} />
 			)}
 
-			{/* Başlık */}
-			<motion.div
-				initial={{ opacity: 0, y: 16 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4 }}
-			>
-				<div className="flex flex-col gap-3">
-					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-						<div className="flex items-center gap-3">
-							<div
-								className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-								style={{
-									background: "var(--color-teal-subtle)",
-									border: "1px solid var(--color-teal-border)",
-								}}
-							>
-								<Cloud
-									className="w-4 h-4"
-									style={{ color: "var(--color-teal)" }}
-								/>
-							</div>
-							<div>
-								<h1
-									className="text-xl font-bold"
-									style={{ color: "var(--text-primary)" }}
-								>
-									Kubernetes
-								</h1>
-								<p
-									className="text-xs mt-0.5"
-									style={{ color: "var(--text-muted)" }}
-								>
-									Cluster yönetimi · pod izleme · auto-scaling
-								</p>
-							</div>
-						</div>
-						<div className="flex items-center gap-2">
-							{isAvailable && (
-								<button
+			<PageHeader
+				eyebrow="Altyapı"
+				title="Kubernetes"
+				description="Cluster yönetimi · pod izleme · auto-scaling"
+				actions={
+					isAvailable ? (
+						<button
 									type="button"
 									onClick={() => {
 										refetchNodes();
@@ -821,9 +790,11 @@ export function KubernetesPage() {
 									)}
 									Yenile
 								</button>
-							)}
+							) : null
+						}
+						meta={
 							<div
-								className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border"
+								className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium border"
 								style={
 									isAvailable
 										? {
@@ -840,8 +811,7 @@ export function KubernetesPage() {
 							>
 								{statusLoading ? (
 									<>
-										<Loader2 className="w-3 h-3 animate-spin" /> Kontrol
-										ediliyor
+										<Loader2 className="w-3 h-3 animate-spin" /> Kontrol ediliyor
 									</>
 								) : isAvailable ? (
 									<>
@@ -853,8 +823,8 @@ export function KubernetesPage() {
 									</>
 								)}
 							</div>
-						</div>
-					</div>
+						}
+					/>
 					{/* Cluster summary strip */}
 					{isAvailable && !statusLoading && (
 						<div className="flex flex-wrap gap-2">
@@ -903,8 +873,6 @@ export function KubernetesPage() {
 							))}
 						</div>
 					)}
-				</div>
-			</motion.div>
 
 			{/* Bağlanamadı */}
 			{!statusLoading && !isAvailable && (
@@ -2072,6 +2040,6 @@ export function KubernetesPage() {
 					</AnimatePresence>
 				</>
 			)}
-		</div>
+		</PageShell>
 	);
 }

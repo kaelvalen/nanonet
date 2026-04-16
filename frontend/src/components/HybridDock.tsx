@@ -10,7 +10,6 @@ import {
 	Shield,
 	Sparkles,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import logo from "@/assets/logo.png";
@@ -35,42 +34,88 @@ interface NavItem {
 	badge?: "services" | "alerts";
 }
 
-const navItems: NavItem[] = [
+const PRIMARY: NavItem[] = [
 	{ to: "/app", label: "Genel Bakış", icon: LayoutDashboard, end: true },
 	{ to: "/app/services", label: "Servisler", icon: Server, badge: "services" },
 	{ to: "/app/alerts", label: "Uyarılar", icon: AlertCircle, badge: "alerts" },
 	{ to: "/app/ai-insights", label: "AI İçgörüler", icon: Sparkles },
 	{ to: "/app/service-map", label: "Servis Haritası", icon: GitFork },
-	{ to: "/app/kubernetes", label: "Kubernetes", icon: Cloud },
-	{ to: "/app/security", label: "Güvenlik", icon: Shield },
-	{ to: "/app/logs", label: "Loglar", icon: Scroll },
 ];
 
-function Tooltip({ label, visible }: { label: string; visible: boolean }) {
+const SECONDARY: NavItem[] = [
+	{ to: "/app/kubernetes", label: "Kubernetes", icon: Cloud },
+	{ to: "/app/logs", label: "Loglar", icon: Scroll },
+	{ to: "/app/security", label: "Güvenlik", icon: Shield },
+];
+
+function DockItem({
+	item,
+	active,
+	badge,
+	hovered,
+	onHover,
+}: {
+	item: NavItem;
+	active: boolean;
+	badge: number | null;
+	hovered: boolean;
+	onHover: (hovered: boolean) => void;
+}) {
+	const isAlert = item.badge === "alerts";
 	return (
-		<AnimatePresence>
-			{visible && (
-				<motion.div
-					initial={{ opacity: 0, x: -6 }}
-					animate={{ opacity: 1, x: 0 }}
-					exit={{ opacity: 0, x: -4 }}
-					transition={{ duration: 0.12 }}
-					className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap pointer-events-none z-50"
+		<div
+			className="relative"
+			onMouseEnter={() => onHover(true)}
+			onMouseLeave={() => onHover(false)}
+		>
+			<NavLink to={item.to} end={item.end}>
+				<div
+					className="w-9 h-9 flex items-center justify-center rounded-lg relative transition-colors"
 					style={{
-						background: "var(--surface-overlay)",
-						border: "1px solid var(--border-default)",
-						boxShadow: "var(--panel-shadow)",
-						color: "var(--text-primary)",
+						background: active ? "var(--surface-sunken)" : "transparent",
+						color: active ? "var(--color-teal)" : "var(--text-muted)",
 					}}
 				>
-					{label}
-					<span
-						className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent"
-						style={{ borderRightColor: "var(--surface-overlay)" }}
-					/>
-				</motion.div>
-			)}
-		</AnimatePresence>
+					<item.icon className="w-4 h-4" />
+
+					{badge != null && (
+						<span
+							className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold tabular-nums"
+							style={{
+								background: isAlert ? "var(--status-down)" : "var(--color-teal)",
+								color: "#fff",
+								border: "1.5px solid var(--surface-raised)",
+							}}
+						>
+							{badge > 9 ? "9+" : badge}
+						</span>
+					)}
+
+					{active && (
+						<span
+							className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full"
+							style={{ background: "var(--color-teal)" }}
+						/>
+					)}
+				</div>
+			</NavLink>
+
+			{/* Tooltip */}
+			<div
+				className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap pointer-events-none transition-all duration-150 ${
+					hovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-1"
+				}`}
+				style={{
+					background: "var(--surface-overlay)",
+					border: "1px solid var(--border-default)",
+					boxShadow: "var(--panel-shadow)",
+					color: "var(--text-primary)",
+					zIndex: 60,
+				}}
+			>
+				{item.label}
+			</div>
+		</div>
 	);
 }
 
@@ -81,7 +126,7 @@ export function HybridDock() {
 	const { isConnected } = useWSStore();
 	const { user } = useAuthStore();
 	const { logout } = useAuth();
-	const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+	const [hovered, setHovered] = useState<string | null>(null);
 
 	const downCount = services.filter(
 		(s) => s.status === "down" || s.status === "degraded",
@@ -103,204 +148,98 @@ export function HybridDock() {
 		: "NN";
 
 	return (
-		<motion.aside
+		<aside
 			className="fixed left-3 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col items-center gap-1 py-2 px-1.5"
 			style={{
-				background:
-					"color-mix(in srgb, var(--surface-raised) 85%, transparent)",
+				background: "var(--surface-raised)",
 				border: "1px solid var(--border-default)",
-				borderRadius: "20px",
-				boxShadow:
-					"0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06)",
-				backdropFilter: "blur(20px)",
-				WebkitBackdropFilter: "blur(20px)",
+				borderRadius: "14px",
+				boxShadow: "var(--panel-shadow)",
 			}}
-			initial={{ opacity: 0, x: -20 }}
-			animate={{ opacity: 1, x: 0 }}
-			transition={{ duration: 0.3, ease: "easeOut" }}
 		>
 			{/* Logo */}
-			<motion.button
+			<button
 				type="button"
 				onClick={() => navigate("/app")}
-				className="w-9 h-9 flex items-center justify-center rounded-xl mb-1 relative overflow-hidden"
-				onMouseEnter={() => setHoveredItem("logo")}
-				onMouseLeave={() => setHoveredItem(null)}
-				whileHover={{ scale: 1.08 }}
-				whileTap={{ scale: 0.94 }}
+				className="w-9 h-9 flex items-center justify-center rounded-lg mb-1 transition-transform hover:scale-105 active:scale-95"
 			>
-				<img src={logo} alt="NanoNet" className="w-full h-full object-cover" />
-				<Tooltip label="NanoNet" visible={hoveredItem === "logo"} />
-			</motion.button>
+				<img src={logo} alt="NanoNet" className="w-7 h-7 object-contain" />
+			</button>
 
-			{/* Divider */}
 			<div
-				className="w-6 h-px my-0.5"
+				className="w-6 h-px"
 				style={{ background: "var(--border-subtle)" }}
 			/>
 
-			{/* Nav items */}
-			{navItems.map((item) => {
-				const active = isActive(item.to, item.end);
-				const badge = getBadge(item.badge);
-				const isAlert = item.badge === "alerts";
-
-				return (
-					// biome-ignore lint/a11y/noStaticElementInteractions: tooltip hover wrapper, NavLink inside is the interactive element
-					<div
+			{/* Primary nav */}
+			<div className="flex flex-col gap-0.5 py-1">
+				{PRIMARY.map((item) => (
+					<DockItem
 						key={item.to}
-						className="relative"
-						onMouseEnter={() => setHoveredItem(item.to)}
-						onMouseLeave={() => setHoveredItem(null)}
-					>
-						<NavLink to={item.to} end={item.end}>
-							<motion.div
-								className="w-9 h-9 flex items-center justify-center rounded-xl relative"
-								style={{
-									background: active ? "var(--sidebar-accent)" : "transparent",
-								}}
-								whileHover={{
-									scale: 1.1,
-									background: active ? undefined : "var(--surface-sunken)",
-								}}
-								whileTap={{ scale: 0.92 }}
-								transition={{ duration: 0.1 }}
-							>
-								<item.icon
-									className="w-4.5 h-4.5"
-									style={{
-										color: active
-											? "var(--sidebar-primary)"
-											: "var(--text-muted)",
-									}}
-								/>
+						item={item}
+						active={isActive(item.to, item.end)}
+						badge={getBadge(item.badge)}
+						hovered={hovered === item.to}
+						onHover={(h) => setHovered(h ? item.to : null)}
+					/>
+				))}
+			</div>
 
-								{/* Badge dot */}
-								{badge != null && (
-									<span
-										className="absolute -top-0.5 -right-0.5 min-w-3.5 h-3.5 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold"
-										style={
-											isAlert
-												? {
-														background: "var(--status-down)",
-														color: "#fff",
-													}
-												: {
-														background: "var(--color-teal)",
-														color: "#fff",
-													}
-										}
-									>
-										{badge > 9 ? "9+" : badge}
-									</span>
-								)}
-
-								{/* Active indicator */}
-								{active && (
-									<motion.div
-										className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full"
-										style={{ background: "var(--sidebar-primary)" }}
-										layoutId="dock-active"
-										transition={{
-											duration: 0.2,
-											type: "spring",
-											stiffness: 400,
-											damping: 30,
-										}}
-									/>
-								)}
-							</motion.div>
-						</NavLink>
-
-						<Tooltip label={item.label} visible={hoveredItem === item.to} />
-					</div>
-				);
-			})}
-
-			{/* Divider */}
 			<div
-				className="w-6 h-px my-0.5"
+				className="w-6 h-px"
+				style={{ background: "var(--border-subtle)" }}
+			/>
+
+			{/* Secondary nav */}
+			<div className="flex flex-col gap-0.5 py-1">
+				{SECONDARY.map((item) => (
+					<DockItem
+						key={item.to}
+						item={item}
+						active={isActive(item.to, item.end)}
+						badge={getBadge(item.badge)}
+						hovered={hovered === item.to}
+						onHover={(h) => setHovered(h ? item.to : null)}
+					/>
+				))}
+			</div>
+
+			<div
+				className="w-6 h-px"
 				style={{ background: "var(--border-subtle)" }}
 			/>
 
 			{/* Settings */}
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: tooltip hover wrapper, NavLink inside is the interactive element */}
-			<div
-				className="relative"
-				onMouseEnter={() => setHoveredItem("settings")}
-				onMouseLeave={() => setHoveredItem(null)}
-			>
-				<NavLink to="/app/settings">
-					<motion.div
-						className="w-9 h-9 flex items-center justify-center rounded-xl"
-						style={{
-							background: isActive("/app/settings")
-								? "var(--sidebar-accent)"
-								: "transparent",
-						}}
-						whileHover={{
-							scale: 1.1,
-							background: isActive("/app/settings")
-								? undefined
-								: "var(--surface-sunken)",
-						}}
-						whileTap={{ scale: 0.92 }}
-					>
-						<Settings
-							className="w-4 h-4"
-							style={{
-								color: isActive("/app/settings")
-									? "var(--sidebar-primary)"
-									: "var(--text-muted)",
-							}}
-						/>
-						{isActive("/app/settings") && (
-							<motion.div
-								className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full"
-								style={{ background: "var(--sidebar-primary)" }}
-								layoutId="dock-active"
-								transition={{
-									duration: 0.2,
-									type: "spring",
-									stiffness: 400,
-									damping: 30,
-								}}
-							/>
-						)}
-					</motion.div>
-				</NavLink>
-				<Tooltip label="Ayarlar" visible={hoveredItem === "settings"} />
-			</div>
+			<DockItem
+				item={{ to: "/app/settings", label: "Ayarlar", icon: Settings }}
+				active={isActive("/app/settings")}
+				badge={null}
+				hovered={hovered === "/app/settings"}
+				onHover={(h) => setHovered(h ? "/app/settings" : null)}
+			/>
 
-			{/* User avatar + logout */}
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: tooltip hover wrapper, DropdownMenuTrigger inside is the interactive element */}
+			{/* User */}
 			<div
 				className="relative mt-1"
-				onMouseEnter={() => setHoveredItem("user")}
-				onMouseLeave={() => setHoveredItem(null)}
+				onMouseEnter={() => setHovered("user")}
+				onMouseLeave={() => setHovered(null)}
 			>
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<motion.button
+						<button
 							type="button"
-							className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold relative"
+							className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-[11px] font-bold relative transition-transform hover:scale-105 active:scale-95"
 							style={{ background: "var(--gradient-logo)" }}
-							whileHover={{ scale: 1.1 }}
-							whileTap={{ scale: 0.92 }}
 						>
 							{initials}
-							{/* WS dot */}
 							<span
-								className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
+								className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
 								style={{
-									background: isConnected
-										? "var(--status-up)"
-										: "var(--text-faint)",
-									borderColor: "var(--surface-raised)",
-									boxShadow: isConnected ? "0 0 6px var(--status-up)" : "none",
+									background: isConnected ? "var(--status-up)" : "var(--text-faint)",
+									border: "1.5px solid var(--surface-raised)",
 								}}
 							/>
-						</motion.button>
+						</button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						side="right"
@@ -338,15 +277,25 @@ export function HybridDock() {
 							onClick={() => logout()}
 						>
 							<LogOut className="w-3.5 h-3.5 mr-2" />
-							Çıkış Yap
+							Çıkış yap
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
-				<Tooltip
-					label={user?.email ?? "Hesabım"}
-					visible={hoveredItem === "user"}
-				/>
+				<div
+					className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap pointer-events-none transition-all duration-150 ${
+						hovered === "user" ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-1"
+					}`}
+					style={{
+						background: "var(--surface-overlay)",
+						border: "1px solid var(--border-default)",
+						boxShadow: "var(--panel-shadow)",
+						color: "var(--text-primary)",
+						zIndex: 60,
+					}}
+				>
+					{user?.email ?? "Hesabım"}
+				</div>
 			</div>
-		</motion.aside>
+		</aside>
 	);
 }

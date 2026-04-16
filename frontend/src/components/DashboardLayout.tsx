@@ -8,6 +8,12 @@ import { FloatingStatusBar } from "./FloatingStatusBar";
 import { HybridDock } from "./HybridDock";
 import { MobileNav } from "./MobileNav";
 
+/**
+ * Pages that render their own full-bleed background / layout (like the
+ * service map). These skip the left dock padding.
+ */
+const FULL_BLEED_PATHS = new Set(["/app/service-map"]);
+
 export function DashboardLayout() {
 	useWebSocket();
 	const { pathname } = useLocation();
@@ -21,21 +27,30 @@ export function DashboardLayout() {
 		document.dispatchEvent(event);
 	}, []);
 
+	const fullBleed = FULL_BLEED_PATHS.has(pathname);
+
 	return (
-		<div className="min-h-screen text-foreground">
-			{/* Floating dock — hidden on mobile */}
+		<div
+			className="min-h-screen"
+			style={{ background: "var(--background)", color: "var(--text-primary)" }}
+		>
+			{/* Floating dock — desktop only */}
 			<HybridDock />
 
-			{/* Floating status bar — top right */}
+			{/* Floating status bar — desktop only */}
 			<FloatingStatusBar onOpenCommandPalette={handleOpenCommandPalette} />
 
-			{/* Page wrapper — full width, small left padding for dock clearance (except full-bleed pages) */}
 			<div
-				className={`flex flex-col min-h-screen ${pathname === "/app/service-map" ? "" : "md:pl-16"}`}
+				className={`flex flex-col min-h-screen ${
+					fullBleed ? "" : "md:pl-20"
+				}`}
 			>
-				{/* Main Content */}
 				<main
-					className={`flex-1 flex flex-col min-h-0 ${pathname === "/app/service-map" ? "" : "pb-20 md:pb-8 px-4 sm:px-6 lg:px-8 pt-14"}`}
+					className={
+						fullBleed
+							? "flex-1 flex flex-col min-h-0"
+							: "flex-1 flex flex-col min-h-0 pt-16 pb-24 md:pb-10 px-4 sm:px-6 lg:px-10"
+					}
 				>
 					<ErrorBoundary key={pathname}>
 						<Outlet />
@@ -43,13 +58,8 @@ export function DashboardLayout() {
 				</main>
 			</div>
 
-			{/* Command Palette */}
 			<CommandPalette />
-
-			{/* Mobile Bottom Nav */}
 			<MobileNav />
-
-			{/* AI Assistant */}
 			<AIAssistant />
 		</div>
 	);

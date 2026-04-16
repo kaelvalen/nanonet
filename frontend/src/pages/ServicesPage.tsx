@@ -1,91 +1,320 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-	AlertTriangle,
 	ArrowUpRight,
-	CheckCircle2,
 	Clock,
 	Globe,
-	HelpCircle,
 	LayoutGrid,
 	List,
 	Search,
 	Server,
-	XCircle,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { metricsApi } from "@/api/metrics";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	type Status,
+	StatusBadge,
+	StatusDot,
+} from "@/components/ui/status-atoms";
+import type { Service } from "@/types/service";
 import { useServices } from "@/hooks/useServices";
 
-type Status = "all" | "up" | "degraded" | "down" | "unknown";
+type Filter = "all" | Status;
+type Range = "24h" | "7d" | "30d";
 
-const STATUS_LABELS: Record<Status, string> = {
+const FILTER_LABELS: Record<Filter, string> = {
 	all: "Tümü",
 	up: "Aktif",
 	degraded: "Bozuk",
-	down: "Çevrimdışı",
+	down: "Offline",
 	unknown: "Bilinmiyor",
 };
 
-function statusStyles(status: string) {
-	switch (status) {
-		case "up":
-			return {
-				dot: "var(--status-up)",
-				badgeBg: "var(--status-up-subtle)",
-				badgeText: "var(--status-up-text)",
-				accent: "var(--status-up-border)",
-			};
-		case "degraded":
-			return {
-				dot: "var(--status-warn)",
-				badgeBg: "var(--status-warn-subtle)",
-				badgeText: "var(--status-warn-text)",
-				accent: "var(--status-warn-border)",
-			};
-		case "down":
-			return {
-				dot: "var(--status-down)",
-				badgeBg: "var(--status-down-subtle)",
-				badgeText: "var(--status-down-text)",
-				accent: "var(--status-down-border)",
-			};
-		default:
-			return {
-				dot: "var(--text-faint)",
-				badgeBg: "var(--surface-sunken)",
-				badgeText: "var(--text-muted)",
-				accent: "var(--border-subtle)",
-			};
-	}
+const FILTER_ORDER: Filter[] = ["all", "up", "degraded", "down"];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Filter bar
+
+function SegmentedControl<T extends string>({
+	options,
+	value,
+	onChange,
+	renderLabel,
+}: {
+	options: readonly T[];
+	value: T;
+	onChange: (v: T) => void;
+	renderLabel?: (opt: T) => React.ReactNode;
+}) {
+	return (
+		<div
+			className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0"
+			style={{
+				background: "var(--surface-sunken)",
+				border: "1px solid var(--border-default)",
+			}}
+		>
+			{options.map((opt) => (
+				<button
+					key={opt}
+					type="button"
+					onClick={() => onChange(opt)}
+					className="relative px-2.5 h-7 rounded-md text-xs font-medium transition-colors"
+					style={{
+						background: value === opt ? "var(--surface-raised)" : "transparent",
+						color:
+							value === opt
+								? "var(--color-teal)"
+								: "var(--text-muted)",
+						boxShadow: value === opt ? "var(--btn-shadow)" : undefined,
+					}}
+				>
+					{renderLabel ? renderLabel(opt) : opt}
+				</button>
+			))}
+		</div>
+	);
 }
 
-function StatusIcon({ status }: { status: string }) {
-	const cls = "w-3.5 h-3.5";
-	if (status === "up")
-		return (
-			<CheckCircle2 className={cls} style={{ color: "var(--status-up)" }} />
-		);
-	if (status === "degraded")
-		return (
-			<AlertTriangle className={cls} style={{ color: "var(--status-warn)" }} />
-		);
-	if (status === "down")
-		return <XCircle className={cls} style={{ color: "var(--status-down)" }} />;
-	return <HelpCircle className={cls} style={{ color: "var(--text-faint)" }} />;
+// ─────────────────────────────────────────────────────────────────────────────
+// Uptime chip
+
+function UptimeChip({ value }: { value: number }) {
+	const color =
+		value >= 99
+			? "var(--status-up-text)"
+			: value >= 95
+				? "var(--status-warn-text)"
+				: "var(--status-down-text)";
+	const bg =
+		value >= 99
+			? "var(--status-up-subtle)"
+			: value >= 95
+				? "var(--status-warn-subtle)"
+				: "var(--status-down-subtle)";
+	return (
+		<span
+			className="inline-flex items-center px-1.5 h-5 text-[10px] font-mono font-semibold tabular-nums rounded"
+			style={{ background: bg, color }}
+		>
+			{value.toFixed(1)}%
+		</span>
+	);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Service grid card
+
+function ServiceCard({ service, uptime }: { service: Service; uptime?: number }) {
+	return (
+		<Link
+			to={`/app/services/${service.id}`}
+			className="group block h-full"
+		>
+			<div
+				className="relative h-full p-4 transition-all overflow-hidden"
+				style={{
+					background: "var(--surface-card)",
+					border: "1px solid var(--border-default)",
+					borderRadius: "var(--radius)",
+				}}
+			>
+				<div className="flex items-start justify-between gap-3 mb-4">
+					<div className="flex items-start gap-3 min-w-0 flex-1">
+						<div
+							className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+							style={{ background: "var(--surface-sunken)" }}
+						>
+							<Server
+								className="w-4 h-4"
+								style={{ color: "var(--text-muted)" }}
+							/>
+						</div>
+						<div className="min-w-0 pt-0.5">
+							<h3
+								className="text-sm font-semibold truncate leading-tight"
+								style={{ color: "var(--text-primary)" }}
+							>
+								{service.name}
+							</h3>
+							<p
+								className="text-[11px] font-mono truncate mt-1"
+								style={{ color: "var(--text-faint)" }}
+							>
+								{service.host}:{service.port}
+							</p>
+						</div>
+					</div>
+					<StatusBadge status={service.status} />
+				</div>
+
+				<div
+					className="flex items-center justify-between pt-3 text-[11px]"
+					style={{ borderTop: "1px solid var(--border-subtle)" }}
+				>
+					<div
+						className="flex items-center gap-3"
+						style={{ color: "var(--text-faint)" }}
+					>
+						<span className="inline-flex items-center gap-1">
+							<Clock className="w-3 h-3" />
+							{service.poll_interval_sec}s
+						</span>
+						<span className="inline-flex items-center gap-1 truncate max-w-32">
+							<Globe className="w-3 h-3 shrink-0" />
+							<span className="truncate">{service.health_endpoint}</span>
+						</span>
+					</div>
+					<div className="flex items-center gap-2">
+						{uptime != null && <UptimeChip value={uptime} />}
+						<ArrowUpRight
+							className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
+							style={{ color: "var(--text-muted)" }}
+						/>
+					</div>
+				</div>
+			</div>
+		</Link>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Service list row
+
+function ServiceRow({
+	service,
+	uptime,
+	isLast,
+}: {
+	service: Service;
+	uptime?: number;
+	isLast: boolean;
+}) {
+	return (
+		<Link
+			to={`/app/services/${service.id}`}
+			className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--surface-sunken)]"
+			style={{
+				borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
+			}}
+		>
+			<StatusDot status={service.status} />
+			<span
+				className="flex-1 text-sm font-medium truncate"
+				style={{ color: "var(--text-primary)" }}
+			>
+				{service.name}
+			</span>
+			<span
+				className="text-xs font-mono hidden sm:block shrink-0"
+				style={{ color: "var(--text-faint)" }}
+			>
+				{service.host}:{service.port}
+			</span>
+			<span
+				className="hidden md:inline-flex items-center gap-1 text-xs shrink-0"
+				style={{ color: "var(--text-faint)" }}
+			>
+				<Clock className="w-3 h-3" />
+				{service.poll_interval_sec}s
+			</span>
+			<div className="shrink-0 w-16 flex justify-end">
+				{uptime != null && <UptimeChip value={uptime} />}
+			</div>
+			<StatusBadge status={service.status} />
+		</Link>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Empty state
+
+function EmptyResults({
+	hasServices,
+}: {
+	hasServices: boolean;
+}) {
+	return (
+		<div
+			className="p-12 text-center rounded-lg"
+			style={{
+				background: "var(--surface-card)",
+				border: "1px dashed var(--border-default)",
+			}}
+		>
+			<div
+				className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+				style={{ background: "var(--surface-sunken)" }}
+			>
+				<Server className="w-6 h-6" style={{ color: "var(--text-faint)" }} />
+			</div>
+			<p
+				className="text-sm font-semibold mb-1"
+				style={{ color: "var(--text-primary)" }}
+			>
+				{hasServices
+					? "Filtreye uygun servis yok"
+					: "Henüz servis eklenmedi"}
+			</p>
+			<p className="text-xs" style={{ color: "var(--text-muted)" }}>
+				{hasServices
+					? "Arama veya filtre kriterlerini değiştirin"
+					: "Sağ üstten ilk servisinizi ekleyin"}
+			</p>
+		</div>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loading skeletons
+
+function LoadingGrid() {
+	return (
+		<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+			{Array.from({ length: 6 }, (_, i) => i).map((i) => (
+				<div
+					key={i}
+					className="p-4 animate-pulse rounded-lg"
+					style={{
+						background: "var(--surface-card)",
+						border: "1px solid var(--border-default)",
+					}}
+				>
+					<div className="flex items-center gap-3">
+						<div
+							className="w-9 h-9 rounded-lg"
+							style={{ background: "var(--surface-sunken)" }}
+						/>
+						<div className="flex-1 space-y-2">
+							<div
+								className="h-3.5 w-32 rounded"
+								style={{ background: "var(--surface-sunken)" }}
+							/>
+							<div
+								className="h-2.5 w-24 rounded"
+								style={{ background: "var(--surface-sunken)" }}
+							/>
+						</div>
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page
 
 export function ServicesPage() {
 	const { services, isLoading } = useServices();
 	const [search, setSearch] = useState("");
-	const [statusFilter, setStatusFilter] = useState<Status>("all");
+	const [statusFilter, setStatusFilter] = useState<Filter>("all");
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-	const [slaRange, setSlaRange] = useState<"24h" | "7d" | "30d">("24h");
+	const [slaRange, setSlaRange] = useState<Range>("24h");
 
 	const { data: uptimeMap = {} } = useQuery({
 		queryKey: ["bulkUptime", slaRange],
@@ -96,17 +325,20 @@ export function ServicesPage() {
 	});
 
 	const filtered = useMemo(() => {
+		const q = search.toLowerCase();
 		return services.filter((s) => {
 			const matchesSearch =
-				s.name.toLowerCase().includes(search.toLowerCase()) ||
-				s.host.toLowerCase().includes(search.toLowerCase());
-			const matchesStatus = statusFilter === "all" || s.status === statusFilter;
+				!q ||
+				s.name.toLowerCase().includes(q) ||
+				s.host.toLowerCase().includes(q);
+			const matchesStatus =
+				statusFilter === "all" || s.status === statusFilter;
 			return matchesSearch && matchesStatus;
 		});
 	}, [services, search, statusFilter]);
 
 	const statusCounts = useMemo(() => {
-		const counts = {
+		const counts: Record<Filter, number> = {
 			all: services.length,
 			up: 0,
 			degraded: 0,
@@ -114,56 +346,38 @@ export function ServicesPage() {
 			unknown: 0,
 		};
 		for (const s of services) {
-			if (s.status in counts) counts[s.status as keyof typeof counts]++;
+			if (s.status in counts) {
+				counts[s.status as Filter]++;
+			}
 		}
 		return counts;
 	}, [services]);
 
 	return (
-		<div className="space-y-5">
-			{/* Header */}
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.35 }}
-				className="flex items-start justify-between gap-4"
-			>
-				<div>
-					<h1
-						className="text-lg font-bold leading-none"
-						style={{ color: "var(--text-primary)" }}
-					>
-						Servisler
-					</h1>
-					<p
-						className="text-xs mt-1"
-						style={{ color: "var(--text-muted)" }}
-					>
-						{isLoading
-							? "Yükleniyor…"
-							: services.length === 0
-								? "Henüz servis eklenmedi"
-								: `${services.length} servis izleniyor`}
-					</p>
-				</div>
-				<AddServiceDialog />
-			</motion.div>
+		<PageShell width="wide">
+			<PageHeader
+				eyebrow="Servisler"
+				title="Tüm servisler"
+				description={
+					isLoading
+						? "Yükleniyor…"
+						: services.length === 0
+							? "Henüz servis eklenmedi"
+							: `${services.length} servis izleniyor`
+				}
+				actions={<AddServiceDialog />}
+			/>
 
 			{/* Toolbar */}
-			<motion.div
-				initial={{ opacity: 0, y: 8 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.35, delay: 0.05 }}
-				className="flex flex-col sm:flex-row gap-2"
-			>
+			<div className="flex flex-col md:flex-row gap-2 mb-5">
 				{/* Search */}
-				<div className="relative flex-1">
+				<div className="relative flex-1 min-w-0">
 					<Search
-						className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+						className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
 						style={{ color: "var(--text-faint)" }}
 					/>
 					<Input
-						placeholder="İsim veya host ara..."
+						placeholder="İsim veya host ile ara…"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						className="pl-9 h-9 text-sm"
@@ -175,418 +389,115 @@ export function ServicesPage() {
 				</div>
 
 				{/* Status filter */}
-				<div
-					className="flex items-center gap-1 px-1 rounded-lg"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-					}}
-				>
-					{(["all", "up", "degraded", "down"] as Status[]).map((s) => (
-						<button
-							key={s}
-							type="button"
-							onClick={() => setStatusFilter(s)}
-							className="px-2.5 py-1.5 rounded-md text-xs font-medium transition-all"
-							style={
-								statusFilter === s
-									? {
-											background:
-												s === "up"
-													? "var(--status-up-subtle)"
-													: s === "degraded"
-														? "var(--status-warn-subtle)"
-														: s === "down"
-															? "var(--status-down-subtle)"
-															: "var(--color-teal-subtle)",
-											color:
-												s === "up"
-													? "var(--status-up-text)"
-													: s === "degraded"
-														? "var(--status-warn-text)"
-														: s === "down"
-															? "var(--status-down-text)"
-															: "var(--color-teal)",
-										}
-									: { color: "var(--text-muted)" }
-							}
-						>
-							{STATUS_LABELS[s]}
-							{statusCounts[s] > 0 && (
+				<SegmentedControl
+					options={FILTER_ORDER}
+					value={statusFilter}
+					onChange={setStatusFilter}
+					renderLabel={(opt) => (
+						<span className="inline-flex items-center gap-1.5">
+							{FILTER_LABELS[opt]}
+							{statusCounts[opt] > 0 && (
 								<span
-									className="ml-1.5 text-[10px] tabular-nums"
-									style={{ opacity: 0.7 }}
+									className="text-[10px] tabular-nums font-mono"
+									style={{ opacity: 0.6 }}
 								>
-									{statusCounts[s]}
+									{statusCounts[opt]}
 								</span>
 							)}
-						</button>
-					))}
-				</div>
+						</span>
+					)}
+				/>
 
 				{/* SLA range */}
-				<div
-					className="flex items-center gap-1 px-1 rounded-lg"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-					}}
-				>
-					{(["24h", "7d", "30d"] as const).map((r) => (
-						<button
-							key={r}
-							type="button"
-							onClick={() => setSlaRange(r)}
-							className="px-2.5 py-1.5 rounded-md text-xs font-medium transition-all"
-							style={
-								slaRange === r
-									? {
-											background: "var(--color-teal-subtle)",
-											color: "var(--color-teal)",
-										}
-									: { color: "var(--text-muted)" }
-							}
-						>
-							{r}
-						</button>
-					))}
-				</div>
+				<SegmentedControl
+					options={["24h", "7d", "30d"] as const}
+					value={slaRange}
+					onChange={setSlaRange}
+				/>
 
 				{/* View toggle */}
 				<div
-					className="flex items-center gap-0.5 px-1 rounded-lg"
+					className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0"
 					style={{
-						background: "var(--surface-card)",
+						background: "var(--surface-sunken)",
 						border: "1px solid var(--border-default)",
 					}}
 				>
 					<button
 						type="button"
 						onClick={() => setViewMode("grid")}
-						className="p-1.5 rounded-md transition-all"
-						style={
-							viewMode === "grid"
-								? {
-										background: "var(--color-teal-subtle)",
-										color: "var(--color-teal)",
-									}
-								: { color: "var(--text-faint)" }
-						}
+						className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
+						style={{
+							background:
+								viewMode === "grid" ? "var(--surface-raised)" : "transparent",
+							color:
+								viewMode === "grid"
+									? "var(--color-teal)"
+									: "var(--text-faint)",
+							boxShadow: viewMode === "grid" ? "var(--btn-shadow)" : undefined,
+						}}
 					>
-						<LayoutGrid className="w-4 h-4" />
+						<LayoutGrid className="w-3.5 h-3.5" />
 					</button>
 					<button
 						type="button"
 						onClick={() => setViewMode("list")}
-						className="p-1.5 rounded-md transition-all"
-						style={
-							viewMode === "list"
-								? {
-										background: "var(--color-teal-subtle)",
-										color: "var(--color-teal)",
-									}
-								: { color: "var(--text-faint)" }
-						}
+						className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
+						style={{
+							background:
+								viewMode === "list" ? "var(--surface-raised)" : "transparent",
+							color:
+								viewMode === "list"
+									? "var(--color-teal)"
+									: "var(--text-faint)",
+							boxShadow: viewMode === "list" ? "var(--btn-shadow)" : undefined,
+						}}
 					>
-						<List className="w-4 h-4" />
+						<List className="w-3.5 h-3.5" />
 					</button>
 				</div>
-			</motion.div>
+			</div>
 
-			{/* Content */}
+			{/* Results */}
 			{isLoading ? (
-				<div
-					className={
-						viewMode === "grid"
-							? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"
-							: "space-y-2"
-					}
-				>
-					{[1, 2, 3, 4, 5, 6].map((i) => (
-						<Card
-							key={i}
-							className="p-4 animate-pulse"
-							style={{
-								background: "var(--surface-card)",
-								border: "1px solid var(--border-default)",
-							}}
-						>
-							<div className="flex items-center gap-3">
-								<div
-									className="w-9 h-9 rounded-lg"
-									style={{ background: "var(--surface-sunken)" }}
-								/>
-								<div className="flex-1 space-y-2">
-									<div
-										className="h-3.5 w-32 rounded"
-										style={{ background: "var(--surface-sunken)" }}
-									/>
-									<div
-										className="h-2.5 w-24 rounded"
-										style={{ background: "var(--surface-sunken)" }}
-									/>
-								</div>
-							</div>
-						</Card>
-					))}
-				</div>
+				<LoadingGrid />
 			) : filtered.length === 0 ? (
-				<Card
-					className="p-12 text-center"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-					}}
-				>
-					<div
-						className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-						style={{ background: "var(--surface-sunken)" }}
-					>
-						<Server
-							className="w-6 h-6"
-							style={{ color: "var(--text-faint)" }}
-						/>
-					</div>
-					<p
-						className="text-sm font-medium mb-1"
-						style={{ color: "var(--text-secondary)" }}
-					>
-						{services.length === 0
-							? "Henüz servis eklenmedi"
-							: "Filtreye uygun servis bulunamadı"}
-					</p>
-					<p className="text-xs" style={{ color: "var(--text-faint)" }}>
-						{services.length === 0
-							? '"Servis Ekle" butonu ile başlayın'
-							: "Arama veya filtre kriterlerini değiştirin"}
-					</p>
-				</Card>
+				<EmptyResults hasServices={services.length > 0} />
 			) : viewMode === "grid" ? (
 				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
 					<AnimatePresence mode="popLayout">
-						{filtered.map((service, index) => {
-							const sv = statusStyles(service.status);
-							const uptime = uptimeMap[service.id];
-							return (
-								<motion.div
-									key={service.id}
-									initial={{ opacity: 0, scale: 0.97 }}
-									animate={{ opacity: 1, scale: 1 }}
-									exit={{ opacity: 0, scale: 0.97 }}
-									transition={{ duration: 0.2, delay: index * 0.03 }}
-									whileHover={{ y: -1 }}
-									layout
-								>
-									<Link
-										to={`/app/services/${service.id}`}
-										className="block group"
-									>
-										<Card
-											className="relative p-4 transition-all duration-150 overflow-hidden group-hover:border-(--color-teal-border)"
-											style={{
-												background: "var(--surface-card)",
-												border: "1px solid var(--border-default)",
-											}}
-										>
-											{/* Top status accent */}
-											<div
-												className="absolute inset-x-0 top-0 h-0.5"
-												style={{ background: sv.accent }}
-											/>
-
-											<div className="flex items-start justify-between mb-3">
-												<div className="flex items-center gap-3 min-w-0">
-													<div
-														className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 relative"
-														style={{
-															background: sv.badgeBg,
-															border: `1px solid ${sv.accent}`,
-														}}
-													>
-														<Server
-															className="w-4 h-4"
-															style={{ color: sv.dot }}
-														/>
-														<span
-															className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
-															style={{
-																background: sv.dot,
-																borderColor: "var(--surface-card)",
-															}}
-														/>
-													</div>
-													<div className="min-w-0">
-														<h3
-															className="text-sm font-semibold truncate"
-															style={{ color: "var(--text-primary)" }}
-														>
-															{service.name}
-														</h3>
-														<p
-															className="text-[11px] font-mono truncate mt-0.5"
-															style={{ color: "var(--text-faint)" }}
-														>
-															{service.host}:{service.port}
-														</p>
-													</div>
-												</div>
-												<Badge
-													className="text-[10px] px-2 py-0.5 shrink-0 rounded-md border-0"
-													style={{
-														background: sv.badgeBg,
-														color: sv.badgeText,
-													}}
-												>
-													{service.status === "up"
-														? "Aktif"
-														: service.status === "degraded"
-															? "Bozuk"
-															: service.status === "down"
-																? "Çevrimdışı"
-																: "Bilinmiyor"}
-												</Badge>
-											</div>
-
-											<div
-												className="flex items-center justify-between pt-3"
-												style={{ borderTop: "1px solid var(--border-subtle)" }}
-											>
-												<div className="flex items-center gap-3">
-													<span
-														className="text-[11px] flex items-center gap-1"
-														style={{ color: "var(--text-faint)" }}
-													>
-														<Clock className="w-3 h-3" />
-														{service.poll_interval_sec}s
-													</span>
-													<span
-														className="text-[11px] flex items-center gap-1 max-w-24 truncate"
-														style={{ color: "var(--text-faint)" }}
-													>
-														<Globe className="w-3 h-3 shrink-0" />
-														{service.health_endpoint}
-													</span>
-												</div>
-												<div className="flex items-center gap-2">
-													{uptime != null && (
-														<span
-															className="text-[11px] font-semibold tabular-nums font-mono"
-															style={{
-																color:
-																	uptime >= 99
-																		? "var(--status-up-text)"
-																		: uptime >= 95
-																			? "var(--status-warn-text)"
-																			: "var(--status-down-text)",
-															}}
-														>
-															{uptime.toFixed(1)}%
-														</span>
-													)}
-													<ArrowUpRight
-														className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
-														style={{ color: "var(--text-faint)" }}
-													/>
-												</div>
-											</div>
-										</Card>
-									</Link>
-								</motion.div>
-							);
-						})}
+						{filtered.map((service, i) => (
+							<motion.div
+								key={service.id}
+								layout
+								initial={{ opacity: 0, y: 8 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, scale: 0.96 }}
+								transition={{ duration: 0.2, delay: Math.min(i, 8) * 0.025 }}
+							>
+								<ServiceCard service={service} uptime={uptimeMap[service.id]} />
+							</motion.div>
+						))}
 					</AnimatePresence>
 				</div>
 			) : (
-				<Card
+				<div
+					className="overflow-hidden rounded-lg"
 					style={{
 						background: "var(--surface-card)",
 						border: "1px solid var(--border-default)",
 					}}
 				>
-					<AnimatePresence mode="popLayout">
-						{filtered.map((service, index) => {
-							const sv = statusStyles(service.status);
-							const uptime = uptimeMap[service.id];
-							const isLast = index === filtered.length - 1;
-							return (
-								<motion.div
-									key={service.id}
-									initial={{ opacity: 0, x: -8 }}
-									animate={{ opacity: 1, x: 0 }}
-									exit={{ opacity: 0, x: -8 }}
-									transition={{ duration: 0.2, delay: index * 0.02 }}
-									layout
-								>
-									<Link
-										to={`/app/services/${service.id}`}
-										className="flex items-center gap-4 px-4 py-3 transition-colors group hover:bg-(--surface-sunken)"
-										style={{
-											borderBottom: isLast
-												? "none"
-												: "1px solid var(--border-subtle)",
-										}}
-									>
-										<span
-											className="w-2 h-2 rounded-full shrink-0"
-											style={{ background: sv.dot }}
-										/>
-										<span
-											className="flex-1 text-sm font-medium truncate"
-											style={{ color: "var(--text-primary)" }}
-										>
-											{service.name}
-										</span>
-										<span
-											className="text-xs font-mono hidden sm:block"
-											style={{ color: "var(--text-faint)" }}
-										>
-											{service.host}:{service.port}
-										</span>
-										<span
-											className="hidden sm:flex items-center gap-1 text-xs"
-											style={{ color: "var(--text-faint)" }}
-										>
-											<Clock className="w-3 h-3" />
-											{service.poll_interval_sec}s
-										</span>
-										{uptime != null && (
-											<span
-												className="text-xs font-semibold tabular-nums font-mono"
-												style={{
-													color:
-														uptime >= 99
-															? "var(--status-up-text)"
-															: uptime >= 95
-																? "var(--status-warn-text)"
-																: "var(--status-down-text)",
-												}}
-											>
-												{uptime.toFixed(1)}%
-											</span>
-										)}
-										<Badge
-											className="text-[10px] px-2 py-0.5 rounded-md border-0 shrink-0"
-											style={{
-												background: sv.badgeBg,
-												color: sv.badgeText,
-											}}
-										>
-											{service.status === "up"
-												? "Aktif"
-												: service.status === "degraded"
-													? "Bozuk"
-													: service.status === "down"
-														? "Çevrimdışı"
-														: "Bilinmiyor"}
-										</Badge>
-										<StatusIcon status={service.status} />
-									</Link>
-								</motion.div>
-							);
-						})}
-					</AnimatePresence>
-				</Card>
+					{filtered.map((service, i) => (
+						<ServiceRow
+							key={service.id}
+							service={service}
+							uptime={uptimeMap[service.id]}
+							isLast={i === filtered.length - 1}
+						/>
+					))}
+				</div>
 			)}
-		</div>
+		</PageShell>
 	);
 }
