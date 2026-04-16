@@ -6,11 +6,14 @@ import { useWSStore } from "@/store/wsStore";
 
 type Crumb = { label: string; path: string };
 
-function buildBreadcrumbs(pathname: string): Crumb[] {
+function buildBreadcrumbs(pathname: string, services: { id: string; name: string }[]): Crumb[] {
 	const crumbs: Crumb[] = [{ label: "Genel Bakış", path: "/app" }];
-	if (pathname.startsWith("/app/services/") && pathname.length > 14) {
+	const serviceDetailMatch = pathname.match(/^\/app\/services\/(.+)$/);
+	if (serviceDetailMatch) {
+		const serviceId = serviceDetailMatch[1];
+		const svcName = services.find((s) => s.id === serviceId)?.name ?? "Detay";
 		crumbs.push({ label: "Servisler", path: "/app/services" });
-		crumbs.push({ label: "Detay", path: pathname });
+		crumbs.push({ label: svcName, path: pathname });
 	} else if (pathname === "/app/services") {
 		crumbs.push({ label: "Servisler", path: "/app/services" });
 	} else if (pathname === "/app/alerts") {
@@ -23,6 +26,10 @@ function buildBreadcrumbs(pathname: string): Crumb[] {
 		crumbs.push({ label: "Ayarlar", path: "/app/settings" });
 	} else if (pathname === "/app/kubernetes") {
 		crumbs.push({ label: "Kubernetes", path: "/app/kubernetes" });
+	} else if (pathname === "/app/logs") {
+		crumbs.push({ label: "Loglar", path: "/app/logs" });
+	} else if (pathname === "/app/security") {
+		crumbs.push({ label: "Güvenlik", path: "/app/security" });
 	}
 	return crumbs;
 }
@@ -37,7 +44,7 @@ export function FloatingStatusBar({
 	const { isConnected } = useWSStore();
 	const { services } = useServices();
 
-	const crumbs = buildBreadcrumbs(location.pathname);
+	const crumbs = buildBreadcrumbs(location.pathname, services);
 	const downCount = services.filter(
 		(s) => s.status === "down" || s.status === "degraded",
 	).length;

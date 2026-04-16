@@ -509,6 +509,53 @@ export function AlertsPage() {
 
 	return (
 		<div className="space-y-4">
+			{/* ── Page header ─────────────────────────────────────────── */}
+			<motion.div
+				className="flex items-start justify-between gap-4"
+				initial={{ opacity: 0, y: -6 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.25 }}
+			>
+				<div>
+					<div className="flex items-center gap-2">
+						<h1
+							className="text-lg font-bold leading-none"
+							style={{ color: "var(--text-primary)" }}
+						>
+							Uyarılar
+						</h1>
+						{activeCount > 0 && (
+							<span
+								className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+								style={{
+									background: "var(--status-down-subtle)",
+									color: "var(--status-down-text)",
+									border: "1px solid var(--status-down-border)",
+								}}
+							>
+								{activeCount} aktif
+							</span>
+						)}
+					</div>
+					<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+						Servis uyarılarını yönetin ve eşik değerleri ayarlayın
+					</p>
+				</div>
+				<button
+					type="button"
+					onClick={() => refetch()}
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
+					style={{
+						background: "var(--surface-card)",
+						border: "1px solid var(--border-default)",
+						color: "var(--text-muted)",
+					}}
+				>
+					<RefreshCw className="w-3.5 h-3.5" />
+					Yenile
+				</button>
+			</motion.div>
+
 			{/* ── Stat tiles ──────────────────────────────────────────── */}
 			<motion.div
 				className="grid grid-cols-2 sm:grid-cols-4 gap-3"

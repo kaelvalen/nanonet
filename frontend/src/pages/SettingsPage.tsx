@@ -335,14 +335,22 @@ export function SettingsPage() {
 		<div className="space-y-6 max-w-3xl mx-auto">
 			{/* Header */}
 			<motion.div
-				initial={{ opacity: 0, y: 20 }}
+				initial={{ opacity: 0, y: -6 }}
 				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.5 }}
+				transition={{ duration: 0.25 }}
 				className="flex items-start justify-between gap-4"
 			>
-				<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-					Platform yapılandırması ve tercihler
-				</p>
+				<div>
+					<h1
+						className="text-lg font-bold leading-none"
+						style={{ color: "var(--text-primary)" }}
+					>
+						Ayarlar
+					</h1>
+					<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+						Platform yapılandırması ve tercihler
+					</p>
+				</div>
 				{anyDirty && (
 					<button
 						type="button"

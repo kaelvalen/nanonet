@@ -175,6 +175,26 @@ export function AIInsightsPage() {
 
 	return (
 		<div className="space-y-4">
+			{/* ── Page header ─────────────────────────────────────────── */}
+			<motion.div
+				className="flex items-start justify-between gap-4"
+				initial={{ opacity: 0, y: -6 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.25 }}
+			>
+				<div>
+					<h1
+						className="text-lg font-bold leading-none"
+						style={{ color: "var(--text-primary)" }}
+					>
+						AI İçgörüler
+					</h1>
+					<p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+						Claude AI destekli servis analizi ve önerileri
+					</p>
+				</div>
+			</motion.div>
+
 			{/* ── Stat tiles ─────────────────────────────────────────── */}
 			<motion.div
 				className="grid grid-cols-2 sm:grid-cols-4 gap-3"

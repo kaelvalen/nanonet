@@ -354,36 +354,40 @@ export function ServiceDetailPage() {
 		<div className="space-y-6">
 			{/* Header */}
 			<motion.div
-				initial={{ opacity: 0, y: 20 }}
+				initial={{ opacity: 0, y: -6 }}
 				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.5 }}
+				transition={{ duration: 0.25 }}
 			>
 				<div className="flex items-center gap-3 mb-4">
 					<button
 						type="button"
 						onClick={() => navigate("/app/services")}
-						className="p-2 rounded transition-all"
-						style={{ color: "var(--text-muted)" }}
+						className="p-2 rounded-lg transition-colors hover:opacity-70"
+						style={{
+							color: "var(--text-muted)",
+							background: "var(--surface-sunken)",
+							border: "1px solid var(--border-default)",
+						}}
 					>
 						<ArrowLeft className="w-4 h-4" />
 					</button>
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-3">
 							<h1
-								className="text-xl font-bold truncate"
-								style={{ color: "var(--text-secondary)" }}
+								className="text-lg font-bold truncate"
+								style={{ color: "var(--text-primary)" }}
 							>
 								{service?.name ?? ""}
 							</h1>
 							<Badge
-								className="text-[10px] font-([--font-mono]) px-2 py-0.5 rounded border"
+								className="text-[10px] font-mono px-2 py-0.5 rounded border"
 								style={statusBadgeStyle}
 							>
 								{service?.status?.toUpperCase() ?? "UNKNOWN"}
 							</Badge>
 						</div>
 						<p
-							className="text-xs font-([--font-mono]) mt-0.5"
+							className="text-xs font-mono mt-0.5"
 							style={{ color: "var(--text-faint)" }}
 						>
 							{service?.host}:{service?.port} · {service?.health_endpoint} ·{" "}
@@ -1269,7 +1273,7 @@ export function ServiceDetailPage() {
 												<div>
 													<div className="flex items-center gap-2 mb-1">
 														<Badge
-															className="text-[9px] px-1.5 py-0 rounded border uppercase font-([--font-mono])"
+															className="text-[9px] px-1.5 py-0 rounded border uppercase font-mono"
 															style={{
 																background:
 																	alert.severity === "crit"

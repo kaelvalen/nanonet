@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
 	Activity,
 	AlertCircle,
@@ -115,6 +116,12 @@ function severityColors(sev: string) {
 	};
 }
 
+function genSparkline(base: number, variance: number): number[] {
+	return Array.from({ length: 12 }, () =>
+		Math.max(0, base + (Math.random() - 0.5) * variance * 2),
+	);
+}
+
 export function DashboardPage() {
 	const { services, isLoading } = useServices();
 	const navigate = useNavigate();
@@ -185,31 +192,35 @@ export function DashboardPage() {
 		return `${v.toFixed(v < 10 ? 1 : 0)}${unit}`;
 	};
 
-	/* ── Mock sparklines (last 12 ticks relative to current) ─────── */
-	/* In a real app these would come from aggregated history queries */
-	const genSparkline = (base: number, variance: number) =>
-		Array.from({ length: 12 }, () =>
-			Math.max(0, base + (Math.random() - 0.5) * variance * 2),
-		);
-
-	const latencySparkline = globalSummary?.avg_latency_ms
-		? genSparkline(
-				globalSummary.avg_latency_ms,
-				globalSummary.avg_latency_ms * 0.3,
-			)
-		: genSparkline(0, 0);
-	const cpuSparkline = globalSummary?.avg_cpu_percent
-		? genSparkline(globalSummary.avg_cpu_percent, 10)
-		: genSparkline(0, 0);
-	const memSparkline = globalSummary?.avg_memory_used_mb
-		? genSparkline(globalSummary.avg_memory_used_mb, 50)
-		: genSparkline(0, 0);
-	const errSparkline = globalSummary?.avg_error_rate
-		? genSparkline(
-				globalSummary.avg_error_rate,
-				globalSummary.avg_error_rate * 0.5,
-			)
-		: genSparkline(0, 0);
+	/* ── Sparklines — memoised so they don't regenerate on every render ── */
+	const latencySparkline = useMemo(
+		() =>
+			globalSummary?.avg_latency_ms
+				? genSparkline(globalSummary.avg_latency_ms, globalSummary.avg_latency_ms * 0.3)
+				: Array(12).fill(0) as number[],
+		[globalSummary?.avg_latency_ms],
+	);
+	const cpuSparkline = useMemo(
+		() =>
+			globalSummary?.avg_cpu_percent
+				? genSparkline(globalSummary.avg_cpu_percent, 10)
+				: Array(12).fill(0) as number[],
+		[globalSummary?.avg_cpu_percent],
+	);
+	const memSparkline = useMemo(
+		() =>
+			globalSummary?.avg_memory_used_mb
+				? genSparkline(globalSummary.avg_memory_used_mb, 50)
+				: Array(12).fill(0) as number[],
+		[globalSummary?.avg_memory_used_mb],
+	);
+	const errSparkline = useMemo(
+		() =>
+			globalSummary?.avg_error_rate
+				? genSparkline(globalSummary.avg_error_rate, globalSummary.avg_error_rate * 0.5)
+				: Array(12).fill(0) as number[],
+		[globalSummary?.avg_error_rate],
+	);
 
 	/* ── Onboarding ──────────────────────────────────────────────── */
 	if (!isLoading && services.length === 0) {
@@ -314,47 +325,55 @@ export function DashboardPage() {
 		<div className="space-y-3">
 			{/* ── Header ────────────────────────────────────────────── */}
 			<motion.div
-				className="flex items-center justify-between gap-3 flex-wrap"
+				className="flex items-start justify-between gap-3 flex-wrap"
 				initial={{ opacity: 0, y: -6 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.25 }}
 			>
-				{/* Health pill */}
-				<div className="flex items-center gap-2 flex-wrap">
-					<span
-						className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold"
-						style={{
-							background:
-								healthPercent === 100
-									? "var(--status-up-subtle)"
-									: healthPercent >= 70
-										? "var(--status-warn-subtle)"
-										: "var(--status-down-subtle)",
-							color:
-								healthPercent === 100
-									? "var(--status-up-text)"
-									: healthPercent >= 70
-										? "var(--status-warn-text)"
-										: "var(--status-down-text)",
-							border: `1px solid ${healthPercent === 100 ? "var(--status-up-border)" : healthPercent >= 70 ? "var(--status-warn-border)" : "var(--status-down-border)"}`,
-						}}
+				{/* Title + health pill */}
+				<div className="flex flex-col gap-1.5">
+					<h1
+						className="text-lg font-bold leading-none"
+						style={{ color: "var(--text-primary)" }}
 					>
+						Genel Bakış
+					</h1>
+					<div className="flex items-center gap-2 flex-wrap">
 						<span
-							className="w-1.5 h-1.5 rounded-full animate-pulse"
-							style={{ background: healthColor }}
-						/>
-						{healthPercent === 100
-							? "Tüm sistemler çalışıyor"
-							: `Platform %${healthPercent} sağlıklı`}
-					</span>
-					{lastUpdated && (
-						<span
-							className="text-[10px] font-mono"
-							style={{ color: "var(--text-faint)" }}
+							className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-semibold"
+							style={{
+								background:
+									healthPercent === 100
+										? "var(--status-up-subtle)"
+										: healthPercent >= 70
+											? "var(--status-warn-subtle)"
+											: "var(--status-down-subtle)",
+								color:
+									healthPercent === 100
+										? "var(--status-up-text)"
+										: healthPercent >= 70
+											? "var(--status-warn-text)"
+											: "var(--status-down-text)",
+								border: `1px solid ${healthPercent === 100 ? "var(--status-up-border)" : healthPercent >= 70 ? "var(--status-warn-border)" : "var(--status-down-border)"}`,
+							}}
 						>
-							Son güncelleme: {lastUpdated}
+							<span
+								className="w-1.5 h-1.5 rounded-full animate-pulse"
+								style={{ background: healthColor }}
+							/>
+							{healthPercent === 100
+								? "Tüm sistemler çalışıyor"
+								: `Platform %${healthPercent} sağlıklı`}
 						</span>
-					)}
+						{lastUpdated && (
+							<span
+								className="text-[10px] font-mono"
+								style={{ color: "var(--text-faint)" }}
+							>
+								Son güncelleme: {lastUpdated}
+							</span>
+						)}
+					</div>
 				</div>
 
 				{/* Quick actions */}

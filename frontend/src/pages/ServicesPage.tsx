@@ -126,11 +126,26 @@ export function ServicesPage() {
 				initial={{ opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.35 }}
-				className="flex items-center justify-between"
+				className="flex items-start justify-between gap-4"
 			>
-				<p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-					{services.length} servis izleniyor
-				</p>
+				<div>
+					<h1
+						className="text-lg font-bold leading-none"
+						style={{ color: "var(--text-primary)" }}
+					>
+						Servisler
+					</h1>
+					<p
+						className="text-xs mt-1"
+						style={{ color: "var(--text-muted)" }}
+					>
+						{isLoading
+							? "Yükleniyor…"
+							: services.length === 0
+								? "Henüz servis eklenmedi"
+								: `${services.length} servis izleniyor`}
+					</p>
+				</div>
 				<AddServiceDialog />
 			</motion.div>
 
@@ -367,7 +382,7 @@ export function ServicesPage() {
 										className="block group"
 									>
 										<Card
-											className="relative p-4 transition-all duration-150 overflow-hidden"
+											className="relative p-4 transition-all duration-150 overflow-hidden group-hover:border-(--color-teal-border)"
 											style={{
 												background: "var(--surface-card)",
 												border: "1px solid var(--border-default)",
@@ -504,7 +519,7 @@ export function ServicesPage() {
 								>
 									<Link
 										to={`/app/services/${service.id}`}
-										className="flex items-center gap-4 px-4 py-3 transition-colors group"
+										className="flex items-center gap-4 px-4 py-3 transition-colors group hover:bg-(--surface-sunken)"
 										style={{
 											borderBottom: isLast
 												? "none"
@@ -517,7 +532,7 @@ export function ServicesPage() {
 										/>
 										<span
 											className="flex-1 text-sm font-medium truncate"
-											style={{ color: "var(--text-secondary)" }}
+											style={{ color: "var(--text-primary)" }}
 										>
 											{service.name}
 										</span>
