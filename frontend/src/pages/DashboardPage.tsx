@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+	Activity,
 	ArrowRight,
 	Bell,
+	BrainCircuit,
 	CheckCircle2,
-	Clock,
+	ChevronRight,
 	Cpu,
 	Gauge,
 	GitFork,
@@ -12,10 +14,12 @@ import {
 	Server,
 	ShieldCheck,
 	Sparkles,
+	TrendingUp,
 	XCircle,
 	Zap,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { metricsApi } from "@/api/metrics";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
@@ -27,94 +31,111 @@ import {
 	StatusDot,
 } from "@/components/ui/status-atoms";
 import { useServices } from "@/hooks/useServices";
+import type { Alert } from "@/types/alerts";
+import type { Service } from "@/types/service";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 
-function fmt(v: number | null | undefined, unit = "") {
-	if (v == null || v <= 0) return "—";
-	return `${v.toFixed(v < 10 ? 1 : 0)}${unit}`;
+function fmt(v: number | null | undefined, unit = "", decimals?: number) {
+	if (v == null) return "—";
+	if (v <= 0 && v !== 0) return "—";
+	const d = decimals ?? (v < 10 ? 1 : 0);
+	return `${v.toFixed(d)}${unit}`;
+}
+
+function fmtMemory(mb: number | null | undefined) {
+	if (mb == null) return "—";
+	if (mb > 1024) return `${(mb / 1024).toFixed(1)}GB`;
+	return `${mb.toFixed(0)}MB`;
+}
+
+function fmtTime(iso: string | null | undefined) {
+	if (!iso) return "—";
+	try {
+		const d = new Date(iso);
+		const diff = (Date.now() - d.getTime()) / 1000;
+		if (diff < 60) return "şimdi";
+		if (diff < 3600) return `${Math.floor(diff / 60)}dk`;
+		if (diff < 86400) return `${Math.floor(diff / 3600)}sa`;
+		return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
+	} catch {
+		return "—";
+	}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Compact stat cell (used inline in the stat strip)
+// Health ring (SVG circular progress)
 
-function StatCell({
-	label,
-	value,
-	icon: Icon,
-	tone = "default",
-	to,
-	sub,
+function HealthRing({
+	percent,
+	size = 72,
+	strokeWidth = 6,
 }: {
-	label: string;
-	value: React.ReactNode;
-	icon: React.ElementType;
-	tone?: "default" | "accent" | "success" | "warn" | "danger";
-	to?: string;
-	sub?: string;
+	percent: number;
+	size?: number;
+	strokeWidth?: number;
 }) {
-	const accentColor =
-		tone === "accent"
-			? "var(--color-teal)"
-			: tone === "success"
-				? "var(--status-up)"
-				: tone === "warn"
-					? "var(--status-warn)"
-					: tone === "danger"
-						? "var(--status-down)"
-						: "var(--text-muted)";
+	const radius = (size - strokeWidth) / 2;
+	const circumference = 2 * Math.PI * radius;
+	const offset = circumference - (percent / 100) * circumference;
+	const color =
+		percent >= 95
+			? "var(--status-up)"
+			: percent >= 80
+				? "var(--status-warn)"
+				: "var(--status-down)";
 
-	const body = (
-		<div
-			className="relative h-full px-3 py-2.5 overflow-hidden transition-colors hover:bg-[var(--surface-sunken)]"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
-				borderRadius: "var(--radius)",
-			}}
-		>
-			{tone !== "default" && (
-				<span
-					className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r-full"
-					style={{ background: accentColor }}
+	return (
+		<div className="relative shrink-0" style={{ width: size, height: size }}>
+			<svg
+				width={size}
+				height={size}
+				className="-rotate-90"
+				viewBox={`0 0 ${size} ${size}`}
+			>
+				<title>Sistem sağlığı: %{percent}</title>
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					fill="none"
+					stroke="var(--border-subtle)"
+					strokeWidth={strokeWidth}
 				/>
-			)}
-			<div className="flex items-center justify-between gap-2">
-				<div className="min-w-0 flex-1">
-					<div className="flex items-center gap-1.5 mb-1">
-						<Icon className="w-3 h-3" style={{ color: accentColor }} />
-						<span
-							className="text-[10px] font-medium truncate"
-							style={{ color: "var(--text-faint)" }}
-						>
-							{label}
-						</span>
-					</div>
-					<p
-						className="text-lg font-semibold tabular-nums font-mono leading-none"
-						style={{ color: "var(--text-primary)" }}
-					>
-						{value}
-					</p>
-					{sub && (
-						<p
-							className="text-[10px] mt-1 truncate"
-							style={{ color: "var(--text-faint)" }}
-						>
-							{sub}
-						</p>
-					)}
-				</div>
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					fill="none"
+					stroke={color}
+					strokeWidth={strokeWidth}
+					strokeLinecap="round"
+					strokeDasharray={circumference}
+					strokeDashoffset={offset}
+					style={{ transition: "stroke-dashoffset 600ms ease" }}
+				/>
+			</svg>
+			<div className="absolute inset-0 flex flex-col items-center justify-center">
+				<span
+					className="text-lg font-bold tabular-nums leading-none"
+					style={{ color: "var(--text-primary)" }}
+				>
+					{percent}
+				</span>
+				<span
+					className="text-[9px] font-semibold mt-0.5"
+					style={{ color: "var(--text-faint)" }}
+				>
+					%
+				</span>
 			</div>
 		</div>
 	);
-
-	return to ? <Link to={to}>{body}</Link> : body;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Onboarding (no services yet)
+// Onboarding
 
 function Onboarding() {
 	return (
@@ -166,7 +187,496 @@ function Onboarding() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Page
+// Hero card — one of three cards in the top row
+
+function HeroCard({
+	children,
+	accent,
+	className,
+}: {
+	children: React.ReactNode;
+	accent?: string;
+	className?: string;
+}) {
+	return (
+		<div
+			className={`relative overflow-hidden rounded-lg p-4 flex gap-4 ${className ?? ""}`}
+			style={{
+				background: "var(--surface-card)",
+				border: "1px solid var(--border-default)",
+			}}
+		>
+			{accent && (
+				<span
+					className="absolute left-0 top-0 bottom-0 w-0.5"
+					style={{ background: accent }}
+				/>
+			)}
+			{children}
+		</div>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Metric chip — compact stat display
+
+function MetricChip({
+	label,
+	value,
+	sub,
+	icon: Icon,
+	tone = "default",
+	to,
+}: {
+	label: string;
+	value: React.ReactNode;
+	sub?: string;
+	icon: React.ElementType;
+	tone?: "default" | "accent" | "success" | "warn" | "danger";
+	to?: string;
+}) {
+	const color =
+		tone === "accent"
+			? "var(--color-teal)"
+			: tone === "success"
+				? "var(--status-up)"
+				: tone === "warn"
+					? "var(--status-warn)"
+					: tone === "danger"
+						? "var(--status-down)"
+						: "var(--text-muted)";
+
+	const body = (
+		<div
+			className="group flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-colors hover:bg-[var(--surface-sunken)]"
+			style={{
+				background: "var(--surface-card)",
+				border: "1px solid var(--border-default)",
+			}}
+		>
+			<div
+				className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+				style={{
+					background: "var(--surface-sunken)",
+					border: `1px solid ${color}30`,
+				}}
+			>
+				<Icon className="w-3.5 h-3.5" style={{ color }} />
+			</div>
+			<div className="min-w-0 flex-1">
+				<p
+					className="text-[10px] font-semibold uppercase tracking-wider leading-none"
+					style={{ color: "var(--text-faint)" }}
+				>
+					{label}
+				</p>
+				<div className="flex items-baseline gap-1.5 mt-1">
+					<p
+						className="text-base font-bold tabular-nums font-mono leading-none"
+						style={{ color: "var(--text-primary)" }}
+					>
+						{value}
+					</p>
+					{sub && (
+						<p
+							className="text-[10px] leading-none"
+							style={{ color: "var(--text-faint)" }}
+						>
+							{sub}
+						</p>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+
+	return to ? <Link to={to}>{body}</Link> : body;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Service row with uptime bar
+
+function ServiceRow({
+	service,
+	uptime,
+}: {
+	service: Service;
+	uptime?: number;
+}) {
+	const uptimeColor =
+		uptime != null
+			? uptime >= 99.5
+				? "var(--status-up)"
+				: uptime >= 95
+					? "var(--status-warn)"
+					: "var(--status-down)"
+			: "var(--text-faint)";
+
+	return (
+		<Link
+			to={`/app/services/${service.id}`}
+			className="group flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
+		>
+			<StatusDot status={service.status} />
+
+			<div className="min-w-0 flex-1">
+				<div className="flex items-center gap-2 mb-1">
+					<span
+						className="text-sm font-semibold truncate"
+						style={{ color: "var(--text-primary)" }}
+					>
+						{service.name}
+					</span>
+					<span
+						className="text-[10px] font-mono truncate hidden md:inline"
+						style={{ color: "var(--text-faint)" }}
+					>
+						{service.host}:{service.port}
+					</span>
+				</div>
+				{/* Uptime bar */}
+				<div
+					className="relative h-1 rounded-full overflow-hidden"
+					style={{ background: "var(--surface-sunken)" }}
+				>
+					<div
+						className="absolute inset-y-0 left-0 rounded-full transition-all"
+						style={{
+							width: `${uptime ?? 0}%`,
+							background: uptimeColor,
+						}}
+					/>
+				</div>
+			</div>
+
+			<div className="flex items-center gap-2 shrink-0">
+				{uptime != null && (
+					<span
+						className="text-[11px] font-mono font-bold tabular-nums w-12 text-right"
+						style={{ color: uptimeColor }}
+					>
+						{uptime.toFixed(1)}%
+					</span>
+				)}
+				<StatusBadge status={service.status} />
+				<ChevronRight
+					className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
+					style={{ color: "var(--text-faint)" }}
+				/>
+			</div>
+		</Link>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alert row
+
+function AlertRow({
+	alert,
+	serviceName,
+}: {
+	alert: Alert;
+	serviceName: string;
+}) {
+	return (
+		<Link
+			to="/app/alerts"
+			className="flex items-start gap-2.5 px-3 py-2.5 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
+		>
+			<SeverityBadge severity={alert.severity} />
+			<div className="flex-1 min-w-0">
+				<div className="flex items-center justify-between gap-2">
+					<span
+						className="text-xs font-semibold truncate"
+						style={{ color: "var(--text-primary)" }}
+					>
+						{serviceName}
+					</span>
+					<span
+						className="text-[10px] font-mono shrink-0"
+						style={{ color: "var(--text-faint)" }}
+					>
+						{fmtTime(alert.triggered_at)}
+					</span>
+				</div>
+				<p
+					className="text-[11px] mt-0.5 truncate"
+					style={{ color: "var(--text-muted)" }}
+				>
+					{alert.message ?? alert.type}
+				</p>
+			</div>
+		</Link>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Activity right column — tabbed: alerts | insights
+
+type ActivityTab = "alerts" | "insights";
+
+function ActivityPanel({
+	alerts,
+	services,
+}: {
+	alerts: Alert[];
+	services: Service[];
+}) {
+	const [tab, setTab] = useState<ActivityTab>("alerts");
+	const { data: insights } = useQuery({
+		queryKey: ["dashLatestInsights"],
+		queryFn: () => metricsApi.getAllInsights(5),
+		refetchInterval: 60_000,
+		staleTime: 45_000,
+	});
+
+	const critCount = alerts.filter((a) => a.severity === "crit").length;
+	const warnCount = alerts.filter((a) => a.severity === "warn").length;
+	const insightCount = insights?.insights.length ?? 0;
+
+	return (
+		<div
+			className="flex flex-col min-h-0 overflow-hidden"
+			style={{
+				background: "var(--surface-card)",
+				border: "1px solid var(--border-default)",
+				borderRadius: "var(--radius)",
+			}}
+		>
+			{/* Tabs header */}
+			<div
+				className="flex items-center justify-between gap-2 px-3 py-2 shrink-0"
+				style={{ borderBottom: "1px solid var(--border-subtle)" }}
+			>
+				<div className="flex items-center gap-1">
+					<button
+						type="button"
+						onClick={() => setTab("alerts")}
+						className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all"
+						style={{
+							background:
+								tab === "alerts" ? "var(--surface-sunken)" : "transparent",
+							color:
+								tab === "alerts" ? "var(--text-primary)" : "var(--text-muted)",
+						}}
+					>
+						<Bell className="w-3 h-3" />
+						Uyarılar
+						{alerts.length > 0 && (
+							<span
+								className="min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+								style={{
+									background:
+										critCount > 0
+											? "var(--status-down-subtle)"
+											: "var(--surface-sunken)",
+									color:
+										critCount > 0
+											? "var(--status-down-text)"
+											: "var(--text-muted)",
+								}}
+							>
+								{alerts.length}
+							</span>
+						)}
+					</button>
+					<button
+						type="button"
+						onClick={() => setTab("insights")}
+						className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all"
+						style={{
+							background:
+								tab === "insights" ? "var(--surface-sunken)" : "transparent",
+							color:
+								tab === "insights"
+									? "var(--text-primary)"
+									: "var(--text-muted)",
+						}}
+					>
+						<BrainCircuit className="w-3 h-3" />
+						AI İçgörü
+						{insightCount > 0 && (
+							<span
+								className="min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+								style={{
+									background: "var(--color-lavender-subtle)",
+									color: "var(--color-lavender)",
+								}}
+							>
+								{insightCount}
+							</span>
+						)}
+					</button>
+				</div>
+
+				<Link
+					to={tab === "alerts" ? "/app/alerts" : "/app/ai-insights"}
+					className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-[var(--text-primary)] shrink-0"
+					style={{ color: "var(--text-muted)" }}
+				>
+					Tümü <ArrowRight className="w-3 h-3" />
+				</Link>
+			</div>
+
+			{/* Sub-summary line */}
+			<div
+				className="px-3 py-1.5 text-[10px] shrink-0 flex items-center gap-3"
+				style={{
+					background: "var(--surface-sunken)",
+					color: "var(--text-faint)",
+					borderBottom: "1px solid var(--border-subtle)",
+				}}
+			>
+				{tab === "alerts" ? (
+					<>
+						{critCount > 0 && (
+							<span className="flex items-center gap-1 font-semibold">
+								<span
+									className="w-1.5 h-1.5 rounded-full"
+									style={{ background: "var(--status-down)" }}
+								/>
+								{critCount} kritik
+							</span>
+						)}
+						{warnCount > 0 && (
+							<span className="flex items-center gap-1 font-semibold">
+								<span
+									className="w-1.5 h-1.5 rounded-full"
+									style={{ background: "var(--status-warn)" }}
+								/>
+								{warnCount} uyarı
+							</span>
+						)}
+						{alerts.length === 0 && (
+							<span className="flex items-center gap-1 font-semibold">
+								<CheckCircle2
+									className="w-3 h-3"
+									style={{ color: "var(--status-up)" }}
+								/>
+								Tümü sakin
+							</span>
+						)}
+					</>
+				) : (
+					<span>Son Claude analiz çıktıları</span>
+				)}
+			</div>
+
+			{/* Scrollable content */}
+			<div className="flex-1 min-h-0 overflow-y-auto">
+				{tab === "alerts" ? (
+					alerts.length === 0 ? (
+						<EmptyState
+							icon={CheckCircle2}
+							title="Aktif uyarı yok"
+							subtitle="Tüm sistemler normal"
+							tone="success"
+						/>
+					) : (
+						<ul className="flex flex-col p-1.5 gap-px">
+							{alerts.slice(0, 30).map((alert) => (
+								<li key={alert.id}>
+									<AlertRow
+										alert={alert}
+										serviceName={
+											services.find((s) => s.id === alert.service_id)?.name ??
+											"Bilinmeyen"
+										}
+									/>
+								</li>
+							))}
+						</ul>
+					)
+				) : insightCount === 0 ? (
+					<EmptyState
+						icon={BrainCircuit}
+						title="Henüz içgörü yok"
+						subtitle="Servis analizi için AI İçgörüler sayfasına git"
+						tone="accent"
+					/>
+				) : (
+					<ul className="flex flex-col p-2 gap-2">
+						{insights?.insights.map((insight) => (
+							<li key={insight.id}>
+								<Link
+									to="/app/ai-insights"
+									className="block p-2.5 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
+									style={{ border: "1px solid var(--border-subtle)" }}
+								>
+									<div className="flex items-center justify-between gap-2 mb-1.5">
+										<span
+											className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+											style={{ color: "var(--color-lavender)" }}
+										>
+											<Sparkles className="w-2.5 h-2.5" />
+											{insight.model}
+										</span>
+										<span
+											className="text-[10px] font-mono"
+											style={{ color: "var(--text-faint)" }}
+										>
+											{fmtTime(insight.created_at)}
+										</span>
+									</div>
+									<p
+										className="text-xs line-clamp-2 leading-relaxed"
+										style={{ color: "var(--text-primary)" }}
+									>
+										{insight.summary}
+									</p>
+								</Link>
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
+		</div>
+	);
+}
+
+function EmptyState({
+	icon: Icon,
+	title,
+	subtitle,
+	tone,
+}: {
+	icon: React.ElementType;
+	title: string;
+	subtitle: string;
+	tone: "success" | "accent";
+}) {
+	const bg =
+		tone === "success"
+			? "var(--status-up-subtle)"
+			: "var(--color-lavender-subtle)";
+	const color =
+		tone === "success" ? "var(--status-up)" : "var(--color-lavender)";
+	return (
+		<div className="flex flex-col items-center gap-2 h-full justify-center py-12 px-6 text-center">
+			<div
+				className="w-10 h-10 rounded-xl flex items-center justify-center"
+				style={{ background: bg }}
+			>
+				<Icon className="w-5 h-5" style={{ color }} />
+			</div>
+			<p
+				className="text-sm font-semibold"
+				style={{ color: "var(--text-primary)" }}
+			>
+				{title}
+			</p>
+			<p
+				className="text-xs max-w-[200px]"
+				style={{ color: "var(--text-faint)" }}
+			>
+				{subtitle}
+			</p>
+		</div>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main page
 
 export function DashboardPage() {
 	const { services, isLoading } = useServices();
@@ -179,10 +689,12 @@ export function DashboardPage() {
 		staleTime: 10_000,
 	});
 
+	const hasServices = services.length > 0;
+
 	const { data: globalSummary } = useQuery({
 		queryKey: ["dashGlobalSummary"],
 		queryFn: () => metricsApi.getGlobalSummary(),
-		enabled: services.length > 0,
+		enabled: hasServices,
 		refetchInterval: 30_000,
 		staleTime: 20_000,
 	});
@@ -190,41 +702,51 @@ export function DashboardPage() {
 	const { data: bulkUptime } = useQuery({
 		queryKey: ["dashBulkUptime"],
 		queryFn: () => metricsApi.getBulkUptime("24h"),
-		enabled: services.length > 0,
+		enabled: hasServices,
 		refetchInterval: 120_000,
 		staleTime: 60_000,
 	});
 
 	// ── Derived ────────────────────────────────────────────────────────────
-	const totalServices = services.length;
-	const onlineServices = services.filter((s) => s.status === "up").length;
-	const degradedServices = services.filter(
-		(s) => s.status === "degraded",
-	).length;
-	const offlineServices = services.filter(
-		(s) => s.status === "down" || s.status === "unknown",
-	).length;
+	const counts = useMemo(() => {
+		const c = { up: 0, degraded: 0, down: 0, unknown: 0 };
+		for (const s of services) {
+			if (s.status === "up") c.up++;
+			else if (s.status === "degraded") c.degraded++;
+			else if (s.status === "down") c.down++;
+			else c.unknown++;
+		}
+		return c;
+	}, [services]);
 
-	const criticalServices = services.filter(
-		(s) => s.status === "down" || s.status === "degraded",
-	);
-	const displayServices =
-		criticalServices.length > 0 ? criticalServices : services;
+	const total = services.length;
+	const onlineCount = counts.up;
+	const unhealthyCount = counts.down + counts.degraded + counts.unknown;
+	const healthPercent = total > 0 ? Math.round((onlineCount / total) * 100) : 0;
 
-	const recentAlerts = (activeAlerts ?? []).slice(0, 20);
-	const critAlerts = recentAlerts.filter((a) => a.severity === "crit").length;
-	const warnAlerts = recentAlerts.filter((a) => a.severity === "warn").length;
+	const alerts = activeAlerts ?? [];
+	const critCount = alerts.filter((a) => a.severity === "crit").length;
+	const warnCount = alerts.filter((a) => a.severity === "warn").length;
 
-	const healthPercent =
-		totalServices > 0 ? Math.round((onlineServices / totalServices) * 100) : 0;
-	const healthColor =
-		healthPercent === 100
-			? "var(--status-up)"
-			: healthPercent >= 70
-				? "var(--status-warn)"
-				: "var(--status-down)";
+	// Average uptime across all services
+	const avgUptime = useMemo(() => {
+		if (!bulkUptime) return null;
+		const vals = Object.values(bulkUptime);
+		if (vals.length === 0) return null;
+		return vals.reduce((a, b) => a + b, 0) / vals.length;
+	}, [bulkUptime]);
 
-	if (!isLoading && services.length === 0) {
+	// Sort: critical first, then degraded, then up
+	const sortedServices = useMemo(() => {
+		const priority = { down: 0, unknown: 1, degraded: 2, up: 3 } as const;
+		return [...services].sort((a, b) => {
+			const pa = priority[a.status as keyof typeof priority] ?? 4;
+			const pb = priority[b.status as keyof typeof priority] ?? 4;
+			return pa - pb;
+		});
+	}, [services]);
+
+	if (!isLoading && !hasServices) {
 		return (
 			<PageShell fill>
 				<Onboarding />
@@ -232,63 +754,16 @@ export function DashboardPage() {
 		);
 	}
 
-	const memoryValue =
-		globalSummary?.avg_memory_used_mb && globalSummary.avg_memory_used_mb > 1024
-			? `${(globalSummary.avg_memory_used_mb / 1024).toFixed(1)} GB`
-			: fmt(globalSummary?.avg_memory_used_mb, " MB");
-
 	return (
 		<PageShell fill>
 			<PageHeader
 				compact
 				eyebrow="Panel"
 				title="Genel Bakış"
-				description={`${totalServices} servis · %${healthPercent} sağlıklı`}
-				meta={
-					totalServices > 0 ? (
-						<div
-							className="flex items-center gap-2 max-w-md"
-							style={{ color: "var(--text-muted)" }}
-						>
-							<div
-								className="flex-1 h-1 rounded-full overflow-hidden"
-								style={{ background: "var(--surface-sunken)" }}
-							>
-								<div className="h-full flex" style={{ width: "100%" }}>
-									{onlineServices > 0 && (
-										<div
-											style={{
-												width: `${(onlineServices / totalServices) * 100}%`,
-												background: "var(--status-up)",
-											}}
-										/>
-									)}
-									{degradedServices > 0 && (
-										<div
-											style={{
-												width: `${(degradedServices / totalServices) * 100}%`,
-												background: "var(--status-warn)",
-											}}
-										/>
-									)}
-									{offlineServices > 0 && (
-										<div
-											style={{
-												width: `${(offlineServices / totalServices) * 100}%`,
-												background: "var(--status-down)",
-											}}
-										/>
-									)}
-								</div>
-							</div>
-							<span
-								className="text-[11px] font-mono font-semibold tabular-nums"
-								style={{ color: healthColor }}
-							>
-								{healthPercent}%
-							</span>
-						</div>
-					) : null
+				description={
+					hasServices
+						? `${total} servis izleniyor · son güncelleme şimdi`
+						: "Servisleriniz yükleniyor…"
 				}
 				actions={
 					<>
@@ -315,368 +790,427 @@ export function DashboardPage() {
 				}
 			/>
 
-			{/* Compact stat strip — 8 cells in one row on xl */}
-			<div className="grid grid-cols-4 xl:grid-cols-8 gap-2 mb-4 shrink-0">
-				<StatCell
-					label="Toplam"
-					value={totalServices}
-					icon={Server}
-					tone="accent"
-					to="/app/services"
-				/>
-				<StatCell
-					label="Çevrimiçi"
-					value={onlineServices}
-					icon={CheckCircle2}
-					tone="success"
-					to="/app/services"
-				/>
-				<StatCell
-					label="Bozuk"
-					value={degradedServices}
-					icon={Zap}
-					tone="warn"
-					to="/app/services"
-				/>
-				<StatCell
-					label="Offline"
-					value={offlineServices}
-					icon={XCircle}
-					tone="danger"
-					to="/app/services"
-				/>
-				<StatCell
-					label="Latency"
-					value={fmt(globalSummary?.avg_latency_ms, "ms")}
-					icon={Gauge}
-					tone="warn"
-					sub={
-						globalSummary?.p95_latency_ms
-							? `P95 ${fmt(globalSummary.p95_latency_ms, "ms")}`
-							: undefined
-					}
-				/>
-				<StatCell
-					label="CPU"
-					value={fmt(globalSummary?.avg_cpu_percent, "%")}
-					icon={Cpu}
-					tone="accent"
-				/>
-				<StatCell label="Bellek" value={memoryValue} icon={MemoryStick} />
-				<StatCell
-					label="Hata"
-					value={
-						globalSummary?.avg_error_rate && globalSummary.avg_error_rate > 0
-							? `${Math.min(globalSummary.avg_error_rate, 100).toFixed(1)}%`
-							: "0%"
-					}
-					icon={ShieldCheck}
-					tone={critAlerts > 0 ? "danger" : "success"}
-				/>
-			</div>
-
-			{/* Main content — services + alerts, fills remaining viewport */}
-			<div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
-				<ServicesPanel
-					services={displayServices}
-					uptimeMap={bulkUptime ?? {}}
-					totalCount={services.length}
-					criticalOnly={criticalServices.length > 0}
-					className="lg:col-span-7"
-				/>
-				<AlertsPanel
-					alerts={recentAlerts}
-					services={services}
-					critCount={critAlerts}
-					warnCount={warnAlerts}
-					className="lg:col-span-5"
-				/>
-			</div>
-		</PageShell>
-	);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Services panel
-
-function ServicesPanel({
-	services,
-	uptimeMap,
-	totalCount,
-	criticalOnly,
-	className,
-}: {
-	services: Array<{
-		id: string;
-		name: string;
-		host: string;
-		port: number;
-		status: "up" | "down" | "degraded" | "unknown";
-	}>;
-	uptimeMap: Record<string, number>;
-	totalCount: number;
-	criticalOnly: boolean;
-	className?: string;
-}) {
-	return (
-		<div
-			className={`flex flex-col min-h-0 overflow-hidden ${className ?? ""}`}
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
-				borderRadius: "var(--radius)",
-			}}
-		>
-			{/* Header */}
-			<div
-				className="flex items-center justify-between gap-3 px-4 py-3 shrink-0"
-				style={{ borderBottom: "1px solid var(--border-subtle)" }}
+			{/* ── HERO ROW ─────────────────────────────────────────────────── */}
+			<motion.div
+				className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 shrink-0"
+				initial={{ opacity: 0, y: 6 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.3 }}
 			>
-				<div className="flex items-center gap-2.5 min-w-0">
+				{/* Health ring card */}
+				<HeroCard
+					accent={
+						healthPercent >= 95
+							? "var(--status-up)"
+							: healthPercent >= 80
+								? "var(--status-warn)"
+								: "var(--status-down)"
+					}
+				>
+					<HealthRing percent={healthPercent} />
+					<div className="min-w-0 flex-1 flex flex-col justify-center">
+						<p
+							className="text-[10px] font-bold uppercase tracking-[0.18em]"
+							style={{ color: "var(--text-faint)" }}
+						>
+							Sistem Sağlığı
+						</p>
+						<p
+							className="text-sm font-semibold mt-1"
+							style={{ color: "var(--text-primary)" }}
+						>
+							{onlineCount} / {total} çevrimiçi
+						</p>
+						{/* Segmented breakdown */}
+						<div className="flex gap-0.5 mt-2.5">
+							{counts.up > 0 && (
+								<div
+									className="h-1 rounded-full"
+									style={{
+										flex: counts.up,
+										background: "var(--status-up)",
+									}}
+								/>
+							)}
+							{counts.degraded > 0 && (
+								<div
+									className="h-1 rounded-full"
+									style={{
+										flex: counts.degraded,
+										background: "var(--status-warn)",
+									}}
+								/>
+							)}
+							{counts.down > 0 && (
+								<div
+									className="h-1 rounded-full"
+									style={{
+										flex: counts.down,
+										background: "var(--status-down)",
+									}}
+								/>
+							)}
+							{counts.unknown > 0 && (
+								<div
+									className="h-1 rounded-full"
+									style={{
+										flex: counts.unknown,
+										background: "var(--border-subtle)",
+									}}
+								/>
+							)}
+						</div>
+					</div>
+				</HeroCard>
+
+				{/* Alerts pulse card */}
+				<HeroCard
+					accent={
+						critCount > 0
+							? "var(--status-down)"
+							: warnCount > 0
+								? "var(--status-warn)"
+								: "var(--status-up)"
+					}
+				>
 					<div
-						className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+						className="relative w-[72px] h-[72px] rounded-xl flex items-center justify-center shrink-0"
+						style={{
+							background:
+								critCount > 0
+									? "var(--status-down-subtle)"
+									: warnCount > 0
+										? "var(--status-warn-subtle)"
+										: "var(--status-up-subtle)",
+							border: `1px solid ${
+								critCount > 0
+									? "var(--status-down-border)"
+									: warnCount > 0
+										? "var(--status-warn-border)"
+										: "var(--status-up-border)"
+							}`,
+						}}
+					>
+						{critCount > 0 && (
+							<span
+								className="absolute inset-0 rounded-xl animate-pulse"
+								style={{ background: "var(--status-down)", opacity: 0.15 }}
+							/>
+						)}
+						<Bell
+							className="w-6 h-6 relative z-10"
+							style={{
+								color:
+									critCount > 0
+										? "var(--status-down)"
+										: warnCount > 0
+											? "var(--status-warn)"
+											: "var(--status-up)",
+							}}
+						/>
+					</div>
+					<div className="min-w-0 flex-1 flex flex-col justify-center">
+						<p
+							className="text-[10px] font-bold uppercase tracking-[0.18em]"
+							style={{ color: "var(--text-faint)" }}
+						>
+							Aktif Uyarı
+						</p>
+						<p
+							className="text-2xl font-bold tabular-nums leading-none mt-1.5"
+							style={{
+								color:
+									alerts.length > 0
+										? "var(--text-primary)"
+										: "var(--text-muted)",
+							}}
+						>
+							{alerts.length}
+						</p>
+						<div className="flex items-center gap-2 mt-1.5 text-[11px]">
+							{critCount > 0 && (
+								<span
+									className="font-semibold"
+									style={{ color: "var(--status-down-text)" }}
+								>
+									{critCount} kritik
+								</span>
+							)}
+							{warnCount > 0 && (
+								<span
+									className="font-semibold"
+									style={{ color: "var(--status-warn-text)" }}
+								>
+									{warnCount} uyarı
+								</span>
+							)}
+							{alerts.length === 0 && (
+								<span style={{ color: "var(--text-faint)" }}>
+									son 24 saatte temiz
+								</span>
+							)}
+						</div>
+					</div>
+				</HeroCard>
+
+				{/* Performance card */}
+				<HeroCard accent="var(--color-teal)">
+					<div
+						className="w-[72px] h-[72px] rounded-xl flex items-center justify-center shrink-0"
 						style={{
 							background: "var(--color-teal-subtle)",
 							border: "1px solid var(--color-teal-border)",
 						}}
 					>
-						<Server
-							className="w-3.5 h-3.5"
+						<Activity
+							className="w-6 h-6"
 							style={{ color: "var(--color-teal)" }}
 						/>
 					</div>
-					<div className="min-w-0">
-						<h3
-							className="text-sm font-semibold leading-none"
-							style={{ color: "var(--text-primary)" }}
-						>
-							{criticalOnly ? "Dikkat gereken servisler" : "Servisler"}
-						</h3>
+					<div className="min-w-0 flex-1 flex flex-col justify-center">
 						<p
-							className="text-[11px] mt-1 truncate"
+							className="text-[10px] font-bold uppercase tracking-[0.18em]"
 							style={{ color: "var(--text-faint)" }}
 						>
-							{services.length} / {totalCount} gösteriliyor
+							Performans
 						</p>
-					</div>
-				</div>
-				<Link
-					to="/app/services"
-					className="flex items-center gap-1 text-xs font-medium transition-colors hover:text-[var(--text-primary)] shrink-0"
-					style={{ color: "var(--text-muted)" }}
-				>
-					Tümü <ArrowRight className="w-3 h-3" />
-				</Link>
-			</div>
-
-			{/* Scrollable list */}
-			<div className="flex-1 min-h-0 overflow-y-auto">
-				<ul className="flex flex-col p-2 gap-px">
-					{services.map((service) => {
-						const uptime = uptimeMap[service.id];
-						const uptimeColor =
-							uptime != null
-								? uptime >= 99
-									? "var(--status-up-text)"
-									: uptime >= 95
-										? "var(--status-warn-text)"
-										: "var(--status-down-text)"
-								: "var(--text-faint)";
-						return (
-							<li key={service.id}>
-								<Link
-									to={`/app/services/${service.id}`}
-									className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
-								>
-									<StatusDot status={service.status} />
-									<span
-										className="flex-1 text-sm font-medium truncate"
-										style={{ color: "var(--text-primary)" }}
-									>
-										{service.name}
-									</span>
-									<span
-										className="text-[11px] font-mono hidden md:block shrink-0"
-										style={{ color: "var(--text-faint)" }}
-									>
-										{service.host}:{service.port}
-									</span>
-									{uptime != null && (
-										<span
-											className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono tabular-nums shrink-0 w-14 justify-end"
-											style={{ color: uptimeColor }}
-										>
-											{uptime.toFixed(1)}%
-										</span>
-									)}
-									<StatusBadge status={service.status} />
-								</Link>
-							</li>
-						);
-					})}
-				</ul>
-			</div>
-		</div>
-	);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Alerts panel
-
-function AlertsPanel({
-	alerts,
-	services,
-	critCount,
-	warnCount,
-	className,
-}: {
-	alerts: Array<{
-		id: string;
-		service_id: string;
-		type: string;
-		severity: "crit" | "warn" | "info";
-		message: string;
-		triggered_at: string;
-	}>;
-	services: Array<{ id: string; name: string }>;
-	critCount: number;
-	warnCount: number;
-	className?: string;
-}) {
-	return (
-		<div
-			className={`flex flex-col min-h-0 overflow-hidden ${className ?? ""}`}
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
-				borderRadius: "var(--radius)",
-			}}
-		>
-			{/* Header */}
-			<div
-				className="flex items-center justify-between gap-3 px-4 py-3 shrink-0"
-				style={{ borderBottom: "1px solid var(--border-subtle)" }}
-			>
-				<div className="flex items-center gap-2.5 min-w-0">
-					<div
-						className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-						style={{
-							background:
-								alerts.length > 0
-									? "var(--status-down-subtle)"
-									: "var(--status-up-subtle)",
-							border: `1px solid ${
-								alerts.length > 0
-									? "var(--status-down-border)"
-									: "var(--status-up-border)"
-							}`,
-						}}
-					>
-						<Bell
-							className="w-3.5 h-3.5"
-							style={{
-								color:
-									alerts.length > 0 ? "var(--status-down)" : "var(--status-up)",
-							}}
-						/>
-					</div>
-					<div className="min-w-0">
-						<h3
-							className="text-sm font-semibold leading-none"
+						<p
+							className="text-2xl font-bold tabular-nums leading-none mt-1.5 font-mono"
 							style={{ color: "var(--text-primary)" }}
 						>
-							Aktif uyarılar
-						</h3>
-						<p
-							className="text-[11px] mt-1 truncate"
-							style={{ color: "var(--text-faint)" }}
-						>
-							{alerts.length === 0
-								? "Tümü sakin"
-								: `${critCount} kritik · ${warnCount} uyarı`}
+							{fmt(globalSummary?.avg_latency_ms, "ms")}
 						</p>
-					</div>
-				</div>
-				<Link
-					to="/app/alerts"
-					className="flex items-center gap-1 text-xs font-medium transition-colors hover:text-[var(--text-primary)] shrink-0"
-					style={{ color: "var(--text-muted)" }}
-				>
-					Tümü <ArrowRight className="w-3 h-3" />
-				</Link>
-			</div>
-
-			{/* Scrollable feed */}
-			<div className="flex-1 min-h-0 overflow-y-auto">
-				{alerts.length === 0 ? (
-					<div className="flex flex-col items-center gap-2 py-12 px-6 text-center">
-						<div
-							className="w-10 h-10 rounded-xl flex items-center justify-center"
-							style={{ background: "var(--status-up-subtle)" }}
-						>
-							<CheckCircle2
-								className="w-5 h-5"
-								style={{ color: "var(--status-up)" }}
-							/>
+						<div className="flex items-center gap-2 mt-1.5 text-[11px]">
+							<span style={{ color: "var(--text-faint)" }}>
+								P95 {fmt(globalSummary?.p95_latency_ms, "ms")}
+							</span>
+							{avgUptime != null && (
+								<>
+									<span style={{ color: "var(--border-default)" }}>·</span>
+									<span
+										className="font-semibold"
+										style={{
+											color:
+												avgUptime >= 99
+													? "var(--status-up-text)"
+													: "var(--status-warn-text)",
+										}}
+									>
+										{avgUptime.toFixed(2)}% uptime
+									</span>
+								</>
+							)}
 						</div>
-						<p
-							className="text-sm font-medium"
-							style={{ color: "var(--text-primary)" }}
-						>
-							Aktif uyarı yok
-						</p>
-						<p className="text-xs" style={{ color: "var(--text-faint)" }}>
-							Tüm sistemler normal
-						</p>
 					</div>
-				) : (
-					<ul className="flex flex-col p-2 gap-px">
-						{alerts.map((alert) => {
-							const svcName =
-								services.find((s) => s.id === alert.service_id)?.name ??
-								"Bilinmeyen";
-							return (
-								<li key={alert.id}>
-									<Link
-										to="/app/alerts"
-										className="flex items-start gap-3 px-3 py-2.5 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
+				</HeroCard>
+			</motion.div>
+
+			{/* ── METRIC CHIPS ─────────────────────────────────────────────── */}
+			<motion.div
+				className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 shrink-0"
+				initial={{ opacity: 0, y: 6 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.3, delay: 0.05 }}
+			>
+				<MetricChip
+					label="CPU"
+					value={fmt(globalSummary?.avg_cpu_percent, "%")}
+					icon={Cpu}
+					tone={(globalSummary?.avg_cpu_percent ?? 0) > 75 ? "warn" : "accent"}
+				/>
+				<MetricChip
+					label="Bellek"
+					value={fmtMemory(globalSummary?.avg_memory_used_mb)}
+					icon={MemoryStick}
+					tone="default"
+				/>
+				<MetricChip
+					label="Hata Oranı"
+					value={
+						globalSummary?.avg_error_rate
+							? `${Math.min(globalSummary.avg_error_rate, 100).toFixed(1)}%`
+							: "0%"
+					}
+					icon={ShieldCheck}
+					tone={(globalSummary?.avg_error_rate ?? 0) > 1 ? "danger" : "success"}
+				/>
+				<MetricChip
+					label="Durum"
+					value={
+						unhealthyCount === 0
+							? "Sağlıklı"
+							: unhealthyCount === 1
+								? "1 sorun"
+								: `${unhealthyCount} sorun`
+					}
+					icon={unhealthyCount === 0 ? CheckCircle2 : XCircle}
+					tone={unhealthyCount === 0 ? "success" : "danger"}
+				/>
+			</motion.div>
+
+			{/* ── MAIN GRID ────────────────────────────────────────────────── */}
+			<div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3">
+				{/* Services list */}
+				<motion.div
+					className="lg:col-span-7 flex flex-col min-h-0 overflow-hidden"
+					style={{
+						background: "var(--surface-card)",
+						border: "1px solid var(--border-default)",
+						borderRadius: "var(--radius)",
+					}}
+					initial={{ opacity: 0, y: 6 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.3, delay: 0.1 }}
+				>
+					{/* Header */}
+					<div
+						className="flex items-center justify-between gap-2 px-3 py-2 shrink-0"
+						style={{ borderBottom: "1px solid var(--border-subtle)" }}
+					>
+						<div className="flex items-center gap-2 min-w-0">
+							<div
+								className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+								style={{
+									background: "var(--color-teal-subtle)",
+									border: "1px solid var(--color-teal-border)",
+								}}
+							>
+								<Server
+									className="w-3.5 h-3.5"
+									style={{ color: "var(--color-teal)" }}
+								/>
+							</div>
+							<div className="min-w-0">
+								<h3
+									className="text-sm font-semibold leading-none"
+									style={{ color: "var(--text-primary)" }}
+								>
+									Servisler
+								</h3>
+								<p
+									className="text-[10px] mt-1"
+									style={{ color: "var(--text-faint)" }}
+								>
+									Kritik önce — {total} servis
+								</p>
+							</div>
+						</div>
+						<div className="flex items-center gap-2 shrink-0">
+							<div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono">
+								{counts.up > 0 && (
+									<span
+										className="flex items-center gap-1"
+										style={{ color: "var(--status-up-text)" }}
 									>
-										<div className="flex-1 min-w-0">
-											<div className="flex items-center gap-2 mb-1">
-												<SeverityBadge severity={alert.severity} />
-												<span
-													className="text-xs font-semibold truncate"
-													style={{ color: "var(--text-primary)" }}
-												>
-													{svcName}
-												</span>
-											</div>
-											<p
-												className="text-[11px] truncate"
-												style={{ color: "var(--text-faint)" }}
-											>
-												{alert.message ?? alert.type}
-											</p>
+										<span
+											className="w-1.5 h-1.5 rounded-full"
+											style={{ background: "var(--status-up)" }}
+										/>
+										{counts.up}
+									</span>
+								)}
+								{counts.degraded > 0 && (
+									<span
+										className="flex items-center gap-1"
+										style={{ color: "var(--status-warn-text)" }}
+									>
+										<span
+											className="w-1.5 h-1.5 rounded-full"
+											style={{ background: "var(--status-warn)" }}
+										/>
+										{counts.degraded}
+									</span>
+								)}
+								{counts.down > 0 && (
+									<span
+										className="flex items-center gap-1"
+										style={{ color: "var(--status-down-text)" }}
+									>
+										<span
+											className="w-1.5 h-1.5 rounded-full"
+											style={{ background: "var(--status-down)" }}
+										/>
+										{counts.down}
+									</span>
+								)}
+							</div>
+							<Link
+								to="/app/services"
+								className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-[var(--text-primary)]"
+								style={{ color: "var(--text-muted)" }}
+							>
+								Tümü <ArrowRight className="w-3 h-3" />
+							</Link>
+						</div>
+					</div>
+
+					{/* List */}
+					<div className="flex-1 min-h-0 overflow-y-auto">
+						{isLoading ? (
+							<div className="flex flex-col p-1.5 gap-px">
+								{[1, 2, 3, 4, 5].map((i) => (
+									<div
+										key={i}
+										className="px-3 py-2.5 rounded-md animate-pulse flex items-center gap-3"
+									>
+										<div
+											className="w-2 h-2 rounded-full shrink-0"
+											style={{ background: "var(--border-subtle)" }}
+										/>
+										<div className="flex-1 space-y-1.5">
+											<div
+												className="h-3 w-1/3 rounded"
+												style={{ background: "var(--border-subtle)" }}
+											/>
+											<div
+												className="h-1 rounded-full"
+												style={{ background: "var(--border-subtle)" }}
+											/>
 										</div>
 										<div
-											className="flex items-center gap-1 shrink-0 text-[10px] font-mono mt-0.5"
-											style={{ color: "var(--text-faint)" }}
-										>
-											<Clock className="w-3 h-3" />
-											{alert.triggered_at
-												? new Date(alert.triggered_at).toLocaleTimeString(
-														"tr-TR",
-														{ hour: "2-digit", minute: "2-digit" },
-													)
-												: "—"}
-										</div>
-									</Link>
-								</li>
-							);
-						})}
-					</ul>
-				)}
+											className="h-4 w-12 rounded"
+											style={{ background: "var(--border-subtle)" }}
+										/>
+									</div>
+								))}
+							</div>
+						) : sortedServices.length === 0 ? (
+							<EmptyState
+								icon={Server}
+								title="Henüz servis yok"
+								subtitle="İlk servisinizi ekleyin"
+								tone="accent"
+							/>
+						) : (
+							<ul className="flex flex-col p-1.5 gap-px">
+								{sortedServices.map((service) => (
+									<li key={service.id}>
+										<ServiceRow
+											service={service}
+											uptime={bulkUptime?.[service.id]}
+										/>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				</motion.div>
+
+				{/* Activity panel */}
+				<motion.div
+					className="lg:col-span-5 flex flex-col min-h-0"
+					initial={{ opacity: 0, y: 6 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.3, delay: 0.15 }}
+				>
+					<ActivityPanel alerts={alerts} services={services} />
+				</motion.div>
 			</div>
-		</div>
+		</PageShell>
 	);
 }
+
+// Keep these imports referenced — they are used in icon slots above.
+void Gauge;
+void TrendingUp;
+void Zap;
