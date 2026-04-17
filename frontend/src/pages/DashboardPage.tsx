@@ -748,14 +748,14 @@ export function DashboardPage() {
 
 	if (!isLoading && !hasServices) {
 		return (
-			<PageShell fill>
+			<PageShell width="wide" fill>
 				<Onboarding />
 			</PageShell>
 		);
 	}
 
 	return (
-		<PageShell fill>
+		<PageShell width="wide" fill>
 			<PageHeader
 				compact
 				eyebrow="Panel"

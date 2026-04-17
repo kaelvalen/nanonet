@@ -352,7 +352,7 @@ export function ServiceDetailPage() {
 					};
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill>
 			{/* Header */}
 			<motion.div
 				initial={{ opacity: 0, y: -6 }}

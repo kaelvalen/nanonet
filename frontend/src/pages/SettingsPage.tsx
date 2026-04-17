@@ -333,7 +333,7 @@ export function SettingsPage() {
 	const dividerStyle = { backgroundColor: "var(--border-divider)" };
 
 	return (
-		<PageShell className="max-w-3xl" fill>
+		<PageShell width="default" fill>
 			<PageHeader
 				compact
 				eyebrow="Hesap"
