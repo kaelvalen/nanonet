@@ -18,5 +18,6 @@ export interface ServiceNodeData extends Record<string, unknown> {
 
 export interface SerializedMap {
 	nodes: { id: string; type: string; position: { x: number; y: number } }[];
-	edges: Pick<Edge, "id" | "source" | "target" | "label">[];
+	// Backend'e sadece string label gönderiyoruz (ReactNode/null değil).
+	edges: { id: string; source: string; target: string; label?: string }[];
 }

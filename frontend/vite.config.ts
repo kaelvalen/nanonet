@@ -1,6 +1,6 @@
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -10,15 +10,29 @@ export default defineConfig({
 			"@": path.resolve(__dirname, "./src"),
 		},
 	},
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks(id) {
+					if (!id.includes("node_modules")) return;
+
+					if (id.includes("/recharts/")) return "charts";
+					if (id.includes("/pdf-lib/")) return "pdf";
+					if (id.includes("/@tanstack/")) return "query";
+					if (id.includes("/react-router/")) return "router";
+
+					return "vendor";
+				},
+			},
+		},
+	},
 	server: {
 		port: 3000,
 		host: true,
 		allowedHosts: true,
 		watch: {
-			usePolling: true,
-		},
-		hmr: {
-			clientPort: 443,
+			// Polling Docker bind-mount'larda stabil; lokal dev'de gereksiz CPU yakar.
+			usePolling: process.env.DOCKER === "true",
 		},
 		proxy: {
 			"/api": {

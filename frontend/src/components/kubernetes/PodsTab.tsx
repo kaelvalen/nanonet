@@ -12,6 +12,7 @@ import {
 import { motion } from "motion/react";
 import type React from "react";
 import { useState } from "react";
+import type { UseMutationResult } from "@tanstack/react-query";
 import type { PodInfo } from "@/api/k8s";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,11 +22,7 @@ function DeletePodButton({
 	deletePodMutation,
 }: {
 	podName: string;
-	deletePodMutation: {
-		mutate: (args: unknown) => void;
-		isPending: boolean;
-		variables?: string;
-	};
+	deletePodMutation: UseMutationResult<{ message: string }, unknown, string, unknown>;
 }) {
 	const [asking, setAsking] = useState(false);
 	const isPending =
@@ -94,11 +91,7 @@ export interface PodsTabProps {
 	pods: PodInfo[];
 	filteredPods: PodInfo[];
 	setLogPod: (name: string | null) => void;
-	deletePodMutation: {
-		mutate: (args: unknown) => void;
-		isPending: boolean;
-		variables?: string;
-	};
+	deletePodMutation: UseMutationResult<{ message: string }, unknown, string, unknown>;
 	PodStatusBadge: React.FC<{ status: string }>;
 	StatusDot: React.FC<{ ready: boolean; size?: "sm" | "md" }>;
 }

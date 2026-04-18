@@ -13,6 +13,7 @@ import {
 import { motion } from "motion/react";
 import type React from "react";
 import { useState } from "react";
+import type { UseMutationResult } from "@tanstack/react-query";
 import type { DeploymentInfo } from "@/api/k8s";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,16 +35,13 @@ export interface NanonetTabProps {
 			Record<string, { image: string; replicas: number; open: boolean }>
 		>
 	>;
-	deployMutation: {
-		mutate: (args: unknown) => void;
-		isPending: boolean;
-		variables?: { name: string };
-	};
-	undeployMutation: {
-		mutate: (args: unknown) => void;
-		isPending: boolean;
-		variables?: string;
-	};
+	deployMutation: UseMutationResult<
+		{ message: string; k8s_name: string },
+		unknown,
+		{ name: string; image: string; port: number; replicas: number },
+		unknown
+	>;
+	undeployMutation: UseMutationResult<{ message: string }, unknown, string, unknown>;
 	refetchNanonetServices: () => void;
 	refetchDeployments: () => void;
 	slugifyForK8s: (name: string) => string;
