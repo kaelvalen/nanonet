@@ -3,9 +3,6 @@ import { Bell, Loader2, RotateCcw, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { type AlertRules, metricsApi } from "@/api/metrics";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 interface AlertRulesTabProps {
 	serviceId: string;
@@ -34,7 +31,7 @@ const FIELDS: {
 		min: 1,
 		max: 100,
 		description: "Bu değeri aşan CPU kullanımında alert tetiklenir",
-		color: "var(--color-teal)",
+		color: "#2dd4bf",
 	},
 	{
 		key: "memory_threshold_mb",
@@ -43,7 +40,7 @@ const FIELDS: {
 		min: 1,
 		max: 999999,
 		description: "Bu değeri aşan bellek kullanımında alert tetiklenir",
-		color: "var(--color-blue)",
+		color: "#22d3ee",
 	},
 	{
 		key: "latency_threshold_ms",
@@ -52,7 +49,7 @@ const FIELDS: {
 		min: 1,
 		max: 999999,
 		description: "Bu değeri aşan yanıt süresinde alert tetiklenir",
-		color: "var(--color-lavender)",
+		color: "#818cf8",
 	},
 	{
 		key: "error_rate_threshold",
@@ -61,7 +58,7 @@ const FIELDS: {
 		min: 0,
 		max: 100,
 		description: "Bu değeri aşan hata oranında alert tetiklenir",
-		color: "var(--status-down)",
+		color: "#fb7185",
 	},
 ];
 
@@ -104,122 +101,148 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 
 	if (isLoading) {
 		return (
-			<Card
-				className="p-5 rounded animate-pulse"
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+				{[0, 1, 2, 3].map((i) => (
+					<div
+						key={i}
+						className="h-[140px] rounded-lg animate-pulse"
+						style={{
+							background: "var(--surface-card)",
+							border: "1px solid var(--border-default)",
+						}}
+					/>
+				))}
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex flex-col gap-3">
+			<div
+				className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg"
 				style={{
 					background: "var(--surface-card)",
 					border: "1px solid var(--border-default)",
 				}}
 			>
-				<div className="space-y-3">
-					{[1, 2, 3, 4].map((i) => (
-						<div
-							key={i}
-							className="h-16 rounded"
-							style={{ background: "var(--surface-sunken)" }}
-						/>
-					))}
-				</div>
-			</Card>
-		);
-	}
-
-	return (
-		<Card
-			className="p-5 rounded"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
-			}}
-		>
-			<div className="flex items-center justify-between mb-5">
-				<div className="flex items-center gap-2">
-					<Bell className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
-					<h3
-						className="text-sm font-semibold"
-						style={{ color: "var(--text-secondary)" }}
+				<div className="flex items-center gap-2.5 min-w-0">
+					<span
+						className="w-7 h-7 rounded flex items-center justify-center shrink-0"
+						style={{
+							background: "var(--color-teal-subtle)",
+							border: "1px solid var(--color-teal-border)",
+						}}
 					>
-						Alert Eşikleri
-					</h3>
-					{rules?.is_default && (
-						<span
-							className="text-[10px] px-2 py-0.5 rounded"
-							style={{
-								background: "var(--surface-sunken)",
-								border: "1px solid var(--border-subtle)",
-								color: "var(--text-faint)",
-							}}
+						<Bell className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
+					</span>
+					<div className="min-w-0">
+						<div className="flex items-center gap-2">
+							<p
+								className="text-xs font-bold leading-tight"
+								style={{ color: "var(--text-primary)" }}
+							>
+								Alert Eşikleri
+							</p>
+							{rules?.is_default && (
+								<span
+									className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+									style={{
+										background: "var(--surface-sunken)",
+										border: "1px solid var(--border-subtle)",
+										color: "var(--text-faint)",
+									}}
+								>
+									varsayılan
+								</span>
+							)}
+						</div>
+						<p
+							className="text-[10px] leading-tight mt-0.5"
+							style={{ color: "var(--text-muted)" }}
 						>
-							varsayılan
-						</span>
-					)}
+							Eşikleri aşan metrikler otomatik uyarı tetikler
+						</p>
+					</div>
 				</div>
-				<div className="flex items-center gap-2">
+
+				<div className="flex items-center gap-2 shrink-0">
 					{isDirty && (
-						<Button
-							size="sm"
-							variant="outline"
+						<button
+							type="button"
 							onClick={() => setForm(null)}
-							className="rounded text-xs h-7"
+							className="flex items-center gap-1 px-2.5 h-8 rounded text-[10px] font-bold uppercase tracking-wider transition-colors"
 							style={{
 								color: "var(--text-muted)",
-								borderColor: "var(--border-default)",
+								border: "1px solid var(--border-default)",
 							}}
 						>
-							<RotateCcw className="w-3 h-3 mr-1" /> İptal
-						</Button>
+							<RotateCcw className="w-3 h-3" /> İptal
+						</button>
 					)}
-					<Button
-						size="sm"
+					<button
+						type="button"
 						onClick={() => saveMutation.mutate(current)}
 						disabled={!isDirty || saveMutation.isPending}
-						className="rounded text-xs h-7 text-white"
-						style={
-							isDirty
-								? {
-										background: "var(--gradient-btn-primary)",
-										boxShadow: "var(--btn-shadow)",
-									}
-								: { opacity: 0.5 }
-						}
+						className="flex items-center gap-1.5 px-3 h-8 rounded text-[10px] font-bold uppercase tracking-wider text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+						style={{
+							background: isDirty
+								? "var(--gradient-btn-primary)"
+								: "var(--surface-sunken)",
+							boxShadow: isDirty ? "var(--btn-shadow)" : undefined,
+							color: isDirty ? "white" : "var(--text-faint)",
+						}}
 					>
 						{saveMutation.isPending ? (
-							<Loader2 className="w-3 h-3 mr-1 animate-spin" />
+							<Loader2 className="w-3 h-3 animate-spin" />
 						) : (
-							<Save className="w-3 h-3 mr-1" />
+							<Save className="w-3 h-3" />
 						)}
 						Kaydet
-					</Button>
+					</button>
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 				{FIELDS.map(({ key, label, unit, min, max, description, color }) => {
 					const value = current[key];
 					const pct = Math.min((value / max) * 100, 100);
+					const dirty = isDirty && form?.[key] !== undefined;
 
 					return (
 						<div
 							key={key}
-							className="p-4 rounded space-y-2"
+							className="relative p-4 rounded-lg flex flex-col gap-3 overflow-hidden"
 							style={{
-								background: "var(--surface-sunken)",
-								border: "1px solid var(--border-default)",
+								background: "var(--surface-card)",
+								border: `1px solid ${dirty ? color : "var(--border-default)"}`,
 							}}
 						>
-							<div className="flex items-center justify-between">
+							<div
+								className="absolute top-0 left-0 right-0 h-px"
+								style={{ background: color, opacity: 0.4 }}
+							/>
+
+							<div className="flex items-center justify-between gap-2">
 								<p
-									className="text-[10px] uppercase tracking-wider font-semibold"
+									className="text-[10px] uppercase tracking-[0.2em] font-bold"
 									style={{ color }}
 								>
 									{label}
 								</p>
-								<span
-									className="text-xs font-bold tabular-nums"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									{value} {unit}
-								</span>
+								<div className="flex items-baseline gap-1">
+									<span
+										className="text-base font-mono font-bold tabular-nums leading-none"
+										style={{ color: "var(--text-primary)" }}
+									>
+										{value}
+									</span>
+									<span
+										className="text-[10px] font-mono"
+										style={{ color: "var(--text-faint)" }}
+									>
+										{unit}
+									</span>
+								</div>
 							</div>
 
 							<div
@@ -228,11 +251,11 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 							>
 								<div
 									className="h-full rounded-full transition-all"
-									style={{ width: `${pct}%`, backgroundColor: color }}
+									style={{ width: `${pct}%`, background: color }}
 								/>
 							</div>
 
-							<Input
+							<input
 								type="number"
 								min={min}
 								max={max}
@@ -243,24 +266,24 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 										setForm({ ...current, [key]: v });
 									}
 								}}
-								className="rounded text-xs h-8"
+								className="w-full h-9 px-2.5 rounded text-xs font-mono tabular-nums focus:outline-none transition-colors"
 								style={{
 									background: "var(--input-bg)",
-									borderColor:
-										isDirty && form?.[key] !== undefined
-											? color
-											: "var(--input-border)",
-									color: "var(--text-secondary)",
+									border: `1px solid ${dirty ? color : "var(--input-border)"}`,
+									color: "var(--text-primary)",
 								}}
 							/>
 
-							<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+							<p
+								className="text-[10px] leading-snug"
+								style={{ color: "var(--text-muted)" }}
+							>
 								{description}
 							</p>
 						</div>
 					);
 				})}
 			</div>
-		</Card>
+		</div>
 	);
 }
