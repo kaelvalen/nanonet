@@ -120,13 +120,13 @@ function HealthRing({
 			</svg>
 			<div className="absolute inset-0 flex flex-col items-center justify-center">
 				<span
-					className="text-lg font-bold tabular-nums leading-none"
+					className="text-[20px] font-semibold tabular-nums leading-none tracking-tight"
 					style={{ color: "var(--text-primary)" }}
 				>
 					{percent}
 				</span>
 				<span
-					className="text-[9px] font-semibold mt-0.5"
+					className="text-[10px] font-medium mt-1"
 					style={{ color: "var(--text-faint)" }}
 				>
 					%
@@ -202,17 +202,23 @@ function HeroCard({
 }) {
 	return (
 		<div
-			className={`relative overflow-hidden rounded-lg p-4 flex gap-4 ${className ?? ""}`}
+			className={`group relative overflow-hidden rounded-2xl p-5 flex gap-4 transition-all hover:border-[color:var(--border-strong)] ${className ?? ""}`}
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
 			}}
 		>
 			{accent && (
-				<span
-					className="absolute left-0 top-0 bottom-0 w-0.5"
-					style={{ background: accent }}
-				/>
+				<>
+					<span
+						className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-20 transition-opacity group-hover:opacity-30 pointer-events-none"
+						style={{ background: accent }}
+					/>
+					<span
+						className="absolute left-0 top-0 bottom-0 w-[3px]"
+						style={{ background: accent }}
+					/>
+				</>
 			)}
 			{children}
 		</div>
@@ -250,39 +256,38 @@ function MetricChip({
 
 	const body = (
 		<div
-			className="group flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-colors hover:bg-[var(--surface-sunken)]"
+			className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:border-[color:var(--border-strong)]"
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
 			}}
 		>
 			<div
-				className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+				className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
 				style={{
-					background: "var(--surface-sunken)",
-					border: `1px solid ${color}30`,
+					background: `color-mix(in srgb, ${color} 12%, transparent)`,
 				}}
 			>
-				<Icon className="w-3.5 h-3.5" style={{ color }} />
+				<Icon className="w-4 h-4" style={{ color }} />
 			</div>
 			<div className="min-w-0 flex-1">
 				<p
-					className="text-[10px] font-semibold uppercase tracking-wider leading-none"
-					style={{ color: "var(--text-faint)" }}
+					className="text-[11px] font-medium leading-none"
+					style={{ color: "var(--text-muted)" }}
 				>
 					{label}
 				</p>
-				<div className="flex items-baseline gap-1.5 mt-1">
+				<div className="flex items-baseline gap-1.5 mt-2">
 					<p
-						className="text-base font-bold tabular-nums font-mono leading-none"
+						className="text-[18px] font-semibold tabular-nums leading-none tracking-tight"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{value}
 					</p>
 					{sub && (
 						<p
-							className="text-[10px] leading-none"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[11px] leading-none font-medium"
+							style={{ color }}
 						>
 							{sub}
 						</p>
@@ -317,26 +322,25 @@ function ServiceRow({
 	return (
 		<Link
 			to={`/app/services/${service.id}`}
-			className="group flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
+			className="group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-[var(--surface-sunken)]"
 		>
 			<StatusDot status={service.status} />
 
 			<div className="min-w-0 flex-1">
-				<div className="flex items-center gap-2 mb-1">
+				<div className="flex items-center gap-2 mb-1.5">
 					<span
-						className="text-sm font-semibold truncate"
+						className="text-[13px] font-semibold truncate tracking-tight"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{service.name}
 					</span>
 					<span
-						className="text-[10px] font-mono truncate hidden md:inline"
+						className="text-[11px] font-mono truncate hidden md:inline"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{service.host}:{service.port}
 					</span>
 				</div>
-				{/* Uptime bar */}
 				<div
 					className="relative h-1 rounded-full overflow-hidden"
 					style={{ background: "var(--surface-sunken)" }}
@@ -354,7 +358,7 @@ function ServiceRow({
 			<div className="flex items-center gap-2 shrink-0">
 				{uptime != null && (
 					<span
-						className="text-[11px] font-mono font-bold tabular-nums w-12 text-right"
+						className="text-[11px] font-medium tabular-nums w-12 text-right"
 						style={{ color: uptimeColor }}
 					>
 						{uptime.toFixed(1)}%
@@ -383,26 +387,26 @@ function AlertRow({
 	return (
 		<Link
 			to="/app/alerts"
-			className="flex items-start gap-2.5 px-3 py-2.5 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
+			className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:bg-[var(--surface-sunken)]"
 		>
 			<SeverityBadge severity={alert.severity} />
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center justify-between gap-2">
 					<span
-						className="text-xs font-semibold truncate"
+						className="text-[13px] font-semibold truncate tracking-tight"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{serviceName}
 					</span>
 					<span
-						className="text-[10px] font-mono shrink-0"
+						className="text-[11px] shrink-0"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{fmtTime(alert.triggered_at)}
 					</span>
 				</div>
 				<p
-					className="text-[11px] mt-0.5 truncate"
+					className="text-[12px] mt-1 truncate"
 					style={{ color: "var(--text-muted)" }}
 				>
 					{alert.message ?? alert.type}
@@ -438,35 +442,35 @@ function ActivityPanel({
 
 	return (
 		<div
-			className="flex flex-col min-h-0 overflow-hidden"
+			className="flex flex-col min-h-0 overflow-hidden rounded-2xl"
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
-				borderRadius: "var(--radius)",
 			}}
 		>
 			{/* Tabs header */}
 			<div
-				className="flex items-center justify-between gap-2 px-3 py-2 shrink-0"
+				className="flex items-center justify-between gap-2 px-3 py-2.5 shrink-0"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
-				<div className="flex items-center gap-1">
+				<div className="flex items-center gap-1 p-0.5 rounded-full" style={{ background: "var(--surface-sunken)" }}>
 					<button
 						type="button"
 						onClick={() => setTab("alerts")}
-						className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all"
+						className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
 						style={{
 							background:
-								tab === "alerts" ? "var(--surface-sunken)" : "transparent",
+								tab === "alerts" ? "var(--surface-card)" : "transparent",
 							color:
 								tab === "alerts" ? "var(--text-primary)" : "var(--text-muted)",
+							boxShadow: tab === "alerts" ? "0 1px 2px rgba(0,0,0,0.06)" : undefined,
 						}}
 					>
-						<Bell className="w-3 h-3" />
+						<Bell className="w-3.5 h-3.5" />
 						Uyarılar
 						{alerts.length > 0 && (
 							<span
-								className="min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+								className="min-w-4 h-4 px-1.5 rounded-full text-[10px] font-semibold flex items-center justify-center tabular-nums"
 								style={{
 									background:
 										critCount > 0
@@ -485,21 +489,22 @@ function ActivityPanel({
 					<button
 						type="button"
 						onClick={() => setTab("insights")}
-						className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all"
+						className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
 						style={{
 							background:
-								tab === "insights" ? "var(--surface-sunken)" : "transparent",
+								tab === "insights" ? "var(--surface-card)" : "transparent",
 							color:
 								tab === "insights"
 									? "var(--text-primary)"
 									: "var(--text-muted)",
+							boxShadow: tab === "insights" ? "0 1px 2px rgba(0,0,0,0.06)" : undefined,
 						}}
 					>
-						<BrainCircuit className="w-3 h-3" />
-						AI İçgörü
+						<BrainCircuit className="w-3.5 h-3.5" />
+						AI içgörü
 						{insightCount > 0 && (
 							<span
-								className="min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+								className="min-w-4 h-4 px-1.5 rounded-full text-[10px] font-semibold flex items-center justify-center tabular-nums"
 								style={{
 									background: "var(--color-lavender-subtle)",
 									color: "var(--color-lavender)",
@@ -602,26 +607,29 @@ function ActivityPanel({
 							<li key={insight.id}>
 								<Link
 									to="/app/ai-insights"
-									className="block p-2.5 rounded-md transition-colors hover:bg-[var(--surface-sunken)]"
+									className="block p-3 rounded-xl transition-all hover:border-[color:var(--border-strong)]"
 									style={{ border: "1px solid var(--border-subtle)" }}
 								>
-									<div className="flex items-center justify-between gap-2 mb-1.5">
+									<div className="flex items-center justify-between gap-2 mb-2">
 										<span
-											className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
-											style={{ color: "var(--color-lavender)" }}
+											className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full"
+											style={{
+												color: "var(--color-lavender)",
+												background: "var(--color-lavender-subtle)",
+											}}
 										>
-											<Sparkles className="w-2.5 h-2.5" />
+											<Sparkles className="w-3 h-3" />
 											{insight.model}
 										</span>
 										<span
-											className="text-[10px] font-mono"
+											className="text-[11px]"
 											style={{ color: "var(--text-faint)" }}
 										>
 											{fmtTime(insight.created_at)}
 										</span>
 									</div>
 									<p
-										className="text-xs line-clamp-2 leading-relaxed"
+										className="text-[13px] line-clamp-2 leading-relaxed"
 										style={{ color: "var(--text-primary)" }}
 									>
 										{insight.summary}
@@ -775,19 +783,19 @@ export function DashboardPage() {
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-7 text-xs"
+							className="h-9 px-3 text-[13px] rounded-full"
 							onClick={() => navigate("/app/service-map")}
 						>
-							<GitFork className="w-3.5 h-3.5 mr-1.5" />
+							<GitFork className="w-4 h-4 mr-1.5" />
 							Harita
 						</Button>
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-7 text-xs"
+							className="h-9 px-3 text-[13px] rounded-full"
 							onClick={() => navigate("/app/ai-insights")}
 						>
-							<Sparkles className="w-3.5 h-3.5 mr-1.5" />
+							<Sparkles className="w-4 h-4 mr-1.5" />
 							AI
 						</Button>
 						<AddServiceDialog />
@@ -817,13 +825,13 @@ export function DashboardPage() {
 					<HealthRing percent={healthPercent} />
 					<div className="min-w-0 flex-1 flex flex-col justify-center">
 						<p
-							className="text-[10px] font-bold uppercase tracking-[0.18em]"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[11px] font-medium leading-none"
+							style={{ color: "var(--text-muted)" }}
 						>
-							Sistem Sağlığı
+							Sistem sağlığı
 						</p>
 						<p
-							className="text-sm font-semibold mt-1"
+							className="text-[15px] font-semibold mt-2 tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{onlineCount} / {total} çevrimiçi
@@ -883,7 +891,7 @@ export function DashboardPage() {
 					}
 				>
 					<div
-						className="relative w-[72px] h-[72px] rounded-xl flex items-center justify-center shrink-0"
+						className="relative w-[72px] h-[72px] rounded-2xl flex items-center justify-center shrink-0"
 						style={{
 							background:
 								critCount > 0
@@ -891,19 +899,12 @@ export function DashboardPage() {
 									: warnCount > 0
 										? "var(--status-warn-subtle)"
 										: "var(--status-up-subtle)",
-							border: `1px solid ${
-								critCount > 0
-									? "var(--status-down-border)"
-									: warnCount > 0
-										? "var(--status-warn-border)"
-										: "var(--status-up-border)"
-							}`,
 						}}
 					>
 						{critCount > 0 && (
 							<span
-								className="absolute inset-0 rounded-xl animate-pulse"
-								style={{ background: "var(--status-down)", opacity: 0.15 }}
+								className="absolute inset-0 rounded-2xl animate-pulse"
+								style={{ background: "var(--status-down)", opacity: 0.18 }}
 							/>
 						)}
 						<Bell
@@ -920,13 +921,13 @@ export function DashboardPage() {
 					</div>
 					<div className="min-w-0 flex-1 flex flex-col justify-center">
 						<p
-							className="text-[10px] font-bold uppercase tracking-[0.18em]"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[11px] font-medium leading-none"
+							style={{ color: "var(--text-muted)" }}
 						>
-							Aktif Uyarı
+							Aktif uyarı
 						</p>
 						<p
-							className="text-2xl font-bold tabular-nums leading-none mt-1.5"
+							className="text-[28px] font-semibold tabular-nums leading-none mt-2 tracking-tight"
 							style={{
 								color:
 									alerts.length > 0
@@ -936,7 +937,7 @@ export function DashboardPage() {
 						>
 							{alerts.length}
 						</p>
-						<div className="flex items-center gap-2 mt-1.5 text-[11px]">
+						<div className="flex items-center gap-2 mt-2 text-[12px]">
 							{critCount > 0 && (
 								<span
 									className="font-semibold"
@@ -967,11 +968,8 @@ export function DashboardPage() {
 				{isVisible("performance") && (
 				<HeroCard accent="var(--color-teal)">
 					<div
-						className="w-[72px] h-[72px] rounded-xl flex items-center justify-center shrink-0"
-						style={{
-							background: "var(--color-teal-subtle)",
-							border: "1px solid var(--color-teal-border)",
-						}}
+						className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center shrink-0"
+						style={{ background: "var(--color-teal-subtle)" }}
 					>
 						<Activity
 							className="w-6 h-6"
@@ -980,18 +978,18 @@ export function DashboardPage() {
 					</div>
 					<div className="min-w-0 flex-1 flex flex-col justify-center">
 						<p
-							className="text-[10px] font-bold uppercase tracking-[0.18em]"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[11px] font-medium leading-none"
+							style={{ color: "var(--text-muted)" }}
 						>
 							Performans
 						</p>
 						<p
-							className="text-2xl font-bold tabular-nums leading-none mt-1.5 font-mono"
+							className="text-[28px] font-semibold tabular-nums leading-none mt-2 tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{fmt(globalSummary?.avg_latency_ms, "ms")}
 						</p>
-						<div className="flex items-center gap-2 mt-1.5 text-[11px]">
+						<div className="flex items-center gap-2 mt-2 text-[12px]">
 							<span style={{ color: "var(--text-faint)" }}>
 								P95 {fmt(globalSummary?.p95_latency_ms, "ms")}
 							</span>
@@ -1083,11 +1081,10 @@ export function DashboardPage() {
 				<motion.div
 					className={`${
 						showActivity ? "lg:col-span-7" : "lg:col-span-1"
-					} flex flex-col min-h-0 overflow-hidden`}
+					} flex flex-col min-h-0 overflow-hidden rounded-2xl`}
 					style={{
 						background: "var(--surface-card)",
 						border: "1px solid var(--border-default)",
-						borderRadius: "var(--radius)",
 					}}
 					initial={{ opacity: 0, y: 6 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -1095,34 +1092,31 @@ export function DashboardPage() {
 				>
 					{/* Header */}
 					<div
-						className="flex items-center justify-between gap-2 px-3 py-2 shrink-0"
+						className="flex items-center justify-between gap-2 px-4 py-3 shrink-0"
 						style={{ borderBottom: "1px solid var(--border-subtle)" }}
 					>
-						<div className="flex items-center gap-2 min-w-0">
+						<div className="flex items-center gap-3 min-w-0">
 							<div
-								className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-								style={{
-									background: "var(--color-teal-subtle)",
-									border: "1px solid var(--color-teal-border)",
-								}}
+								className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+								style={{ background: "var(--color-teal-subtle)" }}
 							>
 								<Server
-									className="w-3.5 h-3.5"
+									className="w-4 h-4"
 									style={{ color: "var(--color-teal)" }}
 								/>
 							</div>
 							<div className="min-w-0">
 								<h3
-									className="text-sm font-semibold leading-none"
+									className="text-[14px] font-semibold leading-none tracking-tight"
 									style={{ color: "var(--text-primary)" }}
 								>
 									Servisler
 								</h3>
 								<p
-									className="text-[10px] mt-1"
-									style={{ color: "var(--text-faint)" }}
+									className="text-[11px] mt-1.5"
+									style={{ color: "var(--text-muted)" }}
 								>
-									Kritik önce — {total} servis
+									Kritik önce · {total} servis
 								</p>
 							</div>
 						</div>

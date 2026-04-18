@@ -103,7 +103,7 @@ function StatCard({
 					style={{ color: color ?? "var(--text-faint)" }}
 				/>
 				<span
-					className="text-[11px] font-medium uppercase tracking-wider"
+					className="text-[12px] font-medium"
 					style={{ color: "var(--text-faint)" }}
 				>
 					{label}
@@ -663,7 +663,7 @@ export function SecurityPage() {
 
 					{/* Kolon başlıkları */}
 					<div
-						className="grid items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider"
+						className="grid items-center gap-2 px-4 py-2 text-[11px] font-semibold"
 						style={{
 							gridTemplateColumns: "1fr 90px 60px 56px 36px",
 							color: "var(--text-faint)",

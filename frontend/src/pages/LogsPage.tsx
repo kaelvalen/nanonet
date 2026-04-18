@@ -194,35 +194,32 @@ function LogStatCard({
 	const Icon = cfg.icon;
 	return (
 		<div
-			className="rounded-xl p-4 flex items-center gap-3 relative overflow-hidden"
+			className="rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden"
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
 			}}
 		>
-			<div
-				className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+			<span
+				className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-15 pointer-events-none"
 				style={{ background: cfg.dotColor }}
 			/>
 			<div
-				className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-				style={{
-					background: cfg.bgColor,
-					border: `1px solid ${cfg.dotColor}30`,
-				}}
+				className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+				style={{ background: cfg.bgColor }}
 			>
 				<Icon className="w-4 h-4" style={{ color: cfg.textColor }} />
 			</div>
-			<div>
+			<div className="relative">
 				<p
-					className="text-2xl font-bold tabular-nums leading-none"
+					className="text-[24px] font-semibold tabular-nums leading-none tracking-tight"
 					style={{ color: cfg.textColor }}
 				>
 					{value.toLocaleString()}
 				</p>
 				<p
-					className="text-[11px] font-medium mt-0.5"
-					style={{ color: "var(--text-faint)" }}
+					className="text-[11px] font-medium mt-1.5"
+					style={{ color: "var(--text-muted)" }}
 				>
 					{label}
 				</p>
@@ -389,7 +386,7 @@ function ServiceLogsTab() {
 			{/* Filters */}
 			<div className="flex flex-wrap gap-2">
 				<select
-					className="px-3 py-2 text-sm rounded-lg appearance-none"
+					className="px-3.5 h-9 text-[13px] rounded-full appearance-none cursor-pointer"
 					style={{
 						background: "var(--surface-card)",
 						border: "1px solid var(--border-default)",
@@ -410,7 +407,7 @@ function ServiceLogsTab() {
 				</select>
 
 				<select
-					className="px-3 py-2 text-sm rounded-lg appearance-none"
+					className="px-3.5 h-9 text-[13px] rounded-full appearance-none cursor-pointer"
 					style={{
 						background: "var(--surface-card)",
 						border: "1px solid var(--border-default)",
@@ -434,7 +431,7 @@ function ServiceLogsTab() {
 				</select>
 
 				<select
-					className="px-3 py-2 text-sm rounded-lg appearance-none"
+					className="px-3.5 h-9 text-[13px] rounded-full appearance-none cursor-pointer"
 					style={{
 						background: "var(--surface-card)",
 						border: "1px solid var(--border-default)",
@@ -459,11 +456,11 @@ function ServiceLogsTab() {
 
 				<div className="relative flex-1" style={{ minWidth: "180px" }}>
 					<Search
-						className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+						className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
 						style={{ color: "var(--text-faint)" }}
 					/>
 					<Input
-						className="pl-9"
+						className="pl-10 h-9 text-[13px] rounded-full"
 						placeholder="Mesaj ara..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
@@ -485,8 +482,9 @@ function ServiceLogsTab() {
 					size="sm"
 					onClick={() => refetch()}
 					disabled={isFetching}
+					className="h-9 px-3 text-[13px] rounded-full"
 				>
-					<RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+					<RefreshCw className="w-4 h-4 mr-1.5" />
 					Yenile
 				</Button>
 				{data?.logs && data.logs.length > 0 && (
@@ -494,8 +492,9 @@ function ServiceLogsTab() {
 						variant="outline"
 						size="sm"
 						onClick={() => downloadLogs(data.logs)}
+						className="h-9 px-3 text-[13px] rounded-full"
 					>
-						<Download className="w-3.5 h-3.5 mr-1.5" />
+						<Download className="w-4 h-4 mr-1.5" />
 						İndir
 					</Button>
 				)}
@@ -528,13 +527,13 @@ function ServiceLogsTab() {
 			)}
 
 			{/* Log list */}
-			<Panel padding="none" className="overflow-hidden">
+			<Panel padding="none" className="overflow-hidden rounded-2xl">
 				<div
 					className="px-4 py-3 flex items-center justify-between"
-					style={{ borderBottom: "1px solid var(--border-default)" }}
+					style={{ borderBottom: "1px solid var(--border-subtle)" }}
 				>
 					<span
-						className="text-sm font-semibold"
+						className="text-[14px] font-semibold tracking-tight"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{data ? `${data.total.toLocaleString()} kayıt` : "Servis Logları"}
@@ -913,11 +912,8 @@ export function LogsPage() {
 
 			{/* Tabs */}
 			<div
-				className="flex gap-1 p-1 rounded-xl mb-3 shrink-0"
-				style={{
-					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-default)",
-				}}
+				className="inline-flex self-start gap-1 p-1 rounded-full mb-4 shrink-0"
+				style={{ background: "var(--surface-sunken)" }}
 			>
 				{tabs.map((tab) => {
 					const Icon = tab.icon;
@@ -927,15 +923,15 @@ export function LogsPage() {
 							key={tab.key}
 							type="button"
 							onClick={() => setActiveTab(tab.key)}
-							className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+							className="flex items-center justify-center gap-2 px-4 py-2 rounded-full text-[13px] font-medium transition-all"
 							style={
 								active
 									? {
 											background: "var(--surface-card)",
 											color: "var(--text-primary)",
-											boxShadow: "var(--panel-shadow)",
+											boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
 										}
-									: { background: "transparent", color: "var(--text-faint)" }
+									: { background: "transparent", color: "var(--text-muted)" }
 							}
 						>
 							<Icon className="w-4 h-4" />
@@ -947,21 +943,20 @@ export function LogsPage() {
 
 			{/* Retention bilgisi */}
 			<div
-				className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs mb-3 shrink-0"
+				className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 text-[12px] mb-4 shrink-0"
 				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-					color: "var(--text-faint)",
+					background: "var(--color-blue-subtle)",
+					color: "var(--text-secondary)",
 				}}
 			>
 				<Clock
-					className="w-3.5 h-3.5 shrink-0"
+					className="w-4 h-4 shrink-0"
 					style={{ color: "var(--color-blue)" }}
 				/>
 				<span>
-					Loglar otomatik olarak{" "}
-					<strong style={{ color: "var(--text-secondary)" }}>30 gün</strong>{" "}
-					süreyle saklanır. Servis logları TimescaleDB hypertable ile yönetilir.
+					Loglar{" "}
+					<strong style={{ color: "var(--text-primary)" }}>30 gün</strong>{" "}
+					süreyle saklanır — servis logları TimescaleDB hypertable ile yönetilir.
 				</span>
 			</div>
 

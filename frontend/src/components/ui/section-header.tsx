@@ -26,15 +26,15 @@ export function SectionHeader({
 	return (
 		<div
 			className={cn(
-				"flex items-end justify-between gap-3 shrink-0",
-				dense ? "mb-2" : "mb-3",
+				"flex items-start sm:items-end justify-between gap-3 shrink-0 flex-col sm:flex-row",
+				dense ? "mb-3" : "mb-4",
 				className,
 			)}
 		>
 			<div className="min-w-0">
 				{eyebrow && (
 					<p
-						className="text-[10px] font-bold uppercase tracking-[0.16em] mb-0.5"
+						className="text-[11px] font-medium leading-none mb-1.5"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{eyebrow}
@@ -43,7 +43,7 @@ export function SectionHeader({
 				<h2
 					className={cn(
 						"font-semibold tracking-tight leading-tight truncate",
-						dense ? "text-sm" : "text-[15px]",
+						dense ? "text-[14px]" : "text-[16px]",
 					)}
 					style={{ color: "var(--text-primary)" }}
 				>
@@ -51,7 +51,7 @@ export function SectionHeader({
 				</h2>
 				{description && (
 					<p
-						className="text-xs mt-0.5 max-w-2xl"
+						className="text-[13px] mt-1 max-w-2xl leading-relaxed"
 						style={{ color: "var(--text-muted)" }}
 					>
 						{description}
@@ -59,7 +59,9 @@ export function SectionHeader({
 				)}
 			</div>
 			{actions && (
-				<div className="flex items-center gap-1.5 shrink-0">{actions}</div>
+				<div className="flex items-center gap-2 shrink-0 flex-wrap">
+					{actions}
+				</div>
 			)}
 		</div>
 	);

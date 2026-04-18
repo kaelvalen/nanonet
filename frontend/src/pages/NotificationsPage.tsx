@@ -127,8 +127,8 @@ export function NotificationsPage() {
 	return (
 		<PageShell width="wide" fill={false}>
 			<PageHeader
-				eyebrow="bildirimler"
-				title="Bildirim Kanalları"
+				eyebrow="Bildirimler"
+				title="Bildirim kanalları"
 				description="Slack, Discord, webhook, e-posta ve PagerDuty üzerinden alert dağıtımı yapılandır."
 				actions={
 					<Button
@@ -144,10 +144,10 @@ export function NotificationsPage() {
 								enabled: true,
 							})
 						}
-						className="h-8 px-3 text-xs text-white"
+						className="h-9 px-4 text-[13px] text-white rounded-full"
 						style={{ background: "var(--gradient-btn-primary)" }}
 					>
-						<Plus className="w-3.5 h-3.5 mr-1.5" /> Kanal Ekle
+						<Plus className="w-4 h-4 mr-1.5" /> Kanal ekle
 					</Button>
 				}
 			/>
@@ -236,51 +236,46 @@ function ChannelRow({
 	const Icon = meta.icon;
 
 	return (
-		<Panel className="overflow-hidden">
-			<div className="flex flex-wrap items-center gap-3 px-4 py-3">
+					<Panel className="overflow-hidden rounded-2xl">
+			<div className="flex flex-wrap items-center gap-3 px-4 py-3.5">
 				<span
-					className="w-9 h-9 rounded flex items-center justify-center shrink-0"
-					style={{
-						background: `${meta.color}14`,
-						border: `1px solid ${meta.color}33`,
-					}}
+					className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+					style={{ background: `${meta.color}1a` }}
 				>
 					<Icon className="w-4 h-4" style={{ color: meta.color }} />
 				</span>
 				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 flex-wrap">
 						<p
-							className="text-sm font-bold truncate"
+							className="text-[14px] font-semibold truncate tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{channel.name}
 						</p>
 						<span
-							className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
+							className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0"
 							style={{
 								color: meta.color,
 								background: `${meta.color}14`,
-								border: `1px solid ${meta.color}33`,
 							}}
 						>
 							{meta.label}
 						</span>
 						{channel.last_error && (
 							<span
-								className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
+								className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0"
 								style={{
 									color: "var(--status-down-text)",
 									background: "var(--status-down-subtle)",
-									border: "1px solid var(--status-down-border)",
 								}}
 								title={channel.last_error}
 							>
-								last error
+								Son hata
 							</span>
 						)}
 					</div>
 					<p
-						className="text-[10px] font-mono mt-0.5 truncate"
+						className="text-[12px] mt-1 truncate"
 						style={{ color: "var(--text-muted)" }}
 					>
 						{channel.severities.join(", ")} ·{" "}
@@ -300,7 +295,7 @@ function ChannelRow({
 				<Button
 					size="sm"
 					variant="outline"
-					className="h-8 px-2 text-xs"
+					className="h-8 px-3 text-[12px] rounded-full"
 					onClick={onTest}
 				>
 					<Send className="w-3 h-3 mr-1" /> Test
@@ -308,7 +303,7 @@ function ChannelRow({
 				<Button
 					size="sm"
 					variant="outline"
-					className="h-8 px-2 text-xs"
+					className="h-8 px-3 text-[12px] rounded-full"
 					onClick={onOpenDeliveries}
 				>
 					Geçmiş
@@ -316,7 +311,7 @@ function ChannelRow({
 				<Button
 					size="sm"
 					variant="ghost"
-					className="h-8 w-8 p-0"
+					className="h-8 w-8 p-0 rounded-full"
 					onClick={onDelete}
 					aria-label="sil"
 				>
@@ -404,7 +399,7 @@ function DeliveryRow({ d }: { d: DeliveryRecord }) {
 				/>
 			)}
 			<span
-				className="uppercase tracking-wider font-bold"
+				className="font-semibold capitalize tracking-tight"
 				style={{ color }}
 			>
 				{d.status}
@@ -476,7 +471,7 @@ function DraftEditor({
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Ad
 					</Label>
 					<Input
@@ -487,10 +482,10 @@ function DraftEditor({
 					/>
 				</div>
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Tip
 					</Label>
-					<div className="grid grid-cols-5 gap-1 mt-1.5">
+					<div className="grid grid-cols-5 gap-1.5 mt-2">
 						{(Object.keys(CHANNEL_META) as NotificationChannelType[]).map(
 							(t) => {
 								const m = CHANNEL_META[t];
@@ -507,12 +502,12 @@ function DraftEditor({
 												config: defaultConfigFor(t),
 											})
 										}
-										className="h-9 rounded flex items-center justify-center transition-colors"
+										className="h-10 rounded-xl flex items-center justify-center transition-all"
 										style={{
 											background: active
 												? `${m.color}1f`
 												: "var(--surface-sunken)",
-											border: `1px solid ${active ? m.color : "var(--border-default)"}`,
+											border: `1px solid ${active ? m.color : "transparent"}`,
 										}}
 										title={m.label}
 									>
@@ -540,17 +535,17 @@ function DraftEditor({
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Şiddet Filtresi
 					</Label>
-					<div className="flex gap-1 mt-1.5">
+					<div className="flex gap-1.5 mt-2">
 						{SEV_LIST.map((s) => {
 							const on = (value.severities ?? []).includes(s.key);
 							return (
 								<button
 									key={s.key}
 									type="button"
-									className="h-8 px-3 rounded text-[11px] font-bold uppercase tracking-wider transition-colors"
+									className="h-8 px-3 rounded-full text-[12px] font-medium transition-all"
 									style={{
 										background: on
 											? "var(--color-teal-subtle)"
@@ -558,7 +553,7 @@ function DraftEditor({
 										color: on
 											? "var(--color-teal)"
 											: "var(--text-muted)",
-										border: `1px solid ${on ? "var(--color-teal-border)" : "var(--border-default)"}`,
+										border: `1px solid ${on ? "var(--color-teal-border)" : "transparent"}`,
 									}}
 									onClick={() => {
 										const cur = new Set(value.severities ?? []);
@@ -575,7 +570,7 @@ function DraftEditor({
 				</div>
 
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Cooldown (sn)
 					</Label>
 					<Input
@@ -599,22 +594,22 @@ function DraftEditor({
 				<Button
 					variant="outline"
 					size="sm"
-					className="h-8 px-3 text-xs"
+					className="h-9 px-4 text-[13px] rounded-full"
 					onClick={onCancel}
 				>
 					Vazgeç
 				</Button>
 				<Button
 					size="sm"
-					className="h-8 px-3 text-xs text-white"
+					className="h-9 px-4 text-[13px] text-white rounded-full"
 					style={{ background: "var(--gradient-btn-primary)" }}
 					disabled={submitting || !value.name.trim()}
 					onClick={onSubmit}
 				>
 					{submitting ? (
-						<Loader2 className="w-3 h-3 mr-1 animate-spin" />
+						<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
 					) : (
-						<Plus className="w-3 h-3 mr-1" />
+						<Plus className="w-3.5 h-3.5 mr-1.5" />
 					)}
 					Ekle
 				</Button>
@@ -635,7 +630,7 @@ function ConfigEditor({
 	if (type === "email") {
 		return (
 			<div>
-				<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+				<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 					E-posta Adresi
 				</Label>
 				<Input
@@ -651,7 +646,7 @@ function ConfigEditor({
 	if (type === "pagerduty") {
 		return (
 			<div>
-				<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+				<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 					Routing Key
 				</Label>
 				<Input
@@ -668,7 +663,7 @@ function ConfigEditor({
 	return (
 		<div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
 			<div>
-				<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+				<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 					URL
 				</Label>
 				<Input
@@ -680,7 +675,7 @@ function ConfigEditor({
 			</div>
 			{type === "webhook" && (
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						HMAC Secret (opsiyonel)
 					</Label>
 					<Input

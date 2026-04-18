@@ -142,10 +142,10 @@ export function ProbesPage() {
 					<Button
 						size="sm"
 						onClick={() => setDraft(DEFAULT_DRAFT)}
-						className="h-8 px-3 text-xs text-white"
+						className="h-9 px-4 text-[13px] text-white rounded-full"
 						style={{ background: "var(--gradient-btn-primary)" }}
 					>
-						<Plus className="mr-1 h-3.5 w-3.5" />
+						<Plus className="mr-1.5 h-3.5 w-3.5" />
 						Yeni Probe
 					</Button>
 				}
@@ -220,26 +220,30 @@ function ProbeRow({
 	const tone = statusTone(probe.last_status);
 	const Icon = KIND_META[probe.kind].icon;
 	return (
-		<Panel padding="sm">
-			<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-1">
+		<Panel padding="md" className="rounded-2xl">
+			<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
 				<div className="min-w-0 flex-1">
-					<div className="flex items-center gap-2">
-						<Icon
-							className="h-3.5 w-3.5"
-							style={{ color: "var(--text-muted)" }}
-						/>
+					<div className="flex items-center gap-2.5 flex-wrap">
 						<span
-							className="text-[13px] font-semibold"
+							className="w-9 h-9 rounded-xl flex items-center justify-center"
+							style={{ background: "var(--surface-sunken)" }}
+						>
+							<Icon
+								className="h-4 w-4"
+								style={{ color: "var(--text-muted)" }}
+							/>
+						</span>
+						<span
+							className="text-[14px] font-semibold tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{probe.name}
 						</span>
 						<span
-							className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] font-bold"
+							className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium capitalize"
 							style={{
 								background: tone.bg,
 								color: tone.fg,
-								border: `1px solid ${tone.border}`,
 							}}
 						>
 							<span
@@ -250,21 +254,21 @@ function ProbeRow({
 						</span>
 					</div>
 					<div
-						className="mt-1 truncate font-mono text-[11px]"
+						className="mt-2 truncate font-mono text-[12px]"
 						style={{ color: "var(--text-muted)" }}
 					>
 						{probe.target}
 					</div>
 					<div
-						className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em]"
+						className="mt-2 flex items-center gap-3 flex-wrap text-[12px]"
 						style={{ color: "var(--text-faint)" }}
 					>
-						<span>{KIND_META[probe.kind].label}</span>
+						<span className="font-medium">{KIND_META[probe.kind].label}</span>
 						<span>her {probe.interval_seconds}s</span>
 						<span>timeout {probe.timeout_seconds}s</span>
 						{probe.last_latency_ms != null && (
 							<span
-								className="font-mono normal-case tabular-nums tracking-normal"
+								className="font-mono tabular-nums"
 								style={{ color: "var(--text-muted)" }}
 							>
 								{probe.last_latency_ms}ms
@@ -272,7 +276,7 @@ function ProbeRow({
 						)}
 						{probe.last_run_at && (
 							<span
-								className="inline-flex items-center gap-1 normal-case tracking-normal"
+								className="inline-flex items-center gap-1"
 								style={{ color: "var(--text-muted)" }}
 							>
 								<Clock className="h-3 w-3" />
@@ -282,15 +286,14 @@ function ProbeRow({
 					</div>
 					{probe.last_error && probe.last_status !== "up" && (
 						<div
-							className="mt-2 flex items-start gap-1.5 rounded-md px-2 py-1.5 text-[11px]"
+							className="mt-2.5 flex items-start gap-1.5 rounded-xl px-3 py-2 text-[12px]"
 							style={{
 								background: "var(--status-down-subtle)",
-								border: "1px solid var(--status-down-border)",
 								color: "var(--status-down-text)",
 							}}
 						>
-							<AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-							<span className="font-mono">{probe.last_error}</span>
+							<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+							<span className="font-mono break-all">{probe.last_error}</span>
 						</div>
 					)}
 				</div>
@@ -304,10 +307,9 @@ function ProbeRow({
 						type="button"
 						onClick={onDelete}
 						disabled={busy}
-						className="rounded-md p-1.5 disabled:opacity-50 transition-colors"
+						className="rounded-full h-8 w-8 flex items-center justify-center disabled:opacity-50 transition-colors"
 						style={{
 							background: "var(--status-down-subtle)",
-							border: "1px solid var(--status-down-border)",
 							color: "var(--status-down-text)",
 						}}
 						title="Sil"
@@ -354,7 +356,7 @@ function DraftEditor({
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Ad
@@ -363,17 +365,17 @@ function DraftEditor({
 						value={value.name}
 						onChange={(e) => onChange({ ...value, name: e.target.value })}
 						placeholder="Public API"
-						className="mt-1.5"
+						className="mt-1.5 h-9 text-[13px] rounded-lg"
 					/>
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Tür
 					</Label>
-					<div className="flex gap-1.5 mt-1.5">
+					<div className="flex gap-1.5 mt-2">
 						{(["http", "tcp"] as const).map((k) => {
 							const active = value.kind === k;
 							return (
@@ -381,12 +383,12 @@ function DraftEditor({
 									key={k}
 									type="button"
 									onClick={() => onChange({ ...value, kind: k })}
-									className="flex-1 rounded-md px-3 py-2 text-[12px] font-bold uppercase tracking-wider transition-colors"
+									className="flex-1 rounded-xl px-3 h-10 text-[13px] font-medium transition-all"
 									style={{
 										background: active
 											? "var(--color-teal-subtle)"
 											: "var(--surface-sunken)",
-										border: `1px solid ${active ? "var(--color-teal-border)" : "var(--border-default)"}`,
+										border: `1px solid ${active ? "var(--color-teal-border)" : "transparent"}`,
 										color: active ? "var(--color-teal)" : "var(--text-muted)",
 									}}
 								>
@@ -398,7 +400,7 @@ function DraftEditor({
 				</div>
 				<div className="md:col-span-2">
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Hedef
@@ -407,14 +409,14 @@ function DraftEditor({
 						value={value.target}
 						onChange={(e) => onChange({ ...value, target: e.target.value })}
 						placeholder={KIND_META[value.kind].help}
-						className="mt-1.5 font-mono"
+						className="mt-1.5 h-9 text-[13px] font-mono rounded-lg"
 					/>
 				</div>
 				{value.kind === "http" && (
 					<>
 						<div>
 							<Label
-								className="text-[11px] uppercase tracking-[0.18em] font-bold"
+								className="text-[12px] font-medium"
 								style={{ color: "var(--text-faint)" }}
 							>
 								Method
@@ -427,12 +429,12 @@ function DraftEditor({
 										method: e.target.value.toUpperCase(),
 									})
 								}
-								className="mt-1.5 font-mono"
+								className="mt-1.5 h-9 text-[13px] font-mono rounded-lg"
 							/>
 						</div>
 						<div>
 							<Label
-								className="text-[11px] uppercase tracking-[0.18em] font-bold"
+								className="text-[12px] font-medium"
 								style={{ color: "var(--text-faint)" }}
 							>
 								Beklenen Status
@@ -446,12 +448,12 @@ function DraftEditor({
 										expected_status: Number(e.target.value) || 200,
 									})
 								}
-								className="mt-1.5 font-mono"
+								className="mt-1.5 h-9 text-[13px] font-mono rounded-lg"
 							/>
 						</div>
 						<div className="md:col-span-2">
 							<Label
-								className="text-[11px] uppercase tracking-[0.18em] font-bold"
+								className="text-[12px] font-medium"
 								style={{ color: "var(--text-faint)" }}
 							>
 								Body içermeli (opsiyonel)
@@ -465,14 +467,14 @@ function DraftEditor({
 									})
 								}
 								placeholder='örn. "ok" veya "status":"healthy"'
-								className="mt-1.5 font-mono"
+								className="mt-1.5 h-9 text-[13px] font-mono rounded-lg"
 							/>
 						</div>
 					</>
 				)}
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Aralık (saniye)
@@ -488,12 +490,12 @@ function DraftEditor({
 								interval_seconds: Number(e.target.value) || 60,
 							})
 						}
-						className="mt-1.5 font-mono"
+						className="mt-1.5 h-9 text-[13px] font-mono rounded-lg"
 					/>
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Timeout (saniye)
@@ -509,7 +511,7 @@ function DraftEditor({
 								timeout_seconds: Number(e.target.value) || 10,
 							})
 						}
-						className="mt-1.5 font-mono"
+						className="mt-1.5 h-9 text-[13px] font-mono rounded-lg"
 					/>
 				</div>
 			</div>
@@ -518,7 +520,7 @@ function DraftEditor({
 				<Button
 					variant="outline"
 					size="sm"
-					className="h-8 px-3 text-xs"
+					className="h-9 px-4 text-[13px] rounded-full"
 					onClick={onCancel}
 					disabled={submitting}
 				>
@@ -526,7 +528,7 @@ function DraftEditor({
 				</Button>
 				<Button
 					size="sm"
-					className="h-8 px-3 text-xs text-white"
+					className="h-9 px-4 text-[13px] text-white rounded-full"
 					style={{ background: "var(--gradient-btn-primary)" }}
 					onClick={onSubmit}
 					disabled={
@@ -534,9 +536,9 @@ function DraftEditor({
 					}
 				>
 					{submitting ? (
-						<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+						<Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
 					) : (
-						<Plus className="mr-1 h-3.5 w-3.5" />
+						<Plus className="mr-1.5 h-3.5 w-3.5" />
 					)}
 					Oluştur
 				</Button>

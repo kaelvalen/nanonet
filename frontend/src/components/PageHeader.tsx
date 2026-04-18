@@ -24,27 +24,33 @@ export function PageHeader({
 }: PageHeaderProps) {
 	return (
 		<motion.div
-			className="flex items-start justify-between gap-4 mb-5"
+			className="flex items-start justify-between gap-4 mb-6 flex-col sm:flex-row sm:items-center"
 			initial={{ opacity: 0, y: -6 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.25 }}
 		>
-			<div className="flex items-center gap-3 min-w-0">
+			<div className="flex items-center gap-3 min-w-0 flex-1">
 				{Icon && (
-					<div
-						className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-						style={{
-							background: iconBg,
-							border: `1px solid ${iconBorder}`,
-						}}
-					>
-						<Icon className="w-4.5 h-4.5" style={{ color: iconColor }} />
+					<div className="relative shrink-0">
+						<div
+							className="absolute inset-0 rounded-2xl blur-md opacity-60"
+							style={{ background: iconColor }}
+						/>
+						<div
+							className="relative w-10 h-10 rounded-2xl flex items-center justify-center"
+							style={{
+								background: iconBg,
+								border: `1px solid ${iconBorder}`,
+							}}
+						>
+							<Icon className="w-4.5 h-4.5" style={{ color: iconColor }} />
+						</div>
 					</div>
 				)}
 				<div className="min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
 						<h1
-							className="text-lg font-bold leading-none"
+							className="text-[20px] font-semibold leading-none tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{title}
@@ -53,7 +59,7 @@ export function PageHeader({
 					</div>
 					{subtitle && (
 						<p
-							className="text-xs mt-1 leading-relaxed"
+							className="text-[13px] mt-1.5 leading-relaxed"
 							style={{ color: "var(--text-muted)" }}
 						>
 							{subtitle}
@@ -62,7 +68,9 @@ export function PageHeader({
 				</div>
 			</div>
 			{actions && (
-				<div className="flex items-center gap-2 shrink-0">{actions}</div>
+				<div className="flex items-center gap-2 shrink-0 flex-wrap">
+					{actions}
+				</div>
 			)}
 		</motion.div>
 	);

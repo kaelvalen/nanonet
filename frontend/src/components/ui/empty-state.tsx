@@ -60,31 +60,37 @@ export function EmptyState({
 			)}
 		>
 			{Icon && (
-				<div
-					className={cn(
-						"rounded-xl flex items-center justify-center mb-3",
-						iconBoxSize,
-					)}
-					style={{ background: t.bg, border: `1px solid ${t.border}` }}
-				>
-					<Icon className={iconSize} style={{ color: t.color }} />
+				<div className="relative mb-4">
+					<div
+						className="absolute inset-0 rounded-2xl blur-xl opacity-50"
+						style={{ background: t.color }}
+					/>
+					<div
+						className={cn(
+							"relative rounded-2xl flex items-center justify-center",
+							iconBoxSize,
+						)}
+						style={{ background: t.bg, border: `1px solid ${t.border}` }}
+					>
+						<Icon className={iconSize} style={{ color: t.color }} />
+					</div>
 				</div>
 			)}
 			<p
-				className={cn("font-semibold", titleSize)}
+				className={cn("font-semibold tracking-tight", titleSize)}
 				style={{ color: "var(--text-primary)" }}
 			>
 				{title}
 			</p>
 			{description && (
 				<p
-					className="text-xs mt-1 max-w-[320px] leading-relaxed"
+					className="text-[13px] mt-1.5 max-w-[360px] leading-relaxed"
 					style={{ color: "var(--text-muted)" }}
 				>
 					{description}
 				</p>
 			)}
-			{action && <div className="mt-4">{action}</div>}
+			{action && <div className="mt-5">{action}</div>}
 		</div>
 	);
 }

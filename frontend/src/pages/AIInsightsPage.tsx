@@ -319,7 +319,7 @@ export function AIInsightsPage() {
 							{/* Service selector */}
 							<div className="space-y-2">
 								<p
-									className="text-[11px] font-semibold uppercase tracking-wider"
+									className="text-[12px] font-semibold"
 									style={{ color: "var(--text-faint)" }}
 								>
 									Servis
@@ -353,7 +353,7 @@ export function AIInsightsPage() {
 							{/* Mode toggle */}
 							<div className="space-y-2">
 								<p
-									className="text-[11px] font-semibold uppercase tracking-wider"
+									className="text-[12px] font-semibold"
 									style={{ color: "var(--text-faint)" }}
 								>
 									Analiz Modu
@@ -586,7 +586,7 @@ export function AIInsightsPage() {
 											style={{ background: "var(--surface-sunken)" }}
 										>
 											<p
-												className="text-[10px] font-bold uppercase tracking-wider mb-1.5"
+												className="text-[11px] font-medium mb-2"
 												style={{ color: "var(--text-faint)" }}
 											>
 												Özet
@@ -614,7 +614,7 @@ export function AIInsightsPage() {
 														style={{ color: "var(--status-down)" }}
 													/>
 													<p
-														className="text-[10px] font-bold uppercase tracking-wider"
+														className="text-[11px] font-medium"
 														style={{ color: "var(--status-down-text)" }}
 													>
 														Kök Neden
@@ -645,7 +645,7 @@ export function AIInsightsPage() {
 															style={{ color: "var(--color-teal)" }}
 														/>
 														<p
-															className="text-[10px] font-bold uppercase tracking-wider"
+															className="text-[11px] font-medium"
 															style={{ color: "var(--color-teal)" }}
 														>
 															Öneriler
@@ -949,7 +949,7 @@ export function AIInsightsPage() {
 																				style={{ color: "var(--status-down)" }}
 																			/>
 																			<span
-																				className="text-[10px] font-bold uppercase tracking-wider"
+																				className="text-[11px] font-medium"
 																				style={{
 																					color: "var(--status-down-text)",
 																				}}
@@ -981,7 +981,7 @@ export function AIInsightsPage() {
 																					style={{ color: "var(--color-teal)" }}
 																				/>
 																				<span
-																					className="text-[10px] font-bold uppercase tracking-wider"
+																					className="text-[11px] font-medium"
 																					style={{ color: "var(--color-teal)" }}
 																				>
 																					Öneriler

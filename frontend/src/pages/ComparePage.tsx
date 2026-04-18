@@ -226,12 +226,11 @@ export function ComparePage() {
 				title="Servis Karşılaştırması"
 				description="2-4 servisi yan yana koyup CPU, bellek veya latency'lerini aynı eksen üzerinde inceleyin."
 				meta={
-					<div className="flex items-center gap-4 flex-wrap">
+					<div className="flex items-center gap-3 flex-wrap">
 						<div
-							className="inline-flex rounded-lg p-0.5 gap-0.5"
+							className="inline-flex rounded-full p-1 gap-0.5"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "1px solid var(--border-default)",
 							}}
 						>
 							{(["avg_cpu", "avg_memory", "avg_latency"] as MetricKey[]).map((m) => (
@@ -239,12 +238,13 @@ export function ComparePage() {
 									type="button"
 									key={m}
 									onClick={() => setMetric(m)}
-									className="text-[10px] px-3 py-1.5 rounded-md uppercase tracking-wider font-bold transition-colors"
+									className="text-[12px] px-3 h-7 rounded-full font-medium transition-all"
 									style={{
 										background:
 											metric === m ? "var(--brand-primary)" : "transparent",
 										color:
 											metric === m ? "#ffffff" : "var(--text-muted)",
+										boxShadow: metric === m ? "0 1px 2px rgba(0,0,0,0.08)" : undefined,
 									}}
 								>
 									{METRIC_LABELS[m]}
@@ -252,10 +252,9 @@ export function ComparePage() {
 							))}
 						</div>
 						<div
-							className="inline-flex rounded-lg p-0.5 gap-0.5"
+							className="inline-flex rounded-full p-1 gap-0.5"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "1px solid var(--border-default)",
 							}}
 						>
 							{(["1h", "6h", "24h"] as const).map((d) => (
@@ -263,12 +262,13 @@ export function ComparePage() {
 									type="button"
 									key={d}
 									onClick={() => setDuration(d)}
-									className="text-[10px] px-3 py-1.5 rounded-md font-mono font-bold transition-colors"
+									className="text-[12px] px-3 h-7 rounded-full font-mono font-medium tabular-nums transition-all"
 									style={{
 										background:
 											duration === d ? "var(--brand-primary)" : "transparent",
 										color:
 											duration === d ? "#ffffff" : "var(--text-muted)",
+										boxShadow: duration === d ? "0 1px 2px rgba(0,0,0,0.08)" : undefined,
 									}}
 								>
 									{d}

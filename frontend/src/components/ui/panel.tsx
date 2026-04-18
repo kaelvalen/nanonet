@@ -82,7 +82,7 @@ export function Panel({
 			role={role}
 			onClick={onClick}
 			className={cn(
-				"rounded-[var(--radius)]",
+				"rounded-xl",
 				fill && "flex flex-col min-h-0 overflow-hidden",
 				pad,
 				className,
@@ -122,7 +122,7 @@ export function PanelHeader({
 		<div
 			className={cn(
 				"flex items-center justify-between gap-2 shrink-0",
-				dense ? "px-3 py-2" : "px-4 py-3",
+				dense ? "px-3.5 py-2.5" : "px-4 py-3.5",
 				className,
 			)}
 			style={{
@@ -136,8 +136,8 @@ export function PanelHeader({
 				<div className="min-w-0">
 					<h3
 						className={cn(
-							"font-semibold leading-tight truncate",
-							dense ? "text-xs" : "text-sm",
+							"font-semibold leading-tight truncate tracking-tight",
+							dense ? "text-[13px]" : "text-[14px]",
 						)}
 						style={{ color: "var(--text-primary)" }}
 					>
@@ -145,8 +145,8 @@ export function PanelHeader({
 					</h3>
 					{subtitle && (
 						<p
-							className="text-[10px] mt-0.5 truncate"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[11px] mt-0.5 truncate"
+							style={{ color: "var(--text-muted)" }}
 						>
 							{subtitle}
 						</p>
@@ -233,8 +233,8 @@ export function PanelIcon({
 	const c = colors[tone];
 	return (
 		<div
-			className="w-7 h-7 rounded-md flex items-center justify-center"
-			style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.color }}
+			className="w-8 h-8 rounded-xl flex items-center justify-center"
+			style={{ background: c.bg, color: c.color }}
 		>
 			{children}
 		</div>

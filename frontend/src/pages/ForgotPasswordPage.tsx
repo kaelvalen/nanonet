@@ -91,7 +91,7 @@ export function ForgotPasswordPage() {
 				<div className="space-y-1.5">
 					<Label
 						htmlFor="email"
-						className="text-[11px] font-black uppercase tracking-[0.15em]"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						E-posta

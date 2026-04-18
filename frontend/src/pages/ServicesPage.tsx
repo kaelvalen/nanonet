@@ -62,22 +62,19 @@ function SegmentedControl<T extends string>({
 }) {
 	return (
 		<div
-			className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0"
-			style={{
-				background: "var(--surface-sunken)",
-				border: "1px solid var(--border-default)",
-			}}
+			className="flex items-center gap-0.5 p-1 rounded-full shrink-0"
+			style={{ background: "var(--surface-sunken)" }}
 		>
 			{options.map((opt) => (
 				<button
 					key={opt}
 					type="button"
 					onClick={() => onChange(opt)}
-					className="relative px-2.5 h-7 rounded-md text-xs font-medium transition-colors"
+					className="relative px-3 h-7 rounded-full text-[12px] font-medium transition-all"
 					style={{
-						background: value === opt ? "var(--surface-raised)" : "transparent",
-						color: value === opt ? "var(--color-teal)" : "var(--text-muted)",
-						boxShadow: value === opt ? "var(--btn-shadow)" : undefined,
+						background: value === opt ? "var(--surface-card)" : "transparent",
+						color: value === opt ? "var(--text-primary)" : "var(--text-muted)",
+						boxShadow: value === opt ? "0 1px 2px rgba(0,0,0,0.06)" : undefined,
 					}}
 				>
 					{renderLabel ? renderLabel(opt) : opt}
@@ -105,7 +102,7 @@ function UptimeChip({ value }: { value: number }) {
 				: "var(--status-down-subtle)";
 	return (
 		<span
-			className="inline-flex items-center px-1.5 h-5 text-[10px] font-mono font-semibold tabular-nums rounded"
+			className="inline-flex items-center px-2 h-[22px] text-[11px] font-medium tabular-nums rounded-full"
 			style={{ background: bg, color }}
 		>
 			{value.toFixed(1)}%
@@ -123,36 +120,49 @@ function ServiceCard({
 	service: Service;
 	uptime?: number;
 }) {
+	const statusColor =
+		service.status === "up"
+			? "var(--status-up)"
+			: service.status === "degraded"
+				? "var(--status-warn)"
+				: service.status === "down"
+					? "var(--status-down)"
+					: "var(--text-faint)";
 	return (
 		<Link to={`/app/services/${service.id}`} className="group block h-full">
 			<div
-				className="relative h-full p-4 transition-all overflow-hidden"
+				className="relative h-full p-4 transition-all overflow-hidden rounded-2xl hover:border-[color:var(--border-strong)]"
 				style={{
 					background: "var(--surface-card)",
 					border: "1px solid var(--border-default)",
-					borderRadius: "var(--radius)",
 				}}
 			>
-				<div className="flex items-start justify-between gap-3 mb-4">
+				<span
+					className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"
+					style={{ background: statusColor }}
+				/>
+				<div className="relative flex items-start justify-between gap-3 mb-4">
 					<div className="flex items-start gap-3 min-w-0 flex-1">
-						<div
-							className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-							style={{ background: "var(--surface-sunken)" }}
-						>
-							<Server
-								className="w-4 h-4"
-								style={{ color: "var(--text-muted)" }}
-							/>
+						<div className="relative shrink-0 mt-0.5">
+							<div
+								className="w-10 h-10 rounded-xl flex items-center justify-center"
+								style={{ background: `color-mix(in srgb, ${statusColor} 12%, transparent)` }}
+							>
+								<Server
+									className="w-4 h-4"
+									style={{ color: statusColor }}
+								/>
+							</div>
 						</div>
 						<div className="min-w-0 pt-0.5">
 							<h3
-								className="text-sm font-semibold truncate leading-tight"
+								className="text-[14px] font-semibold truncate tracking-tight leading-tight"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{service.name}
 							</h3>
 							<p
-								className="text-[11px] font-mono truncate mt-1"
+								className="text-[11px] font-mono truncate mt-1.5"
 								style={{ color: "var(--text-faint)" }}
 							>
 								{service.host}:{service.port}
@@ -163,19 +173,19 @@ function ServiceCard({
 				</div>
 
 				<div
-					className="flex items-center justify-between pt-3 text-[11px]"
+					className="relative flex items-center justify-between pt-3 text-[12px]"
 					style={{ borderTop: "1px solid var(--border-subtle)" }}
 				>
 					<div
 						className="flex items-center gap-3"
-						style={{ color: "var(--text-faint)" }}
+						style={{ color: "var(--text-muted)" }}
 					>
-						<span className="inline-flex items-center gap-1">
-							<Clock className="w-3 h-3" />
+						<span className="inline-flex items-center gap-1.5">
+							<Clock className="w-3.5 h-3.5" />
 							{service.poll_interval_sec}s
 						</span>
-						<span className="inline-flex items-center gap-1 truncate max-w-32">
-							<Globe className="w-3 h-3 shrink-0" />
+						<span className="inline-flex items-center gap-1.5 truncate max-w-32">
+							<Globe className="w-3.5 h-3.5 shrink-0" />
 							<span className="truncate">{service.health_endpoint}</span>
 						</span>
 					</div>
@@ -207,29 +217,29 @@ function ServiceRow({
 	return (
 		<Link
 			to={`/app/services/${service.id}`}
-			className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--surface-sunken)]"
+			className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--surface-sunken)]"
 			style={{
 				borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
 			}}
 		>
 			<StatusDot status={service.status} />
 			<span
-				className="flex-1 text-sm font-medium truncate"
+				className="flex-1 text-[14px] font-medium truncate tracking-tight"
 				style={{ color: "var(--text-primary)" }}
 			>
 				{service.name}
 			</span>
 			<span
-				className="text-xs font-mono hidden sm:block shrink-0"
+				className="text-[12px] font-mono hidden sm:block shrink-0"
 				style={{ color: "var(--text-faint)" }}
 			>
 				{service.host}:{service.port}
 			</span>
 			<span
-				className="hidden md:inline-flex items-center gap-1 text-xs shrink-0"
-				style={{ color: "var(--text-faint)" }}
+				className="hidden md:inline-flex items-center gap-1.5 text-[12px] shrink-0"
+				style={{ color: "var(--text-muted)" }}
 			>
-				<Clock className="w-3 h-3" />
+				<Clock className="w-3.5 h-3.5" />
 				{service.poll_interval_sec}s
 			</span>
 			<div className="shrink-0 w-16 flex justify-end">
@@ -386,23 +396,20 @@ export function ServicesPage() {
 							onChange={setSlaRange}
 						/>
 						<div
-							className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0"
-							style={{
-								background: "var(--surface-sunken)",
-								border: "1px solid var(--border-default)",
-							}}
+							className="flex items-center gap-0.5 p-1 rounded-full shrink-0"
+							style={{ background: "var(--surface-sunken)" }}
 						>
 							<button
 								type="button"
 								onClick={() => setViewMode("grid")}
 								aria-label="Grid görünüm"
-								className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
+								className="w-7 h-7 rounded-full flex items-center justify-center transition-all"
 								style={{
 									background:
-										viewMode === "grid" ? "var(--surface-raised)" : "transparent",
+										viewMode === "grid" ? "var(--surface-card)" : "transparent",
 									color:
-										viewMode === "grid" ? "var(--color-teal)" : "var(--text-faint)",
-									boxShadow: viewMode === "grid" ? "var(--btn-shadow)" : undefined,
+										viewMode === "grid" ? "var(--text-primary)" : "var(--text-faint)",
+									boxShadow: viewMode === "grid" ? "0 1px 2px rgba(0,0,0,0.06)" : undefined,
 								}}
 							>
 								<LayoutGrid className="w-3.5 h-3.5" />
@@ -411,13 +418,13 @@ export function ServicesPage() {
 								type="button"
 								onClick={() => setViewMode("list")}
 								aria-label="Liste görünüm"
-								className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
+								className="w-7 h-7 rounded-full flex items-center justify-center transition-all"
 								style={{
 									background:
-										viewMode === "list" ? "var(--surface-raised)" : "transparent",
+										viewMode === "list" ? "var(--surface-card)" : "transparent",
 									color:
-										viewMode === "list" ? "var(--color-teal)" : "var(--text-faint)",
-									boxShadow: viewMode === "list" ? "var(--btn-shadow)" : undefined,
+										viewMode === "list" ? "var(--text-primary)" : "var(--text-faint)",
+									boxShadow: viewMode === "list" ? "0 1px 2px rgba(0,0,0,0.06)" : undefined,
 								}}
 							>
 								<List className="w-3.5 h-3.5" />
@@ -428,14 +435,14 @@ export function ServicesPage() {
 			>
 				<div className="relative w-full md:w-auto md:flex-1 min-w-0">
 					<Search
-						className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
+						className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
 						style={{ color: "var(--text-faint)" }}
 					/>
 					<Input
 						placeholder="İsim veya host ile ara…"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="pl-9 h-9 text-sm w-full"
+						className="pl-10 h-9 text-[13px] w-full rounded-full"
 					/>
 				</div>
 			</Toolbar>
@@ -466,7 +473,7 @@ export function ServicesPage() {
 						</AnimatePresence>
 					</div>
 				) : (
-					<Panel padding="none" className="overflow-hidden">
+					<Panel padding="none" className="overflow-hidden rounded-2xl">
 						{filtered.map((service, i) => (
 							<ServiceRow
 								key={service.id}

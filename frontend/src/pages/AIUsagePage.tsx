@@ -104,7 +104,7 @@ export function AIUsagePage() {
 						/>
 					</div>
 
-					<Panel className="mt-4">
+					<Panel className="mt-4 rounded-2xl">
 						<PanelHeader
 							dense
 							icon={
@@ -116,7 +116,7 @@ export function AIUsagePage() {
 							actions={
 								summary?.budget_usd ? (
 									<span
-										className="text-xs tabular-nums font-mono"
+										className="text-[12px] tabular-nums font-mono"
 										style={{ color: "var(--text-secondary)" }}
 									>
 										{fmtUSD(summary.month_spend_usd)} /{" "}
@@ -124,7 +124,7 @@ export function AIUsagePage() {
 									</span>
 								) : (
 									<span
-										className="text-xs"
+										className="text-[12px]"
 										style={{ color: "var(--text-faint)" }}
 									>
 										Henüz bütçe ayarlanmadı
@@ -138,11 +138,11 @@ export function AIUsagePage() {
 							{summary?.budget_usd ? (
 								<>
 									<div
-										className="h-2 w-full overflow-hidden rounded"
+										className="h-2.5 w-full overflow-hidden rounded-full"
 										style={{ background: "var(--surface-sunken)" }}
 									>
 										<div
-											className="h-full transition-[width] duration-500"
+											className="h-full transition-[width] duration-500 rounded-full"
 											style={{
 												width: `${Math.min(100, usedPct)}%`,
 												background: overBudget
@@ -153,33 +153,33 @@ export function AIUsagePage() {
 											}}
 										/>
 									</div>
-									<div className="mt-2 flex items-center justify-between text-[11px]">
+									<div className="mt-2.5 flex items-center justify-between text-[12px]">
 										<span style={{ color: "var(--text-faint)" }}>
 											{summary.budget_remaining_usd != null &&
 												`${fmtUSD(summary.budget_remaining_usd)} kaldı`}
 										</span>
 										{overBudget && (
 											<span
-												className="flex items-center gap-1"
+												className="flex items-center gap-1.5 font-medium"
 												style={{ color: "var(--status-down-text)" }}
 											>
-												<AlertTriangle className="size-3" /> Bütçe aşıldı —
+												<AlertTriangle className="size-3.5" /> Bütçe aşıldı —
 												yeni AI çağrıları engellenir
 											</span>
 										)}
 										{nearBudget && (
 											<span
-												className="flex items-center gap-1"
+												className="flex items-center gap-1.5 font-medium"
 												style={{ color: "var(--status-warn-text)" }}
 											>
-												<AlertTriangle className="size-3" /> Bütçeye yakın
+												<AlertTriangle className="size-3.5" /> Bütçeye yakın
 											</span>
 										)}
 									</div>
 								</>
 							) : (
 								<p
-									className="text-xs"
+									className="text-[12px]"
 									style={{ color: "var(--text-faint)" }}
 								>
 									Settings → AI Analiz menüsünden aylık bütçenizi
@@ -189,7 +189,7 @@ export function AIUsagePage() {
 						</div>
 					</Panel>
 
-					<Panel className="mt-4 overflow-hidden">
+					<Panel className="mt-4 overflow-hidden rounded-2xl">
 						<PanelHeader dense>Son 50 çağrı</PanelHeader>
 						{!recent || recent.length === 0 ? (
 							<EmptyState
@@ -280,18 +280,17 @@ export function AIUsagePage() {
 												<td className="px-4 py-2">
 													{row.cache_hit ? (
 														<span
-															className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium"
+															className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
 															style={{
 																background: "var(--status-up-subtle)",
 																color: "var(--status-up-text)",
-																border: "1px solid var(--status-up-border)",
 															}}
 														>
 															<CheckCircle2 className="size-3" /> hit
 														</span>
 													) : (
 														<span
-															className="text-[10px]"
+															className="text-[11px]"
 															style={{ color: "var(--text-faint)" }}
 														>
 															miss

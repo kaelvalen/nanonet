@@ -89,7 +89,7 @@ export function ApiTokensPage() {
 								expires_in_days: 0,
 							})
 						}
-						className="gap-2 h-8 text-xs text-white"
+						className="gap-2 h-9 px-4 text-[13px] text-white rounded-full"
 						size="sm"
 						style={{ background: "var(--gradient-btn-primary)" }}
 					>
@@ -162,28 +162,33 @@ function RevealedBanner({
 	onDismiss: () => void;
 }) {
 	return (
-		<Panel tone="warn" className="mb-4">
+		<Panel tone="warn" className="mb-4 rounded-2xl">
 			<div className="flex items-start gap-3 p-4">
-				<AlertTriangle
-					className="mt-0.5 size-5 shrink-0"
-					style={{ color: "var(--status-warn)" }}
-				/>
+				<span
+					className="mt-0.5 w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+					style={{ background: "var(--status-warn-subtle)" }}
+				>
+					<AlertTriangle
+						className="size-4"
+						style={{ color: "var(--status-warn)" }}
+					/>
+				</span>
 				<div className="flex-1 min-w-0">
 					<div
-						className="text-sm font-semibold"
+						className="text-[14px] font-semibold tracking-tight"
 						style={{ color: "var(--status-warn-text)" }}
 					>
-						Token "{name}" oluşturuldu — şimdi kopyala!
+						Token "{name}" oluşturuldu — şimdi kopyala
 					</div>
 					<div
-						className="mt-1 text-xs"
+						className="mt-1 text-[12px]"
 						style={{ color: "var(--text-secondary)" }}
 					>
 						Bu secret değer bir daha gösterilmeyecek. Güvenli bir yere kaydet.
 					</div>
 					<div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
 						<code
-							className="flex-1 min-w-0 rounded px-3 py-2 text-xs font-mono break-all"
+							className="flex-1 min-w-0 rounded-lg px-3 py-2 text-[12px] font-mono break-all"
 							style={{
 								background: "var(--input-bg)",
 								color: "var(--text-primary)",
@@ -196,7 +201,7 @@ function RevealedBanner({
 							<Button
 								variant="outline"
 								size="sm"
-								className="gap-1 h-9"
+								className="gap-1 h-9 px-4 text-[13px] rounded-full"
 								onClick={() => {
 									navigator.clipboard.writeText(secret);
 									toast.success("Token panoya kopyalandı");
@@ -204,7 +209,12 @@ function RevealedBanner({
 							>
 								<Copy className="size-3.5" /> Kopyala
 							</Button>
-							<Button variant="ghost" size="sm" onClick={onDismiss}>
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-9 px-4 text-[13px] rounded-full"
+								onClick={onDismiss}
+							>
 								Tamam
 							</Button>
 						</div>
@@ -240,23 +250,23 @@ function DraftEditor({
 		});
 	};
 	return (
-		<Panel className="mb-4">
+		<Panel className="mb-4 rounded-2xl">
 			<PanelHeader dense>Yeni API Token</PanelHeader>
 			<PanelBody scroll={false}>
 				<div className="grid gap-3 sm:grid-cols-2">
 					<div>
-						<Label className="text-xs">İsim</Label>
+						<Label className="text-[12px] font-medium">İsim</Label>
 						<Input
-							className="mt-1 h-9"
+							className="mt-1.5 h-9 text-[13px] rounded-lg"
 							placeholder="örn. CI deploy bot"
 							value={draft.name}
 							onChange={(e) => onChange({ ...draft, name: e.target.value })}
 						/>
 					</div>
 					<div>
-						<Label className="text-xs">Süre (gün)</Label>
+						<Label className="text-[12px] font-medium">Süre (gün)</Label>
 						<Input
-							className="mt-1 h-9 w-32"
+							className="mt-1.5 h-9 w-32 text-[13px] rounded-lg"
 							type="number"
 							min={0}
 							max={3650}
@@ -269,7 +279,7 @@ function DraftEditor({
 							}
 						/>
 						<div
-							className="mt-1 text-[10px]"
+							className="mt-1.5 text-[11px]"
 							style={{ color: "var(--text-faint)" }}
 						>
 							0 = süresiz
@@ -278,8 +288,8 @@ function DraftEditor({
 				</div>
 
 				<div className="mt-4">
-					<Label className="text-xs">Scope'lar</Label>
-					<div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+					<Label className="text-[12px] font-medium">Scope'lar</Label>
+					<div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 						{availableScopes.map((scope) => {
 							const checked = draft.scopes.includes(scope);
 							return (
@@ -287,36 +297,36 @@ function DraftEditor({
 									key={scope}
 									type="button"
 									onClick={() => toggleScope(scope)}
-									className="flex items-start gap-2 rounded-md border px-3 py-2 text-left transition-colors"
+									className="flex items-start gap-2 rounded-xl border px-3 py-2.5 text-left transition-all"
 									style={{
 										background: checked
 											? "var(--color-violet-subtle)"
 											: "var(--surface-sunken)",
 										borderColor: checked
 											? "var(--color-violet-border)"
-											: "var(--border-default)",
+											: "transparent",
 									}}
 								>
 									{checked ? (
 										<CheckCircle2
-											className="mt-0.5 size-3.5"
+											className="mt-0.5 size-3.5 shrink-0"
 											style={{ color: "var(--color-violet)" }}
 										/>
 									) : (
 										<div
-											className="mt-0.5 size-3.5 rounded-full border"
+											className="mt-0.5 size-3.5 rounded-full border shrink-0"
 											style={{ borderColor: "var(--text-faint)" }}
 										/>
 									)}
 									<div className="flex-1 min-w-0">
 										<div
-											className="text-xs font-mono font-medium truncate"
+											className="text-[12px] font-mono font-semibold truncate"
 											style={{ color: "var(--text-primary)" }}
 										>
 											{scope}
 										</div>
 										<div
-											className="text-[10px]"
+											className="text-[11px] mt-0.5 leading-relaxed"
 											style={{ color: "var(--text-faint)" }}
 										>
 											{SCOPE_HELP[scope] ?? "—"}
@@ -329,17 +339,22 @@ function DraftEditor({
 				</div>
 			</PanelBody>
 			<PanelFooter>
-				<Button variant="ghost" size="sm" onClick={onCancel}>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="h-9 px-4 text-[13px] rounded-full"
+					onClick={onCancel}
+				>
 					İptal
 				</Button>
 				<Button
 					size="sm"
 					disabled={saving || !draft.name.trim() || draft.scopes.length === 0}
 					onClick={onSave}
-					className="text-white"
+					className="text-white h-9 px-4 text-[13px] rounded-full"
 					style={{ background: "var(--gradient-btn-primary)" }}
 				>
-					{saving && <Loader2 className="mr-1 size-3 animate-spin" />}
+					{saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
 					Oluştur
 				</Button>
 			</PanelFooter>
@@ -371,23 +386,22 @@ function TokenRow({
 	const dead = expired || revoked;
 
 	return (
-		<Panel padding="md" style={{ opacity: dead ? 0.55 : 1 }}>
+		<Panel padding="md" className="rounded-2xl" style={{ opacity: dead ? 0.55 : 1 }}>
 			<div className="flex items-center justify-between gap-4">
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2 flex-wrap">
 						<span
-							className="text-sm font-semibold truncate"
+							className="text-[14px] font-semibold truncate tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{token.name}
 						</span>
 						{revoked && (
 							<span
-								className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium"
+								className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
 								style={{
 									background: "var(--status-down-subtle)",
 									color: "var(--status-down-text)",
-									border: "1px solid var(--status-down-border)",
 								}}
 							>
 								<XCircle className="size-3" /> İptal
@@ -395,11 +409,10 @@ function TokenRow({
 						)}
 						{!revoked && expired && (
 							<span
-								className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium"
+								className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
 								style={{
 									background: "var(--status-warn-subtle)",
 									color: "var(--status-warn-text)",
-									border: "1px solid var(--status-warn-border)",
 								}}
 							>
 								Süresi dolmuş
@@ -407,11 +420,11 @@ function TokenRow({
 						)}
 					</div>
 					<div
-						className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]"
+						className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]"
 						style={{ color: "var(--text-faint)" }}
 					>
 						<code
-							className="rounded px-1.5 py-0.5 font-mono"
+							className="rounded-md px-2 py-0.5 font-mono"
 							style={{ background: "var(--surface-sunken)" }}
 						>
 							{token.prefix}…
@@ -423,11 +436,11 @@ function TokenRow({
 							</span>
 						)}
 					</div>
-					<div className="mt-2 flex flex-wrap gap-1">
+					<div className="mt-2.5 flex flex-wrap gap-1.5">
 						{token.scopes.map((s) => (
 							<span
 								key={s}
-								className="rounded px-1.5 py-0.5 text-[10px] font-mono"
+								className="rounded-full px-2 py-0.5 text-[11px] font-mono"
 								style={{
 									background: "var(--surface-sunken)",
 									color: "var(--text-secondary)",
@@ -442,7 +455,7 @@ function TokenRow({
 					<Button
 						variant="ghost"
 						size="sm"
-						className="shrink-0"
+						className="shrink-0 h-9 w-9 p-0 rounded-full"
 						style={{ color: "var(--status-down)" }}
 						onClick={onRevoke}
 					>

@@ -61,22 +61,19 @@ function SectionHeader({
 	label: string;
 }) {
 	return (
-		<div className="flex items-center gap-2 mb-4">
+		<div className="flex items-center gap-3 mb-4">
 			<div
-				className="w-7 h-7 rounded flex items-center justify-center"
-				style={{
-					backgroundColor: "var(--brand-primary-subtle)",
-					border: "1px solid var(--border-default)",
-				}}
+				className="w-9 h-9 rounded-xl flex items-center justify-center"
+				style={{ backgroundColor: "var(--brand-primary-subtle)" }}
 			>
 				<Icon
-					className="w-3.5 h-3.5"
+					className="w-4 h-4"
 					style={{ color: "var(--brand-primary)" }}
 				/>
 			</div>
 			<h3
-				className="text-sm font-semibold"
-				style={{ color: "var(--text-secondary)" }}
+				className="text-[15px] font-semibold tracking-tight"
+				style={{ color: "var(--text-primary)" }}
 			>
 				{label}
 			</h3>
@@ -96,17 +93,17 @@ function SettingRow({
 	onChange: (v: boolean) => void;
 }) {
 	return (
-		<div className="flex items-center justify-between py-2">
+		<div className="flex items-center justify-between py-3">
 			<div className="flex-1 pr-4">
 				<p
-					className="text-xs font-medium"
-					style={{ color: "var(--text-secondary)" }}
+					className="text-[13px] font-medium"
+					style={{ color: "var(--text-primary)" }}
 				>
 					{label}
 				</p>
 				<p
-					className="text-[10px] mt-0.5"
-					style={{ color: "var(--text-faint)" }}
+					className="text-[12px] mt-1 leading-relaxed"
+					style={{ color: "var(--text-muted)" }}
 				>
 					{desc}
 				</p>
@@ -350,7 +347,7 @@ export function SettingsPage() {
 							type="button"
 							onClick={handleSaveAll}
 							disabled={saveMutation.isPending}
-							className="flex items-center gap-2 px-4 h-9 rounded text-xs font-semibold shrink-0 transition-opacity hover:opacity-80 disabled:opacity-50"
+							className="flex items-center gap-2 px-4 h-9 rounded-full text-[13px] font-semibold shrink-0 transition-opacity hover:opacity-90 disabled:opacity-50"
 							style={{
 								background: "var(--gradient-btn-primary)",
 								color: "white",
@@ -359,12 +356,12 @@ export function SettingsPage() {
 						>
 							{saveMutation.isPending ? (
 								<>
-									<Loader2 className="w-3.5 h-3.5 animate-spin" />
+									<Loader2 className="w-4 h-4 animate-spin" />
 									Kaydediliyor...
 								</>
 							) : (
 								<>
-									<Save className="w-3.5 h-3.5" />
+									<Save className="w-4 h-4" />
 									Değişiklikleri Kaydet
 								</>
 							)}
@@ -379,24 +376,24 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.1 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
-					<div className="flex items-center gap-3">
+				<Card className="rounded-2xl p-5" style={cardStyle}>
+					<div className="flex items-center gap-4">
 						<div
-							className="w-11 h-11 rounded flex items-center justify-center text-white text-sm font-bold shrink-0"
+							className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-[16px] font-semibold shrink-0"
 							style={{ background: "var(--gradient-logo)" }}
 						>
 							{user?.email?.charAt(0).toUpperCase() || "U"}
 						</div>
 						<div className="flex-1 min-w-0">
 							<h3
-								className="text-sm font-semibold truncate"
-								style={{ color: "var(--text-secondary)" }}
+								className="text-[14px] font-semibold truncate tracking-tight"
+								style={{ color: "var(--text-primary)" }}
 							>
 								{user?.email || "user@nanonet.dev"}
 							</h3>
 							<p
-								className="text-[10px] mt-0.5"
-								style={{ color: "var(--text-faint)" }}
+								className="text-[12px] mt-1"
+								style={{ color: "var(--text-muted)" }}
 							>
 								Üyelik:{" "}
 								{user?.created_at
@@ -424,7 +421,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.12 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Lock} label="Şifre Değiştir" />
 						<Button
@@ -571,7 +568,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.15 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Bell} label="Bildirimler" />
 						{notifsDirty && (
@@ -638,7 +635,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.2 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Zap} label="İzleme" />
 						{monitoringDirty && (
@@ -753,7 +750,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.25 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Sparkles} label="AI Analiz" />
 						{aiDirty && (
@@ -865,7 +862,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.3 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<SectionHeader icon={Palette} label="Görünüm" />
 					<Separator className="mb-4" style={dividerStyle} />
 
@@ -947,7 +944,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.32 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={Webhook} label="Bildirim Kanalları" />
 						{webhookDirty && (
@@ -1002,7 +999,7 @@ export function SettingsPage() {
 							</div>
 							<div>
 								<Label
-									className="text-[10px] uppercase tracking-wider block mb-1"
+									className="text-[12px] font-medium block mb-1.5"
 									style={{ color: "var(--text-muted)" }}
 								>
 									Webhook URL
@@ -1024,7 +1021,7 @@ export function SettingsPage() {
 							</div>
 							<div>
 								<Label
-									className="text-[10px] uppercase tracking-wider block mb-1"
+									className="text-[12px] font-medium block mb-1.5"
 									style={{ color: "var(--text-muted)" }}
 								>
 									İmza Secret (İsteğe Bağlı)
@@ -1109,7 +1106,7 @@ export function SettingsPage() {
 							</div>
 							<div>
 								<Label
-									className="text-[10px] uppercase tracking-wider block mb-1"
+									className="text-[12px] font-medium block mb-1.5"
 									style={{ color: "var(--text-muted)" }}
 								>
 									Slack Incoming Webhook URL
@@ -1146,7 +1143,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.35 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<div className="flex items-center justify-between mb-1">
 						<SectionHeader icon={ScrollText} label="İşlem Geçmişi" />
 						<Button
@@ -1242,7 +1239,7 @@ export function SettingsPage() {
 												<div className="min-w-0 flex-1">
 													<div className="flex items-center gap-2">
 														<span
-															className="text-[10px] font-bold uppercase tracking-wide"
+															className="text-[11px] font-semibold"
 															style={{ color: actionColor }}
 														>
 															{log.action}
@@ -1337,7 +1334,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.37 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<SectionHeader icon={Key} label="API Anahtarı" />
 					<Separator className="mb-4" style={dividerStyle} />
 					<p
@@ -1411,7 +1408,7 @@ export function SettingsPage() {
 				transition={{ duration: 0.4, delay: 0.39 }}
 			>
 				<Card
-					className="rounded p-5"
+					className="rounded-2xl p-5"
 					style={{
 						...cardStyle,
 						border: "1px solid var(--status-down-border)",
@@ -1493,7 +1490,7 @@ export function SettingsPage() {
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.4 }}
 			>
-				<Card className="rounded p-5" style={cardStyle}>
+				<Card className="rounded-2xl p-5" style={cardStyle}>
 					<SectionHeader icon={Info} label="Hakkında" />
 					<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
 						{[
@@ -1517,7 +1514,7 @@ export function SettingsPage() {
 								}}
 							>
 								<span
-									className="text-[10px] uppercase tracking-wider"
+									className="text-[11px] font-medium"
 									style={{ color: "var(--text-faint)" }}
 								>
 									{label}

@@ -83,7 +83,7 @@ export function PublicStatusPage() {
 			</section>
 
 			<footer
-				className="mt-12 pt-6 text-center text-[10px] font-mono uppercase tracking-[0.2em]"
+				className="mt-12 pt-6 text-center text-[12px] font-medium"
 				style={{
 					color: "var(--text-faint)",
 					borderTop: "1px solid var(--border-subtle)",
@@ -125,7 +125,7 @@ function Header({ view }: { view: PublicStatusView }) {
 				</p>
 			)}
 			<div
-				className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-[0.18em]"
+				className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold tracking-tight"
 				style={{
 					color: tone.color,
 					background: tone.bg,
@@ -197,7 +197,7 @@ function UptimeChip({ label, value }: { label: string; value: number }) {
 	return (
 		<div className="text-right">
 			<p
-				className="uppercase tracking-wider"
+				className="font-medium"
 				style={{ color: "var(--text-faint)" }}
 			>
 				{label}
@@ -243,11 +243,10 @@ function IncidentRow({ incident }: { incident: PublicStatusView["incidents"][num
 				</div>
 			</div>
 			<span
-				className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded"
+				className="text-[11px] font-medium capitalize px-2 py-0.5 rounded-full"
 				style={{
 					color,
 					background: bg,
-					border: `1px solid ${color}33`,
 				}}
 			>
 				{incident.severity}
@@ -259,8 +258,8 @@ function IncidentRow({ incident }: { incident: PublicStatusView["incidents"][num
 function SectionTitle({ children }: { children: React.ReactNode }) {
 	return (
 		<h2
-			className="text-[10px] font-mono uppercase tracking-[0.2em] font-bold"
-			style={{ color: "var(--text-faint)" }}
+			className="text-[13px] font-semibold tracking-tight"
+			style={{ color: "var(--text-secondary)" }}
 		>
 			{children}
 		</h2>

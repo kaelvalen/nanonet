@@ -142,10 +142,10 @@ export function RunbooksPage() {
 					<Button
 						size="sm"
 						onClick={() => setDraft(DEFAULT_DRAFT)}
-						className="h-8 px-3 text-xs text-white"
+						className="h-9 px-4 text-[13px] text-white rounded-full"
 						style={{ background: "var(--gradient-btn-primary)" }}
 					>
-						<Plus className="mr-1 h-3.5 w-3.5" />
+						<Plus className="mr-1.5 h-3.5 w-3.5" />
 						Yeni Runbook
 					</Button>
 				}
@@ -231,31 +231,29 @@ function RunbookRow({
 }) {
 	const sev = severityTone(book.min_severity);
 	return (
-		<Panel padding="sm" style={{ opacity: book.enabled ? 1 : 0.65 }}>
-			<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-1">
+		<Panel padding="md" className="rounded-2xl" style={{ opacity: book.enabled ? 1 : 0.65 }}>
+			<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
 						<span
-							className="text-[13px] font-semibold"
+							className="text-[14px] font-semibold tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{book.name}
 						</span>
 						<span
-							className="rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] font-bold"
+							className="rounded-full px-2 py-0.5 text-[11px] font-medium capitalize"
 							style={{
 								background: sev.bg,
 								color: sev.fg,
-								border: `1px solid ${sev.border}`,
 							}}
 						>
 							≥ {book.min_severity}
 						</span>
 						<span
-							className="rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] font-bold"
+							className="rounded-full px-2 py-0.5 text-[11px] font-medium"
 							style={{
 								background: "var(--surface-sunken)",
-								border: "1px solid var(--border-default)",
 								color: "var(--text-secondary)",
 							}}
 						>
@@ -263,7 +261,7 @@ function RunbookRow({
 						</span>
 					</div>
 					<div
-						className="mt-1 text-[12px]"
+						className="mt-2 text-[12px]"
 						style={{ color: "var(--text-muted)" }}
 					>
 						<span className="font-mono">{book.alert_type}</span>
@@ -276,22 +274,19 @@ function RunbookRow({
 						<span>{serviceName}</span>
 					</div>
 					<div
-						className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em]"
+						className="mt-2 flex items-center gap-3 flex-wrap text-[12px]"
 						style={{ color: "var(--text-faint)" }}
 					>
 						<span>cooldown {book.cooldown_seconds}s</span>
 						<span>≤ {book.max_per_hour}/sa</span>
 						<span
-							className="font-mono normal-case tracking-normal"
+							className="font-mono tabular-nums"
 							style={{ color: "var(--text-muted)" }}
 						>
 							{book.fire_count} kez tetiklendi
 						</span>
 						{book.last_fired_at && (
-							<span
-								className="normal-case tracking-normal"
-								style={{ color: "var(--text-muted)" }}
-							>
+							<span style={{ color: "var(--text-muted)" }}>
 								son: {relative(book.last_fired_at)}
 							</span>
 						)}
@@ -307,9 +302,8 @@ function RunbookRow({
 						type="button"
 						onClick={onDelete}
 						disabled={busy}
-						className="rounded-md p-1.5 disabled:opacity-50 transition-colors"
+						className="rounded-full h-8 w-8 flex items-center justify-center disabled:opacity-50 transition-colors"
 						style={{
-							border: "1px solid var(--status-down-border)",
 							color: "var(--status-down-text)",
 							background: "var(--status-down-subtle)",
 						}}
@@ -359,7 +353,7 @@ function DraftEditor({
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Ad
@@ -368,18 +362,18 @@ function DraftEditor({
 						value={value.name}
 						onChange={(e) => onChange({ ...value, name: e.target.value })}
 						placeholder="Auto-restart on CPU spike"
-						className="mt-1.5"
+						className="mt-1.5 h-9 text-[13px] rounded-lg"
 					/>
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Servis
 					</Label>
 					<select
-						className="mt-1.5 h-9 w-full rounded-md px-3 text-[13px]"
+						className="mt-1.5 h-9 w-full rounded-lg px-3 text-[13px]"
 						style={{
 							background: "var(--input-bg)",
 							border: "1px solid var(--input-border)",
@@ -400,13 +394,13 @@ function DraftEditor({
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Alert Tipi
 					</Label>
 					<select
-						className="mt-1.5 h-9 w-full rounded-md px-3 text-[13px]"
+						className="mt-1.5 h-9 w-full rounded-lg px-3 text-[13px]"
 						style={{
 							background: "var(--input-bg)",
 							border: "1px solid var(--input-border)",
@@ -426,12 +420,12 @@ function DraftEditor({
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Minimum Severity
 					</Label>
-					<div className="flex gap-1.5 mt-1.5">
+					<div className="flex gap-1.5 mt-2">
 						{(["info", "warn", "crit"] as Severity[]).map((s) => {
 							const active = value.min_severity === s;
 							const tone = severityTone(s);
@@ -440,10 +434,10 @@ function DraftEditor({
 									key={s}
 									type="button"
 									onClick={() => onChange({ ...value, min_severity: s })}
-									className="flex-1 rounded-md px-3 py-2 text-[12px] uppercase tracking-[0.15em] font-bold transition-colors"
+									className="flex-1 rounded-xl px-3 h-10 text-[13px] font-medium capitalize transition-all"
 									style={{
 										background: active ? tone.bg : "var(--surface-sunken)",
-										border: `1px solid ${active ? tone.border : "var(--border-default)"}`,
+										border: `1px solid ${active ? tone.border : "transparent"}`,
 										color: active ? tone.fg : "var(--text-muted)",
 									}}
 								>
@@ -455,13 +449,13 @@ function DraftEditor({
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Aksiyon
 					</Label>
 					<select
-						className="mt-1.5 h-9 w-full rounded-md px-3 text-[13px]"
+						className="mt-1.5 h-9 w-full rounded-lg px-3 text-[13px]"
 						style={{
 							background: "var(--input-bg)",
 							border: "1px solid var(--input-border)",
@@ -481,7 +475,7 @@ function DraftEditor({
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Aktif
@@ -497,7 +491,7 @@ function DraftEditor({
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Cooldown (s)
@@ -512,12 +506,12 @@ function DraftEditor({
 								cooldown_seconds: Number(e.target.value) || 0,
 							})
 						}
-						className="mt-1.5"
+						className="mt-1.5 h-9 text-[13px] rounded-lg"
 					/>
 				</div>
 				<div>
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Saat başına maksimum
@@ -533,18 +527,18 @@ function DraftEditor({
 								max_per_hour: Number(e.target.value) || 6,
 							})
 						}
-						className="mt-1.5"
+						className="mt-1.5 h-9 text-[13px] rounded-lg"
 					/>
 				</div>
 				<div className="md:col-span-2">
 					<Label
-						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						className="text-[12px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Args (JSON)
 					</Label>
 					<Textarea
-						className="mt-1.5 min-h-[80px] font-mono text-[12px]"
+						className="mt-1.5 min-h-[80px] font-mono text-[12px] rounded-lg"
 						value={argsJson}
 						onChange={(e) => {
 							try {
@@ -570,7 +564,7 @@ function DraftEditor({
 				<Button
 					variant="outline"
 					size="sm"
-					className="h-8 px-3 text-xs"
+					className="h-9 px-4 text-[13px] rounded-full"
 					onClick={onCancel}
 					disabled={submitting}
 				>
@@ -578,15 +572,15 @@ function DraftEditor({
 				</Button>
 				<Button
 					size="sm"
-					className="h-8 px-3 text-xs text-white"
+					className="h-9 px-4 text-[13px] text-white rounded-full"
 					style={{ background: "var(--gradient-btn-primary)" }}
 					onClick={onSubmit}
 					disabled={submitting || !value.name.trim()}
 				>
 					{submitting ? (
-						<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+						<Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
 					) : (
-						<Play className="mr-1 h-3.5 w-3.5" />
+						<Play className="mr-1.5 h-3.5 w-3.5" />
 					)}
 					Oluştur
 				</Button>

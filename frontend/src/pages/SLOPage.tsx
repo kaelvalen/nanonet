@@ -182,7 +182,7 @@ function SLOCard({
 	return (
 		<Panel
 			padding="none"
-			className="overflow-hidden"
+			className="overflow-hidden rounded-2xl"
 			style={{
 				borderColor: healthy
 					? "var(--border-default)"
@@ -190,17 +190,16 @@ function SLOCard({
 			}}
 		>
 			<div
-				className="flex items-center justify-between gap-3 px-4 py-3"
+				className="flex items-center justify-between gap-3 px-4 py-3.5"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
-				<div className="flex items-center gap-2.5 min-w-0">
+				<div className="flex items-center gap-3 min-w-0">
 					<span
-						className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+						className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
 						style={{
 							background: healthy
 								? "var(--status-up-subtle)"
 								: "var(--status-down-subtle)",
-							border: `1px solid ${healthy ? "var(--status-up-border)" : "var(--status-down-border)"}`,
 						}}
 					>
 						{healthy ? (
@@ -216,31 +215,30 @@ function SLOCard({
 						)}
 					</span>
 					<div className="min-w-0">
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 flex-wrap">
 							<p
-								className="text-sm font-bold truncate"
+								className="text-[14px] font-semibold truncate tracking-tight"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{slo.name}
 							</p>
 							<span
-								className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
+								className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0"
 								style={{
 									color: "var(--color-teal)",
 									background: "var(--color-teal-subtle)",
-									border: "1px solid var(--color-teal-border)",
 								}}
 							>
 								{meta.label}
 							</span>
 						</div>
 						<p
-							className="text-[10px] font-mono mt-0.5"
+							className="text-[12px] mt-1"
 							style={{ color: "var(--text-muted)" }}
 						>
 							{serviceName} · hedef{" "}
 							<span
-								className="tabular-nums font-bold"
+								className="tabular-nums font-semibold"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{slo.target}%
@@ -253,7 +251,7 @@ function SLOCard({
 				<Button
 					size="sm"
 					variant="ghost"
-					className="h-8 w-8 p-0"
+					className="h-8 w-8 p-0 rounded-full"
 					onClick={onDelete}
 				>
 					<Trash2
@@ -402,18 +400,18 @@ function MetricChip({
 				: "var(--status-up-subtle)";
 	return (
 		<div
-			className="rounded p-2.5 flex flex-col gap-1"
-			style={{ background: bg, border: `1px solid ${color}33` }}
+			className="rounded-xl p-3 flex flex-col gap-1.5"
+			style={{ background: bg }}
 		>
 			<div
-				className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em]"
+				className="flex items-center gap-1.5 text-[11px] font-medium"
 				style={{ color }}
 			>
-				<Icon className="w-3 h-3" />
+				<Icon className="w-3.5 h-3.5" />
 				{label}
 			</div>
 			<p
-				className="text-base font-mono font-bold tabular-nums leading-none"
+				className="text-[18px] font-semibold tabular-nums leading-none tracking-tight"
 				style={{ color: "var(--text-primary)" }}
 			>
 				{value}
@@ -444,18 +442,18 @@ function DraftEditor({
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Ad
 					</Label>
 					<Input
 						value={value.name}
 						onChange={(e) => onChange({ ...value, name: e.target.value })}
 						placeholder="api availability 30d"
-						className="mt-1.5 h-9 text-sm"
+						className="mt-1.5 h-9 text-[13px] rounded-lg"
 					/>
 				</div>
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Servis
 					</Label>
 					<select
@@ -463,7 +461,7 @@ function DraftEditor({
 						onChange={(e) =>
 							onChange({ ...value, service_id: e.target.value })
 						}
-						className="mt-1.5 w-full h-9 px-2.5 rounded text-sm"
+						className="mt-1.5 w-full h-9 px-3 rounded-lg text-[13px]"
 						style={{
 							background: "var(--input-bg)",
 							border: "1px solid var(--input-border)",
@@ -481,7 +479,7 @@ function DraftEditor({
 
 			<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						SLI Tipi
 					</Label>
 					<select
@@ -489,7 +487,7 @@ function DraftEditor({
 						onChange={(e) =>
 							onChange({ ...value, sli_type: e.target.value as SLIType })
 						}
-						className="mt-1.5 w-full h-9 px-2.5 rounded text-sm"
+						className="mt-1.5 w-full h-9 px-3 rounded-lg text-[13px]"
 						style={{
 							background: "var(--input-bg)",
 							border: "1px solid var(--input-border)",
@@ -502,7 +500,7 @@ function DraftEditor({
 					</select>
 				</div>
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Hedef %
 					</Label>
 					<Input
@@ -514,11 +512,11 @@ function DraftEditor({
 						onChange={(e) =>
 							onChange({ ...value, target: Number(e.target.value) })
 						}
-						className="mt-1.5 h-9 text-sm font-mono tabular-nums"
+						className="mt-1.5 h-9 text-[13px] font-mono tabular-nums rounded-lg"
 					/>
 				</div>
 				<div>
-					<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 						Pencere (gün)
 					</Label>
 					<Input
@@ -529,12 +527,12 @@ function DraftEditor({
 						onChange={(e) =>
 							onChange({ ...value, window_days: Number(e.target.value) })
 						}
-						className="mt-1.5 h-9 text-sm font-mono tabular-nums"
+						className="mt-1.5 h-9 text-[13px] font-mono tabular-nums rounded-lg"
 					/>
 				</div>
 				{value.sli_type !== "availability" && (
 					<div>
-						<Label className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--text-faint)" }}>
+						<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
 							Eşik {value.sli_type === "latency" ? "(ms)" : "(%)"}
 						</Label>
 						<Input
@@ -543,7 +541,7 @@ function DraftEditor({
 							onChange={(e) =>
 								onChange({ ...value, threshold: Number(e.target.value) })
 							}
-							className="mt-1.5 h-9 text-sm font-mono tabular-nums"
+							className="mt-1.5 h-9 text-[13px] font-mono tabular-nums rounded-lg"
 						/>
 					</div>
 				)}
@@ -558,22 +556,22 @@ function DraftEditor({
 				<Button
 					variant="outline"
 					size="sm"
-					className="h-8 px-3 text-xs"
+					className="h-9 px-4 text-[13px] rounded-full"
 					onClick={onCancel}
 				>
 					Vazgeç
 				</Button>
 				<Button
 					size="sm"
-					className="h-8 px-3 text-xs text-white"
+					className="h-9 px-4 text-[13px] text-white rounded-full"
 					style={{ background: "var(--gradient-btn-primary)" }}
 					disabled={submitting || !value.name.trim() || !value.service_id}
 					onClick={onSubmit}
 				>
 					{submitting ? (
-						<Loader2 className="w-3 h-3 mr-1 animate-spin" />
+						<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
 					) : (
-						<Plus className="w-3 h-3 mr-1" />
+						<Plus className="w-3.5 h-3.5 mr-1.5" />
 					)}
 					Oluştur
 				</Button>

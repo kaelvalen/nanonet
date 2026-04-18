@@ -287,7 +287,7 @@ function PodLogModal({
 					style={{ borderColor: "var(--border-subtle)" }}
 				>
 					<p
-						className="text-[10px] uppercase tracking-wider"
+						className="text-[11px] font-medium"
 						style={{ color: "var(--text-faint)" }}
 					>
 						Son
@@ -1010,7 +1010,7 @@ export function KubernetesPage() {
 									<div>
 										<div className="flex items-center justify-between mb-2">
 											<p
-												className="text-[10px] uppercase tracking-wider font-semibold"
+												className="text-[11px] font-semibold"
 												style={{ color: "var(--text-muted)" }}
 											>
 												Nodes
@@ -1156,7 +1156,7 @@ export function KubernetesPage() {
 																		].map(({ label, value }) => (
 																			<div key={label} className="pt-3">
 																				<p
-																					className="text-[9px] uppercase tracking-wider"
+																					className="text-[10px] font-medium"
 																					style={{ color: "var(--text-faint)" }}
 																				>
 																					{label}
@@ -1186,7 +1186,7 @@ export function KubernetesPage() {
 										<div>
 											<div className="flex items-center justify-between mb-2">
 												<p
-													className="text-[10px] uppercase tracking-wider font-semibold"
+													className="text-[11px] font-semibold"
 													style={{ color: "var(--text-muted)" }}
 												>
 													Deployment'lar
@@ -1304,7 +1304,7 @@ export function KubernetesPage() {
 								>
 									<div className="flex items-center justify-between">
 										<p
-											className="text-[10px] uppercase tracking-wider"
+											className="text-[11px] font-medium"
 											style={{ color: "var(--text-muted)" }}
 										>
 											{deployments.length} dağıtım
@@ -1494,7 +1494,7 @@ export function KubernetesPage() {
 																}}
 															>
 																<p
-																	className="text-[9px] uppercase tracking-wider mb-2.5"
+																	className="text-[10px] font-medium mb-2.5"
 																	style={{ color: "var(--text-faint)" }}
 																>
 																	Ölçekle
@@ -1625,7 +1625,7 @@ export function KubernetesPage() {
 									{/* Existing HPAs list */}
 									<div className="flex items-center justify-between">
 										<p
-											className="text-[10px] uppercase tracking-wider"
+											className="text-[11px] font-medium"
 											style={{ color: "var(--text-muted)" }}
 										>
 											{hpas.length} HPA{" "}
@@ -1747,7 +1747,7 @@ export function KubernetesPage() {
 																}}
 															>
 																<p
-																	className="text-[10px] uppercase tracking-wider mb-1"
+																	className="text-[11px] font-medium mb-1.5"
 																	style={{ color: "var(--text-muted)" }}
 																>
 																	{s.label}
@@ -1831,7 +1831,7 @@ export function KubernetesPage() {
 
 										<div className="mb-4">
 											<p
-												className="text-[10px] uppercase tracking-wider mb-2"
+												className="text-[11px] font-medium mb-2"
 												style={{ color: "var(--text-muted)" }}
 											>
 												Deployment Seç
@@ -1893,7 +1893,7 @@ export function KubernetesPage() {
 											].map(({ label, val, set, min, max }) => (
 												<div key={label}>
 													<p
-														className="text-[10px] uppercase tracking-wider mb-2"
+														className="text-[11px] font-medium mb-2"
 														style={{ color: "var(--text-muted)" }}
 													>
 														{label}
@@ -1932,7 +1932,7 @@ export function KubernetesPage() {
 											))}
 											<div>
 												<p
-													className="text-[10px] uppercase tracking-wider mb-2"
+													className="text-[11px] font-medium mb-2"
 													style={{ color: "var(--text-muted)" }}
 												>
 													CPU Hedef (%)

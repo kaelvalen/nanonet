@@ -82,22 +82,22 @@ export function StatCard({
 }: StatCardProps) {
 	const t = TONES[tone];
 
-	const labelSize = size === "lg" ? "text-[11px]" : "text-[10px]";
+	const labelSize = size === "lg" ? "text-[12px]" : "text-[11px]";
 	const valueSize =
 		size === "lg"
-			? "text-2xl"
+			? "text-[28px]"
 			: size === "sm"
-				? "text-base"
-				: "text-lg sm:text-xl";
-	const iconBox = size === "lg" ? "w-11 h-11" : size === "sm" ? "w-7 h-7" : "w-9 h-9";
+				? "text-[18px]"
+				: "text-[22px]";
+	const iconBox = size === "lg" ? "w-11 h-11" : size === "sm" ? "w-8 h-8" : "w-10 h-10";
 	const iconSize = size === "lg" ? "w-5 h-5" : size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4";
-	const padding = size === "sm" ? "p-3" : "p-3.5";
+	const padding = size === "sm" ? "p-3" : "p-4";
 
 	const inner = (
 		<div
 			className={cn(
-				"flex items-center gap-3 rounded-[var(--radius)] transition-colors",
-				to && "hover:bg-[var(--surface-sunken)] cursor-pointer",
+				"flex items-center gap-3 rounded-xl transition-all",
+				to && "hover:border-[color:var(--border-strong)] cursor-pointer",
 				padding,
 				className,
 			)}
@@ -109,12 +109,11 @@ export function StatCard({
 			{Icon && (
 				<div
 					className={cn(
-						"rounded-md flex items-center justify-center shrink-0",
+						"rounded-xl flex items-center justify-center shrink-0",
 						iconBox,
 					)}
 					style={{
 						background: t.bg,
-						border: `1px solid ${t.border}`,
 						color: t.color,
 					}}
 				>
@@ -123,18 +122,15 @@ export function StatCard({
 			)}
 			<div className="min-w-0 flex-1">
 				<p
-					className={cn(
-						"font-bold uppercase tracking-[0.14em] leading-none",
-						labelSize,
-					)}
-					style={{ color: "var(--text-faint)" }}
+					className={cn("font-medium leading-none", labelSize)}
+					style={{ color: "var(--text-muted)" }}
 				>
 					{label}
 				</p>
-				<div className="flex items-baseline gap-1.5 mt-1.5 min-w-0">
+				<div className="flex items-baseline gap-1.5 mt-2 min-w-0">
 					<p
 						className={cn(
-							"font-bold tabular-nums font-mono leading-none truncate",
+							"font-semibold tabular-nums leading-none truncate tracking-tight",
 							valueSize,
 						)}
 						style={{ color: "var(--text-primary)" }}
@@ -143,8 +139,8 @@ export function StatCard({
 					</p>
 					{hint && (
 						<p
-							className="text-[10px] leading-none truncate"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[11px] leading-none truncate font-medium"
+							style={{ color: t.color }}
 						>
 							{hint}
 						</p>

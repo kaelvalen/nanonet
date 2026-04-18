@@ -90,38 +90,36 @@ function SeverityTile({
 		<button
 			type="button"
 			onClick={onClick}
-			className="relative overflow-hidden p-4 text-left transition-all"
+			className="group relative overflow-hidden p-4 text-left transition-all rounded-2xl hover:border-[color:var(--border-strong)]"
 			style={{
 				background: active ? bg : "var(--surface-card)",
 				border: `1px solid ${active ? accent : "var(--border-default)"}`,
-				borderRadius: "var(--radius)",
-				boxShadow: active ? "var(--btn-shadow)" : undefined,
 			}}
 		>
 			{active && (
 				<span
-					className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+					className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-30 pointer-events-none"
 					style={{ background: accent }}
 				/>
 			)}
-			<div className="flex items-center justify-between gap-2">
+			<div className="relative flex items-center justify-between gap-2">
 				<div className="min-w-0">
 					<p
-						className="text-[11px] font-medium mb-1"
-						style={{ color: "var(--text-faint)" }}
+						className="text-[11px] font-medium mb-1.5"
+						style={{ color: "var(--text-muted)" }}
 					>
 						{label}
 					</p>
 					<p
-						className="text-2xl font-semibold tabular-nums font-mono leading-none"
+						className="text-[26px] font-semibold tabular-nums leading-none tracking-tight"
 						style={{ color: active ? accent : "var(--text-primary)" }}
 					>
 						{count}
 					</p>
 				</div>
 				<div
-					className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-					style={{ background: "var(--surface-sunken)" }}
+					className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+					style={{ background: `color-mix(in srgb, ${accent} 12%, transparent)` }}
 				>
 					<Icon className="w-4 h-4" style={{ color: accent }} />
 				</div>
@@ -157,20 +155,18 @@ function AlertRow({
 
 	return (
 		<div
-			className={`relative overflow-hidden transition-opacity ${
+			className={`relative overflow-hidden transition-opacity rounded-xl ${
 				resolved ? "opacity-60" : ""
 			}`}
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
 				borderLeft: `3px solid ${accent}`,
-				borderRadius: "var(--radius)",
 			}}
 		>
 			<div className="px-4 py-3.5 flex items-start gap-3">
-				{/* Severity icon */}
 				<div
-					className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+					className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
 					style={{
 						background:
 							alert.severity === "crit"
@@ -188,50 +184,49 @@ function AlertRow({
 					/>
 				</div>
 
-				{/* Content */}
 				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-2 mb-1.5 flex-wrap">
+					<div className="flex items-center gap-2 mb-2 flex-wrap">
 						<SeverityBadge severity={alert.severity} />
 						<span
-							className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+							className="text-[11px] font-mono px-2 py-0.5 rounded-full"
 							style={{
 								background: "var(--surface-sunken)",
-								color: "var(--text-faint)",
+								color: "var(--text-muted)",
 							}}
 						>
 							{alert.type}
 						</span>
 						<span
-							className="text-xs font-semibold"
+							className="text-[13px] font-semibold tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{svcName}
 						</span>
 						{resolved && (
 							<span
-								className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded"
+								className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
 								style={{
 									background: "var(--status-up-subtle)",
 									color: "var(--status-up-text)",
 								}}
 							>
-								<CheckCircle2 className="w-2.5 h-2.5" />
+								<CheckCircle2 className="w-3 h-3" />
 								Çözüldü
 							</span>
 						)}
 					</div>
 					<p
-						className="text-xs leading-relaxed"
+						className="text-[13px] leading-relaxed"
 						style={{ color: "var(--text-secondary)" }}
 					>
 						{alert.message}
 					</p>
 					<div
-						className="flex items-center gap-3 mt-2 text-[10px] font-mono"
+						className="flex items-center gap-3 mt-2 text-[11px]"
 						style={{ color: "var(--text-faint)" }}
 					>
 						<span className="inline-flex items-center gap-1">
-							<Clock className="w-2.5 h-2.5" />
+							<Clock className="w-3 h-3" />
 							{new Date(alert.triggered_at).toLocaleString("tr-TR", {
 								dateStyle: "short",
 								timeStyle: "short",
@@ -242,21 +237,20 @@ function AlertRow({
 								className="inline-flex items-center gap-1"
 								style={{ color: "var(--status-up-text)" }}
 							>
-								<ArrowRight className="w-2.5 h-2.5" />
+								<ArrowRight className="w-3 h-3" />
 								{new Date(alert.resolved_at).toLocaleTimeString("tr-TR")}
 							</span>
 						)}
 					</div>
 				</div>
 
-				{/* Actions */}
 				{!resolved && (
 					<div className="flex items-center gap-1.5 shrink-0 relative">
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={onToggleSnooze}
-							className="h-7 w-7 p-0"
+							className="h-8 w-8 p-0 rounded-full"
 							title="Ertele"
 						>
 							<Timer className="w-3.5 h-3.5" />
@@ -266,13 +260,13 @@ function AlertRow({
 							variant="outline"
 							size="sm"
 							onClick={onResolve}
-							className="h-7 px-2.5 text-xs"
+							className="h-8 px-3 text-[12px] rounded-full"
 							style={{
 								borderColor: "var(--status-up-border)",
 								color: "var(--status-up-text)",
 							}}
 						>
-							<CheckCircle2 className="w-3 h-3 mr-1" />
+							<CheckCircle2 className="w-3.5 h-3.5 mr-1" />
 							Çöz
 						</Button>
 
@@ -283,7 +277,7 @@ function AlertRow({
 									animate={{ opacity: 1, y: 0 }}
 									exit={{ opacity: 0, y: -4 }}
 									transition={{ duration: 0.12 }}
-									className="absolute right-0 top-8 z-10 w-36 rounded-lg overflow-hidden"
+									className="absolute right-0 top-9 z-10 w-40 rounded-xl overflow-hidden p-1"
 									style={{
 										background: "var(--surface-overlay)",
 										border: "1px solid var(--border-default)",
@@ -295,11 +289,11 @@ function AlertRow({
 											type="button"
 											key={opt.minutes}
 											onClick={() => onSnooze(opt.minutes)}
-											className="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-[var(--surface-sunken)]"
+											className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] transition-colors hover:bg-[var(--surface-sunken)]"
 											style={{ color: "var(--text-secondary)" }}
 										>
 											<Clock
-												className="w-3 h-3"
+												className="w-3.5 h-3.5"
 												style={{ color: "var(--text-muted)" }}
 											/>
 											{opt.label}
@@ -422,16 +416,16 @@ export function AlertsPage() {
 						variant="ghost"
 						size="sm"
 						onClick={() => refetch()}
-						className="h-8 text-xs"
+						className="h-9 px-3 text-[13px] rounded-full"
 					>
-						<RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+						<RefreshCw className="w-4 h-4 mr-1.5" />
 						Yenile
 					</Button>
 				}
 			/>
 
 			{/* Severity tiles — compact */}
-			<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 shrink-0">
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 shrink-0">
 				{(["all", "crit", "warn", "info"] as const).map((sev) => (
 					<SeverityTile
 						key={sev}
@@ -455,28 +449,22 @@ export function AlertsPage() {
 					padding="none"
 					className="lg:col-span-8 flex flex-col min-h-0 overflow-hidden"
 				>
-					{/* Feed header */}
 					<div
 						className="flex items-center justify-between gap-3 px-4 py-3 shrink-0"
 						style={{ borderBottom: "1px solid var(--border-subtle)" }}
 					>
-						<div className="flex items-center gap-2.5 min-w-0">
+						<div className="flex items-center gap-3 min-w-0">
 							<div
-								className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+								className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
 								style={{
 									background:
 										activeCount > 0
 											? "var(--status-down-subtle)"
 											: "var(--status-up-subtle)",
-									border: `1px solid ${
-										activeCount > 0
-											? "var(--status-down-border)"
-											: "var(--status-up-border)"
-									}`,
 								}}
 							>
 								<Bell
-									className="w-3.5 h-3.5"
+									className="w-4 h-4"
 									style={{
 										color:
 											activeCount > 0
@@ -487,14 +475,14 @@ export function AlertsPage() {
 							</div>
 							<div className="min-w-0">
 								<h3
-									className="text-sm font-semibold leading-none"
+									className="text-[14px] font-semibold leading-none tracking-tight"
 									style={{ color: "var(--text-primary)" }}
 								>
 									Akış
 								</h3>
 								<p
-									className="text-[11px] mt-1"
-									style={{ color: "var(--text-faint)" }}
+									className="text-[11px] mt-1.5"
+									style={{ color: "var(--text-muted)" }}
 								>
 									{filtered.length} uyarı gösteriliyor
 								</p>
@@ -503,8 +491,9 @@ export function AlertsPage() {
 						<button
 							type="button"
 							onClick={() => setShowResolved(!showResolved)}
-							className="text-xs font-medium transition-colors shrink-0"
+							className="text-[12px] font-medium transition-colors shrink-0 px-3 h-8 rounded-full"
 							style={{
+								background: showResolved ? "var(--status-up-subtle)" : "transparent",
 								color: showResolved
 									? "var(--status-up-text)"
 									: "var(--text-muted)",

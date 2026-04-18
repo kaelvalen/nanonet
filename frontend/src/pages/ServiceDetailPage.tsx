@@ -636,7 +636,7 @@ function ActionButton({
 			type="button"
 			onClick={onClick}
 			disabled={loading || disabled}
-			className="nn-cockpit-action group flex items-center gap-2.5 px-3 h-9 rounded-lg text-[12px] font-medium text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+			className="nn-cockpit-action group flex items-center gap-2.5 px-3 h-8 rounded-lg text-[12px] font-medium text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 			style={
 				{
 					border: "1px solid var(--border-default)",
@@ -694,51 +694,49 @@ function IdentityRail({
 			initial={{ opacity: 0, x: -8 }}
 			animate={{ opacity: 1, x: 0 }}
 			transition={{ duration: 0.35 }}
-			className="flex flex-col lg:w-[280px] lg:shrink-0 lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-1rem)] lg:overflow-y-auto lg:pr-1"
+			className="flex flex-col lg:w-[260px] lg:shrink-0 lg:self-start"
 		>
 			<button
 				type="button"
 				onClick={onBack}
-				className="group self-start flex items-center gap-1.5 text-[12px] font-medium mb-5 px-1.5 py-1 rounded-lg transition-colors hover:text-[color:var(--text-primary)]"
+				className="group self-start flex items-center gap-1.5 text-[12px] font-medium mb-3 px-1.5 py-1 rounded-lg transition-colors hover:text-[color:var(--text-primary)]"
 				style={{ color: "var(--text-muted)" }}
 			>
 				<ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
 				Tüm Servisler
 			</button>
 
-			<div className="flex flex-col gap-3 pb-5 mb-5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-				<div className="flex items-center gap-3">
-					<StatusOrb status={service.status} size={10} />
-					<div className="min-w-0 flex-1">
-						<p
-							className="text-[11px] font-medium leading-none mb-2"
-							style={{
-								color:
-									service.status === "up"
-										? "var(--status-up-text)"
-										: service.status === "degraded"
-											? "var(--status-warn-text)"
-											: service.status === "down"
-												? "var(--status-down-text)"
-												: "var(--text-faint)",
-							}}
-						>
-							{STATUS_LABEL[service.status]}
-						</p>
-						<h1
-							className="text-[18px] font-semibold leading-tight tracking-tight truncate"
-							style={{ color: "var(--text-primary)" }}
-							title={service.name}
-						>
-							{service.name}
-						</h1>
-					</div>
+			<div className="flex flex-col gap-2 pb-3 mb-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+				<div className="flex items-center gap-2.5">
+					<StatusOrb status={service.status} size={9} />
+					<p
+						className="text-[11px] font-medium leading-none"
+						style={{
+							color:
+								service.status === "up"
+									? "var(--status-up-text)"
+									: service.status === "degraded"
+										? "var(--status-warn-text)"
+										: service.status === "down"
+											? "var(--status-down-text)"
+											: "var(--text-faint)",
+						}}
+					>
+						{STATUS_LABEL[service.status]}
+					</p>
 				</div>
+				<h1
+					className="text-[17px] font-semibold leading-tight tracking-tight truncate"
+					style={{ color: "var(--text-primary)" }}
+					title={service.name}
+				>
+					{service.name}
+				</h1>
 
 				<button
 					type="button"
 					onClick={copy}
-					className="group flex items-center gap-2 px-2.5 py-1.5 -mx-1 rounded-lg transition-colors hover:bg-[var(--surface-sunken)]"
+					className="group flex items-center gap-2 px-2 py-1 -mx-1 rounded-lg transition-colors hover:bg-[var(--surface-sunken)]"
 					aria-label="Adresi kopyala"
 				>
 					<span
@@ -764,12 +762,12 @@ function IdentityRail({
 			</div>
 
 			<dl
-				className="grid grid-cols-2 gap-4 pb-5 mb-5"
+				className="grid grid-cols-2 gap-3 pb-3 mb-3"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
 				<div className="min-w-0">
 					<dt
-						className="text-[11px] font-medium mb-1.5"
+						className="text-[11px] font-medium mb-1"
 						style={{ color: "var(--text-muted)" }}
 					>
 						Endpoint
@@ -784,7 +782,7 @@ function IdentityRail({
 				</div>
 				<div>
 					<dt
-						className="text-[11px] font-medium mb-1.5"
+						className="text-[11px] font-medium mb-1"
 						style={{ color: "var(--text-muted)" }}
 					>
 						Poll
@@ -799,7 +797,7 @@ function IdentityRail({
 			</dl>
 
 			<div
-				className="flex items-center gap-3 px-3.5 py-3 mb-5 rounded-xl"
+				className="flex items-center gap-2.5 px-3 py-2.5 mb-3 rounded-xl"
 				style={{
 					background: service.agent_connected
 						? "var(--status-up-subtle)"
@@ -812,7 +810,7 @@ function IdentityRail({
 				}}
 			>
 				<span
-					className={`w-2 h-2 rounded-full ${
+					className={`w-2 h-2 rounded-full shrink-0 ${
 						service.agent_connected ? "animate-pulse" : ""
 					}`}
 					style={{
@@ -826,7 +824,7 @@ function IdentityRail({
 				/>
 				<div className="flex-1 min-w-0">
 					<p
-						className="text-[12px] font-semibold leading-none"
+						className="text-[12px] font-semibold leading-none truncate"
 						style={{
 							color: service.agent_connected
 								? "var(--status-up-text)"
@@ -836,19 +834,19 @@ function IdentityRail({
 						{service.agent_connected ? "Agent canlı" : "Agent yok"}
 					</p>
 					<p
-						className="text-[11px] mt-1 truncate"
+						className="text-[11px] mt-0.5 truncate"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{service.agent_connected
-							? `Bağlı${service.agent_version ? ` · v${service.agent_version}` : ""}`
+							? `v${service.agent_version ?? "0"}`
 							: service.agent_last_heartbeat_at
-								? `Son ${new Date(service.agent_last_heartbeat_at).toLocaleTimeString("tr-TR")}`
+								? `Son ${new Date(service.agent_last_heartbeat_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`
 								: "Kurulum gerekli"}
 					</p>
 				</div>
 				{service.agent_status && service.agent_status !== "unknown" && (
 					<span
-						className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+						className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
 						style={{
 							color:
 								service.agent_status === "healthy"
@@ -869,9 +867,9 @@ function IdentityRail({
 				)}
 			</div>
 
-			<div className="flex flex-col gap-1.5">
+			<div className="flex flex-col gap-1">
 				<p
-					className="text-[11px] font-medium px-1 mb-1.5"
+					className="text-[11px] font-medium px-1 mb-0.5"
 					style={{ color: "var(--text-muted)" }}
 				>
 					Komutlar
@@ -896,7 +894,7 @@ function IdentityRail({
 					variant="warn"
 				/>
 				<div
-					className="h-px my-1.5"
+					className="h-px my-1"
 					style={{ background: "var(--border-subtle)" }}
 				/>
 				<ActionButton
@@ -941,23 +939,21 @@ function SectionNav({
 	active,
 	onChange,
 	alertCount,
-	durationRight,
 }: {
 	active: SectionId;
 	onChange: (s: SectionId) => void;
 	alertCount: number;
-	durationRight?: React.ReactNode;
 }) {
 	return (
 		<div
-			className="flex items-center gap-3 rounded-xl p-1.5"
+			className="rounded-xl p-1.5"
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
 			}}
 		>
 			<nav
-				className="flex items-center gap-1 overflow-x-auto flex-1"
+				className="flex items-center gap-1 overflow-x-auto"
 				style={{ scrollbarWidth: "none" }}
 			>
 				{SECTIONS.map((s) => {
@@ -969,7 +965,7 @@ function SectionNav({
 							key={s.id}
 							type="button"
 							onClick={() => onChange(s.id)}
-							className="relative flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-medium whitespace-nowrap transition-all"
+							className="relative flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-medium whitespace-nowrap transition-all shrink-0"
 							style={
 								isActive
 									? {
@@ -1003,9 +999,6 @@ function SectionNav({
 					);
 				})}
 			</nav>
-			{durationRight && (
-				<div className="shrink-0 hidden sm:block">{durationRight}</div>
-			)}
 		</div>
 	);
 }
@@ -1063,36 +1056,58 @@ function OverviewSection({
 	loading,
 	empty,
 	serviceId,
+	duration,
+	onDurationChange,
 }: {
 	chartData: ChartPoint[];
 	loading: boolean;
 	empty: boolean;
 	serviceId: string;
+	duration: string;
+	onDurationChange: (v: string) => void;
 }) {
+	const toolbar = (
+		<div className="flex items-center justify-between gap-3 flex-wrap">
+			<p
+				className="text-[12px] font-medium"
+				style={{ color: "var(--text-muted)" }}
+			>
+				Son {DURATION_LABELS[duration] ?? duration} ölçümleri
+			</p>
+			<DurationControl value={duration} onChange={onDurationChange} />
+		</div>
+	);
+
 	if (loading) {
 		return (
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-				{[0, 1, 2, 3].map((i) => (
-					<div
-						key={i}
-						className="h-[220px] rounded-lg animate-pulse"
-						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--border-default)",
-						}}
-					/>
-				))}
+			<div className="flex flex-col gap-3">
+				{toolbar}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+					{[0, 1, 2, 3].map((i) => (
+						<div
+							key={i}
+							className="h-[220px] rounded-lg animate-pulse"
+							style={{
+								background: "var(--surface-card)",
+								border: "1px solid var(--border-default)",
+							}}
+						/>
+					))}
+				</div>
 			</div>
 		);
 	}
 
 	if (empty) {
 		return (
-			<EmptyPanel
-				icon={Activity}
-				title="Metrik verisi yok"
-				description="Seçili zaman aralığında bu servis için kayıtlı metrik bulunmuyor. Daha geniş bir aralık seçin veya agent bağlantısını kontrol edin."
-			/>
+			<div className="flex flex-col gap-3">
+				{toolbar}
+				<EmptyPanel
+					icon={Activity}
+					title="Metrik verisi yok"
+					description="Seçili zaman aralığında bu servis için kayıtlı metrik bulunmuyor. Daha geniş bir aralık seçin veya agent bağlantısını kontrol edin."
+				/>
+			</div>
 		);
 	}
 
@@ -1114,6 +1129,7 @@ function OverviewSection({
 			}
 		>
 			<div className="flex flex-col gap-3">
+				{toolbar}
 				<ForecastPanel serviceId={serviceId} />
 				<ServiceMetricsCharts chartData={chartData} />
 				<DependenciesPanel serviceId={serviceId} />
@@ -1121,6 +1137,13 @@ function OverviewSection({
 		</Suspense>
 	);
 }
+
+const DURATION_LABELS: Record<string, string> = {
+	"15m": "15 dakika",
+	"1h": "1 saat",
+	"6h": "6 saat",
+	"24h": "24 saat",
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION — Alerts
@@ -2180,14 +2203,6 @@ export function ServiceDetailPage() {
 						active={activeSection}
 						onChange={setActiveSection}
 						alertCount={alerts.length}
-						durationRight={
-							activeSection === "overview" ? (
-								<DurationControl
-									value={metricsDuration}
-									onChange={setMetricsDuration}
-								/>
-							) : null
-						}
 					/>
 
 					<div
@@ -2218,6 +2233,8 @@ export function ServiceDetailPage() {
 										loading={metricsLoading}
 										empty={chartData.length === 0}
 										serviceId={serviceId ?? ""}
+										duration={metricsDuration}
+										onDurationChange={setMetricsDuration}
 									/>
 								)}
 
