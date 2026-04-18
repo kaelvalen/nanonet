@@ -37,6 +37,23 @@ export interface AggregatedMetric {
 	avg_memory: number | null;
 }
 
+export interface ForecastPoint {
+	timestamp: string;
+	value: number;
+	lower: number;
+	upper: number;
+}
+
+export interface ForecastResponse {
+	series: ForecastPoint[];
+	confidence: number;
+	next_value: number | null;
+	next_alert_at?: string | null;
+	threshold?: number | null;
+}
+
+export type ForecastMetric = "cpu" | "memory" | "latency" | "error_rate";
+
 export const metricsApi = {
 	getHistory: async (
 		serviceId: string,
@@ -48,6 +65,21 @@ export const metricsApi = {
 		});
 		const payload = response.data.data;
 		return payload?.metrics ?? payload ?? [];
+	},
+
+	getForecast: async (
+		serviceId: string,
+		metric: ForecastMetric = "cpu",
+		horizon = 12,
+		threshold?: number,
+	): Promise<{ forecast: ForecastResponse; metric: ForecastMetric }> => {
+		const params: Record<string, string | number> = { metric, horizon };
+		if (threshold != null) params.threshold = threshold;
+		const r = await apiClient.get(
+			`/services/${serviceId}/metrics/forecast`,
+			{ params },
+		);
+		return r.data.data;
 	},
 
 	getAggregated: async (
@@ -222,6 +254,13 @@ export const logsApi = {
 		const response = await apiClient.get(`/services/${serviceId}/logs`, {
 			params,
 		});
+		return response.data.data;
+	},
+
+	searchAll: async (
+		params: LogQueryParams & { service_id?: string } = {},
+	): Promise<LogsResponse> => {
+		const response = await apiClient.get("/logs", { params });
 		return response.data.data;
 	},
 

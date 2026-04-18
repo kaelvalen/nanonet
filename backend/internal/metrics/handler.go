@@ -256,6 +256,79 @@ func parseDuration(s string) (time.Duration, error) {
 	return time.ParseDuration(s)
 }
 
+// GetForecast returns a short-horizon Holt linear forecast for the requested
+// metric (cpu | memory | latency | error_rate). Uses the most recent N samples
+// from the existing GetHistory pipeline.
+func (h *Handler) GetForecast(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "invalid user")
+		return
+	}
+	serviceID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid service ID")
+		return
+	}
+	if !ownership.IsServiceOwner(c.Request.Context(), h.db, serviceID, userID) {
+		response.NotFound(c, "service not found")
+		return
+	}
+
+	metric := c.DefaultQuery("metric", "cpu")
+	horizon := 12
+	if v := c.Query("horizon"); v != "" {
+		var n int
+		if _, err := fmt.Sscan(v, &n); err == nil && n > 0 && n <= 96 {
+			horizon = n
+		}
+	}
+
+	samples, err := h.service.GetHistory(c.Request.Context(), serviceID, time.Hour, 200)
+	if err != nil {
+		response.InternalError(c, "failed to fetch metrics")
+		return
+	}
+	if len(samples) < 4 {
+		response.Success(c, gin.H{"forecast": Forecast{Series: []ForecastPoint{}}})
+		return
+	}
+
+	times := make([]time.Time, 0, len(samples))
+	values := make([]float64, 0, len(samples))
+	for i := len(samples) - 1; i >= 0; i-- { // GetHistory returns DESC by time
+		s := samples[i]
+		var v *float32
+		switch metric {
+		case "memory":
+			v = s.MemoryUsedMB
+		case "latency":
+			v = s.LatencyMS
+		case "error_rate":
+			v = s.ErrorRate
+		default:
+			v = s.CPUPercent
+			metric = "cpu"
+		}
+		if v == nil {
+			continue
+		}
+		times = append(times, s.Time)
+		values = append(values, float64(*v))
+	}
+
+	var threshold *float64
+	if t := c.Query("threshold"); t != "" {
+		var f float64
+		if _, err := fmt.Sscan(t, &f); err == nil {
+			threshold = &f
+		}
+	}
+
+	out := HoltLinearForecast(times, values, horizon, 0.4, 0.1, threshold)
+	response.Success(c, gin.H{"forecast": out, "metric": metric})
+}
+
 func (h *Handler) GetUptime(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {

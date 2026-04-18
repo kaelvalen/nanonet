@@ -29,6 +29,7 @@ type Service struct {
 	repo        *Repository
 	metricsRepo *metrics.Repository
 	rateLimiter *ratelimit.Limiter
+	guard       *CostGuard
 }
 
 func NewService(db *gorm.DB, apiKey string) *Service {
@@ -39,8 +40,13 @@ func NewService(db *gorm.DB, apiKey string) *Service {
 		repo:        NewRepository(db),
 		metricsRepo: metrics.NewRepository(db),
 		rateLimiter: ratelimit.New(10, time.Minute),
+		guard:       NewCostGuard(db),
 	}
 }
+
+// CostGuard exposes the cost guard so handlers (e.g. /ai/usage) can read it
+// without re-instantiating.
+func (s *Service) CostGuard() *CostGuard { return s.guard }
 
 func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, windowMinutes int, deepAnalysis bool) (*AnalysisResult, error) {
 	if !s.rateLimiter.Allow(userID.String()) {
@@ -161,7 +167,7 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 		model = ModelSonnet
 	}
 
-	raw, err := s.callClaude(prompt, model, MaxTokensDefault)
+	raw, err := s.callClaudeGuarded(ctx, userID, &serviceID, "analysis", prompt, model, MaxTokensDefault)
 	if err != nil {
 		return nil, fmt.Errorf("AI analizi başarısız: %w", err)
 	}
@@ -177,7 +183,15 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 }
 
 // callClaude tek Claude isteği yapar ve ham JSON'u döner; caller kendi struct'ına Unmarshal eder.
+// Geriye dönük uyumluluk için sarmalayıcı — gerçek implementasyon callClaudeRaw.
 func (s *Service) callClaude(prompt, model string, maxTokens int) ([]byte, error) {
+	out, _, err := s.callClaudeRaw(prompt, model, maxTokens)
+	return out, err
+}
+
+// callClaudeRaw, çıktı metnine ek olarak token kullanımını da döndürür. Maliyet
+// hesaplaması ve kullanım kaydı (ai_usage) bunu gerektirir.
+func (s *Service) callClaudeRaw(prompt, model string, maxTokens int) ([]byte, ClaudeUsage, error) {
 	reqBody := ClaudeRequest{
 		Model:     model,
 		MaxTokens: maxTokens,
@@ -188,12 +202,12 @@ func (s *Service) callClaude(prompt, model string, maxTokens int) ([]byte, error
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, err
+		return nil, ClaudeUsage{}, err
 	}
 
 	req, err := http.NewRequest("POST", "https://api.anthropic.com/v1/messages", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, err
+		return nil, ClaudeUsage{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", s.apiKey)
@@ -201,25 +215,25 @@ func (s *Service) callClaude(prompt, model string, maxTokens int) ([]byte, error
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ClaudeUsage{}, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("[Claude API] HTTP %d hatası (body: %.200s)", resp.StatusCode, string(body))
-		return nil, fmt.Errorf("claude API hatası (HTTP %d)", resp.StatusCode)
+		return nil, ClaudeUsage{}, fmt.Errorf("claude API hatası (HTTP %d)", resp.StatusCode)
 	}
 
 	var claudeResp ClaudeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&claudeResp); err != nil {
-		return nil, err
+		return nil, ClaudeUsage{}, err
 	}
 	if len(claudeResp.Content) == 0 {
-		return nil, fmt.Errorf("claude boş yanıt döndü")
+		return nil, claudeResp.Usage, fmt.Errorf("claude boş yanıt döndü")
 	}
 	if claudeResp.StopReason == "max_tokens" {
-		return nil, fmt.Errorf("AI yanıtı token limitinde kesildi; maxTokens değerini artırın")
+		return nil, claudeResp.Usage, fmt.Errorf("AI yanıtı token limitinde kesildi; maxTokens değerini artırın")
 	}
 
 	rawText := strings.TrimSpace(claudeResp.Content[0].Text)
@@ -229,7 +243,50 @@ func (s *Service) callClaude(prompt, model string, maxTokens int) ([]byte, error
 	if idx := strings.LastIndex(rawText, "}"); idx >= 0 && idx < len(rawText)-1 {
 		rawText = rawText[:idx+1]
 	}
-	return []byte(rawText), nil
+	return []byte(rawText), claudeResp.Usage, nil
+}
+
+// callClaudeGuarded sarar: bütçe kontrolü → cache lookup → gerçek istek →
+// cache + ai_usage kaydı. Sıfır hata durumunda ham JSON döner.
+func (s *Service) callClaudeGuarded(ctx context.Context, userID uuid.UUID, serviceID *uuid.UUID, kind, prompt, model string, maxTokens int) ([]byte, error) {
+	if s.guard != nil {
+		if err := s.guard.CheckBudget(ctx, userID); err != nil {
+			return nil, err
+		}
+		if hit, _ := s.guard.LookupCache(ctx, model, prompt); hit != nil {
+			s.guard.LogUsage(ctx, UsageRow{
+				UserID:       userID,
+				ServiceID:    serviceID,
+				Model:        model,
+				Kind:         kind,
+				InputTokens:  hit.InputTokens,
+				OutputTokens: hit.OutputTokens,
+				CostUSD:      0,
+				CacheHit:     true,
+			})
+			return []byte(hit.ResponseJSON), nil
+		}
+	}
+	start := time.Now()
+	raw, usage, err := s.callClaudeRaw(prompt, model, maxTokens)
+	latency := int(time.Since(start).Milliseconds())
+	if err != nil {
+		return nil, err
+	}
+	if s.guard != nil {
+		s.guard.StoreCache(ctx, model, prompt, string(raw), usage.InputTokens, usage.OutputTokens)
+		s.guard.LogUsage(ctx, UsageRow{
+			UserID:       userID,
+			ServiceID:    serviceID,
+			Model:        model,
+			Kind:         kind,
+			InputTokens:  usage.InputTokens,
+			OutputTokens: usage.OutputTokens,
+			CacheHit:     false,
+			LatencyMS:    latency,
+		})
+	}
+	return raw, nil
 }
 
 func (s *Service) saveInsight(serviceID uuid.UUID, model string, result *AnalysisResult) {
@@ -411,7 +468,7 @@ func (s *Service) GenerateReport(ctx context.Context, userID uuid.UUID, req Repo
 		periodLabel,
 	)
 
-	raw, err := s.callClaude(prompt, ModelSonnet, 4096)
+	raw, err := s.callClaudeGuarded(ctx, userID, nil, "report", prompt, ModelSonnet, 4096)
 	if err != nil {
 		return nil, fmt.Errorf("AI raporu başarısız: %w", err)
 	}

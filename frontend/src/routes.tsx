@@ -61,6 +61,42 @@ const LogsPage = lazy(() =>
 const SecurityPage = lazy(() =>
 	import("@/pages/SecurityPage").then((m) => ({ default: m.SecurityPage })),
 );
+const NotificationsPage = lazy(() =>
+	import("@/pages/NotificationsPage").then((m) => ({
+		default: m.NotificationsPage,
+	})),
+);
+const SLOPage = lazy(() =>
+	import("@/pages/SLOPage").then((m) => ({ default: m.SLOPage })),
+);
+const StatusPagesAdmin = lazy(() =>
+	import("@/pages/StatusPagesAdmin").then((m) => ({
+		default: m.StatusPagesAdmin,
+	})),
+);
+const PublicStatusPage = lazy(() =>
+	import("@/pages/PublicStatusPage").then((m) => ({
+		default: m.PublicStatusPage,
+	})),
+);
+const IncidentsPage = lazy(() =>
+	import("@/pages/IncidentsPage").then((m) => ({ default: m.IncidentsPage })),
+);
+const ProbesPage = lazy(() =>
+	import("@/pages/ProbesPage").then((m) => ({ default: m.ProbesPage })),
+);
+const RunbooksPage = lazy(() =>
+	import("@/pages/RunbooksPage").then((m) => ({ default: m.RunbooksPage })),
+);
+const AIUsagePage = lazy(() =>
+	import("@/pages/AIUsagePage").then((m) => ({ default: m.AIUsagePage })),
+);
+const ApiTokensPage = lazy(() =>
+	import("@/pages/ApiTokensPage").then((m) => ({ default: m.ApiTokensPage })),
+);
+const ComparePage = lazy(() =>
+	import("@/pages/ComparePage").then((m) => ({ default: m.ComparePage })),
+);
 
 export const router = createBrowserRouter([
 	{
@@ -102,6 +138,11 @@ export const router = createBrowserRouter([
 				<ResetPasswordPage />
 			</GuestGuard>
 		),
+		errorElement: <ErrorPage />,
+	},
+	{
+		path: "/status/:slug",
+		element: <PublicStatusPage />,
 		errorElement: <ErrorPage />,
 	},
 	{
@@ -155,6 +196,15 @@ export const router = createBrowserRouter([
 			{ path: "kubernetes", element: <KubernetesPage /> },
 			{ path: "logs", element: <LogsPage /> },
 			{ path: "security", element: <SecurityPage /> },
+			{ path: "notifications", element: <NotificationsPage /> },
+			{ path: "slo", element: <SLOPage /> },
+			{ path: "status-pages", element: <StatusPagesAdmin /> },
+			{ path: "incidents", element: <IncidentsPage /> },
+			{ path: "probes", element: <ProbesPage /> },
+			{ path: "runbooks", element: <RunbooksPage /> },
+			{ path: "ai-usage", element: <AIUsagePage /> },
+			{ path: "api-tokens", element: <ApiTokensPage /> },
+			{ path: "compare", element: <ComparePage /> },
 		],
 	},
 	{

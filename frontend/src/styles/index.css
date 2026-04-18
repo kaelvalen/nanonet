@@ -1,4 +1,7 @@
-@import "./accessibility.css";
+/* Google Fonts MUST come first — CSS spec requires @import url() to precede
+   all other rules (besides @charset / @layer). Putting fonts.css before
+   accessibility.css ensures the bundled output keeps the url() @import on top. */
 @import "./fonts.css";
+@import "./accessibility.css";
 @import "./tailwind.css";
 @import "./theme.css";

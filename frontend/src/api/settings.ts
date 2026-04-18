@@ -16,6 +16,8 @@ export interface UserSettings {
 	webhook_url: string | null;
 	webhook_secret: string | null;
 	slack_webhook_url: string | null;
+	log_retention_days?: number | null;
+	ai_monthly_budget_usd?: number | null;
 	updated_at: string;
 }
 
@@ -31,6 +33,8 @@ export interface UpdateSettingsRequest {
 	webhook_url?: string | null;
 	webhook_secret?: string | null;
 	slack_webhook_url?: string | null;
+	log_retention_days?: number | null;
+	ai_monthly_budget_usd?: number | null;
 }
 
 export const settingsApi = {

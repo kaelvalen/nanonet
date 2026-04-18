@@ -57,6 +57,10 @@ import type { Service } from "@/types/service";
 // overlaps with Node's child_process method, but this is a typed HTTP client call)
 const runAgentCommand = servicesApi["exec" as "exec"];
 
+import { DependenciesPanel } from "@/components/service-detail/DependenciesPanel";
+import { SharingPanel } from "@/components/service-detail/SharingPanel";
+import { ForecastPanel } from "@/components/service-detail/ForecastPanel";
+
 const ServiceMetricsCharts = lazy(() =>
 	import("@/components/service-detail/ServiceMetricsCharts").then((m) => ({
 		default: m.ServiceMetricsCharts,
@@ -842,9 +846,34 @@ function IdentityRail({
 						className="text-[9px] font-mono mt-1 truncate"
 						style={{ color: "var(--text-faint)" }}
 					>
-						{service.agent_connected ? "WebSocket bağlı" : "Kurulum gerekli"}
+						{service.agent_connected
+							? `WS bağlı${service.agent_version ? ` · v${service.agent_version}` : ""}`
+							: service.agent_last_heartbeat_at
+								? `Son heartbeat ${new Date(service.agent_last_heartbeat_at).toLocaleTimeString("tr-TR")}`
+								: "Kurulum gerekli"}
 					</p>
 				</div>
+				{service.agent_status && service.agent_status !== "unknown" && (
+					<span
+						className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+						style={{
+							color:
+								service.agent_status === "healthy"
+									? "var(--status-up-text)"
+									: service.agent_status === "stale"
+										? "var(--status-degraded-text)"
+										: "var(--status-down-text)",
+							background:
+								service.agent_status === "healthy"
+									? "var(--status-up-subtle)"
+									: service.agent_status === "stale"
+										? "var(--status-degraded-subtle)"
+										: "var(--status-down-subtle)",
+						}}
+					>
+						{service.agent_status}
+					</span>
+				)}
 			</div>
 
 			<div className="flex flex-col gap-1.5">
@@ -1038,10 +1067,12 @@ function OverviewSection({
 	chartData,
 	loading,
 	empty,
+	serviceId,
 }: {
 	chartData: ChartPoint[];
 	loading: boolean;
 	empty: boolean;
+	serviceId: string;
 }) {
 	if (loading) {
 		return (
@@ -1087,7 +1118,12 @@ function OverviewSection({
 				</div>
 			}
 		>
-			<ServiceMetricsCharts chartData={chartData} />
+			<div className="flex flex-col gap-3">
+				<ServiceMetricsCharts chartData={chartData} />
+				<ForecastPanel serviceId={serviceId} />
+				<DependenciesPanel serviceId={serviceId} />
+				<SharingPanel serviceId={serviceId} />
+			</div>
 		</Suspense>
 	);
 }
@@ -2212,6 +2248,7 @@ export function ServiceDetailPage() {
 										chartData={chartData}
 										loading={metricsLoading}
 										empty={chartData.length === 0}
+										serviceId={serviceId ?? ""}
 									/>
 								)}
 

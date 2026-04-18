@@ -97,6 +97,20 @@ func (s *Service) Update(ctx context.Context, userID uuid.UUID, req UpdateSettin
 	if req.SlackWebhookURL != nil {
 		updates["slack_webhook_url"] = req.SlackWebhookURL
 	}
+	if req.LogRetentionDays != nil {
+		v := *req.LogRetentionDays
+		if v < 1 || v > 365 {
+			return nil, errors.New("log_retention_days 1 ile 365 arasında olmalı")
+		}
+		updates["log_retention_days"] = v
+	}
+	if req.AIMonthlyBudgetUSD != nil {
+		v := *req.AIMonthlyBudgetUSD
+		if v < 0 || v > 10_000 {
+			return nil, errors.New("ai_monthly_budget_usd 0 ile 10000 arasında olmalı")
+		}
+		updates["ai_monthly_budget_usd"] = v
+	}
 
 	if err := s.db.WithContext(ctx).Model(existing).Updates(updates).Error; err != nil {
 		return nil, err

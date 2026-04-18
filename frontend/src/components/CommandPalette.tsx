@@ -2,6 +2,7 @@ import {
 	Activity,
 	AlertCircle,
 	Cloud,
+	GitCompare,
 	Home,
 	Play,
 	Plus,
@@ -40,7 +41,8 @@ const navigationItems = [
 		shortcut: "⌘4",
 	},
 	{ label: "Kubernetes", icon: Cloud, path: "/app/kubernetes", shortcut: "⌘5" },
-	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘6" },
+	{ label: "Karşılaştır", icon: GitCompare, path: "/app/compare", shortcut: "⌘6" },
+	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘7" },
 ];
 
 const actionItems = [

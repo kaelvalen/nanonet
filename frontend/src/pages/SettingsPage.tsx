@@ -168,9 +168,10 @@ export function SettingsPage() {
 	const [monitoring, setMonitoring] = useState({
 		pollInterval: 10,
 		autoRecovery: false,
+		logRetentionDays: 30,
 	});
 	const [monitoringDirty, setMonitoringDirty] = useState(false);
-	const [ai, setAi] = useState({ autoAnalyze: true, window: 30 });
+	const [ai, setAi] = useState({ autoAnalyze: true, window: 30, monthlyBudgetUSD: 0 });
 	const [aiDirty, setAiDirty] = useState(false);
 
 	// Password change
@@ -228,10 +229,12 @@ export function SettingsPage() {
 			setMonitoring({
 				pollInterval: settings.poll_interval_sec,
 				autoRecovery: settings.auto_recovery,
+				logRetentionDays: settings.log_retention_days ?? 30,
 			});
 			setAi({
 				autoAnalyze: settings.ai_auto_analyze,
 				window: settings.ai_window_minutes,
+				monthlyBudgetUSD: settings.ai_monthly_budget_usd ?? 0,
 			});
 			setWebhookUrl(settings.webhook_url ?? "");
 			setWebhookSecret(settings.webhook_secret ?? "");
@@ -280,10 +283,13 @@ export function SettingsPage() {
 		if (monitoringDirty) {
 			payload.poll_interval_sec = monitoring.pollInterval;
 			payload.auto_recovery = monitoring.autoRecovery;
+			payload.log_retention_days = monitoring.logRetentionDays;
 		}
 		if (aiDirty) {
 			payload.ai_auto_analyze = ai.autoAnalyze;
 			payload.ai_window_minutes = ai.window;
+			payload.ai_monthly_budget_usd =
+				ai.monthlyBudgetUSD > 0 ? ai.monthlyBudgetUSD : null;
 		}
 		if (webhookDirty) {
 			payload.webhook_url = webhookUrl || null;
@@ -687,6 +693,43 @@ export function SettingsPage() {
 							</div>
 						</div>
 						<Separator style={dividerStyle} />
+						<div className="grid gap-1.5">
+							<Label
+								className="text-xs font-medium"
+								style={{ color: "var(--text-secondary)" }}
+							>
+								Log Saklama Süresi (gün)
+							</Label>
+							<div className="flex items-center gap-3">
+								<Input
+									type="number"
+									min={1}
+									max={365}
+									value={monitoring.logRetentionDays}
+									onChange={(e) => {
+										setMonitoring((p) => ({
+											...p,
+											logRetentionDays:
+												parseInt(e.target.value, 10) || 30,
+										}));
+										setMonitoringDirty(true);
+									}}
+									className="rounded text-xs h-9 w-24"
+									style={{
+										background: "var(--input-bg)",
+										borderColor: "var(--input-border)",
+										color: "var(--text-secondary)",
+									}}
+								/>
+								<span
+									className="text-[10px]"
+									style={{ color: "var(--text-faint)" }}
+								>
+									Min 1 gün, Maks 365 gün — eski loglar otomatik silinir
+								</span>
+							</div>
+						</div>
+						<Separator style={dividerStyle} />
 						<div
 							className="space-y-1 divide-y"
 							style={{ borderColor: "var(--border-divider)" }}
@@ -771,6 +814,45 @@ export function SettingsPage() {
 									style={{ color: "var(--text-faint)" }}
 								>
 									Min 5dk, Maks 120dk
+								</span>
+							</div>
+						</div>
+						<Separator style={dividerStyle} />
+						<div className="grid gap-1.5">
+							<Label
+								className="text-xs font-medium"
+								style={{ color: "var(--text-secondary)" }}
+							>
+								Aylık Bütçe (USD)
+							</Label>
+							<div className="flex items-center gap-3">
+								<Input
+									type="number"
+									min={0}
+									max={10000}
+									step={1}
+									value={ai.monthlyBudgetUSD}
+									onChange={(e) => {
+										setAi((p) => ({
+											...p,
+											monthlyBudgetUSD:
+												parseFloat(e.target.value) || 0,
+										}));
+										setAiDirty(true);
+									}}
+									className="rounded text-xs h-9 w-24"
+									style={{
+										background: "var(--input-bg)",
+										borderColor: "var(--input-border)",
+										color: "var(--text-secondary)",
+									}}
+								/>
+								<span
+									className="text-[10px]"
+									style={{ color: "var(--text-faint)" }}
+								>
+									0 = limitsiz · Aylık spend bu değere ulaşırsa AI çağrıları
+									reddedilir
 								</span>
 							</div>
 						</div>

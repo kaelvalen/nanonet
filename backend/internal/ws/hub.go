@@ -12,23 +12,31 @@ import (
 )
 
 type AgentMessage struct {
-	Type      string                 `json:"type"`
-	AgentID   string                 `json:"agent_id,omitempty"`
-	ServiceID string                 `json:"service_id,omitempty"`
-	CommandID string                 `json:"command_id,omitempty"`
-	Status    string                 `json:"status,omitempty"`
-	Output    *string                `json:"output,omitempty"`
-	Error     *string                `json:"error,omitempty"`
-	Data      map[string]interface{} `json:"data,omitempty"`
-	System    map[string]interface{} `json:"system,omitempty"`
-	App       map[string]interface{} `json:"app,omitempty"`
-	Service   map[string]interface{} `json:"service,omitempty"`
-	Process   map[string]interface{} `json:"process,omitempty"`
-	Timestamp string                 `json:"timestamp,omitempty"`
+	Type         string                   `json:"type"`
+	AgentID      string                   `json:"agent_id,omitempty"`
+	AgentVersion string                   `json:"agent_version,omitempty"`
+	ServiceID    string                   `json:"service_id,omitempty"`
+	CommandID    string                   `json:"command_id,omitempty"`
+	Status       string                   `json:"status,omitempty"`
+	Output       *string                  `json:"output,omitempty"`
+	Error        *string                  `json:"error,omitempty"`
+	Data         map[string]interface{}   `json:"data,omitempty"`
+	System       map[string]interface{}   `json:"system,omitempty"`
+	App          map[string]interface{}   `json:"app,omitempty"`
+	Service      map[string]interface{}   `json:"service,omitempty"`
+	Process      map[string]interface{}   `json:"process,omitempty"`
+	Dependencies []map[string]interface{} `json:"dependencies,omitempty"`
+	Timestamp    string                   `json:"timestamp,omitempty"`
 }
 
 type OnMetricFunc func(serviceID string, msg AgentMessage)
 type OnCommandResultFunc func(commandID, status string, msg AgentMessage)
+type OnDependenciesFunc func(serviceID string, deps []map[string]interface{})
+
+// OnAgentHeartbeatFunc is called whenever an agent reports presence: either an
+// explicit "heartbeat" message or any "metrics" frame. Backend uses it to bump
+// services.agent_last_heartbeat_at + agent_version.
+type OnAgentHeartbeatFunc func(serviceID, agentVersion string, at time.Time)
 
 type Hub struct {
 	dashboardClients map[*Client]bool
@@ -41,6 +49,8 @@ type Hub struct {
 
 	onMetric        OnMetricFunc
 	onCommandResult OnCommandResultFunc
+	onDependencies  OnDependenciesFunc
+	onHeartbeat     OnAgentHeartbeatFunc
 
 	// pendingCommands — agent çevrimdışıyken biriken komutlar (in-memory fallback).
 	pendingCommands map[string][]pendingCommand // serviceID -> []command
@@ -88,6 +98,18 @@ func (h *Hub) SetOnCommandResult(fn OnCommandResultFunc) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.onCommandResult = fn
+}
+
+func (h *Hub) SetOnDependencies(fn OnDependenciesFunc) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.onDependencies = fn
+}
+
+func (h *Hub) SetOnAgentHeartbeat(fn OnAgentHeartbeatFunc) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.onHeartbeat = fn
 }
 
 func (h *Hub) Run() {
@@ -221,10 +243,29 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 
 		h.mu.RLock()
 		fn := h.onMetric
+		hb := h.onHeartbeat
 		h.mu.RUnlock()
 
+		if hb != nil {
+			hb(serviceID, msg.AgentVersion, time.Now())
+		}
 		if fn != nil {
 			fn(serviceID, msg)
+		}
+
+	case "heartbeat":
+		serviceID := msg.ServiceID
+		if serviceID == "" {
+			serviceID = client.serviceID
+		}
+		if serviceID == "" {
+			return
+		}
+		h.mu.RLock()
+		hb := h.onHeartbeat
+		h.mu.RUnlock()
+		if hb != nil {
+			hb(serviceID, msg.AgentVersion, time.Now())
 		}
 
 	case "ack":
@@ -243,6 +284,21 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 		}
 
 		h.BroadcastCommandResult(client.serviceID, msg.CommandID, msg.Status, msg.Output, msg.Error)
+
+	case "dependencies":
+		serviceID := msg.ServiceID
+		if serviceID == "" {
+			serviceID = client.serviceID
+		}
+		if serviceID == "" || len(msg.Dependencies) == 0 {
+			return
+		}
+		h.mu.RLock()
+		fn := h.onDependencies
+		h.mu.RUnlock()
+		if fn != nil {
+			fn(serviceID, msg.Dependencies)
+		}
 
 	default:
 		slog.Warn("Agent bilinmeyen mesaj tipi", slog.String("client_id", client.id), slog.String("type", msg.Type))

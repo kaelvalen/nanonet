@@ -9,6 +9,9 @@ export interface Service {
 	status: "up" | "down" | "degraded" | "unknown";
 	agent_id: string | null;
 	agent_connected?: boolean;
+	agent_version?: string | null;
+	agent_status?: "healthy" | "stale" | "down" | "unknown";
+	agent_last_heartbeat_at?: string | null;
 	created_at: string;
 	updated_at: string;
 }

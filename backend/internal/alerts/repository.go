@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -116,21 +117,29 @@ func (r *Repository) GetActiveAlertTypes(ctx context.Context, serviceID uuid.UUI
 }
 
 func (r *Repository) ResolveByType(ctx context.Context, serviceID uuid.UUID, alertType string) error {
-	return r.ResolveByTypes(ctx, serviceID, []string{alertType})
+	_, err := r.ResolveByTypes(ctx, serviceID, []string{alertType})
+	return err
 }
 
-func (r *Repository) ResolveByTypes(ctx context.Context, serviceID uuid.UUID, alertTypes []string) error {
+func (r *Repository) ResolveByTypes(ctx context.Context, serviceID uuid.UUID, alertTypes []string) ([]uuid.UUID, error) {
 	if len(alertTypes) == 0 {
-		return nil
+		return nil, nil
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	now := time.Now()
-	return r.db.WithContext(ctx).
-		Model(&Alert{}).
-		Where("service_id = ? AND type IN ? AND resolved_at IS NULL", serviceID, alertTypes).
-		Update("resolved_at", now).Error
+	// RETURNING gives us the IDs in a single round-trip so callers can fan out
+	// downstream side effects (incident closing, audit, etc).
+	// pq.StringArray ensures the slice is encoded as a Postgres text[] for the
+	// = ANY($n) predicate. Plain []string would be rejected by lib/pq.
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).Raw(`
+		UPDATE alerts SET resolved_at = ?
+		WHERE service_id = ? AND type = ANY(?) AND resolved_at IS NULL
+		RETURNING id
+	`, now, serviceID, pq.StringArray(alertTypes)).Scan(&ids).Error
+	return ids, err
 }
 
 // SnoozeByUser sets resolved_at = now + duration for the alert, effectively hiding it until the snooze expires.

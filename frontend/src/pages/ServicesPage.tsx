@@ -1,16 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowUpRight,
 	Clock,
 	Globe,
 	LayoutGrid,
 	List,
+	Loader2,
 	Search,
 	Server,
+	Sparkles,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
+import { toast } from "sonner";
+import { demoApi } from "@/api/demo";
 import { metricsApi } from "@/api/metrics";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
 import { Input } from "@/components/ui/input";
@@ -234,6 +238,22 @@ function ServiceRow({
 // Empty state
 
 function EmptyResults({ hasServices }: { hasServices: boolean }) {
+	const qc = useQueryClient();
+	const seed = useMutation({
+		mutationFn: () => demoApi.seed(),
+		onSuccess: (data) => {
+			qc.invalidateQueries({ queryKey: ["services"] });
+			qc.invalidateQueries({ queryKey: ["servicesUptime"] });
+			toast.success(`${data.created_count} demo servis yüklendi`);
+		},
+		onError: (err: unknown) => {
+			const msg =
+				(err as { response?: { data?: { error?: string } } })?.response?.data
+					?.error ?? "Demo verisi yüklenemedi";
+			toast.error(msg);
+		},
+	});
+
 	return (
 		<div
 			className="p-12 text-center rounded-lg"
@@ -254,11 +274,31 @@ function EmptyResults({ hasServices }: { hasServices: boolean }) {
 			>
 				{hasServices ? "Filtreye uygun servis yok" : "Henüz servis eklenmedi"}
 			</p>
-			<p className="text-xs" style={{ color: "var(--text-muted)" }}>
+			<p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
 				{hasServices
 					? "Arama veya filtre kriterlerini değiştirin"
-					: "Sağ üstten ilk servisinizi ekleyin"}
+					: "Sağ üstten ilk servisinizi ekleyin — veya hızlıca arayüzü tanımak için demo veriyi yükleyin"}
 			</p>
+			{!hasServices && (
+				<button
+					type="button"
+					onClick={() => seed.mutate()}
+					disabled={seed.isPending}
+					className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-md disabled:opacity-60"
+					style={{
+						background: "var(--surface-sunken)",
+						border: "1px solid var(--border-default)",
+						color: "var(--text-primary)",
+					}}
+				>
+					{seed.isPending ? (
+						<Loader2 className="w-3.5 h-3.5 animate-spin" />
+					) : (
+						<Sparkles className="w-3.5 h-3.5" style={{ color: "var(--color-amber)" }} />
+					)}
+					{seed.isPending ? "Yükleniyor..." : "Demo veriyi yükle (4 servis · 6 saat metric)"}
+				</button>
+			)}
 		</div>
 	);
 }

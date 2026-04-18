@@ -18,9 +18,12 @@ type Service struct {
 	HealthEndpoint  string     `gorm:"type:varchar(255);not null;default:'/health'" json:"health_endpoint"`
 	PollIntervalSec int        `gorm:"not null;default:10" json:"poll_interval_sec"`
 	Status          string     `gorm:"type:varchar(20);not null;default:'unknown'" json:"status"`
-	AgentID         *uuid.UUID `gorm:"type:uuid" json:"agent_id,omitempty"`
-	CreatedAt       time.Time  `gorm:"not null;default:now()" json:"created_at"`
-	UpdatedAt       time.Time  `gorm:"not null;default:now()" json:"updated_at"`
+	AgentID                *uuid.UUID `gorm:"type:uuid" json:"agent_id,omitempty"`
+	AgentVersion           *string    `gorm:"column:agent_version" json:"agent_version,omitempty"`
+	AgentLastHeartbeatAt   *time.Time `gorm:"column:agent_last_heartbeat_at" json:"agent_last_heartbeat_at,omitempty"`
+	AgentStatus            string     `gorm:"column:agent_status;not null;default:'unknown'" json:"agent_status"`
+	CreatedAt              time.Time  `gorm:"not null;default:now()" json:"created_at"`
+	UpdatedAt              time.Time  `gorm:"not null;default:now()" json:"updated_at"`
 }
 
 type CreateServiceRequest struct {

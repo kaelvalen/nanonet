@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS runbook_fires;
+DROP TABLE IF EXISTS runbooks;

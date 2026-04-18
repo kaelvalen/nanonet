@@ -156,4 +156,10 @@ type ClaudeResponse struct {
 		Text string `json:"text"`
 	} `json:"content"`
 	StopReason string `json:"stop_reason"`
+	Usage      ClaudeUsage `json:"usage"`
+}
+
+type ClaudeUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
 }

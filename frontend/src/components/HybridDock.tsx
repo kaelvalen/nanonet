@@ -1,5 +1,6 @@
 import {
 	AlertCircle,
+	Bell,
 	Cloud,
 	GitFork,
 	LayoutDashboard,
@@ -8,7 +9,15 @@ import {
 	Server,
 	Settings,
 	Shield,
+	FileText,
+	Globe,
+	Activity,
+	BookOpen,
+	CircleDollarSign,
+	GitCompare,
+	Key,
 	Sparkles,
+	Target,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
@@ -38,14 +47,23 @@ const PRIMARY: NavItem[] = [
 	{ to: "/app", label: "Genel Bakış", icon: LayoutDashboard, end: true },
 	{ to: "/app/services", label: "Servisler", icon: Server, badge: "services" },
 	{ to: "/app/alerts", label: "Uyarılar", icon: AlertCircle, badge: "alerts" },
+	{ to: "/app/incidents", label: "Incidents", icon: FileText },
 	{ to: "/app/ai-insights", label: "AI İçgörüler", icon: Sparkles },
 	{ to: "/app/service-map", label: "Servis Haritası", icon: GitFork },
+	{ to: "/app/compare", label: "Karşılaştır", icon: GitCompare },
 ];
 
 const SECONDARY: NavItem[] = [
 	{ to: "/app/kubernetes", label: "Kubernetes", icon: Cloud },
 	{ to: "/app/logs", label: "Loglar", icon: Scroll },
 	{ to: "/app/security", label: "Güvenlik", icon: Shield },
+	{ to: "/app/notifications", label: "Bildirimler", icon: Bell },
+	{ to: "/app/slo", label: "SLO", icon: Target },
+	{ to: "/app/probes", label: "Probes", icon: Activity },
+	{ to: "/app/runbooks", label: "Runbooks", icon: BookOpen },
+	{ to: "/app/ai-usage", label: "AI Maliyetleri", icon: CircleDollarSign },
+	{ to: "/app/api-tokens", label: "API Tokens", icon: Key },
+	{ to: "/app/status-pages", label: "Status Sayfaları", icon: Globe },
 ];
 
 function DockItem({

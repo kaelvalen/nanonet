@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS probe_runs;
+DROP TABLE IF EXISTS probes;

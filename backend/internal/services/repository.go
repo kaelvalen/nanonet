@@ -24,13 +24,19 @@ func (r *Repository) Create(ctx context.Context, service *Service) error {
 	return r.db.WithContext(ctx).Create(service).Error
 }
 
+// GetByID returns the service if the caller is the owner OR holds any active
+// service_grants entry for it. Write-only paths still authorise via Update /
+// Delete (which keep the strict owner check) or via ownership.HasServiceAccess.
 func (r *Repository) GetByID(ctx context.Context, id, userID uuid.UUID) (*Service, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	var service Service
 	err := r.db.WithContext(ctx).
-		Where("id = ? AND user_id = ?", id, userID).
+		Where(`id = ? AND (
+			user_id = ?
+			OR id IN (SELECT service_id FROM service_grants WHERE grantee_user_id = ?)
+		)`, id, userID, userID).
 		First(&service).Error
 	return &service, err
 }
@@ -41,7 +47,9 @@ func (r *Repository) List(ctx context.Context, userID uuid.UUID) ([]Service, err
 
 	var services []Service
 	err := r.db.WithContext(ctx).
-		Where("user_id = ?", userID).
+		Where(`user_id = ?
+			OR id IN (SELECT service_id FROM service_grants WHERE grantee_user_id = ?)`,
+			userID, userID).
 		Order("created_at DESC").
 		Find(&services).Error
 	return services, err

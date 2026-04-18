@@ -8,16 +8,27 @@ import (
 	"os"
 	"time"
 
+	"nanonet-backend/internal/agentmgmt"
 	"nanonet-backend/internal/ai"
 	"nanonet-backend/internal/alerts"
+	"nanonet-backend/internal/apitokens"
 	"nanonet-backend/internal/auth"
 	"nanonet-backend/internal/commands"
+	"nanonet-backend/internal/demo"
 	"nanonet-backend/internal/k8s"
 	"nanonet-backend/internal/logs"
 	"nanonet-backend/internal/maintenance"
 	"nanonet-backend/internal/metrics"
+	"nanonet-backend/internal/notifications"
 	"nanonet-backend/internal/security"
 	"nanonet-backend/internal/services"
+	"nanonet-backend/internal/slo"
+	"nanonet-backend/internal/dependencies"
+	"nanonet-backend/internal/grants"
+	"nanonet-backend/internal/incidents"
+	"nanonet-backend/internal/probes"
+	"nanonet-backend/internal/runbooks"
+	"nanonet-backend/internal/statuspage"
 	"nanonet-backend/internal/settings"
 	"nanonet-backend/internal/ws"
 	"nanonet-backend/pkg/audit"
@@ -31,6 +42,7 @@ import (
 	"nanonet-backend/pkg/tokenblacklist"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func main() {
@@ -119,9 +131,19 @@ func main() {
 		logger.Info("Alert email bildirimleri aktif")
 	}
 
+	// ── Notifications (multi-channel: slack/discord/webhook/email/pagerduty)
+	notifSvc := notifications.NewService(db, m)
+	alertSvc.SetMultiNotifier(notificationsAdapter{svc: notifSvc})
+	logger.Info("Çok-kanallı bildirim servisi aktif")
+
 	// ── Handlers ──────────────────────────────────────────────────
 	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL, bl)
 	authMiddleware := auth.NewMiddleware(cfg.JWTSecret, bl)
+	apiTokensSvc := apitokens.NewService(db)
+	apiTokensHandler := apitokens.NewHandler(apiTokensSvc)
+	demoSvc := demo.New(db)
+	demoHandler := demo.NewHandler(demoSvc)
+	authMiddleware.SetAPITokenAuthenticator(apiTokensAdapter{svc: apiTokensSvc})
 	authSvc := auth.NewService(db, cfg.JWTSecret)
 	serviceHandler := services.NewHandler(db, hub)
 	metricsHandler := metrics.NewHandler(db)
@@ -135,6 +157,15 @@ func main() {
 	auditHandler := audit.NewHandler(db)
 	logsHandler := logs.NewHandler(logsRepo)
 	securityHandler := security.NewHandler(db)
+	notifHandler := notifications.NewHandler(notifSvc, db)
+	sloHandler := slo.NewHandler(slo.NewService(db), db)
+	statusHandler := statuspage.NewHandler(statuspage.NewService(db))
+
+	// ── Incidents (auto-grouped from alerts) ─────────────────────
+	incidentsSvc := incidents.NewService(db)
+	alertSvc.SetIncidentRecorder(incidentsAdapter{svc: incidentsSvc})
+	incidentsHandler := incidents.NewHandler(incidentsSvc)
+	logger.Info("Incident otomatik gruplama aktif")
 
 	// ── Kubernetes (optional) ─────────────────────────────────────
 	var k8sClient *k8s.Client
@@ -166,22 +197,214 @@ func main() {
 		_ = cmdService.UpdateStatus(context.Background(), commandID, status, nil)
 	})
 
-	// 30 günlük log retention — her gün gece yarısı çalışır
+	// ── Dependency auto-discovery (agent-reported outbound connections)
+	depsHandler := dependencies.NewHandler(db)
+	grantsHandler := grants.NewHandler(db)
+	agentSvc := agentmgmt.New(db)
+	agentHandler := agentmgmt.NewHandler(agentSvc)
+	hub.SetOnAgentHeartbeat(func(serviceID, version string, at time.Time) {
+		if err := agentSvc.RecordHeartbeat(context.Background(), serviceID, version, at); err != nil {
+			logger.Debug("heartbeat persist hatası", slog.String("service_id", serviceID), slog.String("error", err.Error()))
+		}
+	})
+	hub.SetOnDependencies(func(serviceID string, raw []map[string]interface{}) {
+		sid, err := uuid.Parse(serviceID)
+		if err != nil {
+			return
+		}
+		obs := make([]dependencies.Observation, 0, len(raw))
+		for _, r := range raw {
+			host, _ := r["target_host"].(string)
+			portF, _ := r["target_port"].(float64)
+			proto, _ := r["protocol"].(string)
+			var pname *string
+			if v, ok := r["process_name"].(string); ok && v != "" {
+				pname = &v
+			}
+			obs = append(obs, dependencies.Observation{
+				TargetHost:  host,
+				TargetPort:  int(portF),
+				Protocol:    proto,
+				ProcessName: pname,
+			})
+		}
+		ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := depsHandler.IngestFromAgent(ctx2, sid, obs); err != nil {
+			logger.Warn("Dependency ingest failed", slog.String("service_id", serviceID), slog.String("error", err.Error()))
+		}
+	})
+
+	// ── Synthetic probes (server-side HTTP/TCP checks) ─────────────
+	probesSvc := probes.NewService(db)
+	probesHandler := probes.NewHandler(probesSvc)
+	probesRunner := probes.NewRunner(probesSvc.Repo(), logger)
+	// On Up→Down (after 3 fails) or Down→Up, dispatch a notification.
+	probesRunner.SetOnTransition(func(ctx context.Context, p probes.Probe, status string) {
+		var sev, msg string
+		if status == "down" {
+			sev = "crit"
+			msg = "Probe '" + p.Name + "' down: " + p.Target
+			if p.LastError != nil && *p.LastError != "" {
+				msg += " (" + *p.LastError + ")"
+			}
+		} else {
+			sev = "info"
+			msg = "Probe '" + p.Name + "' recovered: " + p.Target
+		}
+		_ = notifSvc.Dispatch(ctx, p.UserID, notifications.Event{
+			Kind:        "alert",
+			Title:       "Probe " + status + ": " + p.Name,
+			ServiceName: p.Name,
+			AlertType:   "probe_" + status,
+			Severity:    sev,
+			Message:     msg,
+			Timestamp:   time.Now(),
+		})
+	})
+	go probesRunner.Start(ctx, 10*time.Second)
+	// Trim probe_runs to a 14-day window every 6h to keep the table bounded.
 	go func() {
-		ticker := time.NewTicker(24 * time.Hour)
+		ticker := time.NewTicker(6 * time.Hour)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				threshold := time.Now().Add(-30 * 24 * time.Hour)
-				n, err := logsRepo.DeleteOlderThan(context.Background(), threshold)
-				if err != nil {
-					logger.Warn("Log retention temizleme hatası", slog.String("error", err.Error()))
-				} else if n > 0 {
-					logger.Info("Log retention: eski kayıtlar silindi", slog.Int64("count", n))
+				if err := probesSvc.Repo().PruneRuns(context.Background(), 14*24*time.Hour); err != nil {
+					logger.Warn("Probe run prune hatası", slog.String("error", err.Error()))
 				}
+			}
+		}
+	}()
+	logger.Info("Synthetic probe runner aktif")
+
+	// ── Runbook automation (alert-triggered actions) ───────────────
+	runbooksSvc := runbooks.NewService(db, hub, cmdService, logger)
+	runbooksHandler := runbooks.NewHandler(runbooksSvc)
+	alertSvc.SetRunbookTrigger(runbooksAdapter{svc: runbooksSvc})
+	logger.Info("Runbook engine aktif")
+
+	// Periodic prune of stale, non-promoted dependencies (older than 7 days).
+	go func() {
+		ticker := time.NewTicker(6 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := depsHandler.Repo().PruneStale(context.Background(), 7*24*time.Hour); err != nil {
+					logger.Warn("Dependency prune hatası", slog.String("error", err.Error()))
+				}
+				if guard := aiHandler.CostGuard(); guard != nil {
+					if err := guard.PruneCache(context.Background()); err != nil {
+						logger.Warn("AI prompt cache prune hatası", slog.String("error", err.Error()))
+					}
+				}
+			}
+		}
+	}()
+
+	// Agent heartbeat policy — every 30s, promote services whose agent has not
+	// reported recently to "stale" / "down" and emit alerts. Lightweight scan
+	// over all services with a known last-heartbeat.
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				eval, err := agentSvc.EvaluateStaleness(context.Background(), time.Now())
+				if err != nil {
+					logger.Warn("Agent stale evaluation hatası", slog.String("error", err.Error()))
+					continue
+				}
+				for _, sid := range eval.NewlyStale {
+					if err := alertSvc.CreateManualAlert(context.Background(), sid, "agent_stale", "warning",
+						"Agent heartbeat 90 saniyedir alınamadı"); err != nil {
+						logger.Debug("agent_stale alert eklenemedi", slog.String("error", err.Error()))
+					}
+				}
+				for _, sid := range eval.NewlyDown {
+					if err := alertSvc.CreateManualAlert(context.Background(), sid, "agent_down", "critical",
+						"Agent heartbeat 5 dakikadır alınamadı — bağlantı kesilmiş olabilir"); err != nil {
+						logger.Debug("agent_down alert eklenemedi", slog.String("error", err.Error()))
+					}
+				}
+			}
+		}
+	}()
+
+	// Per-user log retention — her gün çalışır. Default 30 gün; her kullanıcının
+	// user_settings.log_retention_days değeri varsa onu kullan.
+	go func() {
+		runRetention := func() {
+			type row struct {
+				UserID  uuid.UUID `gorm:"column:user_id"`
+				Days    *int      `gorm:"column:log_retention_days"`
+			}
+			var rows []row
+			if err := db.Raw(`SELECT user_id, log_retention_days FROM user_settings`).Scan(&rows).Error; err != nil {
+				logger.Warn("Log retention: ayar okunamadı", slog.String("error", err.Error()))
+				return
+			}
+			// Build user_id → days map; fall back to 30 for users without settings.
+			perUser := make(map[uuid.UUID]int, len(rows))
+			for _, r := range rows {
+				d := 30
+				if r.Days != nil && *r.Days > 0 {
+					d = *r.Days
+				}
+				perUser[r.UserID] = d
+			}
+			// Tek geçişte servis-bazlı silme: her servis için sahibin retention'ını uygula.
+			type svcRow struct {
+				ID     uuid.UUID `gorm:"column:id"`
+				UserID uuid.UUID `gorm:"column:user_id"`
+			}
+			var svcs []svcRow
+			if err := db.Raw(`SELECT id, user_id FROM services`).Scan(&svcs).Error; err != nil {
+				logger.Warn("Log retention: servisler okunamadı", slog.String("error", err.Error()))
+				return
+			}
+			var totalDeleted int64
+			for _, s := range svcs {
+				days := perUser[s.UserID]
+				if days <= 0 {
+					days = 30
+				}
+				cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour)
+				res := db.Exec(`DELETE FROM service_logs WHERE service_id = ? AND time < ?`, s.ID, cutoff)
+				if res.Error != nil {
+					logger.Warn("Log retention: servis için silme başarısız",
+						slog.String("service_id", s.ID.String()),
+						slog.String("error", res.Error.Error()),
+					)
+					continue
+				}
+				totalDeleted += res.RowsAffected
+			}
+			if totalDeleted > 0 {
+				logger.Info("Log retention: eski kayıtlar silindi", slog.Int64("count", totalDeleted))
+			}
+		}
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		// İlk çalışma — startup'tan 5 dk sonra (ısınma ve health check'leri etkilemesin diye).
+		startup := time.NewTimer(5 * time.Minute)
+		defer startup.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-startup.C:
+				runRetention()
+			case <-ticker.C:
+				runRetention()
 			}
 		}
 	}()
@@ -225,6 +448,8 @@ func main() {
 		{
 			aiGroup.POST("/chat", strictLimiter, aiHandler.Chat)
 			aiGroup.POST("/report", strictLimiter, aiHandler.GenerateReport)
+			aiGroup.GET("/usage", aiHandler.UsageSummary)
+			aiGroup.GET("/usage/recent", aiHandler.UsageRecent)
 		}
 
 		svcGroup := v1.Group("/services", authMiddleware.Required())
@@ -238,6 +463,14 @@ func main() {
 			svcGroup.GET("/:id/metrics/aggregated", metricsHandler.GetAggregated)
 			svcGroup.GET("/:id/metrics/uptime", metricsHandler.GetUptime)
 			svcGroup.GET("/:id/metrics/rollup", metricsHandler.GetRollup)
+			svcGroup.GET("/:id/metrics/forecast", metricsHandler.GetForecast)
+			svcGroup.GET("/:id/dependencies", depsHandler.List)
+			svcGroup.PATCH("/:id/dependencies/:dep_id", depsHandler.Promote)
+			svcGroup.DELETE("/:id/dependencies/:dep_id", depsHandler.Delete)
+			svcGroup.GET("/:id/grants", grantsHandler.List)
+			svcGroup.POST("/:id/grants", grantsHandler.Create)
+			svcGroup.PATCH("/:id/grants/:grant_id", grantsHandler.Update)
+			svcGroup.DELETE("/:id/grants/:grant_id", grantsHandler.Delete)
 			svcGroup.GET("/:id/alerts", alertHandler.List)
 			svcGroup.GET("/:id/alert-rules", alertHandler.GetAlertRules)
 			svcGroup.PUT("/:id/alert-rules", alertHandler.UpsertAlertRules)
@@ -269,6 +502,85 @@ func main() {
 			settingsGroup.PUT("", settingsHandler.Update)
 		}
 
+		// One-shot demo data seeder. Idempotent at the user level — refuses to
+		// run if the user already has services so we never pollute real data.
+		v1.POST("/demo/seed", authMiddleware.Required(), strictLimiter, demoHandler.Seed)
+
+		// Agent release info — agents poll this to decide whether to surface an
+		// "update available" banner. Authenticated to keep download URLs private.
+		agentsGroup := v1.Group("/agents", authMiddleware.Required())
+		{
+			agentsGroup.GET("/release", agentHandler.LatestRelease)
+		}
+
+		// Personal API tokens for programmatic access. Token issuance is JWT-only
+		// (no token can mint another); using an API token to hit /api-tokens
+		// is intentionally rejected via RequireScope("api_tokens:manage") which
+		// no scope grants.
+		apiTokensGroup := v1.Group("/api-tokens", authMiddleware.Required())
+		{
+			apiTokensGroup.GET("", apiTokensHandler.List)
+			apiTokensGroup.POST("", apiTokensHandler.Create)
+			apiTokensGroup.DELETE("/:id", apiTokensHandler.Revoke)
+		}
+
+		// Public, unauthenticated status page endpoint.
+		v1.GET("/public/status/:slug", statusHandler.Public)
+
+		incidentsGroup := v1.Group("/incidents", authMiddleware.Required())
+		{
+			incidentsGroup.GET("", incidentsHandler.List)
+			incidentsGroup.GET("/:id", incidentsHandler.Get)
+			incidentsGroup.PATCH("/:id", incidentsHandler.Update)
+			incidentsGroup.POST("/:id/resolve", incidentsHandler.Resolve)
+			incidentsGroup.DELETE("/:id", incidentsHandler.Delete)
+		}
+
+		statusGroup := v1.Group("/status-pages", authMiddleware.Required())
+		{
+			statusGroup.GET("", statusHandler.List)
+			statusGroup.POST("", statusHandler.Create)
+			statusGroup.PUT("/:id", statusHandler.Update)
+			statusGroup.DELETE("/:id", statusHandler.Delete)
+		}
+
+		sloGroup := v1.Group("/slos", authMiddleware.Required())
+		{
+			sloGroup.GET("", sloHandler.List)
+			sloGroup.POST("", sloHandler.Create)
+			sloGroup.PUT("/:id", sloHandler.Update)
+			sloGroup.DELETE("/:id", sloHandler.Delete)
+			sloGroup.GET("/:id/compliance", sloHandler.Compliance)
+			}
+
+			probesGroup := v1.Group("/probes", authMiddleware.Required())
+			{
+				probesGroup.GET("", probesHandler.List)
+				probesGroup.POST("", probesHandler.Create)
+				probesGroup.PUT("/:id", probesHandler.Update)
+				probesGroup.DELETE("/:id", probesHandler.Delete)
+				probesGroup.GET("/:id/runs", probesHandler.Runs)
+			}
+
+			runbooksGroup := v1.Group("/runbooks", authMiddleware.Required())
+			{
+				runbooksGroup.GET("", runbooksHandler.List)
+				runbooksGroup.POST("", runbooksHandler.Create)
+				runbooksGroup.PUT("/:id", runbooksHandler.Update)
+				runbooksGroup.DELETE("/:id", runbooksHandler.Delete)
+				runbooksGroup.GET("/:id/fires", runbooksHandler.Fires)
+			}
+
+		notifGroup := v1.Group("/notifications", authMiddleware.Required())
+		{
+			notifGroup.GET("/channels", notifHandler.List)
+			notifGroup.POST("/channels", notifHandler.Create)
+			notifGroup.PUT("/channels/:id", notifHandler.Update)
+			notifGroup.DELETE("/channels/:id", notifHandler.Delete)
+			notifGroup.POST("/channels/:id/test", strictLimiter, notifHandler.Test)
+			notifGroup.GET("/channels/:id/deliveries", notifHandler.Deliveries)
+		}
+
 		auditGroup := v1.Group("/audit", authMiddleware.Required())
 		{
 			auditGroup.GET("", auditHandler.GetLogs)
@@ -284,6 +596,7 @@ func main() {
 
 		logsGroup := v1.Group("/logs", authMiddleware.Required())
 		{
+			logsGroup.GET("", logsHandler.SearchAll)
 			logsGroup.GET("/stats", logsHandler.GetStats)
 		}
 
@@ -363,4 +676,69 @@ func main() {
 	})
 	sm.Shutdown(srv)
 	logger.Info("Server kapatıldı")
+}
+
+// notificationsAdapter bridges alerts.MultiNotifierEvent ↔ notifications.Event
+// so the alerts package doesn't need to import notifications directly.
+type notificationsAdapter struct{ svc *notifications.Service }
+
+func (a notificationsAdapter) Dispatch(ctx context.Context, userID uuid.UUID, ev alerts.MultiNotifierEvent) int {
+	return a.svc.Dispatch(ctx, userID, notifications.Event{
+		Kind:        ev.Kind,
+		Title:       ev.Title,
+		Message:     ev.Message,
+		Severity:    ev.Severity,
+		ServiceID:   ev.ServiceID,
+		ServiceName: ev.ServiceName,
+		AlertID:     ev.AlertID,
+		AlertType:   ev.AlertType,
+		Timestamp:   ev.Timestamp,
+	})
+}
+
+// incidentsAdapter bridges alerts.IncidentRecorderInput ↔ incidents.AlertInput.
+type incidentsAdapter struct{ svc *incidents.Service }
+
+func (a incidentsAdapter) RecordAlert(ctx context.Context, in alerts.IncidentRecorderInput) error {
+	_, err := a.svc.RecordAlert(ctx, incidents.AlertInput{
+		UserID:      in.UserID,
+		ServiceID:   in.ServiceID,
+		AlertID:     in.AlertID,
+		Type:        in.Type,
+		Severity:    in.Severity,
+		Message:     in.Message,
+		TriggeredAt: in.TriggeredAt,
+		ServiceName: in.ServiceName,
+	})
+	return err
+}
+
+func (a incidentsAdapter) MaybeResolveByAlert(ctx context.Context, alertID uuid.UUID) error {
+	return a.svc.MaybeResolveByAlert(ctx, alertID)
+}
+
+// runbooksAdapter bridges alerts.RunbookTriggerInput ↔ runbooks.AlertInput.
+type runbooksAdapter struct{ svc *runbooks.Service }
+
+func (a runbooksAdapter) OnAlert(ctx context.Context, in alerts.RunbookTriggerInput) {
+	a.svc.OnAlert(ctx, runbooks.AlertInput{
+		UserID:    in.UserID,
+		ServiceID: in.ServiceID,
+		AlertID:   in.AlertID,
+		AlertType: in.AlertType,
+		Severity:  in.Severity,
+		Message:   in.Message,
+	})
+}
+
+// apiTokensAdapter wires apitokens.Service into the auth middleware without
+// causing an import cycle (auth → apitokens would create one).
+type apiTokensAdapter struct{ svc *apitokens.Service }
+
+func (a apiTokensAdapter) Authenticate(ctx context.Context, secret string) (uuid.UUID, []string, bool) {
+	t, err := a.svc.Authenticate(ctx, secret)
+	if err != nil || t == nil {
+		return uuid.Nil, nil, false
+	}
+	return t.UserID, []string(t.Scopes), true
 }

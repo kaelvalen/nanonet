@@ -2,6 +2,7 @@ mod agent_health;
 mod buffer;
 mod commands;
 mod config;
+mod dependencies;
 mod error;
 mod health;
 mod metrics;
@@ -126,6 +127,8 @@ async fn main() -> error::Result<()> {
     let metrics_config = config.clone();
     let metrics_restart_count = Arc::clone(&restart_count);
     let metrics_buffer = metric_buffer.clone();
+    let metrics_agent_id = agent_id.clone();
+    let metrics_ws_tx = ws_tx.clone();
     let metrics_task = tokio::spawn(async move {
         let mut sys = System::new_all();
         let mut disks = Disks::new_with_refreshed_list();
@@ -223,7 +226,7 @@ async fn main() -> error::Result<()> {
             // Mesaj oluştur
             let mut message = json!({
                 "type": "metrics",
-                "agent_id": agent_id,
+                "agent_id": metrics_agent_id,
                 "agent_version": env!("CARGO_PKG_VERSION"),
                 "service_id": service_id,
                 "timestamp": Utc::now().to_rfc3339(),
@@ -275,7 +278,7 @@ async fn main() -> error::Result<()> {
 
             // WS bağlıysa doğrudan gönder, değilse buffer'a ekle
             if ws::WS_CONNECTED.load(Ordering::Relaxed) {
-                if let Err(e) = ws_tx.send(msg_str.clone()).await {
+                if let Err(e) = metrics_ws_tx.send(msg_str.clone()).await {
                     tracing::warn!(
                         "Metrik WS kanalına gönderilemedi: {} — buffer'a alınıyor",
                         e
@@ -291,6 +294,76 @@ async fn main() -> error::Result<()> {
                         dropped = metrics_buffer.dropped_count(),
                         "WS bağlantısız — metrikler biriktiriliyor"
                     );
+                }
+            }
+        }
+    });
+
+    // ─── Dependency Discovery Task ───
+    // Outbound TCP destinations are scanned every 60s and sent over WS.
+    // Backend deduplicates and ages-out entries, so missing a tick is fine.
+    let deps_ws_tx = ws_tx.clone();
+    let deps_service_id = config.service_id.clone();
+    let deps_agent_id = agent_id.clone();
+    let mut deps_shutdown_rx = shutdown_tx.subscribe();
+    let _deps_task = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(60));
+        // First tick fires immediately — skip it so we don't burst at startup.
+        interval.tick().await;
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {},
+                _ = deps_shutdown_rx.changed() => {
+                    tracing::info!("Dependency task kapatılıyor (shutdown sinyali)");
+                    break;
+                }
+            }
+            let observations = dependencies::discover();
+            if observations.is_empty() {
+                continue;
+            }
+            let msg = json!({
+                "type": "dependencies",
+                "agent_id": deps_agent_id,
+                "service_id": deps_service_id,
+                "timestamp": Utc::now().to_rfc3339(),
+                "dependencies": observations,
+            });
+            if ws::WS_CONNECTED.load(Ordering::Relaxed) {
+                if let Err(e) = deps_ws_tx.send(msg.to_string()).await {
+                    tracing::debug!("Dependency mesajı gönderilemedi: {}", e);
+                }
+            }
+        }
+    });
+
+    // ─── Heartbeat Task ───
+    // Backend tracks per-service agent_last_heartbeat_at to flag stale agents.
+    // We send an explicit lightweight "heartbeat" frame every 30s on top of the
+    // regular metrics so heartbeat liveness survives even when metric sampling
+    // is paused (e.g. health probe disabled).
+    let hb_ws_tx = ws_tx.clone();
+    let hb_service_id = config.service_id.clone();
+    let hb_agent_id = agent_id.clone();
+    let mut hb_shutdown_rx = shutdown_tx.subscribe();
+    let _heartbeat_task = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(30));
+        interval.tick().await;
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {},
+                _ = hb_shutdown_rx.changed() => break,
+            }
+            let msg = json!({
+                "type": "heartbeat",
+                "agent_id": hb_agent_id,
+                "agent_version": env!("CARGO_PKG_VERSION"),
+                "service_id": hb_service_id,
+                "timestamp": Utc::now().to_rfc3339(),
+            });
+            if ws::WS_CONNECTED.load(Ordering::Relaxed) {
+                if let Err(e) = hb_ws_tx.send(msg.to_string()).await {
+                    tracing::debug!("Heartbeat gönderilemedi: {}", e);
                 }
             }
         }

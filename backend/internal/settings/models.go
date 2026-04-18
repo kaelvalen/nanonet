@@ -21,7 +21,9 @@ type UserSettings struct {
 	WebhookSecret   *string          `gorm:"column:webhook_secret" json:"webhook_secret"`
 	SlackWebhookURL *string          `gorm:"column:slack_webhook_url" json:"slack_webhook_url"`
 	ServiceMap      *json.RawMessage `gorm:"column:service_map;type:jsonb" json:"service_map,omitempty"`
-	UpdatedAt       time.Time        `gorm:"not null;default:now()" json:"updated_at"`
+	LogRetentionDays    *int      `gorm:"column:log_retention_days" json:"log_retention_days,omitempty"`
+	AIMonthlyBudgetUSD  *float64  `gorm:"column:ai_monthly_budget_usd" json:"ai_monthly_budget_usd,omitempty"`
+	UpdatedAt           time.Time `gorm:"not null;default:now()" json:"updated_at"`
 }
 
 func (UserSettings) TableName() string {
@@ -40,4 +42,6 @@ type UpdateSettingsRequest struct {
 	WebhookURL      *string `json:"webhook_url"`
 	WebhookSecret   *string `json:"webhook_secret"`
 	SlackWebhookURL *string `json:"slack_webhook_url"`
+	LogRetentionDays    *int     `json:"log_retention_days,omitempty"`
+	AIMonthlyBudgetUSD  *float64 `json:"ai_monthly_budget_usd,omitempty"`
 }

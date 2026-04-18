@@ -28,6 +28,9 @@ func NewHandler(db *gorm.DB, apiKey string) *Handler {
 	}
 }
 
+// CostGuard exposes the underlying guard for periodic maintenance (cache prune).
+func (h *Handler) CostGuard() *CostGuard { return h.service.CostGuard() }
+
 func (h *Handler) Chat(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
@@ -80,6 +83,10 @@ func (h *Handler) Analyze(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, ErrRateLimitExceeded) {
 			response.Error(c, 429, err.Error())
+			return
+		}
+		if errors.Is(err, ErrBudgetExceeded) {
+			response.Error(c, http.StatusPaymentRequired, "aylık AI bütçeniz tükendi — Settings → Monitoring'den artırabilirsiniz")
 			return
 		}
 		log.Printf("[AI Analyze ERROR] service=%s user=%s: %v", serviceID, userID, err)
@@ -156,12 +163,60 @@ func (h *Handler) GenerateReport(c *gin.Context) {
 			response.Error(c, 429, err.Error())
 			return
 		}
+		if errors.Is(err, ErrBudgetExceeded) {
+			response.Error(c, http.StatusPaymentRequired, "aylık AI bütçeniz tükendi — Settings → Monitoring'den artırabilirsiniz")
+			return
+		}
 		log.Printf("[AI Report ERROR] user=%s: %v", userID, err)
 		response.InternalError(c, "rapor oluşturulamıyor")
 		return
 	}
 
 	response.Success(c, gin.H{"report": result})
+}
+
+// UsageSummary — GET /api/v1/ai/usage
+// Returns month-to-date AI spend, token counts, cache hits, and budget remaining.
+func (h *Handler) UsageSummary(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+	guard := h.service.CostGuard()
+	if guard == nil {
+		response.InternalError(c, "cost guard yapılandırılmamış")
+		return
+	}
+	summary, err := guard.Summary(c.Request.Context(), userID)
+	if err != nil {
+		log.Printf("[AI Usage ERROR] user=%s: %v", userID, err)
+		response.InternalError(c, "kullanım özeti alınamadı")
+		return
+	}
+	response.Success(c, summary)
+}
+
+// UsageRecent — GET /api/v1/ai/usage/recent?limit=50
+func (h *Handler) UsageRecent(c *gin.Context) {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		response.Unauthorized(c, "geçersiz kullanıcı")
+		return
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	guard := h.service.CostGuard()
+	if guard == nil {
+		response.InternalError(c, "cost guard yapılandırılmamış")
+		return
+	}
+	rows, err := guard.RecentCalls(c.Request.Context(), userID, limit)
+	if err != nil {
+		log.Printf("[AI Usage Recent ERROR] user=%s: %v", userID, err)
+		response.InternalError(c, "kullanım kayıtları alınamadı")
+		return
+	}
+	response.Success(c, gin.H{"calls": rows})
 }
 
 // GetAllInsights — GET /api/v1/insights?limit=20&page=1
