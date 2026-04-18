@@ -16,6 +16,13 @@ export default defineConfig({
 				manualChunks(id) {
 					if (!id.includes("node_modules")) return;
 
+					if (id.includes("/@xyflow/")) return "xyflow";
+					if (id.includes("/@radix-ui/")) return "radix";
+					if (id.includes("/motion/")) return "motion";
+					if (id.includes("/lucide-react/")) return "icons";
+					if (id.includes("/i18next/") || id.includes("/react-i18next/"))
+						return "i18n";
+
 					if (id.includes("/recharts/")) return "charts";
 					if (id.includes("/pdf-lib/")) return "pdf";
 					if (id.includes("/@tanstack/")) return "query";

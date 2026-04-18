@@ -1,23 +1,66 @@
+import { lazy } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AuthGuard, GuestGuard, ServicesRedirect } from "@/components/guards";
-import { AIInsightsPage } from "@/pages/AIInsightsPage";
-import { AlertsPage } from "@/pages/AlertsPage";
-import { DashboardPage } from "@/pages/DashboardPage";
 import { ErrorPage } from "@/pages/ErrorPage";
-import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
-import { KubernetesPage } from "@/pages/KubernetesPage";
-import { LandingPage } from "@/pages/LandingPage";
-import { LoginPage } from "@/pages/LoginPage";
-import { LogsPage } from "@/pages/LogsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
-import { RegisterPage } from "@/pages/RegisterPage";
-import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
-import { SecurityPage } from "@/pages/SecurityPage";
-import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
-import { ServiceMapPage } from "@/pages/ServiceMapPage";
-import { ServicesPage } from "@/pages/ServicesPage";
-import { SettingsPage } from "@/pages/SettingsPage";
+
+const LandingPage = lazy(() =>
+	import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })),
+);
+const LoginPage = lazy(() =>
+	import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+	import("@/pages/RegisterPage").then((m) => ({ default: m.RegisterPage })),
+);
+const ForgotPasswordPage = lazy(() =>
+	import("@/pages/ForgotPasswordPage").then((m) => ({
+		default: m.ForgotPasswordPage,
+	})),
+);
+const ResetPasswordPage = lazy(() =>
+	import("@/pages/ResetPasswordPage").then((m) => ({
+		default: m.ResetPasswordPage,
+	})),
+);
+
+const DashboardPage = lazy(() =>
+	import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const ServicesPage = lazy(() =>
+	import("@/pages/ServicesPage").then((m) => ({ default: m.ServicesPage })),
+);
+const ServiceDetailPage = lazy(() =>
+	import("@/pages/ServiceDetailPage").then((m) => ({
+		default: m.ServiceDetailPage,
+	})),
+);
+const AlertsPage = lazy(() =>
+	import("@/pages/AlertsPage").then((m) => ({ default: m.AlertsPage })),
+);
+const AIInsightsPage = lazy(() =>
+	import("@/pages/AIInsightsPage").then((m) => ({ default: m.AIInsightsPage })),
+);
+const ServiceMapPage = lazy(() =>
+	import("@/pages/ServiceMapPage").then((m) => ({
+		default: m.ServiceMapPage,
+	})),
+);
+const SettingsPage = lazy(() =>
+	import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const KubernetesPage = lazy(() =>
+	import("@/pages/KubernetesPage").then((m) => ({
+		default: m.KubernetesPage,
+	})),
+);
+const LogsPage = lazy(() =>
+	import("@/pages/LogsPage").then((m) => ({ default: m.LogsPage })),
+);
+const SecurityPage = lazy(() =>
+	import("@/pages/SecurityPage").then((m) => ({ default: m.SecurityPage })),
+);
 
 export const router = createBrowserRouter([
 	{

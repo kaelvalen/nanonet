@@ -31,7 +31,6 @@ import {
 	type TimeRange,
 } from "@/api/metrics";
 import { useServiceStore } from "@/store/serviceStore";
-import { downloadReportPDF } from "./ReportPDF";
 import { Input } from "./ui/input";
 
 type PanelMode = "chat" | "report";
@@ -105,6 +104,7 @@ function ReportView({
 		if (isExporting) return;
 		setIsExporting(true);
 		try {
+			const { downloadReportPDF } = await import("./ReportPDF");
 			await downloadReportPDF(report);
 		} catch (err) {
 			console.error("PDF export hatası:", err);

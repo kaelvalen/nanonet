@@ -21,7 +21,7 @@ import {
 	Shield,
 } from "lucide-react";
 import { motion } from "motion/react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -218,7 +218,7 @@ function Inner() {
 		>
 			{/* Header */}
 			<div className="shrink-0 flex items-center gap-2.5 px-8 pt-8 pb-6">
-				<img src={logo} alt="NanoNet" className="w-5 h-5" />
+				<img src={logo} alt="" aria-hidden="true" className="w-5 h-5" />
 				<span className="text-white font-black text-sm tracking-tight">
 					NanoNet
 				</span>

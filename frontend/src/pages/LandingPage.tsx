@@ -16,7 +16,7 @@ import {
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import { useServices } from "@/hooks/useServices";
 import { useAuthStore } from "@/store/authStore";
 
@@ -61,7 +61,12 @@ function Nav({ authed }: { authed: boolean }) {
 		>
 			<nav className="max-w-6xl mx-auto flex items-center justify-between h-14 px-6">
 				<Link to="/" className="flex items-center gap-2.5">
-					<img src={logo} alt="NanoNet" className="w-6 h-6" />
+					<img
+						src={logo}
+						alt=""
+						aria-hidden="true"
+						className="w-6 h-6"
+					/>
 					<span className="font-semibold text-[15px] text-white tracking-tight">
 						NanoNet
 					</span>
@@ -73,7 +78,7 @@ function Nav({ authed }: { authed: boolean }) {
 							key={l.id}
 							type="button"
 							onClick={() => scrollTo(l.id)}
-							className="px-3 py-1.5 text-[13px] text-white/60 hover:text-white transition-colors rounded-md"
+							className="px-3 py-1.5 text-[13px] text-white/75 hover:text-white transition-colors rounded-md"
 						>
 							{l.label}
 						</button>
@@ -873,8 +878,8 @@ function Footer() {
 		>
 			<div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
 				<div className="flex items-center gap-2.5">
-					<img src={logo} alt="NanoNet" className="w-5 h-5 opacity-60" />
-					<span className="text-sm font-semibold text-white/60">NanoNet</span>
+					<img src={logo} alt="" aria-hidden="true" className="w-5 h-5 opacity-70" />
+					<span className="text-sm font-semibold text-white/70">NanoNet</span>
 					<span className="text-xs text-white/30 font-mono">v2.0</span>
 				</div>
 				<div className="flex items-center gap-6">

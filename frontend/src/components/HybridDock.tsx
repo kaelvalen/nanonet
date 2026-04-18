@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import { useAuth } from "@/hooks/useAuth";
 import { useServices } from "@/hooks/useServices";
 import { useAuthStore } from "@/store/authStore";
