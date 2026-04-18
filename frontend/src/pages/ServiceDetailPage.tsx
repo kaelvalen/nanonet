@@ -181,36 +181,23 @@ function StatusOrb({
 					: "var(--status-unknown)";
 
 	const alive = status === "up";
-	const orbit = size * 2;
+	const orbit = size + 6;
 
 	return (
 		<span
-			className="relative inline-flex items-center justify-center shrink-0 overflow-hidden"
+			className="relative inline-flex items-center justify-center shrink-0"
 			style={{ width: orbit, height: orbit }}
 			aria-hidden
 		>
 			{alive && (
-				<>
-					<span
-						className="absolute rounded-full animate-pulse-ring"
-						style={{
-							background: color,
-							opacity: 0.4,
-							width: size,
-							height: size,
-						}}
-					/>
-					<span
-						className="absolute rounded-full animate-pulse-ring"
-						style={{
-							background: color,
-							opacity: 0.4,
-							width: size,
-							height: size,
-							animationDelay: "0.8s",
-						}}
-					/>
-				</>
+				<span
+					className="absolute inset-0 rounded-full"
+					style={{
+						background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+						opacity: 0.35,
+						animation: "nn-orb-breathe 2.4s ease-in-out infinite",
+					}}
+				/>
 			)}
 			<span
 				className="relative rounded-full"
@@ -218,7 +205,9 @@ function StatusOrb({
 					width: size,
 					height: size,
 					background: color,
-					boxShadow: alive ? `0 0 10px ${color}, 0 0 2px ${color}` : undefined,
+					boxShadow: alive
+						? `0 0 0 2px color-mix(in srgb, ${color} 18%, transparent)`
+						: undefined,
 				}}
 			/>
 		</span>
@@ -231,8 +220,8 @@ function StatusOrb({
 
 function UptimeGauge({
 	percent,
-	size = 104,
-	strokeWidth = 5,
+	size = 88,
+	strokeWidth = 4,
 }: {
 	percent: number;
 	size?: number;
@@ -288,25 +277,25 @@ function UptimeGauge({
 			</svg>
 			<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
 				<span
-					className="text-[9px] uppercase tracking-[0.22em] font-bold"
-					style={{ color: "var(--text-faint)" }}
-				>
-					Uptime
-				</span>
-				<span
-					className="font-mono tabular-nums font-bold leading-none mt-1"
+					className="tabular-nums font-semibold leading-none tracking-tight"
 					style={{
 						color: "var(--text-primary)",
-						fontSize: size * 0.22,
+						fontSize: size * 0.26,
 					}}
 				>
 					{clamped.toFixed(clamped >= 99.95 ? 2 : 1)}
+					<span
+						className="text-[10px] font-medium ml-0.5"
+						style={{ color: "var(--text-faint)" }}
+					>
+						%
+					</span>
 				</span>
 				<span
-					className="text-[10px] font-mono mt-1"
+					className="text-[10px] font-medium mt-1.5"
 					style={{ color: "var(--text-faint)" }}
 				>
-					% · 24h
+					24 saat
 				</span>
 			</div>
 		</div>
@@ -425,7 +414,7 @@ function MetricChip({
 			initial={{ opacity: 0, y: 8 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.35, delay: 0.15 + index * 0.06 }}
-			className="relative flex flex-col justify-between p-3.5 rounded-lg overflow-hidden min-w-0"
+			className="group relative flex flex-col justify-between p-4 rounded-xl overflow-hidden min-w-0 transition-colors hover:border-[color:var(--border-strong)]"
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
@@ -433,39 +422,38 @@ function MetricChip({
 		>
 			<div className="flex items-center justify-between gap-2">
 				<span
-					className="text-[10px] uppercase tracking-[0.2em] font-bold"
-					style={{ color: "var(--text-faint)" }}
+					className="text-[11px] font-medium tracking-tight"
+					style={{ color: "var(--text-muted)" }}
 				>
 					{label}
 				</span>
 				<span
-					className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
+					className="w-1.5 h-1.5 rounded-full shrink-0"
 					style={{
-						color: toneColor(tone),
-						background: `${toneColor(tone)}14`,
+						background: toneColor(tone),
+						boxShadow: `0 0 0 3px color-mix(in srgb, ${toneColor(tone)} 14%, transparent)`,
 					}}
-				>
-					{toneLabel(tone)}
-				</span>
+					title={toneLabel(tone)}
+				/>
 			</div>
-			<div className="flex items-end justify-between gap-2 mt-3">
+			<div className="flex items-end justify-between gap-2 mt-2.5">
 				<div className="flex items-baseline gap-1 shrink-0 whitespace-nowrap">
 					<span
-						className="text-[20px] sm:text-[22px] font-mono font-bold tabular-nums leading-none"
+						className="text-[18px] font-semibold tabular-nums leading-none tracking-tight"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{value}
 					</span>
 					{unit && (
 						<span
-							className="text-[10px] font-mono leading-none"
+							className="text-[10px] font-medium leading-none"
 							style={{ color: "var(--text-faint)" }}
 						>
 							{unit}
 						</span>
 					)}
 				</div>
-				<div className="flex-1 min-w-0 flex justify-end">
+				<div className="flex-1 min-w-0 flex justify-end opacity-80 group-hover:opacity-100 transition-opacity">
 					<Sparkline data={sparkData} color={sparkColor} width={56} />
 				</div>
 			</div>
@@ -515,33 +503,32 @@ function VitalSignsBand({
 				initial={{ opacity: 0, y: 8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.4, delay: 0.1 }}
-				className="nn-vital-stripe relative col-span-2 lg:col-span-1 flex items-center gap-4 p-4 rounded-lg overflow-hidden"
+				className="relative col-span-2 lg:col-span-1 flex items-center gap-4 p-4 rounded-xl overflow-hidden"
 				style={{
 					background: "var(--surface-card)",
 					border: "1px solid var(--border-default)",
-					color: "var(--color-teal)",
 				}}
 			>
 				<UptimeGauge percent={uptimePercent ?? 0} />
-				<div className="flex flex-col gap-1 min-w-0 flex-1">
+				<div className="flex flex-col gap-1.5 min-w-0 flex-1">
 					<span
-						className="text-[9px] uppercase tracking-[0.22em] font-bold"
-						style={{ color: "var(--text-faint)" }}
+						className="text-[11px] font-medium tracking-tight"
+						style={{ color: "var(--text-muted)" }}
 					>
 						Sistem Sağlığı
 					</span>
 					<p
-						className="text-base font-bold leading-tight"
+						className="text-[15px] font-semibold leading-none tracking-tight"
 						style={{ color: healthColor }}
 					>
 						{healthLabel}
 					</p>
 					<p
-						className="text-[10px] leading-snug"
-						style={{ color: "var(--text-muted)" }}
+						className="text-[11px] leading-snug"
+						style={{ color: "var(--text-faint)" }}
 					>
 						{STATUS_LABEL[service.status]} ·{" "}
-						<span className="font-mono tabular-nums">
+						<span className="tabular-nums">
 							{service.poll_interval_sec}s poll
 						</span>
 					</p>
@@ -649,7 +636,7 @@ function ActionButton({
 			type="button"
 			onClick={onClick}
 			disabled={loading || disabled}
-			className="nn-cockpit-action group flex items-center gap-2.5 px-3 h-9 rounded text-[11px] font-semibold text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+			className="nn-cockpit-action group flex items-center gap-2.5 px-3 h-9 rounded-lg text-[12px] font-medium text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 			style={
 				{
 					border: "1px solid var(--border-default)",
@@ -712,29 +699,19 @@ function IdentityRail({
 			<button
 				type="button"
 				onClick={onBack}
-				className="group self-start flex items-center gap-1.5 text-[10px] font-bold tracking-[0.14em] uppercase mb-5 px-1 py-1 rounded transition-colors"
+				className="group self-start flex items-center gap-1.5 text-[12px] font-medium mb-5 px-1.5 py-1 rounded-lg transition-colors hover:text-[color:var(--text-primary)]"
 				style={{ color: "var(--text-muted)" }}
 			>
-				<ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
+				<ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
 				Tüm Servisler
 			</button>
 
-			<div
-				className="relative flex flex-col gap-3 pb-5 mb-5"
-				style={{ borderBottom: "1px solid var(--border-subtle)" }}
-			>
-				<div className="absolute top-0 left-0 right-0 h-px overflow-hidden pointer-events-none">
-					<span
-						className="block h-full nn-scan-flow"
-						style={{ opacity: service.status === "up" ? 0.8 : 0.25 }}
-					/>
-				</div>
-
+			<div className="flex flex-col gap-3 pb-5 mb-5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
 				<div className="flex items-center gap-3">
 					<StatusOrb status={service.status} size={10} />
 					<div className="min-w-0 flex-1">
 						<p
-							className="text-[9px] uppercase tracking-[0.22em] font-bold leading-none mb-1.5"
+							className="text-[11px] font-medium leading-none mb-2"
 							style={{
 								color:
 									service.status === "up"
@@ -749,7 +726,7 @@ function IdentityRail({
 							{STATUS_LABEL[service.status]}
 						</p>
 						<h1
-							className="text-lg font-bold leading-tight tracking-tight truncate"
+							className="text-[18px] font-semibold leading-tight tracking-tight truncate"
 							style={{ color: "var(--text-primary)" }}
 							title={service.name}
 						>
@@ -761,11 +738,11 @@ function IdentityRail({
 				<button
 					type="button"
 					onClick={copy}
-					className="group flex items-center gap-2 px-2 py-1.5 -mx-2 rounded transition-colors hover:bg-[var(--surface-sunken)]"
+					className="group flex items-center gap-2 px-2.5 py-1.5 -mx-1 rounded-lg transition-colors hover:bg-[var(--surface-sunken)]"
 					aria-label="Adresi kopyala"
 				>
 					<span
-						className="text-[11px] font-mono truncate flex-1 text-left"
+						className="text-[12px] font-mono truncate flex-1 text-left"
 						style={{ color: "var(--text-secondary)" }}
 					>
 						{service.host}
@@ -774,12 +751,12 @@ function IdentityRail({
 					</span>
 					{copied ? (
 						<Check
-							className="w-3 h-3 shrink-0"
+							className="w-3.5 h-3.5 shrink-0"
 							style={{ color: "var(--status-up)" }}
 						/>
 					) : (
 						<Copy
-							className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity"
+							className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity"
 							style={{ color: "var(--text-faint)" }}
 						/>
 					)}
@@ -792,14 +769,14 @@ function IdentityRail({
 			>
 				<div className="min-w-0">
 					<dt
-						className="text-[9px] uppercase tracking-[0.2em] font-bold mb-1"
-						style={{ color: "var(--text-faint)" }}
+						className="text-[11px] font-medium mb-1.5"
+						style={{ color: "var(--text-muted)" }}
 					>
 						Endpoint
 					</dt>
 					<dd
-						className="text-[11px] font-mono truncate"
-						style={{ color: "var(--text-secondary)" }}
+						className="text-[12px] font-mono truncate"
+						style={{ color: "var(--text-primary)" }}
 						title={service.health_endpoint}
 					>
 						{service.health_endpoint}
@@ -807,14 +784,14 @@ function IdentityRail({
 				</div>
 				<div>
 					<dt
-						className="text-[9px] uppercase tracking-[0.2em] font-bold mb-1"
-						style={{ color: "var(--text-faint)" }}
+						className="text-[11px] font-medium mb-1.5"
+						style={{ color: "var(--text-muted)" }}
 					>
 						Poll
 					</dt>
 					<dd
-						className="text-[11px] font-mono tabular-nums"
-						style={{ color: "var(--text-secondary)" }}
+						className="text-[12px] font-mono tabular-nums"
+						style={{ color: "var(--text-primary)" }}
 					>
 						{service.poll_interval_sec}s
 					</dd>
@@ -822,7 +799,7 @@ function IdentityRail({
 			</dl>
 
 			<div
-				className="flex items-center gap-2.5 px-3 py-2.5 mb-5 rounded"
+				className="flex items-center gap-3 px-3.5 py-3 mb-5 rounded-xl"
 				style={{
 					background: service.agent_connected
 						? "var(--status-up-subtle)"
@@ -843,35 +820,35 @@ function IdentityRail({
 							? "var(--status-up)"
 							: "var(--text-faint)",
 						boxShadow: service.agent_connected
-							? "0 0 6px var(--status-up)"
+							? "0 0 0 3px color-mix(in srgb, var(--status-up) 18%, transparent)"
 							: undefined,
 					}}
 				/>
 				<div className="flex-1 min-w-0">
 					<p
-						className="text-[10px] font-bold uppercase tracking-wider leading-none"
+						className="text-[12px] font-semibold leading-none"
 						style={{
 							color: service.agent_connected
 								? "var(--status-up-text)"
 								: "var(--text-muted)",
 						}}
 					>
-						{service.agent_connected ? "Agent Canlı" : "Agent Yok"}
+						{service.agent_connected ? "Agent canlı" : "Agent yok"}
 					</p>
 					<p
-						className="text-[9px] font-mono mt-1 truncate"
+						className="text-[11px] mt-1 truncate"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{service.agent_connected
-							? `WS bağlı${service.agent_version ? ` · v${service.agent_version}` : ""}`
+							? `Bağlı${service.agent_version ? ` · v${service.agent_version}` : ""}`
 							: service.agent_last_heartbeat_at
-								? `Son heartbeat ${new Date(service.agent_last_heartbeat_at).toLocaleTimeString("tr-TR")}`
+								? `Son ${new Date(service.agent_last_heartbeat_at).toLocaleTimeString("tr-TR")}`
 								: "Kurulum gerekli"}
 					</p>
 				</div>
 				{service.agent_status && service.agent_status !== "unknown" && (
 					<span
-						className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+						className="text-[10px] font-medium px-2 py-0.5 rounded-full"
 						style={{
 							color:
 								service.agent_status === "healthy"
@@ -881,10 +858,10 @@ function IdentityRail({
 										: "var(--status-down-text)",
 							background:
 								service.agent_status === "healthy"
-									? "var(--status-up-subtle)"
+									? "color-mix(in srgb, var(--status-up) 14%, transparent)"
 									: service.agent_status === "stale"
-										? "var(--status-degraded-subtle)"
-										: "var(--status-down-subtle)",
+										? "color-mix(in srgb, var(--status-warn) 14%, transparent)"
+										: "color-mix(in srgb, var(--status-down) 14%, transparent)",
 						}}
 					>
 						{service.agent_status}
@@ -894,8 +871,8 @@ function IdentityRail({
 
 			<div className="flex flex-col gap-1.5">
 				<p
-					className="text-[9px] uppercase tracking-[0.2em] font-bold px-1 mb-1"
-					style={{ color: "var(--text-faint)" }}
+					className="text-[11px] font-medium px-1 mb-1.5"
+					style={{ color: "var(--text-muted)" }}
 				>
 					Komutlar
 				</p>
@@ -973,14 +950,14 @@ function SectionNav({
 }) {
 	return (
 		<div
-			className="flex items-center gap-3 rounded-lg pl-1 pr-2 py-1"
+			className="flex items-center gap-3 rounded-xl p-1.5"
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
 			}}
 		>
 			<nav
-				className="flex items-center gap-0.5 overflow-x-auto flex-1"
+				className="flex items-center gap-1 overflow-x-auto flex-1"
 				style={{ scrollbarWidth: "none" }}
 			>
 				{SECTIONS.map((s) => {
@@ -992,34 +969,32 @@ function SectionNav({
 							key={s.id}
 							type="button"
 							onClick={() => onChange(s.id)}
-							className="relative flex items-center gap-1.5 px-2.5 h-8 rounded text-[11px] font-semibold whitespace-nowrap transition-all"
+							className="relative flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-medium whitespace-nowrap transition-all"
 							style={
 								isActive
 									? {
-											color: "var(--color-teal)",
-											background: "var(--color-teal-subtle)",
-											boxShadow:
-												"inset 0 0 0 1px var(--color-teal-border)",
+											color: "var(--text-primary)",
+											background: "var(--surface-sunken)",
 										}
 									: { color: "var(--text-muted)" }
 							}
 						>
-							<Icon className="w-3 h-3 shrink-0" />
+							<Icon
+								className="w-3.5 h-3.5 shrink-0"
+								style={{
+									color: isActive
+										? "var(--color-teal)"
+										: "currentColor",
+								}}
+							/>
 							<span>{s.label}</span>
 							{showBadge && (
 								<span
-									className="min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center font-mono tabular-nums"
-									style={
-										isActive
-											? {
-													background: "var(--color-teal)",
-													color: "white",
-												}
-											: {
-													background: "var(--status-down-subtle)",
-													color: "var(--status-down-text)",
-												}
-									}
+									className="min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold flex items-center justify-center tabular-nums"
+									style={{
+										background: "var(--status-down)",
+										color: "white",
+									}}
 								>
 									{alertCount}
 								</span>
@@ -1043,19 +1018,22 @@ function DurationControl({
 	onChange: (v: string) => void;
 }) {
 	return (
-		<div className="flex items-center gap-0.5">
+		<div
+			className="flex items-center gap-0.5 p-0.5 rounded-lg"
+			style={{ background: "var(--surface-sunken)" }}
+		>
 			{["15m", "1h", "6h", "24h"].map((d) => (
 				<button
 					key={d}
 					type="button"
 					onClick={() => onChange(d)}
-					className="px-2 h-7 rounded text-[10px] font-bold font-mono tabular-nums tracking-wider transition-all"
+					className="px-2.5 h-7 rounded-md text-[11px] font-medium tabular-nums transition-all"
 					style={
 						value === d
 							? {
-									background: "var(--color-teal-subtle)",
-									color: "var(--color-teal)",
-									boxShadow: "inset 0 0 0 1px var(--color-teal-border)",
+									background: "var(--surface-card)",
+									color: "var(--text-primary)",
+									boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
 								}
 							: { color: "var(--text-muted)" }
 					}
@@ -2172,6 +2150,10 @@ export function ServiceDetailPage() {
 				@keyframes nn-scan-flow {
 					0% { background-position: -60% 0; }
 					100% { background-position: 160% 0; }
+				}
+				@keyframes nn-orb-breathe {
+					0%, 100% { transform: scale(0.85); opacity: 0.25; }
+					50% { transform: scale(1.35); opacity: 0.5; }
 				}
 			`}</style>
 

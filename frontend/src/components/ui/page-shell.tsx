@@ -86,10 +86,14 @@ interface PageHeaderProps {
 }
 
 /**
- * PageHeader — pushes title / eyebrow / actions up into the TopBar via
- * PageMetaContext. Renders a slim, optional description + meta strip
- * inline. Pages keep their normal `<PageHeader>` markup; the TopBar
- * absorbs the title and actions automatically.
+ * PageHeader — pushes the page title/eyebrow up into the global TopBar
+ * (via PageMetaContext) and renders an inline action strip directly
+ * above the page content for description, actions, and meta rows.
+ *
+ * The TopBar owns identity (title, breadcrumb) and global utilities
+ * (search, health, user). Pages keep ownership of their own primary
+ * actions ("Yeni X", filters, save buttons) so they live next to the
+ * content they affect — much easier on the eyes than a crowded topbar.
  */
 export function PageHeader({
 	eyebrow,
@@ -99,24 +103,35 @@ export function PageHeader({
 	meta,
 	className,
 }: PageHeaderProps) {
-	useRegisterPageMeta({ eyebrow, title, description, actions, meta });
+	useRegisterPageMeta({ eyebrow, title });
 
-	if (!description && !meta) return null;
+	if (!description && !meta && !actions) return null;
 
 	return (
 		<header
 			className={cn(
-				"flex flex-col gap-2 shrink-0",
+				"flex flex-col gap-3 shrink-0",
 				className,
 			)}
 		>
-			{description && (
-				<p
-					className="text-xs leading-relaxed max-w-2xl"
-					style={{ color: "var(--text-muted)" }}
-				>
-					{description}
-				</p>
+			{(description || actions) && (
+				<div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
+					{description ? (
+						<p
+							className="text-[13px] leading-relaxed max-w-2xl"
+							style={{ color: "var(--text-muted)" }}
+						>
+							{description}
+						</p>
+					) : (
+						<span className="hidden sm:block" />
+					)}
+					{actions && (
+						<div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+							{actions}
+						</div>
+					)}
+				</div>
 			)}
 			{meta && <div>{meta}</div>}
 		</header>

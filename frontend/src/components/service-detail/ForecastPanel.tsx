@@ -72,56 +72,58 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 				}}
 			/>
 			<div
-				className="flex items-center justify-between gap-3 px-4 py-2.5"
+				className="flex items-center justify-between gap-3 px-4 py-3"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
-				<div className="flex items-center gap-2 min-w-0">
+				<div className="flex items-center gap-2.5 min-w-0">
 					<span
-						className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+						className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
 						style={{
-							background: `${meta.color}1c`,
-							border: `1px solid ${meta.color}55`,
+							background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
+							color: meta.color,
 						}}
 					>
-						<TrendingUp
-							className="w-3.5 h-3.5"
-							style={{ color: meta.color }}
-						/>
+						<TrendingUp className="w-4 h-4" />
 					</span>
 					<div className="min-w-0">
 						<p
-							className="text-[10px] uppercase tracking-[0.2em] font-bold leading-none flex items-center gap-1.5"
-							style={{ color: meta.color }}
+							className="text-[13px] font-semibold leading-none tracking-tight flex items-center gap-2"
+							style={{ color: "var(--text-primary)" }}
 						>
 							Tahmin
 							<span
-								className="text-[9px] font-mono normal-case tracking-normal opacity-70"
-								style={{ color: "var(--text-faint)" }}
+								className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+								style={{
+									color: "var(--text-muted)",
+									background: "var(--surface-sunken)",
+								}}
 							>
 								12 adım
 							</span>
 						</p>
 						<p
-							className="text-[10px] font-mono mt-0.5 truncate"
+							className="text-[11px] mt-1 truncate"
 							style={{ color: "var(--text-muted)" }}
 						>
-							güven:{" "}
+							Güven{" "}
 							<span
-								className="tabular-nums font-bold"
+								className="tabular-nums font-semibold"
 								style={{ color: "var(--text-primary)" }}
 							>
-								{(confidence * 100).toFixed(0)}%
+								%{(confidence * 100).toFixed(0)}
 							</span>
 							{next != null && (
 								<>
-									{" "}
-									· sonraki:{" "}
+									{" · "}sonraki{" "}
 									<span
-										className="tabular-nums font-bold"
+										className="tabular-nums font-semibold"
 										style={{ color: meta.color }}
 									>
-										{next.toFixed(2)}
-										<span className="ml-0.5" style={{ color: "var(--text-faint)" }}>
+										{next.toFixed(meta.unit === "MB" ? 0 : 2)}
+										<span
+											className="ml-0.5 font-normal"
+											style={{ color: "var(--text-faint)" }}
+										>
 											{meta.unit}
 										</span>
 									</span>
@@ -129,10 +131,9 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 							)}
 							{nextAlert && (
 								<>
-									{" "}
-									· tahmini eşik:{" "}
+									{" · "}eşik{" "}
 									<span
-										className="tabular-nums font-bold"
+										className="tabular-nums font-semibold"
 										style={{ color: "var(--status-warn-text)" }}
 									>
 										{nextAlert.toLocaleTimeString("tr-TR", {
@@ -146,7 +147,10 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 					</div>
 				</div>
 
-				<div className="flex items-center gap-1 shrink-0">
+				<div
+					className="flex items-center gap-0.5 shrink-0 p-0.5 rounded-lg"
+					style={{ background: "var(--surface-sunken)" }}
+				>
 					{METRICS.map((m) => {
 						const I = m.icon;
 						const active = m.key === metric;
@@ -155,17 +159,18 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 								key={m.key}
 								type="button"
 								onClick={() => setMetric(m.key)}
-								className="h-7 px-2 rounded flex items-center gap-1 transition-colors"
+								className="h-7 w-7 rounded-md flex items-center justify-center transition-all"
 								style={{
-									background: active
-										? `${m.color}1f`
-										: "var(--surface-sunken)",
-									border: `1px solid ${active ? m.color : "var(--border-default)"}`,
+									background: active ? "var(--surface-card)" : "transparent",
+									boxShadow: active
+										? "0 1px 2px rgba(0,0,0,0.06)"
+										: "none",
 								}}
 								title={m.label}
+								aria-label={m.label}
 							>
 								<I
-									className="w-3 h-3"
+									className="w-3.5 h-3.5"
 									style={{
 										color: active ? m.color : "var(--text-muted)",
 									}}
@@ -223,8 +228,7 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 							<XAxis
 								dataKey="time"
 								tick={{
-									fontSize: 9,
-									fontFamily: "IBM Plex Mono, monospace",
+									fontSize: 10,
 									fill: "var(--text-faint)",
 								}}
 								stroke="var(--border-subtle)"
@@ -235,14 +239,27 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 							/>
 							<YAxis
 								tick={{
-									fontSize: 9,
-									fontFamily: "IBM Plex Mono, monospace",
+									fontSize: 10,
 									fill: "var(--text-faint)",
 								}}
 								stroke="var(--border-subtle)"
 								tickLine={false}
 								axisLine={false}
-								width={32}
+								width={36}
+								tickFormatter={(v: number) =>
+									meta.unit === "MB"
+										? v >= 1024
+											? `${(v / 1024).toFixed(1)}G`
+											: `${Math.round(v)}`
+										: Number.isInteger(v)
+											? String(v)
+											: v.toFixed(1)
+								}
+								domain={[
+									(dataMin: number) => Math.max(0, Math.floor(dataMin * 0.95)),
+									(dataMax: number) => Math.ceil(dataMax * 1.05),
+								]}
+								allowDecimals={false}
 							/>
 							<Tooltip
 								cursor={{
