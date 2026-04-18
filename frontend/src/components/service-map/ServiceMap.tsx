@@ -5,12 +5,20 @@ import {
 	ReactFlowProvider,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Check, Loader2, Plus, RotateCcw, Save, X } from "lucide-react";
-import { AnimatePresence } from "motion/react";
-import { useRef } from "react";
+import {
+	Brain,
+	Check,
+	GitFork,
+	Loader2,
+	Plus,
+	RotateCcw,
+	Save,
+	X,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef } from "react";
 import {
 	STATUS_BG,
-	STATUS_BORDER,
 	STATUS_COLOR,
 	STATUS_LABEL,
 } from "./constants";
@@ -47,118 +55,184 @@ function ServiceMapInner() {
 
 	const addMenuRef = useRef<HTMLDivElement>(null);
 
+	// Close add-menu on outside click
+	useEffect(() => {
+		if (!addMode) return;
+		const onClick = (e: MouseEvent) => {
+			if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+				setAddMode(false);
+			}
+		};
+		document.addEventListener("mousedown", onClick);
+		return () => document.removeEventListener("mousedown", onClick);
+	}, [addMode, setAddMode]);
+
 	return (
 		<div
-			className="flex"
-			style={{ background: "var(--bg-primary)", flex: 1, minHeight: 0 }}
+			className="relative flex-1 min-h-0 flex flex-col"
+			style={{ background: "var(--bg-primary)" }}
 		>
-			{/* Canvas area */}
-			<div className="flex flex-col" style={{ flex: 1, minWidth: 0 }}>
-				{/* Toolbar */}
-				<div
-					className="flex items-center gap-2 px-4 py-2 shrink-0 flex-wrap"
-					style={{ borderBottom: "1px solid var(--border-default)" }}
+			{/* ─────────── Subtoolbar ─────────── */}
+			<div
+				className="flex items-center gap-3 px-4 sm:px-6 py-3 shrink-0 flex-wrap"
+				style={{
+					borderBottom: "1px solid var(--border-subtle)",
+					background:
+						"color-mix(in srgb, var(--surface-card) 60%, transparent)",
+					backdropFilter: "blur(8px)",
+				}}
+			>
+				{/* AI badge */}
+				<span
+					className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium shrink-0"
+					style={{
+						background:
+							"color-mix(in srgb, var(--color-violet) 12%, transparent)",
+						color: "var(--color-violet)",
+					}}
 				>
-					{/* Status counts */}
-					<div className="flex items-center gap-2 mr-1">
-						{(
-							[
-								{ status: "up", label: "Çalışıyor" },
-								{ status: "degraded", label: "Yavaş" },
-								{ status: "down", label: "Çökmüş" },
-							] as const
-						).map(({ status, label }) => (
+					<Brain className="w-3.5 h-3.5" />
+					AI destekli
+				</span>
+
+				<span
+					className="hidden lg:inline-block w-px h-5"
+					style={{ background: "var(--border-default)" }}
+				/>
+
+				{/* Status pill */}
+				<div
+					className="inline-flex items-center gap-0.5 p-0.5 rounded-full"
+					style={{ background: "var(--surface-sunken)" }}
+				>
+					{(
+						[
+							{ status: "up", label: "Çalışıyor" },
+							{ status: "degraded", label: "Yavaş" },
+							{ status: "down", label: "Çökmüş" },
+						] as const
+					).map(({ status, label }) => {
+						const count = statusCounts[status];
+						const breathing = status !== "up" && count > 0;
+						return (
 							<div
 								key={status}
-								className="flex items-center gap-1 px-2 py-0.5 rounded"
-								style={{
-									background: STATUS_BG[status],
-									border: `1px solid ${STATUS_BORDER[status]}`,
-								}}
+								className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full"
+								title={label}
 							>
-								<div
-									className="w-1.5 h-1.5 rounded-full"
-									style={{ background: STATUS_COLOR[status] }}
-								/>
 								<span
-									className="text-[10px] font-semibold tabular-nums"
-									style={{ color: STATUS_COLOR[status] }}
+									className="relative flex items-center justify-center w-3 h-3"
+									aria-hidden
 								>
-									{statusCounts[status]}
+									{breathing && (
+										<span
+											className="absolute inset-0 rounded-full"
+											style={{
+												background: STATUS_COLOR[status],
+												opacity: 0.3,
+												animation:
+													"nn-orb-breathe 2.4s ease-in-out infinite",
+											}}
+										/>
+									)}
+									<span
+										className="relative w-1.5 h-1.5 rounded-full"
+										style={{ background: STATUS_COLOR[status] }}
+									/>
 								</span>
 								<span
-									className="text-[10px] hidden sm:inline"
-									style={{ color: "var(--text-faint)" }}
+									className="text-[12px] font-semibold tabular-nums"
+									style={{ color: STATUS_COLOR[status] }}
+								>
+									{count}
+								</span>
+								<span
+									className="text-[11px] hidden md:inline"
+									style={{ color: "var(--text-muted)" }}
 								>
 									{label}
 								</span>
 							</div>
-						))}
-					</div>
+						);
+					})}
+				</div>
 
-					<span
-						className="text-[10px] px-2 py-0.5 rounded"
+				<span
+					className="hidden md:inline-flex items-center h-8 px-3 rounded-full text-[12px] font-medium"
+					style={{
+						background: "var(--surface-sunken)",
+						color: "var(--text-muted)",
+					}}
+				>
+					<span className="tabular-nums mr-1">{edgeCount}</span>
+					bağlantı
+				</span>
+
+				<div className="flex-1" />
+
+				<span
+					className="hidden xl:flex items-center gap-1.5 text-[11px]"
+					style={{ color: "var(--text-faint)" }}
+				>
+					<kbd
+						className="px-1.5 py-0.5 rounded-md text-[10px] font-mono"
 						style={{
 							background: "var(--surface-sunken)",
 							border: "1px solid var(--border-subtle)",
-							color: "var(--text-faint)",
 						}}
 					>
-						{edgeCount} bağlantı
-					</span>
+						Del
+					</kbd>
+					seçili öğeyi sil
+				</span>
 
-					<div className="flex-1" />
-
-					<span
-						className="hidden md:flex items-center gap-1 text-[10px]"
-						style={{ color: "var(--text-faint)" }}
-					>
-						<kbd
-							className="px-1 py-0.5 rounded text-[9px]"
+				{addableServices.length > 0 && (
+					<div className="relative" ref={addMenuRef}>
+						<button
+							type="button"
+							onClick={() => setAddMode((v) => !v)}
+							className="flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium transition-all"
 							style={{
-								background: "var(--surface-sunken)",
-								border: "1px solid var(--border-subtle)",
+								background: addMode
+									? "color-mix(in srgb, var(--color-teal) 12%, transparent)"
+									: "var(--surface-sunken)",
+								color: addMode ? "var(--color-teal)" : "var(--text-muted)",
 							}}
 						>
-							Del
-						</kbd>
-						seçili öğeyi sil
-					</span>
-
-					{addableServices.length > 0 && (
-						<div className="relative" ref={addMenuRef}>
-							<button
-								type="button"
-								onClick={() => setAddMode((v) => !v)}
-								className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border transition-all"
+							<Plus className="w-3.5 h-3.5" />
+							Servis ekle
+							<span
+								className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full font-semibold"
 								style={{
 									background: addMode
-										? "var(--color-teal-subtle)"
-										: "transparent",
-									borderColor: addMode
-										? "var(--color-teal-border)"
-										: "var(--border-default)",
-									color: addMode ? "var(--color-teal)" : "var(--text-muted)",
+										? "color-mix(in srgb, var(--color-teal) 18%, transparent)"
+										: "var(--surface-card)",
+									color: addMode
+										? "var(--color-teal)"
+										: "var(--text-faint)",
 								}}
 							>
-								<Plus className="w-3 h-3" />
-								Servis Ekle ({addableServices.length})
-							</button>
+								{addableServices.length}
+							</span>
+						</button>
+						<AnimatePresence>
 							{addMode && (
-								<div
-									className="absolute top-9 right-0 z-20 rounded p-2 min-w-52 max-h-72 overflow-y-auto space-y-0.5"
+								<motion.div
+									initial={{ opacity: 0, y: -8, scale: 0.96 }}
+									animate={{ opacity: 1, y: 0, scale: 1 }}
+									exit={{ opacity: 0, y: -8, scale: 0.96 }}
+									transition={{ duration: 0.18 }}
+									className="absolute top-10 right-0 z-30 rounded-2xl p-1.5 min-w-64 max-h-80 overflow-y-auto"
 									style={{
 										background: "var(--surface-card)",
 										border: "1px solid var(--border-default)",
-										boxShadow: "var(--card-shadow)",
+										boxShadow:
+											"0 16px 40px -10px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.04)",
 									}}
 								>
 									<p
-										className="text-[10px] uppercase tracking-wider px-2 pb-1.5 mb-1"
-										style={{
-											color: "var(--text-faint)",
-											borderBottom: "1px solid var(--border-subtle)",
-										}}
+										className="text-[11px] font-medium px-3 py-2"
+										style={{ color: "var(--text-faint)" }}
 									>
 										Haritaya ekle
 									</p>
@@ -167,151 +241,187 @@ function ServiceMapInner() {
 											type="button"
 											key={svc.id}
 											onClick={() => addServiceToMap(svc)}
-											className="w-full text-left px-3 py-1.5 rounded text-xs flex items-center gap-2 transition-opacity hover:opacity-70"
+											className="w-full text-left px-3 py-2 rounded-xl text-[13px] flex items-center gap-2.5 transition-colors hover:bg-[var(--surface-sunken)]"
 											style={{ color: "var(--text-secondary)" }}
 										>
-											<div
+											<span
 												className="w-2 h-2 rounded-full shrink-0"
 												style={{
 													background:
 														STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown,
 												}}
 											/>
-											<span className="truncate flex-1">{svc.name}</span>
+											<span className="truncate flex-1 font-medium">
+												{svc.name}
+											</span>
 											<span
-												className="text-[9px] shrink-0"
+												className="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full font-medium"
 												style={{
 													color:
 														STATUS_COLOR[svc.status] ?? STATUS_COLOR.unknown,
+													background: STATUS_BG[svc.status],
 												}}
 											>
 												{STATUS_LABEL[svc.status]}
 											</span>
 										</button>
 									))}
-								</div>
+								</motion.div>
 							)}
-						</div>
-					)}
+						</AnimatePresence>
+					</div>
+				)}
 
-					<button
-						type="button"
-						onClick={handleSave}
-						className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border transition-all"
-						style={{
-							borderColor: "var(--color-teal-border)",
-							color: "var(--color-teal)",
-						}}
-					>
-						<Save className="w-3 h-3" />
-						Kaydet
-					</button>
+				<button
+					type="button"
+					onClick={handleSave}
+					className="flex items-center gap-1.5 h-8 px-4 rounded-full text-[12px] font-semibold text-white transition-all hover:opacity-90"
+					style={{ background: "var(--gradient-btn-primary)" }}
+				>
+					<Save className="w-3.5 h-3.5" />
+					Kaydet
+				</button>
 
-					{resetAsking ? (
-						<div className="flex items-center gap-1">
-							<button
-								type="button"
-								onClick={handleReset}
-								className="flex items-center gap-1 px-2 h-7 rounded text-[10px] font-semibold border"
-								style={{
-									background: "var(--status-down-subtle)",
-									borderColor: "var(--status-down-border)",
-									color: "var(--status-down-text)",
-								}}
-							>
-								<Check className="w-3 h-3" /> Sıfırla
-							</button>
-							<button
-								type="button"
-								onClick={() => setResetAsking(false)}
-								className="w-7 h-7 rounded flex items-center justify-center border"
-								style={{
-									borderColor: "var(--border-subtle)",
-									color: "var(--text-muted)",
-								}}
-							>
-								<X className="w-3 h-3" />
-							</button>
-						</div>
-					) : (
+				{resetAsking ? (
+					<div className="flex items-center gap-1">
 						<button
 							type="button"
-							onClick={() => setResetAsking(true)}
-							className="flex items-center gap-1.5 px-3 h-7 rounded text-xs border transition-all"
+							onClick={handleReset}
+							className="flex items-center gap-1.5 h-8 px-3 rounded-full text-[11px] font-semibold"
 							style={{
-								borderColor: "var(--border-default)",
-								color: "var(--text-muted)",
+								background: "var(--status-down-subtle)",
+								color: "var(--status-down-text)",
 							}}
 						>
-							<RotateCcw className="w-3 h-3" />
-							Sıfırla
+							<Check className="w-3 h-3" /> Eminim
 						</button>
-					)}
-				</div>
-
-				{/* Canvas */}
-				<div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-					<ReactFlow
-						nodes={nodes}
-						edges={edges}
-						onNodesChange={onNodesChange}
-						onEdgesChange={onEdgesChange}
-						onConnect={onConnect}
-						nodeTypes={nodeTypes}
-						edgeTypes={edgeTypes}
-						fitView
-						fitViewOptions={{ padding: 0.25 }}
-						style={{
-							width: "100%",
-							height: "100%",
-							background: "var(--bg-primary)",
-						}}
-						deleteKeyCode="Delete"
-						onPaneClick={() => setSelectedServiceId(null)}
+						<button
+							type="button"
+							onClick={() => setResetAsking(false)}
+							className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)]"
+							style={{ color: "var(--text-muted)" }}
+							aria-label="İptal"
+						>
+							<X className="w-3.5 h-3.5" />
+						</button>
+					</div>
+				) : (
+					<button
+						type="button"
+						onClick={() => setResetAsking(true)}
+						className="flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium transition-colors hover:bg-[var(--surface-sunken)]"
+						style={{ color: "var(--text-muted)" }}
 					>
-						<Background color="var(--border-subtle)" gap={24} size={1} />
-						<Controls
-							style={{
-								background: "var(--surface-card)",
-								border: "1px solid var(--border-default)",
-								boxShadow: "var(--card-shadow)",
-								borderRadius: "6px",
-							}}
-						/>
-					</ReactFlow>
+						<RotateCcw className="w-3.5 h-3.5" />
+						Sıfırla
+					</button>
+				)}
+			</div>
 
-					{isLoading && services.length === 0 && (
-						<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-							<div className="flex items-center gap-2">
-								<Loader2
-									className="w-4 h-4 animate-spin"
-									style={{ color: "var(--text-faint)" }}
+			{/* ─────────── Canvas ─────────── */}
+			<div className="relative flex-1 min-h-0">
+				<ReactFlow
+					nodes={nodes}
+					edges={edges}
+					onNodesChange={onNodesChange}
+					onEdgesChange={onEdgesChange}
+					onConnect={onConnect}
+					nodeTypes={nodeTypes}
+					edgeTypes={edgeTypes}
+					fitView
+					fitViewOptions={{ padding: 0.25 }}
+					proOptions={{ hideAttribution: true }}
+					style={{
+						width: "100%",
+						height: "100%",
+						background: "var(--bg-primary)",
+					}}
+					deleteKeyCode="Delete"
+					onPaneClick={() => setSelectedServiceId(null)}
+				>
+					<Background color="var(--border-subtle)" gap={28} size={1} />
+					<Controls
+						style={{
+							background:
+								"color-mix(in srgb, var(--surface-card) 92%, transparent)",
+							border: "1px solid var(--border-default)",
+							backdropFilter: "blur(8px)",
+							boxShadow:
+								"0 12px 28px -10px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.02)",
+							borderRadius: "12px",
+							overflow: "hidden",
+						}}
+					/>
+				</ReactFlow>
+
+				{/* Loading / empty overlays */}
+				{isLoading && services.length === 0 && (
+					<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+						<div className="flex items-center gap-2">
+							<Loader2
+								className="w-4 h-4 animate-spin"
+								style={{ color: "var(--text-faint)" }}
+							/>
+							<p className="text-[13px]" style={{ color: "var(--text-muted)" }}>
+								Servisler yükleniyor…
+							</p>
+						</div>
+					</div>
+				)}
+				{!isLoading && services.length === 0 && (
+					<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+						<div
+							className="text-center px-6 py-8 rounded-2xl pointer-events-auto"
+							style={{
+								background:
+									"color-mix(in srgb, var(--surface-card) 70%, transparent)",
+								backdropFilter: "blur(8px)",
+								border: "1px solid var(--border-subtle)",
+							}}
+						>
+							<div
+								className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center"
+								style={{
+									background:
+										"color-mix(in srgb, var(--color-teal) 12%, transparent)",
+									color: "var(--color-teal)",
+								}}
+							>
+								<GitFork className="w-5 h-5" />
+							</div>
+							<p
+								className="text-[14px] font-semibold tracking-tight"
+								style={{ color: "var(--text-primary)" }}
+							>
+								Henüz servis yok
+							</p>
+							<p
+								className="text-[12px] mt-1"
+								style={{ color: "var(--text-muted)" }}
+							>
+								Önce Servisler sayfasından bir servis ekleyin.
+							</p>
+						</div>
+					</div>
+				)}
+
+				{/* Right panel — overlay so canvas doesn't reflow */}
+				<AnimatePresence>
+					{selectedService && (
+						<div
+							className="absolute top-0 right-0 bottom-0 z-20 pointer-events-none"
+							aria-hidden={false}
+						>
+							<div className="h-full pointer-events-auto">
+								<RightPanel
+									service={selectedService}
+									onClose={() => setSelectedServiceId(null)}
 								/>
-								<p className="text-sm" style={{ color: "var(--text-faint)" }}>
-									Servisler yükleniyor...
-								</p>
 							</div>
 						</div>
 					)}
-					{!isLoading && services.length === 0 && (
-						<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-							<p className="text-sm" style={{ color: "var(--text-faint)" }}>
-								Henüz servis yok. Önce bir servis ekleyin.
-							</p>
-						</div>
-					)}
-				</div>
+				</AnimatePresence>
 			</div>
-
-			{/* Right panel */}
-			<AnimatePresence>
-				{selectedService && (
-					<RightPanel
-						service={selectedService}
-						onClose={() => setSelectedServiceId(null)}
-					/>
-				)}
-			</AnimatePresence>
 		</div>
 	);
 }
@@ -319,17 +429,7 @@ function ServiceMapInner() {
 export function ServiceMap() {
 	return (
 		<ReactFlowProvider>
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					flex: 1,
-					minHeight: 0,
-					height: "100%",
-				}}
-			>
-				<ServiceMapInner />
-			</div>
+			<ServiceMapInner />
 		</ReactFlowProvider>
 	);
 }

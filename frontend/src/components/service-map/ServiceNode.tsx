@@ -1,13 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { Activity, AlertTriangle, Server, Trash2 } from "lucide-react";
 import { memo } from "react";
-import {
-	STATUS_BG,
-	STATUS_BORDER,
-	STATUS_COLOR,
-	STATUS_LABEL,
-} from "./constants";
-import { StatusIcon } from "./StatusIcon";
+import { STATUS_COLOR, STATUS_LABEL } from "./constants";
 import type { ServiceNodeData } from "./types";
 
 export const ServiceNode = memo(function ServiceNode({
@@ -17,23 +11,23 @@ export const ServiceNode = memo(function ServiceNode({
 }) {
 	const { service, onDelete, onSelect, selected, extra } = data;
 	const color = STATUS_COLOR[service.status] ?? STATUS_COLOR.unknown;
-	const bg = STATUS_BG[service.status] ?? STATUS_BG.unknown;
-	const border = STATUS_BORDER[service.status] ?? STATUS_BORDER.unknown;
+	const alive = service.status === "up";
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: div contains nested interactive elements (Handle, delete button), cannot use <button>
+		// biome-ignore lint/a11y/useSemanticElements: nested interactive Handle/button prevents using <button>
 		<div
 			role="button"
 			tabIndex={0}
-			className="rounded group relative cursor-pointer"
+			className="group relative cursor-pointer"
 			style={{
-				width: 200,
+				width: 220,
 				background: "var(--surface-card)",
-				border: selected ? `1px solid ${color}` : `1px solid ${border}`,
+				border: `1px solid ${selected ? color : "var(--border-default)"}`,
+				borderRadius: 14,
 				boxShadow: selected
-					? `0 0 0 3px color-mix(in srgb, ${color} 25%, transparent), var(--card-shadow)`
-					: "var(--card-shadow)",
-				transition: "box-shadow 0.15s, border-color 0.15s",
+					? `0 0 0 4px color-mix(in srgb, ${color} 18%, transparent), 0 8px 24px -8px rgba(0,0,0,0.18)`
+					: "0 4px 12px -4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.02)",
+				transition: "box-shadow 0.18s ease, border-color 0.18s ease",
 			}}
 			onClick={() => onSelect(service.id)}
 			onKeyDown={(e) => e.key === "Enter" && onSelect(service.id)}
@@ -45,7 +39,7 @@ export const ServiceNode = memo(function ServiceNode({
 					background: color,
 					width: 9,
 					height: 9,
-					border: "1px solid var(--surface-card)",
+					border: "1.5px solid var(--surface-card)",
 				}}
 			/>
 			<Handle
@@ -55,7 +49,7 @@ export const ServiceNode = memo(function ServiceNode({
 					background: color,
 					width: 9,
 					height: 9,
-					border: "1px solid var(--surface-card)",
+					border: "1.5px solid var(--surface-card)",
 				}}
 			/>
 
@@ -65,49 +59,77 @@ export const ServiceNode = memo(function ServiceNode({
 					e.stopPropagation();
 					onDelete(service.id);
 				}}
-				className="absolute -top-2 -right-2 w-5 h-5 rounded-full items-center justify-center hidden group-hover:flex z-10"
-				style={{ background: "var(--status-down)", color: "white" }}
+				className="absolute -top-2 -right-2 w-6 h-6 rounded-full items-center justify-center hidden group-hover:flex z-10 transition-transform hover:scale-110"
+				style={{
+					background: "var(--status-down)",
+					color: "white",
+					boxShadow: "0 4px 10px -2px rgba(0,0,0,0.2)",
+				}}
+				aria-label="Haritadan kaldır"
 			>
-				<Trash2 className="w-2.5 h-2.5" />
+				<Trash2 className="w-3 h-3" />
 			</button>
 
-			<div className="h-0.5 rounded-t" style={{ background: color }} />
-
-			<div className="px-3 py-2.5">
-				<div className="flex items-center gap-2 mb-2">
-					<div
-						className="w-6 h-6 rounded flex items-center justify-center shrink-0"
-						style={{ background: bg, border: `1px solid ${border}` }}
-					>
-						<Server className="w-3 h-3" style={{ color }} />
-					</div>
+			<div className="px-3.5 pt-3 pb-3">
+				<div className="flex items-center gap-2.5 mb-2.5">
 					<span
-						className="text-xs font-semibold truncate"
-						style={{ color: "var(--text-secondary)", maxWidth: 130 }}
+						className="relative flex items-center justify-center w-4 h-4 shrink-0"
+						aria-hidden
 					>
-						{service.name}
+						{alive && (
+							<span
+								className="absolute inset-0 rounded-full"
+								style={{
+									background: color,
+									opacity: 0.22,
+									animation: "nn-orb-breathe 2.4s ease-in-out infinite",
+								}}
+							/>
+						)}
+						<span
+							className="relative w-2 h-2 rounded-full"
+							style={{
+								background: color,
+								boxShadow: alive
+									? `0 0 0 2px color-mix(in srgb, ${color} 22%, transparent)`
+									: undefined,
+							}}
+						/>
 					</span>
+					<div className="flex-1 min-w-0">
+						<p
+							className="text-[13px] font-semibold tracking-tight truncate leading-none"
+							style={{ color: "var(--text-primary)" }}
+						>
+							{service.name}
+						</p>
+						<p
+							className="text-[11px] truncate mt-1 font-mono"
+							style={{ color: "var(--text-faint)" }}
+						>
+							{service.host}:{service.port}
+						</p>
+					</div>
+					<Server
+						className="w-3.5 h-3.5 shrink-0 opacity-50"
+						style={{ color: "var(--text-faint)" }}
+					/>
 				</div>
 
-				<p
-					className="text-[10px] truncate mb-2"
-					style={{ color: "var(--text-faint)", fontFamily: "var(--font-mono)" }}
-				>
-					{service.host}:{service.port}
-				</p>
-
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2 mt-2 flex-wrap">
 					<span
-						className="px-1.5 py-0.5 rounded text-[9px] font-semibold flex items-center gap-1"
-						style={{ background: bg, color, border: `1px solid ${border}` }}
+						className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+						style={{
+							background: `color-mix(in srgb, ${color} 12%, transparent)`,
+							color,
+						}}
 					>
-						<StatusIcon status={service.status} size="w-2.5 h-2.5" />
 						{STATUS_LABEL[service.status] ?? service.status}
 					</span>
 					{extra?.latency !== undefined && (
 						<span
-							className="text-[9px] flex items-center gap-0.5"
-							style={{ color: "var(--text-faint)" }}
+							className="inline-flex items-center gap-1 text-[10px] font-medium tabular-nums"
+							style={{ color: "var(--text-muted)" }}
 						>
 							<Activity className="w-2.5 h-2.5" />
 							{extra.latency}ms
@@ -115,7 +137,7 @@ export const ServiceNode = memo(function ServiceNode({
 					)}
 					{(extra?.alertCount ?? 0) > 0 && (
 						<span
-							className="text-[9px] flex items-center gap-0.5"
+							className="inline-flex items-center gap-1 text-[10px] font-semibold tabular-nums"
 							style={{ color: "var(--status-down-text)" }}
 						>
 							<AlertTriangle className="w-2.5 h-2.5" />
@@ -125,7 +147,7 @@ export const ServiceNode = memo(function ServiceNode({
 				</div>
 
 				{extra?.uptime !== undefined && (
-					<div className="mt-2">
+					<div className="mt-3">
 						<div
 							className="h-1 rounded-full overflow-hidden"
 							style={{ background: "var(--border-track)" }}
@@ -135,12 +157,20 @@ export const ServiceNode = memo(function ServiceNode({
 								style={{ width: `${extra.uptime}%`, background: color }}
 							/>
 						</div>
-						<p
-							className="text-[9px] mt-0.5 text-right"
-							style={{ color: "var(--text-faint)" }}
-						>
-							{extra.uptime.toFixed(1)}% uptime
-						</p>
+						<div className="flex items-center justify-between mt-1.5">
+							<span
+								className="text-[10px] font-medium"
+								style={{ color: "var(--text-faint)" }}
+							>
+								Uptime
+							</span>
+							<span
+								className="text-[10px] font-semibold tabular-nums"
+								style={{ color: "var(--text-secondary)" }}
+							>
+								{extra.uptime.toFixed(1)}%
+							</span>
+						</div>
 					</div>
 				)}
 			</div>

@@ -20,7 +20,6 @@ import {
 } from "@/api/incidents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
 	EmptyState as SharedEmptyState,
@@ -99,12 +98,12 @@ export function IncidentsPage() {
 	return (
 		<PageShell width="wide">
 			<PageHeader
-				eyebrow="olay yönetimi"
+				eyebrow="Olay yönetimi"
 				title="Incidents"
-				description="Korelasyonlu uyarılar tek bir incident altında gruplanır. Açıklama ve postmortem ekleyerek hafıza oluşturun."
+				description="Korelasyonlu uyarılar tek bir incident altında gruplanır. Açıklama ve postmortem ekleyerek kurumsal hafıza oluşturun."
 			/>
 
-			<Toolbar className="mt-3 flex-wrap gap-y-2">
+			<Toolbar className="flex-wrap gap-y-2">
 				<ToolbarChips>
 					<FilterChip
 						active={status === "all"}
@@ -138,7 +137,7 @@ export function IncidentsPage() {
 						active={severity === "all"}
 						onClick={() => setSeverity("all")}
 					>
-						Tümü
+						Tüm seviyeler
 					</FilterChip>
 					<FilterChip
 						active={severity === "crit"}
@@ -165,16 +164,16 @@ export function IncidentsPage() {
 
 				<ToolbarDivider />
 
-				<div className="relative flex-1 min-w-[180px] max-w-xs">
+				<div className="relative flex-1 min-w-[200px] max-w-xs">
 					<Search
-						className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+						className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
 						style={{ color: "var(--text-faint)" }}
 					/>
 					<Input
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						placeholder="Başlık veya servis ara..."
-						className="h-8 pl-8 text-xs"
+						placeholder="Başlık veya servis ara…"
+						className="h-8 pl-9 text-[12px] rounded-full"
 					/>
 				</div>
 
@@ -186,25 +185,25 @@ export function IncidentsPage() {
 							setSeverity("all");
 							setSearch("");
 						}}
-						className="text-[11px] font-medium px-2 h-8 rounded inline-flex items-center gap-1 hover:bg-[var(--surface-sunken)]"
+						className="text-[12px] font-medium px-3 h-8 rounded-full inline-flex items-center gap-1.5 transition-colors hover:bg-[var(--surface-sunken)]"
 						style={{ color: "var(--text-muted)" }}
 					>
-						<X className="w-3 h-3" /> Temizle
+						<X className="w-3.5 h-3.5" /> Temizle
 					</button>
 				)}
 
 				<span
-					className="ml-auto text-[10px] font-mono tabular-nums"
+					className="ml-auto text-[11px] tabular-nums font-medium"
 					style={{ color: "var(--text-faint)" }}
 				>
-					{filtered.length}/{list.length}
+					{filtered.length}/{list.length} kayıt
 				</span>
 			</Toolbar>
 
-			<div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-3 mt-3 flex-1 min-h-0">
+			<div className="grid grid-cols-1 lg:grid-cols-[minmax(340px,400px)_1fr] gap-4 mt-2 flex-1 min-h-0">
 				<div className="flex flex-col gap-2 overflow-y-auto pr-1 min-h-0">
 					{isLoading ? (
-						<SkeletonList rows={3} rowHeight={80} />
+						<SkeletonList rows={4} rowHeight={84} />
 					) : filtered.length === 0 ? (
 						<SharedEmptyState
 							icon={FileText}
@@ -244,7 +243,7 @@ export function IncidentsPage() {
 						<SharedEmptyState
 							icon={FileText}
 							title="Detay için bir incident seçin"
-							description="Sol taraftaki listeden bir kayıt seçtiğinizde özet, postmortem ve zaman çizelgesi burada görünür."
+							description="Sol taraftaki listeden bir kayıt seçtiğinizde özet, postmortem ve zaman çizelgesi burada açılır."
 							tone="muted"
 							className="h-full"
 						/>
@@ -266,51 +265,90 @@ function IncidentRow({
 }) {
 	const open = !item.resolved_at;
 	const tone = severityTone(item.severity);
+	const dotColor = open ? tone.dot : "var(--status-up)";
 	return (
 		<button
 			type="button"
 			onClick={onSelect}
-			className="text-left rounded-lg p-3 transition-colors"
+			className="group text-left rounded-xl p-3.5 transition-all hover:border-[color:var(--border-strong)]"
 			style={{
 				background: active ? "var(--surface-overlay)" : "var(--surface-card)",
 				border: `1px solid ${active ? "var(--border-strong)" : "var(--border-default)"}`,
+				boxShadow: active
+					? "0 4px 12px -4px rgba(0,0,0,0.08)"
+					: undefined,
 			}}
 		>
-			<div className="flex items-start justify-between gap-2">
-				<div className="flex items-center gap-2 min-w-0">
+			<div className="flex items-start gap-3">
+				<span
+					className="relative flex items-center justify-center w-4 h-4 mt-1 shrink-0"
+					aria-hidden
+				>
+					{open && (
+						<span
+							className="absolute inset-0 rounded-full"
+							style={{
+								background: dotColor,
+								opacity: 0.25,
+								animation: "nn-orb-breathe 2.4s ease-in-out infinite",
+							}}
+						/>
+					)}
 					<span
-						className="w-2 h-2 rounded-full shrink-0"
+						className="relative w-2 h-2 rounded-full"
 						style={{
-							background: open ? tone.color : "var(--status-up)",
-							boxShadow: open ? `0 0 8px ${tone.color}` : "none",
+							background: dotColor,
+							boxShadow: open
+								? `0 0 0 2px color-mix(in srgb, ${dotColor} 22%, transparent)`
+								: undefined,
 						}}
 					/>
+				</span>
+
+				<div className="flex-1 min-w-0">
+					<div className="flex items-start justify-between gap-2">
+						<p
+							className="text-[14px] font-semibold tracking-tight leading-snug truncate"
+							style={{ color: "var(--text-primary)" }}
+						>
+							{item.title}
+						</p>
+						<span
+							className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
+							style={{ color: tone.text, background: tone.bg }}
+						>
+							{severityLabel(item.severity)}
+						</span>
+					</div>
 					<p
-						className="text-sm font-bold truncate"
-						style={{ color: "var(--text-primary)" }}
+						className="mt-1 text-[12px] truncate"
+						style={{ color: "var(--text-muted)" }}
 					>
-						{item.title}
+						<span style={{ color: "var(--text-secondary)" }}>
+							{item.service_name}
+						</span>
+						<span className="mx-1.5" style={{ color: "var(--text-faint)" }}>
+							·
+						</span>
+						{item.alert_count} uyarı
+						<span className="mx-1.5" style={{ color: "var(--text-faint)" }}>
+							·
+						</span>
+						{relativeTime(item.started_at)}
+						{item.resolved_at && (
+							<>
+								<span
+									className="mx-1.5"
+									style={{ color: "var(--text-faint)" }}
+								>
+									·
+								</span>
+								<span style={{ color: "var(--status-up-text)" }}>çözüldü</span>
+							</>
+						)}
 					</p>
 				</div>
-				<span
-					className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
-					style={{
-						color: tone.color,
-						background: tone.bg,
-						border: `1px solid ${tone.color}33`,
-					}}
-				>
-					{item.severity}
-				</span>
 			</div>
-			<p
-				className="mt-1.5 text-[10px] font-mono"
-				style={{ color: "var(--text-muted)" }}
-			>
-				{item.service_name} · {item.alert_count} uyarı ·{" "}
-				{relativeTime(item.started_at)}
-				{item.resolved_at && " · çözüldü"}
-			</p>
 		</button>
 	);
 }
@@ -366,113 +404,123 @@ function DetailPanel({
 	}
 
 	const open = !data.incident.resolved_at;
+	const dotColor = open ? "var(--status-down)" : "var(--status-up)";
 
 	return (
 		<Panel padding="none" className="overflow-hidden flex flex-col h-full">
 			<div
-				className="flex items-start justify-between gap-3 px-4 py-3"
+				className="flex items-start justify-between gap-3 px-5 py-4"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
 				<div className="min-w-0 flex-1">
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 mb-2">
 						<span
-							className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
+							className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium"
 							style={{
-								color: open
-									? "var(--status-down-text)"
-									: "var(--status-up-text)",
 								background: open
 									? "var(--status-down-subtle)"
 									: "var(--status-up-subtle)",
-								border: `1px solid ${
-									open ? "var(--status-down-border)" : "var(--status-up-border)"
-								}`,
+								color: open
+									? "var(--status-down-text)"
+									: "var(--status-up-text)",
 							}}
 						>
-							{open ? "açık" : "çözüldü"}
+							<span
+								className="w-1.5 h-1.5 rounded-full"
+								style={{ background: dotColor }}
+							/>
+							{open ? "Açık" : "Çözüldü"}
 						</span>
-						<p
-							className="text-[10px] font-mono"
+						<span
+							className="text-[12px]"
 							style={{ color: "var(--text-muted)" }}
 						>
-							{data.service_name} · {data.alert_count} uyarı
-						</p>
+							<span style={{ color: "var(--text-secondary)" }}>
+								{data.service_name}
+							</span>
+							<span className="mx-1.5" style={{ color: "var(--text-faint)" }}>
+								·
+							</span>
+							{data.alert_count} uyarı
+						</span>
 					</div>
 					<Input
 						value={title}
 						onChange={(e) => setTitle(e.target.value)}
-						className="mt-1.5 h-8 text-sm font-bold border-transparent focus-visible:border-[var(--border-strong)]"
+						className="h-9 text-[15px] font-semibold tracking-tight border-transparent rounded-lg focus-visible:border-[var(--border-strong)] -ml-2 px-2"
 						style={{ background: "transparent" }}
 					/>
 				</div>
-				<div className="flex items-center gap-1 shrink-0">
+				<div className="flex items-center gap-1.5 shrink-0">
 					{open && (
 						<Button
 							size="sm"
 							variant="outline"
-							className="h-8 px-2.5 text-[11px]"
+							className="h-8 px-3 rounded-full text-[12px] font-medium"
 							onClick={onResolve}
 						>
-							<CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Kapat
+							<CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Kapat
 						</Button>
 					)}
 					<Button
 						size="sm"
 						variant="ghost"
-						className="h-8 w-8 p-0"
+						className="h-8 w-8 p-0 rounded-full"
 						onClick={onDelete}
+						aria-label="Sil"
 					>
 						<Trash2
-							className="w-3.5 h-3.5"
+							className="w-4 h-4"
 							style={{ color: "var(--status-down)" }}
 						/>
 					</Button>
 					<Button
 						size="sm"
 						variant="ghost"
-						className="h-8 w-8 p-0"
+						className="h-8 w-8 p-0 rounded-full"
 						onClick={onClose}
+						aria-label="Kapat"
 					>
-						<X className="w-3.5 h-3.5" />
+						<X className="w-4 h-4" />
 					</Button>
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
+			<div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-6">
 				<section>
-					<Label
-						className="text-[10px] uppercase tracking-[0.2em] font-bold"
-						style={{ color: "var(--text-faint)" }}
+					<label
+						className="text-[12px] font-medium block mb-2"
+						style={{ color: "var(--text-muted)" }}
 					>
 						Özet (one-liner)
-					</Label>
+					</label>
 					<Input
 						value={summary}
 						onChange={(e) => setSummary(e.target.value)}
 						placeholder="Kısa, tek cümlelik açıklama"
-						className="mt-1.5 h-9 text-sm"
+						className="h-10 text-[13px] rounded-lg"
 					/>
 				</section>
 
 				<section>
-					<Label
-						className="text-[10px] uppercase tracking-[0.2em] font-bold"
-						style={{ color: "var(--text-faint)" }}
+					<label
+						className="text-[12px] font-medium block mb-2"
+						style={{ color: "var(--text-muted)" }}
 					>
 						Postmortem (markdown)
-					</Label>
+					</label>
 					<Textarea
 						value={postmortem}
 						onChange={(e) => setPostmortem(e.target.value)}
 						placeholder={"## Sebep\n\n## Etki\n\n## Aksiyonlar"}
-						className="mt-1.5 text-sm min-h-[160px] font-mono"
+						className="text-[13px] min-h-[180px] font-mono rounded-lg leading-relaxed"
 					/>
 				</section>
 
 				<div className="flex justify-end">
 					<Button
 						size="sm"
-						className="h-8 px-3 text-xs text-white"
+						className="h-9 px-4 rounded-full text-[12px] font-semibold text-white"
 						style={{ background: "var(--gradient-btn-primary)" }}
 						disabled={updateMut.isPending}
 						onClick={() =>
@@ -484,24 +532,33 @@ function DetailPanel({
 						}
 					>
 						{updateMut.isPending ? (
-							<Loader2 className="w-3 h-3 mr-1 animate-spin" />
+							<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
 						) : (
-							<Save className="w-3 h-3 mr-1" />
+							<Save className="w-3.5 h-3.5 mr-1.5" />
 						)}
 						Kaydet
 					</Button>
 				</div>
 
 				<section>
-					<Label
-						className="text-[10px] uppercase tracking-[0.2em] font-bold"
-						style={{ color: "var(--text-faint)" }}
-					>
-						Zaman Çizelgesi ({data.timeline.length})
-					</Label>
-					<div className="mt-3">
-						<Timeline events={data.timeline} />
+					<div className="flex items-baseline gap-2 mb-3">
+						<h3
+							className="text-[13px] font-semibold tracking-tight"
+							style={{ color: "var(--text-primary)" }}
+						>
+							Zaman çizelgesi
+						</h3>
+						<span
+							className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
+							style={{
+								color: "var(--text-muted)",
+								background: "var(--surface-sunken)",
+							}}
+						>
+							{data.timeline.length}
+						</span>
 					</div>
+					<Timeline events={data.timeline} />
 				</section>
 			</div>
 		</Panel>
@@ -512,7 +569,7 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 	if (events.length === 0) {
 		return (
 			<p
-				className="text-xs text-center py-6"
+				className="text-[12px] text-center py-8"
 				style={{ color: "var(--text-muted)" }}
 			>
 				Bu pencerede olay kaydı yok.
@@ -520,44 +577,58 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 		);
 	}
 	return (
-		<ol
-			className="relative pl-5"
-			style={{ borderLeft: "1px dashed var(--border-default)" }}
-		>
+		<ol className="relative pl-7 space-y-4">
+			<span
+				className="absolute left-2.5 top-1 bottom-1 w-px"
+				style={{
+					background:
+						"linear-gradient(to bottom, var(--border-default), transparent)",
+				}}
+				aria-hidden
+			/>
 			{events.map((e, idx) => {
 				const meta = eventMeta(e);
 				const Icon = meta.icon;
 				return (
-					<li
-						key={`${e.timestamp}-${idx}`}
-						className="relative pb-4 last:pb-0"
-					>
+					<li key={`${e.timestamp}-${idx}`} className="relative">
 						<span
-							className="absolute -left-[26px] top-0.5 w-5 h-5 rounded flex items-center justify-center"
+							className="absolute -left-[20px] top-0 w-5 h-5 rounded-full flex items-center justify-center"
 							style={{
-								background: meta.bg,
-								border: `1px solid ${meta.color}66`,
+								background: "var(--background)",
+								border: `1.5px solid ${meta.color}`,
 							}}
 						>
 							<Icon className="w-2.5 h-2.5" style={{ color: meta.color }} />
 						</span>
-						<div className="flex items-baseline gap-2">
+						<div className="flex items-baseline gap-2 flex-wrap">
 							<span
-								className="text-[10px] font-mono tabular-nums uppercase tracking-wider"
-								style={{ color: "var(--text-faint)" }}
-							>
-								{new Date(e.timestamp).toLocaleTimeString("tr-TR")}
-							</span>
-							<span
-								className="text-xs font-bold truncate"
+								className="text-[14px] font-medium tracking-tight"
 								style={{ color: "var(--text-primary)" }}
 							>
-								{meta.label} · {e.title}
+								{e.title}
+							</span>
+							<span
+								className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
+								style={{
+									color: meta.color,
+									background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
+								}}
+							>
+								{meta.label}
+							</span>
+							<span
+								className="ml-auto text-[11px] tabular-nums"
+								style={{ color: "var(--text-faint)" }}
+							>
+								{new Date(e.timestamp).toLocaleTimeString("tr-TR", {
+									hour: "2-digit",
+									minute: "2-digit",
+								})}
 							</span>
 						</div>
 						{e.detail && (
 							<p
-								className="mt-0.5 text-[11px] leading-relaxed"
+								className="mt-1 text-[12px] leading-relaxed"
 								style={{ color: "var(--text-muted)" }}
 							>
 								{e.detail}
@@ -577,28 +648,24 @@ function eventMeta(e: TimelineEvent) {
 				label: "uyarı",
 				icon: AlertTriangle,
 				color: "var(--status-down)",
-				bg: "var(--status-down-subtle)",
 			};
 		case "alert_resolved":
 			return {
-				label: "uyarı kapandı",
+				label: "çözüldü",
 				icon: CheckCircle2,
 				color: "var(--status-up)",
-				bg: "var(--status-up-subtle)",
 			};
 		case "command":
 			return {
 				label: "komut",
 				icon: Terminal,
 				color: "var(--color-teal)",
-				bg: "var(--color-teal-subtle)",
 			};
 		default:
 			return {
 				label: "durum",
 				icon: Flame,
 				color: "var(--status-warn)",
-				bg: "var(--status-warn-subtle)",
 			};
 	}
 }
@@ -606,20 +673,30 @@ function eventMeta(e: TimelineEvent) {
 function severityTone(s: string) {
 	if (s === "crit") {
 		return {
-			color: "var(--status-down-text)",
+			text: "var(--status-down-text)",
 			bg: "var(--status-down-subtle)",
+			dot: "var(--status-down)",
 		};
 	}
 	if (s === "warn") {
 		return {
-			color: "var(--status-warn-text)",
+			text: "var(--status-warn-text)",
 			bg: "var(--status-warn-subtle)",
+			dot: "var(--status-warn)",
 		};
 	}
 	return {
-		color: "var(--text-muted)",
+		text: "var(--text-muted)",
 		bg: "var(--surface-sunken)",
+		dot: "var(--text-faint)",
 	};
+}
+
+function severityLabel(s: string) {
+	if (s === "crit") return "Kritik";
+	if (s === "warn") return "Uyarı";
+	if (s === "info") return "Bilgi";
+	return s;
 }
 
 function relativeTime(iso: string) {

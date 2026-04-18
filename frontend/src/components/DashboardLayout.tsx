@@ -10,8 +10,9 @@ import { PageMetaProvider } from "./PageMetaContext";
 import { TopBar } from "./TopBar";
 
 /**
- * Pages that render their own full-bleed background / layout (like the
- * service map). These skip the left dock padding.
+ * Pages that own the entire content area (no main padding, no scroll).
+ * They still get the global TopBar and dock — only the inner <main>
+ * gives up its padding so the page can paint edge-to-edge.
  */
 const FULL_BLEED_PATHS = new Set(["/app/service-map"]);
 
@@ -42,17 +43,13 @@ export function DashboardLayout() {
 				{/* Floating dock — desktop only */}
 				<HybridDock />
 
-				<div
-					className={`flex flex-col flex-1 min-h-0 ${
-						fullBleed ? "" : "md:pl-20"
-					}`}
-				>
-					{!fullBleed && <TopBar onOpenCommandPalette={handleOpenCommandPalette} />}
+				<div className="flex flex-col flex-1 min-h-0 md:pl-20">
+					<TopBar onOpenCommandPalette={handleOpenCommandPalette} />
 
 					<main
 						className={
 							fullBleed
-								? "flex-1 flex flex-col min-h-0"
+								? "flex-1 flex flex-col min-h-0 overflow-hidden pb-[calc(var(--mobilenav-h)+env(safe-area-inset-bottom,0px))] md:pb-0"
 								: "flex-1 flex flex-col min-h-0 pt-3 sm:pt-4 pb-[calc(var(--mobilenav-h)+env(safe-area-inset-bottom,0px)+8px)] md:pb-4 px-3 sm:px-6 lg:px-8 overflow-y-auto"
 						}
 					>

@@ -936,6 +936,11 @@
 		animation: drift 12s linear infinite;
 	}
 
+	@keyframes nn-orb-breathe {
+		0%, 100% { transform: scale(0.85); opacity: 0.25; }
+		50% { transform: scale(1.35); opacity: 0.5; }
+	}
+
 }
 
 /* ── Dark mode ───────────────────────────────────────────────────────────── */

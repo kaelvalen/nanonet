@@ -104,12 +104,14 @@ export function FilterChip({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"shrink-0 inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium transition-colors",
-				"hover:bg-[var(--surface-sunken)]",
+				"shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium transition-all",
+				active
+					? ""
+					: "hover:bg-[var(--surface-sunken)] hover:text-[color:var(--text-primary)]",
 			)}
 			style={{
 				background: active ? t.bgActive : "transparent",
-				border: `1px solid ${active ? t.borderActive : "var(--border-default)"}`,
+				border: `1px solid ${active ? t.borderActive : "transparent"}`,
 				color: active ? t.color : "var(--text-muted)",
 			}}
 		>
@@ -117,10 +119,12 @@ export function FilterChip({
 			<span>{children}</span>
 			{count != null && (
 				<span
-					className="text-[10px] tabular-nums px-1 rounded font-bold"
+					className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full font-semibold"
 					style={{
-						background: active ? "transparent" : "var(--surface-sunken)",
-						color: active ? t.color : "var(--text-faint)",
+						background: active
+							? "color-mix(in srgb, currentColor 14%, transparent)"
+							: "var(--surface-sunken)",
+						color: active ? "currentColor" : "var(--text-faint)",
 					}}
 				>
 					{count}
