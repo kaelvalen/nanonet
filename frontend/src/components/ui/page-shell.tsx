@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useRegisterPageMeta } from "@/components/PageMetaContext";
 import { cn } from "./utils";
 
 /**
@@ -48,13 +49,20 @@ interface PageHeaderProps {
 	actions?: ReactNode;
 	meta?: ReactNode;
 	className?: string;
-	/** Compact mode: smaller title, no border, tighter spacing. Use on pages where every vertical pixel counts. */
+	/**
+	 * Compact mode is now the default behavior — title and actions are
+	 * promoted to the global TopBar via PageMetaContext, so this header
+	 * only renders an inline description / meta strip if those props are
+	 * provided. Kept for API compatibility.
+	 */
 	compact?: boolean;
 }
 
 /**
- * Standard page header: eyebrow → title → description → actions row.
- * Compact mode trims vertical space for viewport-fit pages.
+ * Page header — pushes title / eyebrow / actions up into the TopBar via
+ * PageMetaContext. The component itself renders a slim, optional
+ * description + meta strip in-place. Pages don't need to change their
+ * markup — just keep using `<PageHeader title=... actions=... />`.
  */
 export function PageHeader({
 	eyebrow,
@@ -63,56 +71,29 @@ export function PageHeader({
 	actions,
 	meta,
 	className,
-	compact = false,
 }: PageHeaderProps) {
+	useRegisterPageMeta({ eyebrow, title, description, actions, meta });
+
+	// Render a slim subtitle row only when description or meta is present.
+	// Title + actions are handled by the TopBar.
+	if (!description && !meta) return null;
+
 	return (
 		<header
 			className={cn(
-				"flex flex-col md:flex-row md:items-end md:justify-between shrink-0",
-				compact ? "gap-2 pb-3 mb-4" : "gap-4 pb-6 mb-6 border-b",
+				"flex flex-col gap-2 shrink-0 mb-4 md:mb-5",
 				className,
 			)}
-			style={compact ? undefined : { borderColor: "var(--border-subtle)" }}
 		>
-			<div className="min-w-0 flex-1">
-				{eyebrow && (
-					<p
-						className={cn(
-							"font-bold uppercase tracking-[0.18em]",
-							compact ? "text-[10px] mb-1" : "text-[10px] mb-2",
-						)}
-						style={{ color: "var(--text-faint)" }}
-					>
-						{eyebrow}
-					</p>
-				)}
-				<h1
-					className={cn(
-						"font-bold tracking-tight leading-none",
-						compact ? "text-lg" : "text-2xl",
-					)}
-					style={{ color: "var(--text-primary)" }}
+			{description && (
+				<p
+					className="text-xs leading-relaxed max-w-2xl"
+					style={{ color: "var(--text-muted)" }}
 				>
-					{title}
-				</h1>
-				{description && (
-					<p
-						className={cn(
-							"leading-relaxed max-w-2xl",
-							compact ? "text-xs mt-1.5" : "text-sm mt-2",
-						)}
-						style={{ color: "var(--text-muted)" }}
-					>
-						{description}
-					</p>
-				)}
-				{meta && <div className={compact ? "mt-2" : "mt-3"}>{meta}</div>}
-			</div>
-			{actions && (
-				<div className="flex items-center gap-2 flex-wrap shrink-0">
-					{actions}
-				</div>
+					{description}
+				</p>
 			)}
+			{meta && <div>{meta}</div>}
 		</header>
 	);
 }

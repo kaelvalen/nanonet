@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { metricsApi } from "@/api/metrics";
 import { AddServiceDialog } from "@/components/AddServiceDialog";
+import { DashboardCustomize } from "@/components/DashboardCustomize";
 import { Button } from "@/components/ui/button";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
@@ -30,6 +31,7 @@ import {
 	StatusBadge,
 	StatusDot,
 } from "@/components/ui/status-atoms";
+import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 import { useServices } from "@/hooks/useServices";
 import type { Alert } from "@/types/alerts";
 import type { Service } from "@/types/service";
@@ -681,6 +683,8 @@ function EmptyState({
 export function DashboardPage() {
 	const { services, isLoading } = useServices();
 	const navigate = useNavigate();
+	const { isVisible, config } = useDashboardLayout();
+	const dense = config.density === "compact";
 
 	const { data: activeAlerts } = useQuery({
 		queryKey: ["activeAlerts"],
@@ -754,23 +758,24 @@ export function DashboardPage() {
 		);
 	}
 
+	const heroVisible = isVisible("health") || isVisible("alerts") || isVisible("performance");
+	const chipsVisible =
+		isVisible("cpu") || isVisible("memory") || isVisible("errors") || isVisible("status");
+	const showServices = isVisible("services");
+	const showActivity = isVisible("activity");
+
 	return (
 		<PageShell width="wide" fill>
 			<PageHeader
-				compact
 				eyebrow="Panel"
 				title="Genel Bakış"
-				description={
-					hasServices
-						? `${total} servis izleniyor · son güncelleme şimdi`
-						: "Servisleriniz yükleniyor…"
-				}
 				actions={
 					<>
+						<DashboardCustomize />
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 text-xs"
+							className="h-7 text-xs"
 							onClick={() => navigate("/app/service-map")}
 						>
 							<GitFork className="w-3.5 h-3.5 mr-1.5" />
@@ -779,7 +784,7 @@ export function DashboardPage() {
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 text-xs"
+							className="h-7 text-xs"
 							onClick={() => navigate("/app/ai-insights")}
 						>
 							<Sparkles className="w-3.5 h-3.5 mr-1.5" />
@@ -791,13 +796,15 @@ export function DashboardPage() {
 			/>
 
 			{/* ── HERO ROW ─────────────────────────────────────────────────── */}
+			{heroVisible && (
 			<motion.div
-				className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 shrink-0"
+				className={`grid grid-cols-1 md:grid-cols-3 ${dense ? "gap-2 mb-2" : "gap-3 mb-3"} shrink-0`}
 				initial={{ opacity: 0, y: 6 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3 }}
 			>
 				{/* Health ring card */}
+				{isVisible("health") && (
 				<HeroCard
 					accent={
 						healthPercent >= 95
@@ -862,8 +869,10 @@ export function DashboardPage() {
 						</div>
 					</div>
 				</HeroCard>
+				)}
 
 				{/* Alerts pulse card */}
+				{isVisible("alerts") && (
 				<HeroCard
 					accent={
 						critCount > 0
@@ -952,8 +961,10 @@ export function DashboardPage() {
 						</div>
 					</div>
 				</HeroCard>
+				)}
 
 				{/* Performance card */}
+				{isVisible("performance") && (
 				<HeroCard accent="var(--color-teal)">
 					<div
 						className="w-[72px] h-[72px] rounded-xl flex items-center justify-center shrink-0"
@@ -1003,27 +1014,35 @@ export function DashboardPage() {
 						</div>
 					</div>
 				</HeroCard>
+				)}
 			</motion.div>
+			)}
 
 			{/* ── METRIC CHIPS ─────────────────────────────────────────────── */}
+			{chipsVisible && (
 			<motion.div
-				className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 shrink-0"
+				className={`grid grid-cols-2 md:grid-cols-4 ${dense ? "gap-1.5 mb-2" : "gap-2 mb-4"} shrink-0`}
 				initial={{ opacity: 0, y: 6 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3, delay: 0.05 }}
 			>
+				{isVisible("cpu") && (
 				<MetricChip
 					label="CPU"
 					value={fmt(globalSummary?.avg_cpu_percent, "%")}
 					icon={Cpu}
 					tone={(globalSummary?.avg_cpu_percent ?? 0) > 75 ? "warn" : "accent"}
 				/>
+				)}
+				{isVisible("memory") && (
 				<MetricChip
 					label="Bellek"
 					value={fmtMemory(globalSummary?.avg_memory_used_mb)}
 					icon={MemoryStick}
 					tone="default"
 				/>
+				)}
+				{isVisible("errors") && (
 				<MetricChip
 					label="Hata Oranı"
 					value={
@@ -1034,6 +1053,8 @@ export function DashboardPage() {
 					icon={ShieldCheck}
 					tone={(globalSummary?.avg_error_rate ?? 0) > 1 ? "danger" : "success"}
 				/>
+				)}
+				{isVisible("status") && (
 				<MetricChip
 					label="Durum"
 					value={
@@ -1046,13 +1067,23 @@ export function DashboardPage() {
 					icon={unhealthyCount === 0 ? CheckCircle2 : XCircle}
 					tone={unhealthyCount === 0 ? "success" : "danger"}
 				/>
+				)}
 			</motion.div>
+			)}
 
 			{/* ── MAIN GRID ────────────────────────────────────────────────── */}
-			<div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3">
+			{(showServices || showActivity) && (
+			<div
+				className={`flex-1 min-h-0 grid grid-cols-1 ${
+					showServices && showActivity ? "lg:grid-cols-12" : "lg:grid-cols-1"
+				} gap-3`}
+			>
 				{/* Services list */}
+				{showServices && (
 				<motion.div
-					className="lg:col-span-7 flex flex-col min-h-0 overflow-hidden"
+					className={`${
+						showActivity ? "lg:col-span-7" : "lg:col-span-1"
+					} flex flex-col min-h-0 overflow-hidden`}
 					style={{
 						background: "var(--surface-card)",
 						border: "1px solid var(--border-default)",
@@ -1195,17 +1226,23 @@ export function DashboardPage() {
 						)}
 					</div>
 				</motion.div>
+				)}
 
 				{/* Activity panel */}
+				{showActivity && (
 				<motion.div
-					className="lg:col-span-5 flex flex-col min-h-0"
+					className={`${
+						showServices ? "lg:col-span-5" : "lg:col-span-1"
+					} flex flex-col min-h-0`}
 					initial={{ opacity: 0, y: 6 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.3, delay: 0.15 }}
 				>
 					<ActivityPanel alerts={alerts} services={services} />
 				</motion.div>
+				)}
 			</div>
+			)}
 		</PageShell>
 	);
 }
