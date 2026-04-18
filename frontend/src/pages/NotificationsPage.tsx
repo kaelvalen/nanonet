@@ -26,6 +26,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	PanelBody,
+	PanelFooter,
+	PanelHeader,
+	SkeletonList,
+} from "@/components/ui/primitives";
 import { Switch } from "@/components/ui/switch";
 
 const CHANNEL_META: Record<
@@ -117,7 +125,7 @@ export function NotificationsPage() {
 	const channels = data ?? [];
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="bildirimler"
 				title="Bildirim Kanalları"
@@ -156,17 +164,35 @@ export function NotificationsPage() {
 
 			<div className="flex flex-col gap-3 mt-4">
 				{isLoading ? (
-					<SkeletonRow />
+					<SkeletonList rows={3} rowHeight={68} />
 				) : channels.length === 0 ? (
-					<EmptyState onAdd={() => setDraft({
-						name: "",
-						type: "slack",
-						config: { url: "" },
-						severities: ["warn", "crit"],
-						service_ids: [],
-						cooldown_sec: 300,
-						enabled: true,
-					})} />
+					<SharedEmptyState
+						icon={Bell}
+						title="Henüz bildirim kanalı yok"
+						description="Slack, Discord, webhook, e-posta veya PagerDuty üzerinden alert almak için bir kanal ekle."
+						tone="accent"
+						size="lg"
+						action={
+							<Button
+								size="sm"
+								className="h-8 px-3 text-xs text-white"
+								style={{ background: "var(--gradient-btn-primary)" }}
+								onClick={() =>
+									setDraft({
+										name: "",
+										type: "slack",
+										config: { url: "" },
+										severities: ["warn", "crit"],
+										service_ids: [],
+										cooldown_sec: 300,
+										enabled: true,
+									})
+								}
+							>
+								<Plus className="w-3.5 h-3.5 mr-1.5" /> Kanal Ekle
+							</Button>
+						}
+					/>
 				) : (
 					channels.map((ch) => (
 						<ChannelRow
@@ -210,14 +236,8 @@ function ChannelRow({
 	const Icon = meta.icon;
 
 	return (
-		<div
-			className="rounded-lg overflow-hidden"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
-			}}
-		>
-			<div className="flex items-center gap-3 px-4 py-3">
+		<Panel className="overflow-hidden">
+			<div className="flex flex-wrap items-center gap-3 px-4 py-3">
 				<span
 					className="w-9 h-9 rounded flex items-center justify-center shrink-0"
 					style={{
@@ -308,7 +328,7 @@ function ChannelRow({
 			</div>
 
 			{deliveriesOpen && <DeliveriesPanel channelId={channel.id} />}
-		</div>
+		</Panel>
 	);
 }
 
@@ -435,22 +455,24 @@ function DraftEditor({
 	const meta = CHANNEL_META[value.type];
 
 	return (
-		<div
-			className="mt-4 p-5 rounded-lg flex flex-col gap-4"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-strong)",
-			}}
-		>
-			<div className="flex items-center gap-2">
-				<Bell className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
-				<p
-					className="text-sm font-bold"
-					style={{ color: "var(--text-primary)" }}
-				>
-					Yeni Bildirim Kanalı
-				</p>
-			</div>
+		<Panel className="mt-4">
+			<PanelHeader
+				dense
+				icon={<Bell className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />}
+				actions={
+					<button
+						type="button"
+						onClick={onCancel}
+						className="text-[11px]"
+						style={{ color: "var(--text-muted)" }}
+					>
+						İptal
+					</button>
+				}
+			>
+				Yeni Bildirim Kanalı
+			</PanelHeader>
+			<PanelBody scroll={false} className="flex flex-col gap-4">
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
@@ -572,7 +594,8 @@ function DraftEditor({
 				</div>
 			</div>
 
-			<div className="flex items-center justify-end gap-2 pt-2">
+			</PanelBody>
+			<PanelFooter>
 				<Button
 					variant="outline"
 					size="sm"
@@ -595,8 +618,8 @@ function DraftEditor({
 					)}
 					Ekle
 				</Button>
-			</div>
-		</div>
+			</PanelFooter>
+		</Panel>
 	);
 }
 
@@ -685,63 +708,4 @@ function defaultConfigFor(t: NotificationChannelType): Record<string, unknown> {
 	}
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-	return (
-		<div
-			className="flex flex-col items-center justify-center p-12 rounded-lg text-center"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px dashed var(--border-default)",
-			}}
-		>
-			<span
-				className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
-				style={{
-					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-default)",
-				}}
-			>
-				<Bell className="w-4 h-4" style={{ color: "var(--text-faint)" }} />
-			</span>
-			<p
-				className="text-sm font-semibold mb-1"
-				style={{ color: "var(--text-primary)" }}
-			>
-				Henüz bildirim kanalı yok
-			</p>
-			<p
-				className="text-xs leading-relaxed max-w-sm mb-4"
-				style={{ color: "var(--text-muted)" }}
-			>
-				Slack, Discord, webhook, e-posta veya PagerDuty üzerinden alert
-				almak için bir kanal ekle.
-			</p>
-			<Button
-				size="sm"
-				className="h-8 px-3 text-xs text-white"
-				style={{ background: "var(--gradient-btn-primary)" }}
-				onClick={onAdd}
-			>
-				<Plus className="w-3.5 h-3.5 mr-1.5" /> Kanal Ekle
-			</Button>
-		</div>
-	);
-}
-
-function SkeletonRow() {
-	return (
-		<>
-			{[0, 1, 2].map((i) => (
-				<div
-					key={i}
-					className="h-16 rounded-lg animate-pulse"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-					}}
-				/>
-			))}
-		</>
-	);
-}
 

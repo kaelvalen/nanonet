@@ -177,6 +177,64 @@
 	/* ── Toaster ──────────────────────────────────────────────────────────── */
 	--toast-bg: rgba(255, 255, 255, 0.97);
 	--toast-border: rgba(15, 23, 42, 0.1);
+
+	/* ── Aliases (compatibility with legacy uses across the codebase) ───── */
+	--app-bg: var(--background);
+	--card-bg: var(--surface-card);
+
+	/* ── Extended named palette — used for chart series, accents, etc. ──── */
+	--color-amber: #f59e0b;
+	--color-amber-subtle: rgba(245, 158, 11, 0.08);
+	--color-amber-border: rgba(245, 158, 11, 0.18);
+	--color-violet: #8b5cf6;
+	--color-violet-subtle: rgba(139, 92, 246, 0.08);
+	--color-violet-border: rgba(139, 92, 246, 0.18);
+	--color-cyan: #06b6d4;
+	--color-cyan-subtle: rgba(6, 182, 212, 0.08);
+	--color-cyan-border: rgba(6, 182, 212, 0.18);
+	--color-emerald: #10b981;
+	--color-emerald-subtle: rgba(16, 185, 129, 0.08);
+	--color-emerald-border: rgba(16, 185, 129, 0.18);
+	--color-coral: #f97316;
+	--color-coral-subtle: rgba(249, 115, 22, 0.08);
+	--color-coral-border: rgba(249, 115, 22, 0.18);
+	--color-fuchsia: #d946ef;
+	--color-fuchsia-subtle: rgba(217, 70, 239, 0.08);
+	--color-fuchsia-border: rgba(217, 70, 239, 0.18);
+
+	/* ── Chart series (use these in recharts, sparklines, etc.) ─────────── */
+	--series-1: var(--color-teal);
+	--series-2: var(--color-blue);
+	--series-3: var(--color-lavender);
+	--series-4: var(--color-amber);
+	--series-5: var(--color-violet);
+	--series-6: var(--color-cyan);
+	--series-7: var(--color-emerald);
+	--series-8: var(--color-pink);
+
+	/* ── Layout rhythm tokens ───────────────────────────────────────────── */
+	--page-pad-x: 1rem;
+	--page-pad-y: 1rem;
+	--page-gap: 1rem;
+	--card-pad: 1rem;
+	--card-pad-sm: 0.75rem;
+	--card-gap: 0.75rem;
+
+	/* ── Topbar / dock heights (single source of truth) ─────────────────── */
+	--topbar-h: 3rem;
+	--dock-w: 5rem;
+	--mobilenav-h: 4.25rem;
+
+	/* ── Terminal surface (theme-aware; light variant) ──────────────────── */
+	--terminal-bg: #f8fafc;
+	--terminal-chrome: #f1f5f9;
+	--terminal-border: rgba(15, 23, 42, 0.1);
+	--terminal-fg: #0f172a;
+	--terminal-muted: rgba(15, 23, 42, 0.55);
+	--terminal-block-bg: rgba(15, 23, 42, 0.04);
+	--terminal-accent: #0d9488;
+	--terminal-accent-subtle: rgba(13, 148, 136, 0.1);
+	--terminal-accent-border: rgba(13, 148, 136, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -333,6 +391,39 @@
 
 	--toast-bg: rgba(15, 26, 26, 0.97);
 	--toast-border: rgba(45, 212, 191, 0.08);
+
+	--app-bg: var(--background);
+	--card-bg: var(--surface-card);
+
+	--color-amber: #fbbf24;
+	--color-amber-subtle: rgba(251, 191, 36, 0.1);
+	--color-amber-border: rgba(251, 191, 36, 0.18);
+	--color-violet: #a78bfa;
+	--color-violet-subtle: rgba(167, 139, 250, 0.1);
+	--color-violet-border: rgba(167, 139, 250, 0.18);
+	--color-cyan: #22d3ee;
+	--color-cyan-subtle: rgba(34, 211, 238, 0.1);
+	--color-cyan-border: rgba(34, 211, 238, 0.18);
+	--color-emerald: #34d399;
+	--color-emerald-subtle: rgba(52, 211, 153, 0.1);
+	--color-emerald-border: rgba(52, 211, 153, 0.18);
+	--color-coral: #fb923c;
+	--color-coral-subtle: rgba(251, 146, 60, 0.1);
+	--color-coral-border: rgba(251, 146, 60, 0.18);
+	--color-fuchsia: #e879f9;
+	--color-fuchsia-subtle: rgba(232, 121, 249, 0.1);
+	--color-fuchsia-border: rgba(232, 121, 249, 0.18);
+
+	/* ── Terminal surface (dark variant) ────────────────────────────────── */
+	--terminal-bg: #060a0a;
+	--terminal-chrome: rgba(255, 255, 255, 0.03);
+	--terminal-border: rgba(255, 255, 255, 0.08);
+	--terminal-fg: #e2e8f0;
+	--terminal-muted: rgba(226, 232, 240, 0.5);
+	--terminal-block-bg: rgba(255, 255, 255, 0.025);
+	--terminal-accent: #2dd4bf;
+	--terminal-accent-subtle: rgba(45, 212, 191, 0.12);
+	--terminal-accent-border: rgba(45, 212, 191, 0.28);
 }
 
 @theme inline {

@@ -511,9 +511,8 @@ export function SecurityPage() {
 	}
 
 	return (
-		<PageShell width="wide" fill>
+		<PageShell width="wide" fill={false}>
 			<PageHeader
-				compact
 				eyebrow="Güvenlik"
 				title="Güvenlik Taraması"
 				description="TLS durumu, açık port'lar, header'lar ve risk skoru"

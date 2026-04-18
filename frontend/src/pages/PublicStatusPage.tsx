@@ -3,7 +3,6 @@ import {
 	Activity,
 	AlertTriangle,
 	CheckCircle2,
-	Loader2,
 	XCircle,
 } from "lucide-react";
 import { useParams } from "react-router";
@@ -12,6 +11,10 @@ import {
 	type PublicStatusView,
 	statusPageApi,
 } from "@/api/statuspage";
+import {
+	EmptyState as SharedEmptyState,
+	SkeletonCard,
+} from "@/components/ui/primitives";
 
 export function PublicStatusPage() {
 	const { slug = "" } = useParams<{ slug: string }>();
@@ -25,11 +28,11 @@ export function PublicStatusPage() {
 	if (isLoading) {
 		return (
 			<Shell>
-				<div className="flex items-center justify-center py-32">
-					<Loader2
-						className="w-6 h-6 animate-spin"
-						style={{ color: "var(--text-faint)" }}
-					/>
+				<div className="flex flex-col gap-3">
+					<SkeletonCard className="h-24" />
+					<SkeletonCard className="h-16" />
+					<SkeletonCard className="h-16" />
+					<SkeletonCard className="h-16" />
 				</div>
 			</Shell>
 		);
@@ -38,28 +41,13 @@ export function PublicStatusPage() {
 	if (error || !data) {
 		return (
 			<Shell>
-				<div
-					className="rounded-lg p-12 text-center"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-					}}
-				>
-					<XCircle
-						className="w-8 h-8 mx-auto mb-3"
-						style={{ color: "var(--status-down)" }}
-					/>
-					<p
-						className="text-sm font-bold mb-1"
-						style={{ color: "var(--text-primary)" }}
-					>
-						Status sayfası bulunamadı
-					</p>
-					<p className="text-xs" style={{ color: "var(--text-muted)" }}>
-						<code className="font-mono">/{slug}</code> için yayınlanmış bir
-						sayfa yok.
-					</p>
-				</div>
+				<SharedEmptyState
+					icon={XCircle}
+					title="Status sayfası bulunamadı"
+					description={`/${slug} için yayınlanmış bir sayfa yok.`}
+					tone="muted"
+					size="lg"
+				/>
 			</Shell>
 		);
 	}
@@ -110,7 +98,7 @@ export function PublicStatusPage() {
 function Shell({ children }: { children: React.ReactNode }) {
 	return (
 		<div
-			className="min-h-screen px-4 py-10"
+			className="min-h-screen px-4 sm:px-6 py-8 sm:py-12"
 			style={{ background: "var(--app-bg)" }}
 		>
 			<div className="max-w-3xl mx-auto">{children}</div>

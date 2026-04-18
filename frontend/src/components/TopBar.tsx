@@ -86,13 +86,13 @@ export function TopBar({
 
 	return (
 		<div
-			className="sticky top-0 z-30 w-full"
+			className="sticky top-0 z-30 w-full backdrop-blur-md"
 			style={{
-				background: "var(--background)",
+				background: "color-mix(in srgb, var(--background) 88%, transparent)",
 				borderBottom: "1px solid var(--border-subtle)",
 			}}
 		>
-			<div className="flex items-center h-12 gap-3 px-4 sm:px-6 lg:px-8">
+			<div className="flex items-center h-[var(--topbar-h)] gap-2 sm:gap-3 px-3 sm:px-6 lg:px-8">
 				{/* LEFT — breadcrumb + inline title */}
 				<div className="flex items-center min-w-0 flex-1 gap-3">
 					<nav className="hidden sm:flex items-center min-w-0 shrink-0">
@@ -237,10 +237,10 @@ export function TopBar({
 					{actions && (
 						<>
 							<span
-								className="w-px h-5 mx-1.5 shrink-0"
+								className="hidden sm:block w-px h-5 mx-1.5 shrink-0"
 								style={{ background: "var(--border-default)" }}
 							/>
-							<div className="flex items-center gap-2 shrink-0">
+							<div className="flex items-center gap-1.5 shrink-0 max-w-[60vw] sm:max-w-none overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
 								{actions}
 							</div>
 						</>

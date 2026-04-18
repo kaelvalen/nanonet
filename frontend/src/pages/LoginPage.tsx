@@ -25,12 +25,16 @@ export function LoginPage() {
 			subtitle={t("auth.login_subtitle", "Monitor everything. Miss nothing.")}
 			footer={
 				<>
-					<span className="text-sm text-slate-400 font-medium">
+					<span
+						className="text-sm font-medium"
+						style={{ color: "var(--text-muted)" }}
+					>
 						{t("auth.noAccount")}
 					</span>
 					<Link
 						to="/register"
-						className="text-sm font-black text-slate-900 hover:text-teal-600 transition-colors"
+						className="text-sm font-black transition-colors"
+						style={{ color: "var(--brand-primary)" }}
 					>
 						{t("auth.register")} →
 					</Link>
@@ -41,7 +45,8 @@ export function LoginPage() {
 				<div className="space-y-1.5">
 					<Label
 						htmlFor="email"
-						className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400"
+						className="text-[11px] font-black uppercase tracking-[0.15em]"
+						style={{ color: "var(--text-faint)" }}
 					>
 						{t("auth.email")}
 					</Label>
@@ -52,7 +57,7 @@ export function LoginPage() {
 						placeholder="you@company.com"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className="h-11 rounded-lg border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-teal-500 focus-visible:border-teal-500 transition-colors"
+						className="h-11 rounded-lg text-sm font-medium"
 						required
 						disabled={isLoggingIn}
 					/>
@@ -68,7 +73,8 @@ export function LoginPage() {
 					rightSlot={
 						<Link
 							to="/forgot-password"
-							className="text-[11px] font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+							className="text-[11px] font-semibold transition-colors"
+							style={{ color: "var(--brand-primary)" }}
 						>
 							{t("auth.forgotPassword")}
 						</Link>

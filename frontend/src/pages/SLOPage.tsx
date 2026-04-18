@@ -31,6 +31,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	PanelBody,
+	PanelFooter,
+	PanelHeader,
+	SkeletonList,
+} from "@/components/ui/primitives";
 import { useServices } from "@/hooks/useServices";
 
 const SLI_LABELS: Record<SLIType, { label: string; helper: string }> = {
@@ -77,7 +85,7 @@ export function SLOPage() {
 	});
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="güvenilirlik"
 				title="SLO & Hata Bütçesi"
@@ -116,20 +124,15 @@ export function SLOPage() {
 
 			<div className="flex flex-col gap-3 mt-4">
 				{isLoading ? (
-					<div className="space-y-3">
-						{[0, 1].map((i) => (
-							<div
-								key={i}
-								className="h-40 rounded-lg animate-pulse"
-								style={{
-									background: "var(--surface-card)",
-									border: "1px solid var(--border-default)",
-								}}
-							/>
-						))}
-					</div>
+					<SkeletonList rows={2} rowHeight={160} />
 				) : slos.length === 0 ? (
-					<EmptyState />
+					<SharedEmptyState
+						icon={Target}
+						title="Henüz SLO tanımlı değil"
+						description='Bir servis seçip "99.9% availability / 30 gün" gibi bir hedef tanımlayarak başla.'
+						tone="accent"
+						size="lg"
+					/>
 				) : (
 					slos.map((sl) => (
 						<SLOCard
@@ -177,11 +180,13 @@ function SLOCard({
 	}));
 
 	return (
-		<div
-			className="rounded-lg overflow-hidden"
+		<Panel
+			padding="none"
+			className="overflow-hidden"
 			style={{
-				background: "var(--surface-card)",
-				border: `1px solid ${healthy ? "var(--border-default)" : "var(--status-down-border)"}`,
+				borderColor: healthy
+					? "var(--border-default)"
+					: "var(--status-down-border)",
 			}}
 		>
 			<div
@@ -258,7 +263,7 @@ function SLOCard({
 				</Button>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-0">
+			<div className="grid grid-cols-1 md:grid-cols-[minmax(260px,300px)_1fr] gap-0">
 				<div
 					className="grid grid-cols-3 gap-3 p-4"
 					style={{ borderRight: "1px solid var(--border-subtle)" }}
@@ -368,7 +373,7 @@ function SLOCard({
 					)}
 				</div>
 			</div>
-		</div>
+		</Panel>
 	);
 }
 
@@ -433,16 +438,9 @@ function DraftEditor({
 	submitting: boolean;
 }) {
 	return (
-		<div
-			className="mt-4 p-5 rounded-lg flex flex-col gap-4"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-strong)",
-			}}
-		>
-			<p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-				Yeni SLO
-			</p>
+		<Panel className="mt-4">
+			<PanelHeader dense>Yeni SLO</PanelHeader>
+			<PanelBody scroll={false} className="flex flex-col gap-4">
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
@@ -555,7 +553,8 @@ function DraftEditor({
 				{SLI_LABELS[value.sli_type].helper}
 			</p>
 
-			<div className="flex items-center justify-end gap-2 pt-2">
+			</PanelBody>
+			<PanelFooter>
 				<Button
 					variant="outline"
 					size="sm"
@@ -578,42 +577,8 @@ function DraftEditor({
 					)}
 					Oluştur
 				</Button>
-			</div>
-		</div>
+			</PanelFooter>
+		</Panel>
 	);
 }
 
-function EmptyState() {
-	return (
-		<div
-			className="flex flex-col items-center justify-center p-12 rounded-lg text-center"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px dashed var(--border-default)",
-			}}
-		>
-			<span
-				className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
-				style={{
-					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-default)",
-				}}
-			>
-				<Target className="w-4 h-4" style={{ color: "var(--text-faint)" }} />
-			</span>
-			<p
-				className="text-sm font-semibold mb-1"
-				style={{ color: "var(--text-primary)" }}
-			>
-				Henüz SLO tanımlı değil
-			</p>
-			<p
-				className="text-xs leading-relaxed max-w-sm"
-				style={{ color: "var(--text-muted)" }}
-			>
-				Bir servis seçip "99.9% availability / 30 gün" gibi bir hedef
-				tanımlayarak başla.
-			</p>
-		</div>
-	);
-}

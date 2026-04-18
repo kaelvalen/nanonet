@@ -23,6 +23,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	PanelBody,
+	PanelFooter,
+	PanelHeader,
+	SkeletonList,
+} from "@/components/ui/primitives";
 import { Switch } from "@/components/ui/switch";
 
 const KIND_META: Record<
@@ -47,11 +55,6 @@ const DEFAULT_DRAFT: CreateProbeInput = {
 	timeout_seconds: 10,
 	enabled: true,
 };
-
-const cardStyle = {
-	background: "var(--surface-card)",
-	border: "1px solid var(--border-default)",
-} as const;
 
 export function ProbesPage() {
 	const qc = useQueryClient();
@@ -148,7 +151,7 @@ export function ProbesPage() {
 				}
 			/>
 
-			<div className="flex-1 min-h-0 overflow-y-auto pr-1">
+			<div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
 				{draft && (
 					<DraftEditor
 						value={draft}
@@ -160,14 +163,26 @@ export function ProbesPage() {
 				)}
 
 				{isLoading ? (
-					<div
-						className="flex items-center justify-center py-16"
-						style={{ color: "var(--text-muted)" }}
-					>
-						<Loader2 className="h-5 w-5 animate-spin" />
-					</div>
+					<SkeletonList rows={4} rowHeight={88} />
 				) : items.length === 0 && !draft ? (
-					<EmptyState onCreate={() => setDraft(DEFAULT_DRAFT)} />
+					<SharedEmptyState
+						icon={Activity}
+						title="Henüz probe yok"
+						description="Public bir endpoint'i veya 3rd-party API'yi izlemek için bir HTTP/TCP probe ekle."
+						tone="accent"
+						size="lg"
+						action={
+							<Button
+								className="text-white"
+								size="sm"
+								style={{ background: "var(--gradient-btn-primary)" }}
+								onClick={() => setDraft(DEFAULT_DRAFT)}
+							>
+								<Plus className="mr-1 h-4 w-4" />
+								İlk probe'u oluştur
+							</Button>
+						}
+					/>
 				) : (
 					<div className="flex flex-col gap-2 mt-2">
 						{items.map((p) => (
@@ -205,8 +220,8 @@ function ProbeRow({
 	const tone = statusTone(probe.last_status);
 	const Icon = KIND_META[probe.kind].icon;
 	return (
-		<div className="rounded-lg px-4 py-3" style={cardStyle}>
-			<div className="flex items-start justify-between gap-4">
+		<Panel padding="sm">
+			<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-1">
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
 						<Icon
@@ -279,7 +294,7 @@ function ProbeRow({
 						</div>
 					)}
 				</div>
-				<div className="flex items-center gap-3 shrink-0">
+				<div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
 					<Switch
 						checked={probe.enabled}
 						onCheckedChange={onToggle}
@@ -301,7 +316,7 @@ function ProbeRow({
 					</button>
 				</div>
 			</div>
-		</div>
+		</Panel>
 	);
 }
 
@@ -319,29 +334,23 @@ function DraftEditor({
 	submitting: boolean;
 }) {
 	return (
-		<div
-			className="mb-3 rounded-lg p-5"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-strong)",
-			}}
-		>
-			<div className="mb-3 flex items-center justify-between">
-				<div
-					className="text-[13px] font-semibold"
-					style={{ color: "var(--text-primary)" }}
-				>
-					Yeni Probe
-				</div>
-				<button
-					type="button"
-					onClick={onCancel}
-					className="text-[11px]"
-					style={{ color: "var(--text-muted)" }}
-				>
-					İptal
-				</button>
-			</div>
+		<Panel className="mb-3">
+			<PanelHeader
+				dense
+				actions={
+					<button
+						type="button"
+						onClick={onCancel}
+						className="text-[11px]"
+						style={{ color: "var(--text-muted)" }}
+					>
+						İptal
+					</button>
+				}
+			>
+				Yeni Probe
+			</PanelHeader>
+			<PanelBody scroll={false}>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 				<div>
 					<Label
@@ -504,7 +513,8 @@ function DraftEditor({
 					/>
 				</div>
 			</div>
-			<div className="mt-4 flex justify-end gap-2">
+			</PanelBody>
+			<PanelFooter>
 				<Button
 					variant="outline"
 					size="sm"
@@ -530,47 +540,8 @@ function DraftEditor({
 					)}
 					Oluştur
 				</Button>
-			</div>
-		</div>
-	);
-}
-
-function EmptyState({ onCreate }: { onCreate: () => void }) {
-	return (
-		<div
-			className="rounded-xl py-16 text-center"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px dashed var(--border-default)",
-			}}
-		>
-			<Activity
-				className="mx-auto h-8 w-8"
-				style={{ color: "var(--text-faint)" }}
-			/>
-			<div
-				className="mt-3 text-[14px] font-semibold"
-				style={{ color: "var(--text-primary)" }}
-			>
-				Henüz probe yok
-			</div>
-			<div
-				className="mt-1 text-[12px] max-w-md mx-auto"
-				style={{ color: "var(--text-muted)" }}
-			>
-				Public bir endpoint'i veya 3rd-party API'yi izlemek için bir HTTP/TCP
-				probe ekle.
-			</div>
-			<Button
-				className="mt-4 text-white"
-				size="sm"
-				style={{ background: "var(--gradient-btn-primary)" }}
-				onClick={onCreate}
-			>
-				<Plus className="mr-1 h-4 w-4" />
-				İlk probe'u oluştur
-			</Button>
-		</div>
+			</PanelFooter>
+		</Panel>
 	);
 }
 

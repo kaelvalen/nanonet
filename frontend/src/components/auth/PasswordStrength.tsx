@@ -4,7 +4,12 @@ interface PasswordStrengthProps {
 	password: string;
 }
 
-const COLORS = ["", "#f43f5e", "#f59e0b", "#34d399"];
+const COLORS = [
+	"",
+	"var(--status-down)",
+	"var(--status-warn)",
+	"var(--status-up)",
+];
 const LABELS = ["", "Zayıf", "Orta", "Güçlü"];
 
 function computeStrength(password: string): number {
@@ -24,7 +29,8 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
 				{[1, 2, 3].map((level) => (
 					<div
 						key={level}
-						className="h-0.5 flex-1 rounded-full bg-slate-100 overflow-hidden"
+						className="h-0.5 flex-1 rounded-full overflow-hidden"
+						style={{ background: "var(--surface-sunken)" }}
 					>
 						<motion.div
 							animate={{ width: strength >= level ? "100%" : "0%" }}

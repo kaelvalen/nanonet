@@ -53,32 +53,53 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 
 	return (
 		<div
-			className="rounded-lg overflow-hidden flex flex-col"
+			className="rounded-lg overflow-hidden flex flex-col relative"
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background:
+					"linear-gradient(135deg, var(--surface-card) 0%, var(--surface-card) 60%, color-mix(in srgb, " +
+					meta.color +
+					" 6%, var(--surface-card)) 100%)",
+				border: `1px solid color-mix(in srgb, ${meta.color} 35%, var(--border-default))`,
+				boxShadow: `0 1px 0 color-mix(in srgb, ${meta.color} 18%, transparent), 0 8px 24px -16px color-mix(in srgb, ${meta.color} 60%, transparent)`,
 			}}
 		>
+			<span
+				aria-hidden
+				className="absolute top-0 left-0 right-0 h-px"
+				style={{
+					background: `linear-gradient(90deg, transparent, ${meta.color}, transparent)`,
+					opacity: 0.7,
+				}}
+			/>
 			<div
 				className="flex items-center justify-between gap-3 px-4 py-2.5"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
 				<div className="flex items-center gap-2 min-w-0">
 					<span
-						className="w-6 h-6 rounded flex items-center justify-center shrink-0"
+						className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
 						style={{
-							background: `${meta.color}14`,
-							border: `1px solid ${meta.color}33`,
+							background: `${meta.color}1c`,
+							border: `1px solid ${meta.color}55`,
 						}}
 					>
-						<TrendingUp className="w-3 h-3" style={{ color: meta.color }} />
+						<TrendingUp
+							className="w-3.5 h-3.5"
+							style={{ color: meta.color }}
+						/>
 					</span>
 					<div className="min-w-0">
 						<p
-							className="text-[10px] uppercase tracking-[0.2em] font-bold leading-none"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[10px] uppercase tracking-[0.2em] font-bold leading-none flex items-center gap-1.5"
+							style={{ color: meta.color }}
 						>
-							Tahmin · 12 adım
+							Tahmin
+							<span
+								className="text-[9px] font-mono normal-case tracking-normal opacity-70"
+								style={{ color: "var(--text-faint)" }}
+							>
+								12 adım
+							</span>
 						</p>
 						<p
 							className="text-[10px] font-mono mt-0.5 truncate"

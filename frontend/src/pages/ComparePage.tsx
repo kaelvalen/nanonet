@@ -13,6 +13,13 @@ import {
 import { type AggregatedMetric, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	PanelBody,
+	PanelHeader,
+	seriesColor as paletteColor,
+} from "@/components/ui/primitives";
 import type { Service } from "@/types/service";
 
 type MetricKey = "avg_cpu" | "avg_memory" | "avg_latency";
@@ -21,13 +28,6 @@ const METRIC_LABELS: Record<MetricKey, string> = {
 	avg_memory: "Bellek %",
 	avg_latency: "Latency (ms)",
 };
-
-const SERIES_COLORS = [
-	"var(--color-teal)",
-	"var(--color-amber)",
-	"var(--color-violet)",
-	"var(--color-cyan)",
-];
 
 function formatBucket(b: string) {
 	try {
@@ -94,33 +94,30 @@ function StatusHeatmap({ services }: { services: Service[] }) {
 	}
 
 	return (
-		<div
-			className="rounded-lg p-4"
-			style={{
-				background: "var(--surface-raised)",
-				border: "1px solid var(--border-subtle)",
-			}}
-		>
-			<div className="flex items-center justify-between mb-3">
-				<h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-					24 Saatlik Sağlık Heatmap
-				</h3>
-				<div className="flex items-center gap-2 text-[10px]" style={{ color: "var(--text-faint)" }}>
-					<span className="flex items-center gap-1">
-						<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-up)" }} />
-						Sağlıklı
-					</span>
-					<span className="flex items-center gap-1">
-						<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-warn)" }} />
-						Yüklü
-					</span>
-					<span className="flex items-center gap-1">
-						<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-down)" }} />
-						Kritik
-					</span>
-				</div>
-			</div>
-			<div className="overflow-x-auto">
+		<Panel>
+			<PanelHeader
+				dense
+				actions={
+					<div className="flex items-center gap-2 text-[10px]" style={{ color: "var(--text-faint)" }}>
+						<span className="flex items-center gap-1">
+							<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-up)" }} />
+							Sağlıklı
+						</span>
+						<span className="flex items-center gap-1">
+							<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-warn)" }} />
+							Yüklü
+						</span>
+						<span className="flex items-center gap-1">
+							<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-down)" }} />
+							Kritik
+						</span>
+					</div>
+				}
+			>
+				24 Saatlik Sağlık Heatmap
+			</PanelHeader>
+			<PanelBody scroll={false}>
+				<div className="overflow-x-auto">
 				<table className="text-xs w-full border-separate" style={{ borderSpacing: "2px" }}>
 					<thead>
 						<tr>
@@ -174,7 +171,8 @@ function StatusHeatmap({ services }: { services: Service[] }) {
 					</tbody>
 				</table>
 			</div>
-		</div>
+			</PanelBody>
+		</Panel>
 	);
 }
 
@@ -281,140 +279,126 @@ export function ComparePage() {
 				}
 			/>
 
-			<div className="flex-1 min-h-0 overflow-y-auto pr-1 flex flex-col gap-5">
-				<section
-					className="rounded-lg p-4"
-					style={{
-						background: "var(--surface-raised)",
-						border: "1px solid var(--border-subtle)",
-					}}
-				>
-					<div className="flex items-center justify-between mb-3">
-						<h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-							<GitCompare className="w-4 h-4" />
-							Servis Seçimi
-							<span className="text-[10px] font-normal ml-1" style={{ color: "var(--text-faint)" }}>
-								{selectedIds.length}/4
-							</span>
-						</h3>
-						{selectedIds.length > 0 && (
-							<button
-								type="button"
-								onClick={() => setSelectedIds([])}
-								className="text-[10px] px-2 py-1 rounded-md flex items-center gap-1 font-mono"
-								style={{
-									background: "var(--surface-sunken)",
-									color: "var(--text-muted)",
-									border: "1px solid var(--border-subtle)",
-								}}
-							>
-								<X className="w-3 h-3" />
-								Temizle
-							</button>
-						)}
-					</div>
-					<div className="flex flex-wrap gap-1.5">
-						{services.map((s) => {
-							const active = selectedIds.includes(s.id);
-							const idx = selectedIds.indexOf(s.id);
-							const seriesColor = active ? SERIES_COLORS[idx] : null;
-							return (
+			<div className="flex-1 min-h-0 overflow-y-auto pr-1 flex flex-col gap-4">
+				<Panel>
+					<PanelHeader
+						dense
+						actions={
+							selectedIds.length > 0 ? (
 								<button
 									type="button"
-									key={s.id}
-									onClick={() => toggle(s.id)}
-									disabled={!active && selectedIds.length >= 4}
-									className="text-[11px] px-2.5 py-1.5 rounded-md font-mono flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+									onClick={() => setSelectedIds([])}
+									className="text-[10px] px-2 py-1 rounded-md flex items-center gap-1 font-mono"
 									style={{
-										background: seriesColor
-											? `${seriesColor}1a`
-											: "var(--surface-sunken)",
-										border: `1px solid ${
-											seriesColor ? seriesColor : "var(--border-default)"
-										}`,
-										color: seriesColor
-											? seriesColor
-											: "var(--text-secondary)",
-										fontWeight: active ? 600 : 500,
+										background: "var(--surface-sunken)",
+										color: "var(--text-muted)",
+										border: "1px solid var(--border-subtle)",
 									}}
 								>
-									{active && (
-										<span
-											className="w-2 h-2 rounded-sm"
-											style={{ background: seriesColor ?? undefined }}
-										/>
-									)}
-									{s.name}
+									<X className="w-3 h-3" />
+									Temizle
 								</button>
-							);
-						})}
-					</div>
-				</section>
+							) : null
+						}
+						icon={<GitCompare className="w-4 h-4" />}
+					>
+						Servis Seçimi
+						<span className="text-[10px] font-normal ml-2" style={{ color: "var(--text-faint)" }}>
+							{selectedIds.length}/4
+						</span>
+					</PanelHeader>
+					<PanelBody scroll={false}>
+						<div className="flex flex-wrap gap-1.5">
+							{services.map((s) => {
+								const active = selectedIds.includes(s.id);
+								const idx = selectedIds.indexOf(s.id);
+								const color = active ? paletteColor(idx) : null;
+								return (
+									<button
+										type="button"
+										key={s.id}
+										onClick={() => toggle(s.id)}
+										disabled={!active && selectedIds.length >= 4}
+										className="text-[11px] px-2.5 py-1.5 rounded-md font-mono flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+										style={{
+											background: color
+												? `color-mix(in srgb, ${color} 14%, transparent)`
+												: "var(--surface-sunken)",
+											border: `1px solid ${color ?? "var(--border-default)"}`,
+											color: color ?? "var(--text-secondary)",
+											fontWeight: active ? 600 : 500,
+										}}
+									>
+										{active && (
+											<span
+												className="w-2 h-2 rounded-sm"
+												style={{ background: color ?? undefined }}
+											/>
+										)}
+										{s.name}
+									</button>
+								);
+							})}
+						</div>
+					</PanelBody>
+				</Panel>
 
 				{selectedServices.length === 0 ? (
-					<div
-						className="rounded-lg p-12 text-center text-sm"
-						style={{
-							background: "var(--surface-raised)",
-							border: "1px dashed var(--border-default)",
-							color: "var(--text-muted)",
-						}}
-					>
-						Karşılaştırmak için en az iki servis seçin.
-					</div>
+					<SharedEmptyState
+						icon={GitCompare}
+						title="Karşılaştırmaya başlayın"
+						description="Yukarıdan en az iki servis seçtiğinizde grafik ve heatmap burada belirir."
+						tone="accent"
+					/>
 				) : (
 					<>
-						<section
-							className="rounded-lg p-4"
-							style={{
-								background: "var(--surface-raised)",
-								border: "1px solid var(--border-subtle)",
-							}}
-						>
-							<h3 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>
+						<Panel>
+							<PanelHeader dense>
 								{METRIC_LABELS[metric]} — Son {duration}
-							</h3>
-							<div className="h-72">
-								<ResponsiveContainer width="100%" height="100%">
-									<LineChart data={merged}>
-										<CartesianGrid stroke="var(--border-subtle)" strokeDasharray="3 3" />
-										<XAxis
-											dataKey="bucket"
-											tickFormatter={formatBucket}
-											tick={{ fill: "var(--text-faint)", fontSize: 10 }}
-											stroke="var(--border-subtle)"
-										/>
-										<YAxis
-											tick={{ fill: "var(--text-faint)", fontSize: 10 }}
-											stroke="var(--border-subtle)"
-											width={40}
-										/>
-										<Tooltip
-											contentStyle={{
-												background: "var(--surface-raised)",
-												border: "1px solid var(--border-default)",
-												borderRadius: 6,
-												fontSize: 11,
-											}}
-											labelFormatter={formatBucket}
-										/>
-										{selectedServices.map((svc, i) => (
-											<Line
-												key={svc.id}
-												type="monotone"
-												dataKey={svc.id}
-												name={svc.name}
-												stroke={SERIES_COLORS[i]}
-												strokeWidth={1.8}
-												dot={false}
-												isAnimationActive={false}
-												connectNulls
+							</PanelHeader>
+							<PanelBody scroll={false}>
+								<div className="h-64 sm:h-72">
+									<ResponsiveContainer width="100%" height="100%">
+										<LineChart data={merged}>
+											<CartesianGrid stroke="var(--border-subtle)" strokeDasharray="3 3" />
+											<XAxis
+												dataKey="bucket"
+												tickFormatter={formatBucket}
+												tick={{ fill: "var(--text-faint)", fontSize: 10 }}
+												stroke="var(--border-subtle)"
 											/>
-										))}
-									</LineChart>
-								</ResponsiveContainer>
-							</div>
-						</section>
+											<YAxis
+												tick={{ fill: "var(--text-faint)", fontSize: 10 }}
+												stroke="var(--border-subtle)"
+												width={40}
+											/>
+											<Tooltip
+												contentStyle={{
+													background: "var(--surface-raised)",
+													border: "1px solid var(--border-default)",
+													borderRadius: 6,
+													fontSize: 11,
+												}}
+												labelFormatter={formatBucket}
+											/>
+											{selectedServices.map((svc, i) => (
+												<Line
+													key={svc.id}
+													type="monotone"
+													dataKey={svc.id}
+													name={svc.name}
+													stroke={paletteColor(i)}
+													strokeWidth={1.8}
+													dot={false}
+													isAnimationActive={false}
+													connectNulls
+												/>
+											))}
+										</LineChart>
+									</ResponsiveContainer>
+								</div>
+							</PanelBody>
+						</Panel>
 
 						<StatusHeatmap services={selectedServices} />
 					</>

@@ -20,6 +20,12 @@ import { AddServiceDialog } from "@/components/AddServiceDialog";
 import { Input } from "@/components/ui/input";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	SkeletonGrid,
+	Toolbar,
+} from "@/components/ui/primitives";
+import {
 	type Status,
 	StatusBadge,
 	StatusDot,
@@ -255,88 +261,39 @@ function EmptyResults({ hasServices }: { hasServices: boolean }) {
 	});
 
 	return (
-		<div
-			className="p-12 text-center rounded-lg"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px dashed var(--border-default)",
-			}}
-		>
-			<div
-				className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-				style={{ background: "var(--surface-sunken)" }}
-			>
-				<Server className="w-6 h-6" style={{ color: "var(--text-faint)" }} />
-			</div>
-			<p
-				className="text-sm font-semibold mb-1"
-				style={{ color: "var(--text-primary)" }}
-			>
-				{hasServices ? "Filtreye uygun servis yok" : "Henüz servis eklenmedi"}
-			</p>
-			<p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-				{hasServices
-					? "Arama veya filtre kriterlerini değiştirin"
-					: "Sağ üstten ilk servisinizi ekleyin — veya hızlıca arayüzü tanımak için demo veriyi yükleyin"}
-			</p>
-			{!hasServices && (
-				<button
-					type="button"
-					onClick={() => seed.mutate()}
-					disabled={seed.isPending}
-					className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-md disabled:opacity-60"
-					style={{
-						background: "var(--surface-sunken)",
-						border: "1px solid var(--border-default)",
-						color: "var(--text-primary)",
-					}}
-				>
-					{seed.isPending ? (
-						<Loader2 className="w-3.5 h-3.5 animate-spin" />
-					) : (
-						<Sparkles className="w-3.5 h-3.5" style={{ color: "var(--color-amber)" }} />
-					)}
-					{seed.isPending ? "Yükleniyor..." : "Demo veriyi yükle (4 servis · 6 saat metric)"}
-				</button>
-			)}
-		</div>
-	);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Loading skeletons
-
-function LoadingGrid() {
-	return (
-		<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-			{Array.from({ length: 6 }, (_, i) => i).map((i) => (
-				<div
-					key={i}
-					className="p-4 animate-pulse rounded-lg"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-					}}
-				>
-					<div className="flex items-center gap-3">
-						<div
-							className="w-9 h-9 rounded-lg"
-							style={{ background: "var(--surface-sunken)" }}
-						/>
-						<div className="flex-1 space-y-2">
-							<div
-								className="h-3.5 w-32 rounded"
-								style={{ background: "var(--surface-sunken)" }}
-							/>
-							<div
-								className="h-2.5 w-24 rounded"
-								style={{ background: "var(--surface-sunken)" }}
-							/>
-						</div>
-					</div>
-				</div>
-			))}
-		</div>
+		<SharedEmptyState
+			icon={Server}
+			title={hasServices ? "Filtreye uygun servis yok" : "Henüz servis eklenmedi"}
+			description={
+				hasServices
+					? "Arama veya filtre kriterlerini değiştirin."
+					: "Sağ üstten ilk servisinizi ekleyin — veya hızlıca arayüzü tanımak için demo veriyi yükleyin."
+			}
+			tone={hasServices ? "muted" : "accent"}
+			size="lg"
+			action={
+				!hasServices ? (
+					<button
+						type="button"
+						onClick={() => seed.mutate()}
+						disabled={seed.isPending}
+						className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-md disabled:opacity-60"
+						style={{
+							background: "var(--surface-sunken)",
+							border: "1px solid var(--border-default)",
+							color: "var(--text-primary)",
+						}}
+					>
+						{seed.isPending ? (
+							<Loader2 className="w-3.5 h-3.5 animate-spin" />
+						) : (
+							<Sparkles className="w-3.5 h-3.5" style={{ color: "var(--color-amber)" }} />
+						)}
+						{seed.isPending ? "Yükleniyor..." : "Demo veriyi yükle"}
+					</button>
+				) : null
+			}
+		/>
 	);
 }
 
@@ -389,7 +346,6 @@ export function ServicesPage() {
 	return (
 		<PageShell width="wide" fill>
 			<PageHeader
-				compact
 				eyebrow="Servisler"
 				title="Tüm servisler"
 				description={
@@ -402,10 +358,75 @@ export function ServicesPage() {
 				actions={<AddServiceDialog />}
 			/>
 
-			{/* Toolbar */}
-			<div className="flex flex-col md:flex-row gap-2 mb-4 shrink-0">
-				{/* Search */}
-				<div className="relative flex-1 min-w-0">
+			<Toolbar
+				className="shrink-0"
+				right={
+					<>
+						<SegmentedControl
+							options={FILTER_ORDER}
+							value={statusFilter}
+							onChange={setStatusFilter}
+							renderLabel={(opt) => (
+								<span className="inline-flex items-center gap-1.5">
+									{FILTER_LABELS[opt]}
+									{statusCounts[opt] > 0 && (
+										<span
+											className="text-[10px] tabular-nums font-mono"
+											style={{ opacity: 0.6 }}
+										>
+											{statusCounts[opt]}
+										</span>
+									)}
+								</span>
+							)}
+						/>
+						<SegmentedControl
+							options={["24h", "7d", "30d"] as const}
+							value={slaRange}
+							onChange={setSlaRange}
+						/>
+						<div
+							className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "1px solid var(--border-default)",
+							}}
+						>
+							<button
+								type="button"
+								onClick={() => setViewMode("grid")}
+								aria-label="Grid görünüm"
+								className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
+								style={{
+									background:
+										viewMode === "grid" ? "var(--surface-raised)" : "transparent",
+									color:
+										viewMode === "grid" ? "var(--color-teal)" : "var(--text-faint)",
+									boxShadow: viewMode === "grid" ? "var(--btn-shadow)" : undefined,
+								}}
+							>
+								<LayoutGrid className="w-3.5 h-3.5" />
+							</button>
+							<button
+								type="button"
+								onClick={() => setViewMode("list")}
+								aria-label="Liste görünüm"
+								className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
+								style={{
+									background:
+										viewMode === "list" ? "var(--surface-raised)" : "transparent",
+									color:
+										viewMode === "list" ? "var(--color-teal)" : "var(--text-faint)",
+									boxShadow: viewMode === "list" ? "var(--btn-shadow)" : undefined,
+								}}
+							>
+								<List className="w-3.5 h-3.5" />
+							</button>
+						</div>
+					</>
+				}
+			>
+				<div className="relative w-full md:w-auto md:flex-1 min-w-0">
 					<Search
 						className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
 						style={{ color: "var(--text-faint)" }}
@@ -414,84 +435,14 @@ export function ServicesPage() {
 						placeholder="İsim veya host ile ara…"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="pl-9 h-9 text-sm"
-						style={{
-							background: "var(--surface-card)",
-							borderColor: "var(--border-default)",
-						}}
+						className="pl-9 h-9 text-sm w-full"
 					/>
 				</div>
+			</Toolbar>
 
-				{/* Status filter */}
-				<SegmentedControl
-					options={FILTER_ORDER}
-					value={statusFilter}
-					onChange={setStatusFilter}
-					renderLabel={(opt) => (
-						<span className="inline-flex items-center gap-1.5">
-							{FILTER_LABELS[opt]}
-							{statusCounts[opt] > 0 && (
-								<span
-									className="text-[10px] tabular-nums font-mono"
-									style={{ opacity: 0.6 }}
-								>
-									{statusCounts[opt]}
-								</span>
-							)}
-						</span>
-					)}
-				/>
-
-				{/* SLA range */}
-				<SegmentedControl
-					options={["24h", "7d", "30d"] as const}
-					value={slaRange}
-					onChange={setSlaRange}
-				/>
-
-				{/* View toggle */}
-				<div
-					className="flex items-center gap-0.5 p-0.5 rounded-lg shrink-0"
-					style={{
-						background: "var(--surface-sunken)",
-						border: "1px solid var(--border-default)",
-					}}
-				>
-					<button
-						type="button"
-						onClick={() => setViewMode("grid")}
-						className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
-						style={{
-							background:
-								viewMode === "grid" ? "var(--surface-raised)" : "transparent",
-							color:
-								viewMode === "grid" ? "var(--color-teal)" : "var(--text-faint)",
-							boxShadow: viewMode === "grid" ? "var(--btn-shadow)" : undefined,
-						}}
-					>
-						<LayoutGrid className="w-3.5 h-3.5" />
-					</button>
-					<button
-						type="button"
-						onClick={() => setViewMode("list")}
-						className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
-						style={{
-							background:
-								viewMode === "list" ? "var(--surface-raised)" : "transparent",
-							color:
-								viewMode === "list" ? "var(--color-teal)" : "var(--text-faint)",
-							boxShadow: viewMode === "list" ? "var(--btn-shadow)" : undefined,
-						}}
-					>
-						<List className="w-3.5 h-3.5" />
-					</button>
-				</div>
-			</div>
-
-			{/* Results — scrollable viewport-fit container */}
 			<div className="flex-1 min-h-0 overflow-y-auto -mx-2 px-2 pb-4">
 				{isLoading ? (
-					<LoadingGrid />
+					<SkeletonGrid cols={3} cells={6} />
 				) : filtered.length === 0 ? (
 					<EmptyResults hasServices={services.length > 0} />
 				) : viewMode === "grid" ? (
@@ -515,13 +466,7 @@ export function ServicesPage() {
 						</AnimatePresence>
 					</div>
 				) : (
-					<div
-						className="overflow-hidden rounded-lg"
-						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--border-default)",
-						}}
-					>
+					<Panel padding="none" className="overflow-hidden">
 						{filtered.map((service, i) => (
 							<ServiceRow
 								key={service.id}
@@ -530,7 +475,7 @@ export function ServicesPage() {
 								isLast={i === filtered.length - 1}
 							/>
 						))}
-					</div>
+					</Panel>
 				)}
 			</div>
 		</PageShell>

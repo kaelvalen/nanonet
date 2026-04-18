@@ -2,148 +2,163 @@ import type { ElementType, ReactNode } from "react";
 import { Link } from "react-router";
 import { cn } from "./utils";
 
-type Tone = "default" | "accent" | "success" | "warn" | "danger" | "muted";
+/**
+ * StatCard — single metric tile used in dashboards, summary headers, and
+ * detail pages. Mobile-friendly: text scales gracefully and the card
+ * stays one row tall.
+ *
+ * Variants:
+ *   - tone: default / accent / success / warn / danger / info / violet
+ *   - size: sm (chip) / md (default) / lg (hero)
+ */
 
-const TONE_ICON: Record<Tone, { bg: string; color: string }> = {
+export type StatTone =
+	| "default"
+	| "accent"
+	| "success"
+	| "warn"
+	| "danger"
+	| "info"
+	| "violet";
+
+const TONES: Record<StatTone, { color: string; bg: string; border: string }> = {
 	default: {
-		bg: "var(--surface-sunken)",
 		color: "var(--text-muted)",
+		bg: "var(--surface-sunken)",
+		border: "var(--border-default)",
 	},
 	accent: {
-		bg: "var(--color-teal-subtle)",
 		color: "var(--color-teal)",
+		bg: "var(--color-teal-subtle)",
+		border: "var(--color-teal-border)",
 	},
 	success: {
+		color: "var(--status-up)",
 		bg: "var(--status-up-subtle)",
-		color: "var(--status-up-text)",
+		border: "var(--status-up-border)",
 	},
 	warn: {
+		color: "var(--status-warn)",
 		bg: "var(--status-warn-subtle)",
-		color: "var(--status-warn-text)",
+		border: "var(--status-warn-border)",
 	},
 	danger: {
+		color: "var(--status-down)",
 		bg: "var(--status-down-subtle)",
-		color: "var(--status-down-text)",
+		border: "var(--status-down-border)",
 	},
-	muted: {
-		bg: "var(--surface-sunken)",
-		color: "var(--text-faint)",
+	info: {
+		color: "var(--color-blue)",
+		bg: "var(--color-blue-subtle)",
+		border: "var(--color-blue-border)",
 	},
-};
-
-const TONE_ACCENT: Record<Tone, string> = {
-	default: "var(--text-muted)",
-	accent: "var(--color-teal)",
-	success: "var(--status-up)",
-	warn: "var(--status-warn)",
-	danger: "var(--status-down)",
-	muted: "var(--text-faint)",
+	violet: {
+		color: "var(--color-violet)",
+		bg: "var(--color-violet-subtle)",
+		border: "var(--color-violet-border)",
+	},
 };
 
 interface StatCardProps {
 	label: string;
 	value: ReactNode;
-	/** Optional label beneath value (e.g., `P95: 120 ms`, `+4% last hour`). */
-	sub?: ReactNode;
+	hint?: ReactNode;
 	icon?: ElementType;
-	tone?: Tone;
-	/** Wraps the card in a Link to the given path. */
+	tone?: StatTone;
+	size?: "sm" | "md" | "lg";
 	to?: string;
-	/** Optional secondary action (right side) */
-	trailing?: ReactNode;
 	className?: string;
-	/** Loading skeleton state */
-	loading?: boolean;
 }
 
-/**
- * Unified metric/stat tile. Used on dashboard, service detail, overview pages.
- * Clean, information-dense, no fake sparklines or trend indicators unless
- * backed by real data.
- */
 export function StatCard({
 	label,
 	value,
-	sub,
+	hint,
 	icon: Icon,
 	tone = "default",
+	size = "md",
 	to,
-	trailing,
 	className,
-	loading = false,
 }: StatCardProps) {
-	const iconTones = TONE_ICON[tone];
-	const accentColor = TONE_ACCENT[tone];
+	const t = TONES[tone];
 
-	const body = (
+	const labelSize = size === "lg" ? "text-[11px]" : "text-[10px]";
+	const valueSize =
+		size === "lg"
+			? "text-2xl"
+			: size === "sm"
+				? "text-base"
+				: "text-lg sm:text-xl";
+	const iconBox = size === "lg" ? "w-11 h-11" : size === "sm" ? "w-7 h-7" : "w-9 h-9";
+	const iconSize = size === "lg" ? "w-5 h-5" : size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4";
+	const padding = size === "sm" ? "p-3" : "p-3.5";
+
+	const inner = (
 		<div
 			className={cn(
-				"relative overflow-hidden px-4 py-3.5 h-full transition-colors",
+				"flex items-center gap-3 rounded-[var(--radius)] transition-colors",
 				to && "hover:bg-[var(--surface-sunken)] cursor-pointer",
+				padding,
 				className,
 			)}
 			style={{
 				background: "var(--surface-card)",
 				border: "1px solid var(--border-default)",
-				borderRadius: "var(--radius)",
 			}}
 		>
-			{tone !== "default" && tone !== "muted" && (
-				<span
-					className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
-					style={{ background: accentColor }}
-				/>
+			{Icon && (
+				<div
+					className={cn(
+						"rounded-md flex items-center justify-center shrink-0",
+						iconBox,
+					)}
+					style={{
+						background: t.bg,
+						border: `1px solid ${t.border}`,
+						color: t.color,
+					}}
+				>
+					<Icon className={iconSize} />
+				</div>
 			)}
-			<div className="flex items-start justify-between gap-3">
-				<div className="min-w-0 flex-1">
+			<div className="min-w-0 flex-1">
+				<p
+					className={cn(
+						"font-bold uppercase tracking-[0.14em] leading-none",
+						labelSize,
+					)}
+					style={{ color: "var(--text-faint)" }}
+				>
+					{label}
+				</p>
+				<div className="flex items-baseline gap-1.5 mt-1.5 min-w-0">
 					<p
-						className="text-[11px] font-medium mb-1.5"
-						style={{ color: "var(--text-faint)" }}
-					>
-						{label}
-					</p>
-					<div
-						className="text-2xl font-semibold tabular-nums font-mono leading-none tracking-tight"
+						className={cn(
+							"font-bold tabular-nums font-mono leading-none truncate",
+							valueSize,
+						)}
 						style={{ color: "var(--text-primary)" }}
 					>
-						{loading ? (
-							<span
-								className="inline-block w-16 h-6 rounded animate-pulse"
-								style={{ background: "var(--surface-sunken)" }}
-							/>
-						) : (
-							value
-						)}
-					</div>
-					{sub && (
+						{value}
+					</p>
+					{hint && (
 						<p
-							className="text-[11px] mt-1.5 leading-snug truncate"
+							className="text-[10px] leading-none truncate"
 							style={{ color: "var(--text-faint)" }}
 						>
-							{sub}
+							{hint}
 						</p>
 					)}
-				</div>
-				<div className="flex flex-col items-end gap-2 shrink-0">
-					{Icon && (
-						<div
-							className="w-8 h-8 rounded-lg flex items-center justify-center"
-							style={{
-								background: iconTones.bg,
-								color: iconTones.color,
-							}}
-						>
-							<Icon className="w-4 h-4" />
-						</div>
-					)}
-					{trailing}
 				</div>
 			</div>
 		</div>
 	);
 
-	if (to) {
-		return <Link to={to}>{body}</Link>;
-	}
-	return body;
+	return to ? (
+		<Link to={to} className="block">
+			{inner}
+		</Link>
+	) : (
+		inner
+	);
 }

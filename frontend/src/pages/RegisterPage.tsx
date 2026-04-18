@@ -31,9 +31,15 @@ export function RegisterPage() {
 	const confirmIcon = confirmPassword ? (
 		<span className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none">
 			{passwordsMatch ? (
-				<Check className="w-4 h-4 text-emerald-500" />
+				<Check
+					className="w-4 h-4"
+					style={{ color: "var(--status-up-text)" }}
+				/>
 			) : (
-				<X className="w-4 h-4 text-red-400" />
+				<X
+					className="w-4 h-4"
+					style={{ color: "var(--status-down-text)" }}
+				/>
 			)}
 		</span>
 	) : null;
@@ -47,12 +53,16 @@ export function RegisterPage() {
 			)}
 			footer={
 				<>
-					<span className="text-sm text-slate-400 font-medium">
+					<span
+						className="text-sm font-medium"
+						style={{ color: "var(--text-muted)" }}
+					>
 						{t("auth.haveAccount")}
 					</span>
 					<Link
 						to="/login"
-						className="text-sm font-black text-slate-900 hover:text-teal-600 transition-colors"
+						className="text-sm font-black transition-colors"
+						style={{ color: "var(--brand-primary)" }}
 					>
 						{t("auth.login", "Sign in")} →
 					</Link>
@@ -63,7 +73,8 @@ export function RegisterPage() {
 				<div className="space-y-1.5">
 					<Label
 						htmlFor="email"
-						className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400"
+						className="text-[11px] font-black uppercase tracking-[0.15em]"
+						style={{ color: "var(--text-faint)" }}
 					>
 						{t("auth.email")}
 					</Label>
@@ -74,7 +85,7 @@ export function RegisterPage() {
 						placeholder="you@company.com"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className="h-11 rounded-lg border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-teal-500 focus-visible:border-teal-500 transition-colors"
+						className="h-11 rounded-lg text-sm font-medium"
 						required
 						disabled={isRegistering}
 					/>

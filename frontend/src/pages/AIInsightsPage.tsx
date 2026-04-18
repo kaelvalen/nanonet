@@ -177,7 +177,6 @@ export function AIInsightsPage() {
 	return (
 		<PageShell width="wide" fill>
 			<PageHeader
-				compact
 				eyebrow="AI"
 				title="AI İçgörüler"
 				description="Claude destekli servis analizi · kök-neden · öneri"

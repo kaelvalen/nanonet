@@ -21,6 +21,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	PanelBody,
+	PanelFooter,
+	PanelHeader,
+	SkeletonList,
+} from "@/components/ui/primitives";
 import { Textarea } from "@/components/ui/textarea";
 import { useServices } from "@/hooks/useServices";
 
@@ -69,7 +77,7 @@ export function StatusPagesAdmin() {
 	});
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="herkese açık"
 				title="Status Sayfaları"
@@ -107,20 +115,15 @@ export function StatusPagesAdmin() {
 
 			<div className="flex flex-col gap-3 mt-4">
 				{isLoading ? (
-					<div className="space-y-3">
-						{[0, 1].map((i) => (
-							<div
-								key={i}
-								className="h-24 rounded-lg animate-pulse"
-								style={{
-									background: "var(--surface-card)",
-									border: "1px solid var(--border-default)",
-								}}
-							/>
-						))}
-					</div>
+					<SkeletonList rows={2} rowHeight={96} />
 				) : pages.length === 0 ? (
-					<EmptyState />
+					<SharedEmptyState
+						icon={Globe}
+						title="Henüz status sayfası yok"
+						description="Müşterileriniz veya ekip arkadaşlarınız için herkese açık bir durum sayfası yayınlayın."
+						tone="accent"
+						size="lg"
+					/>
 				) : (
 					pages.map((p) => (
 						<PageRow
@@ -161,14 +164,8 @@ function PageRow({
 	};
 
 	return (
-		<div
-			className="rounded-lg p-4 flex items-start justify-between gap-4"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
-				opacity: page.enabled ? 1 : 0.65,
-			}}
-		>
+		<Panel padding="md" style={{ opacity: page.enabled ? 1 : 0.65 }}>
+		<div className="flex flex-col sm:flex-row items-start justify-between gap-4">
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-2">
 					<Globe className="w-4 h-4" style={{ color: "var(--color-teal)" }} />
@@ -245,7 +242,7 @@ function PageRow({
 				</p>
 			</div>
 
-			<div className="flex items-center gap-1 shrink-0">
+			<div className="flex items-center gap-1 shrink-0 self-start sm:self-auto">
 				<Button
 					size="sm"
 					variant="ghost"
@@ -279,6 +276,7 @@ function PageRow({
 				</Button>
 			</div>
 		</div>
+		</Panel>
 	);
 }
 
@@ -306,16 +304,9 @@ function DraftEditor({
 	const slugValid = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/.test(value.slug);
 
 	return (
-		<div
-			className="mt-4 p-5 rounded-lg flex flex-col gap-4"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-strong)",
-			}}
-		>
-			<p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-				Yeni Status Sayfası
-			</p>
+		<Panel className="mt-4">
+			<PanelHeader dense>Yeni Status Sayfası</PanelHeader>
+			<PanelBody scroll={false} className="flex flex-col gap-4">
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
@@ -428,7 +419,8 @@ function DraftEditor({
 				</div>
 			</div>
 
-			<div className="flex items-center justify-end gap-2">
+			</PanelBody>
+			<PanelFooter>
 				<Button
 					variant="outline"
 					size="sm"
@@ -456,42 +448,7 @@ function DraftEditor({
 					)}
 					Yayınla
 				</Button>
-			</div>
-		</div>
-	);
-}
-
-function EmptyState() {
-	return (
-		<div
-			className="flex flex-col items-center justify-center p-12 rounded-lg text-center"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px dashed var(--border-default)",
-			}}
-		>
-			<span
-				className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
-				style={{
-					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-default)",
-				}}
-			>
-				<Globe className="w-4 h-4" style={{ color: "var(--text-faint)" }} />
-			</span>
-			<p
-				className="text-sm font-semibold mb-1"
-				style={{ color: "var(--text-primary)" }}
-			>
-				Henüz status sayfası yok
-			</p>
-			<p
-				className="text-xs leading-relaxed max-w-sm"
-				style={{ color: "var(--text-muted)" }}
-			>
-				Müşterileriniz veya ekip arkadaşlarınız için herkese açık bir
-				durum sayfası yayınlayın.
-			</p>
-		</div>
+			</PanelFooter>
+		</Panel>
 	);
 }

@@ -23,6 +23,7 @@ import {
 	Sparkles,
 	Terminal,
 	Trash2,
+	Users,
 	Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -38,6 +39,7 @@ import { AlertRulesTab } from "@/components/service-detail/AlertRulesTab";
 import { CommandHistoryTab } from "@/components/service-detail/CommandHistoryTab";
 import { LoadBalancingTab } from "@/components/service-detail/LoadBalancingTab";
 import { MaintenanceTab } from "@/components/service-detail/MaintenanceTab";
+import { useRegisterPageMeta } from "@/components/PageMetaContext";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -48,6 +50,10 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	SkeletonCard,
+} from "@/components/ui/primitives";
 import { useServices } from "@/hooks/useServices";
 import type { Alert } from "@/types/alerts";
 import type { ServiceMetrics } from "@/types/metrics";
@@ -90,6 +96,7 @@ type SectionId =
 	| "history"
 	| "rules"
 	| "maintenance"
+	| "access"
 	| "logs";
 
 type Tone = "ok" | "warn" | "crit" | "mute";
@@ -174,25 +181,32 @@ function StatusOrb({
 					: "var(--status-unknown)";
 
 	const alive = status === "up";
-	const orbit = size * 3.2;
+	const orbit = size * 2;
 
 	return (
 		<span
-			className="relative inline-flex items-center justify-center shrink-0"
+			className="relative inline-flex items-center justify-center shrink-0 overflow-hidden"
 			style={{ width: orbit, height: orbit }}
 			aria-hidden
 		>
 			{alive && (
 				<>
 					<span
-						className="absolute inset-0 rounded-full animate-pulse-ring"
-						style={{ background: color, opacity: 0.45 }}
-					/>
-					<span
-						className="absolute inset-0 rounded-full animate-pulse-ring"
+						className="absolute rounded-full animate-pulse-ring"
 						style={{
 							background: color,
-							opacity: 0.45,
+							opacity: 0.4,
+							width: size,
+							height: size,
+						}}
+					/>
+					<span
+						className="absolute rounded-full animate-pulse-ring"
+						style={{
+							background: color,
+							opacity: 0.4,
+							width: size,
+							height: size,
 							animationDelay: "0.8s",
 						}}
 					/>
@@ -942,6 +956,7 @@ const SECTIONS: {
 	{ id: "history", label: "Geçmiş", icon: History },
 	{ id: "rules", label: "Kurallar", icon: Bell },
 	{ id: "maintenance", label: "Bakım", icon: CalendarClock },
+	{ id: "access", label: "Erişim", icon: Users },
 	{ id: "logs", label: "Günlükler", icon: FileText },
 ];
 
@@ -1121,10 +1136,9 @@ function OverviewSection({
 			}
 		>
 			<div className="flex flex-col gap-3">
-				<ServiceMetricsCharts chartData={chartData} />
 				<ForecastPanel serviceId={serviceId} />
+				<ServiceMetricsCharts chartData={chartData} />
 				<DependenciesPanel serviceId={serviceId} />
-				<SharingPanel serviceId={serviceId} />
 			</div>
 		</Suspense>
 	);
@@ -1319,27 +1333,17 @@ function TerminalSection({
 			)}
 
 			<div
-				className="nn-terminal relative flex flex-col rounded-lg overflow-hidden flex-1 min-h-[440px]"
+				className="nn-terminal relative flex flex-col rounded-lg overflow-hidden flex-1 min-h-0"
 				style={{
-					background: "#060a0a",
-					border: "1px solid var(--border-strong)",
+					background: "var(--terminal-bg)",
+					border: "1px solid var(--terminal-border)",
 				}}
 			>
 				<div
-					className="pointer-events-none absolute inset-0 z-10"
-					style={{
-						backgroundImage:
-							"repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px)",
-						opacity: 0.03,
-						mixBlendMode: "overlay",
-					}}
-				/>
-
-				<div
 					className="relative z-20 flex items-center gap-2 px-4 py-2.5 shrink-0"
 					style={{
-						borderBottom: "1px solid rgba(255,255,255,0.08)",
-						background: "rgba(255,255,255,0.03)",
+						borderBottom: "1px solid var(--terminal-border)",
+						background: "var(--terminal-chrome)",
 					}}
 				>
 					<div className="flex gap-1.5">
@@ -1357,18 +1361,20 @@ function TerminalSection({
 						/>
 					</div>
 					<span
-						className="text-[10px] font-mono ml-2"
-						style={{ color: "rgba(226,232,240,0.5)" }}
+						className="text-[10px] font-mono ml-2 truncate"
+						style={{ color: "var(--terminal-muted)" }}
 					>
 						{service.name} — agent shell
 					</span>
 					<span
-						className="ml-auto text-[9px] font-mono tabular-nums px-1.5 py-0.5 rounded"
+						className="ml-auto text-[9px] font-mono tabular-nums px-1.5 py-0.5 rounded shrink-0"
 						style={{
 							background: service.agent_connected
-								? "rgba(45,212,191,0.12)"
-								: "rgba(251,113,133,0.12)",
-							color: service.agent_connected ? "#2dd4bf" : "#fb7185",
+								? "var(--status-up-subtle)"
+								: "var(--status-down-subtle)",
+							color: service.agent_connected
+								? "var(--status-up-text)"
+								: "var(--status-down-text)",
 						}}
 					>
 						{service.agent_connected ? "● LIVE" : "○ OFFLINE"}
@@ -1377,8 +1383,8 @@ function TerminalSection({
 						<button
 							type="button"
 							onClick={onClear}
-							className="text-[10px] font-mono transition-opacity hover:opacity-60"
-							style={{ color: "rgba(226,232,240,0.5)" }}
+							className="text-[10px] font-mono transition-opacity hover:opacity-60 shrink-0"
+							style={{ color: "var(--terminal-muted)" }}
 						>
 							clear
 						</button>
@@ -1387,17 +1393,18 @@ function TerminalSection({
 
 				<div
 					ref={scrollRef}
-					className="relative z-20 flex-1 overflow-y-auto p-4 font-mono text-xs"
+					className="relative z-20 flex-1 overflow-y-auto p-4 font-mono text-xs min-h-0"
+					style={{ color: "var(--terminal-fg)" }}
 				>
 					{history.length === 0 ? (
 						<div className="flex flex-col items-center justify-center h-full gap-4 select-none">
 							<Terminal
 								className="w-10 h-10"
-								style={{ color: "rgba(45,212,191,0.3)" }}
+								style={{ color: "var(--terminal-accent)", opacity: 0.4 }}
 							/>
 							<p
 								className="text-[11px] font-mono"
-								style={{ color: "rgba(226,232,240,0.4)" }}
+								style={{ color: "var(--terminal-muted)" }}
 							>
 								$ ready — komut girin ve Enter'a basın
 							</p>
@@ -1409,9 +1416,9 @@ function TerminalSection({
 										onClick={() => setCommand(s)}
 										className="px-2.5 py-1 rounded text-[10px] font-mono transition-colors"
 										style={{
-											background: "rgba(45,212,191,0.08)",
-											color: "#2dd4bf",
-											border: "1px solid rgba(45,212,191,0.18)",
+											background: "var(--terminal-accent-subtle)",
+											color: "var(--terminal-accent)",
+											border: "1px solid var(--terminal-accent-border)",
 										}}
 									>
 										{s}
@@ -1431,13 +1438,13 @@ function TerminalSection({
 				<div
 					className="relative z-20 flex items-center gap-2 px-4 py-3 shrink-0"
 					style={{
-						borderTop: "1px solid rgba(255,255,255,0.08)",
-						background: "rgba(255,255,255,0.03)",
+						borderTop: "1px solid var(--terminal-border)",
+						background: "var(--terminal-chrome)",
 					}}
 				>
 					<span
 						className="font-mono text-sm font-bold"
-						style={{ color: "#2dd4bf" }}
+						style={{ color: "var(--terminal-accent)" }}
 					>
 						❯
 					</span>
@@ -1450,7 +1457,7 @@ function TerminalSection({
 						placeholder="e.g. uptime"
 						disabled={loading}
 						className="flex-1 bg-transparent border-none outline-none font-mono text-xs placeholder:opacity-40"
-						style={{ color: "#e2e8f0" }}
+						style={{ color: "var(--terminal-fg)" }}
 					/>
 					<button
 						type="button"
@@ -1458,9 +1465,9 @@ function TerminalSection({
 						disabled={loading || !command.trim()}
 						className="shrink-0 h-7 px-2.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-40"
 						style={{
-							background: "rgba(45,212,191,0.14)",
-							color: "#2dd4bf",
-							border: "1px solid rgba(45,212,191,0.3)",
+							background: "var(--terminal-accent-subtle)",
+							color: "var(--terminal-accent)",
+							border: "1px solid var(--terminal-accent-border)",
 						}}
 					>
 						{loading ? (
@@ -1484,19 +1491,19 @@ function TerminalEntry({ entry }: { entry: ExecEntry }) {
 		entry.status === "timeout";
 	const statusColor =
 		entry.status === "success"
-			? "#4ade80"
+			? "var(--status-up-text)"
 			: entry.status === "failed" || entry.status === "timeout"
-				? "#fb7185"
-				: "#fbbf24";
+				? "var(--status-down-text)"
+				: "var(--status-warn-text)";
 
 	return (
 		<div className="leading-relaxed">
 			<div className="flex items-center gap-2">
-				<span style={{ color: "#2dd4bf" }}>$</span>
-				<span style={{ color: "#e2e8f0" }}>{entry.command}</span>
+				<span style={{ color: "var(--terminal-accent)" }}>$</span>
+				<span style={{ color: "var(--terminal-fg)" }}>{entry.command}</span>
 				<span
 					className="ml-auto font-mono text-[10px]"
-					style={{ color: "rgba(226,232,240,0.4)" }}
+					style={{ color: "var(--terminal-muted)" }}
 				>
 					{new Date(entry.queued_at).toLocaleTimeString("tr-TR", {
 						hour: "2-digit",
@@ -1516,7 +1523,7 @@ function TerminalEntry({ entry }: { entry: ExecEntry }) {
 				{entry.duration_ms != null && (
 					<span
 						className="text-[10px] font-mono ml-auto tabular-nums"
-						style={{ color: "rgba(226,232,240,0.4)" }}
+						style={{ color: "var(--terminal-muted)" }}
 					>
 						{entry.duration_ms}ms
 					</span>
@@ -1526,9 +1533,9 @@ function TerminalEntry({ entry }: { entry: ExecEntry }) {
 				<pre
 					className="mt-2 ml-3 p-2.5 rounded text-[11px] whitespace-pre-wrap break-all"
 					style={{
-						color: "rgba(226,232,240,0.85)",
-						background: "rgba(255,255,255,0.025)",
-						border: "1px solid rgba(255,255,255,0.05)",
+						color: "var(--terminal-fg)",
+						background: "var(--terminal-block-bg)",
+						border: "1px solid var(--terminal-border)",
 					}}
 				>
 					{entry.output}
@@ -1538,9 +1545,9 @@ function TerminalEntry({ entry }: { entry: ExecEntry }) {
 				<pre
 					className="mt-2 ml-3 p-2.5 rounded text-[11px] whitespace-pre-wrap break-all"
 					style={{
-						color: "#fda4af",
-						background: "rgba(251,113,133,0.08)",
-						border: "1px solid rgba(251,113,133,0.18)",
+						color: "var(--status-down-text)",
+						background: "var(--status-down-subtle)",
+						border: "1px solid var(--status-down-border)",
 					}}
 				>
 					{entry.error}
@@ -1940,6 +1947,12 @@ export function ServiceDetailPage() {
 		enabled: !!serviceId,
 	});
 
+	useRegisterPageMeta({
+		eyebrow: "Servis",
+		title: service?.name ?? "Servis",
+		description: service ? `${service.host}:${service.port}` : undefined,
+	});
+
 	useEffect(() => {
 		const handler = (e: Event) => {
 			const ev = e as CustomEvent<{
@@ -2088,87 +2101,47 @@ export function ServiceDetailPage() {
 		}
 	};
 
-	// ──────────────────────────────────────────────────────────────── LOADING
 	if (serviceLoading) {
 		return (
 			<PageShell width="wide" fill>
-				<div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-					<div
-						className="lg:w-[280px] lg:shrink-0 h-[420px] rounded-lg animate-pulse"
-						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--border-default)",
-						}}
-					/>
-					<div className="flex-1 flex flex-col gap-3">
-						<div
-							className="h-[120px] rounded-lg animate-pulse"
-							style={{
-								background: "var(--surface-card)",
-								border: "1px solid var(--border-default)",
-							}}
-						/>
-						<div
-							className="h-[44px] rounded-lg animate-pulse"
-							style={{
-								background: "var(--surface-card)",
-								border: "1px solid var(--border-default)",
-							}}
-						/>
-						<div
-							className="flex-1 rounded-lg animate-pulse"
-							style={{
-								background: "var(--surface-card)",
-								border: "1px solid var(--border-default)",
-							}}
-						/>
+				<div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+					<div className="lg:w-[280px] lg:shrink-0">
+						<SkeletonCard className="h-[420px]" />
+					</div>
+					<div className="flex-1 flex flex-col gap-3 min-h-0">
+						<SkeletonCard className="h-[120px]" />
+						<SkeletonCard className="h-[44px]" />
+						<SkeletonCard className="flex-1" />
 					</div>
 				</div>
 			</PageShell>
 		);
 	}
 
-	// ────────────────────────────────────────────────────────────── NOT FOUND
 	if (!service) {
 		return (
 			<PageShell width="wide" fill>
-				<div className="flex flex-col items-center justify-center flex-1 min-h-0 text-center">
-					<div
-						className="w-14 h-14 rounded-xl flex items-center justify-center mb-5"
-						style={{
-							background: "var(--surface-sunken)",
-							border: "1px solid var(--border-default)",
-						}}
-					>
-						<Server
-							className="w-6 h-6"
-							style={{ color: "var(--text-faint)" }}
-						/>
-					</div>
-					<h2
-						className="text-lg font-bold mb-2"
-						style={{ color: "var(--text-primary)" }}
-					>
-						Servis bulunamadı
-					</h2>
-					<p
-						className="text-sm mb-6 max-w-sm"
-						style={{ color: "var(--text-muted)" }}
-					>
-						Bu servis silinmiş olabilir ya da erişim izniniz yok.
-					</p>
-					<button
-						type="button"
-						onClick={() => navigate("/app/services")}
-						className="flex items-center gap-1.5 px-4 h-9 rounded text-[12px] font-semibold text-white"
-						style={{
-							background: "var(--gradient-btn-primary)",
-							boxShadow: "var(--btn-shadow)",
-						}}
-					>
-						<ArrowLeft className="w-3.5 h-3.5" /> Servislere Dön
-					</button>
-				</div>
+				<SharedEmptyState
+					icon={Server}
+					title="Servis bulunamadı"
+					description="Bu servis silinmiş olabilir ya da erişim izniniz yok."
+					tone="muted"
+					size="lg"
+					className="flex-1"
+					action={
+						<button
+							type="button"
+							onClick={() => navigate("/app/services")}
+							className="flex items-center gap-1.5 px-4 h-9 rounded text-[12px] font-semibold text-white"
+							style={{
+								background: "var(--gradient-btn-primary)",
+								boxShadow: "var(--btn-shadow)",
+							}}
+						>
+							<ArrowLeft className="w-3.5 h-3.5" /> Servislere Dön
+						</button>
+					}
+				/>
 			</PageShell>
 		);
 	}
@@ -2235,7 +2208,13 @@ export function ServiceDetailPage() {
 						}
 					/>
 
-					<div className="flex-1 min-h-0 overflow-y-auto pr-1">
+					<div
+						className={
+							activeSection === "logs" || activeSection === "terminal"
+								? "flex-1 min-h-0 flex flex-col"
+								: "flex-1 min-h-0 overflow-y-auto pr-1"
+						}
+					>
 						<AnimatePresence mode="wait">
 							<motion.div
 								key={activeSection}
@@ -2243,7 +2222,13 @@ export function ServiceDetailPage() {
 								animate={{ opacity: 1, y: 0 }}
 								exit={{ opacity: 0, y: -4 }}
 								transition={{ duration: 0.22 }}
-								className={activeSection === "logs" ? "h-full" : ""}
+								className={
+									activeSection === "logs"
+										? "hidden"
+										: activeSection === "terminal"
+											? "flex-1 min-h-0 flex flex-col"
+											: ""
+								}
 							>
 								{activeSection === "overview" && (
 									<OverviewSection
@@ -2308,15 +2293,20 @@ export function ServiceDetailPage() {
 								{activeSection === "maintenance" && (
 									<MaintenanceTab serviceId={serviceId ?? ""} />
 								)}
+
+								{activeSection === "access" && (
+									<SharingPanel serviceId={serviceId ?? ""} />
+								)}
 							</motion.div>
 						</AnimatePresence>
 
 						{/* Logs — always mounted so WS stream persists across tab switches */}
 						<div
-							style={{
-								display: activeSection === "logs" ? "block" : "none",
-							}}
-							className="h-[calc(100%-1px)] min-h-[420px]"
+							className={
+								activeSection === "logs"
+									? "flex-1 min-h-0 flex flex-col"
+									: "hidden"
+							}
 						>
 							<LogViewer
 								serviceId={serviceId ?? ""}

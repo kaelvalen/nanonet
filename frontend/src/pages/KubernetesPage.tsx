@@ -757,14 +757,12 @@ export function KubernetesPage() {
 	];
 
 	return (
-		<PageShell width="wide" fill>
-			{/* Log Modal */}
+		<PageShell width="wide" fill={false}>
 			{logPod && (
 				<PodLogModal podName={logPod} onClose={() => setLogPod(null)} />
 			)}
 
 			<PageHeader
-				compact
 				eyebrow="Altyapı"
 				title="Kubernetes"
 				description="Cluster yönetimi · pod izleme · auto-scaling"

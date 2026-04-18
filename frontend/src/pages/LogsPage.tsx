@@ -23,9 +23,12 @@ import { useEffect, useRef, useState } from "react";
 import { type LogQueryParams, logsApi, type ServiceLog } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+} from "@/components/ui/primitives";
 import { useAuthStore } from "@/store/authStore";
 
 // ── Tipler ──────────────────────────────────────────────────────
@@ -174,7 +177,7 @@ function downloadLogs(logs: ServiceLog[]) {
 }
 
 // ── Bileşenler ───────────────────────────────────────────────────
-function StatCard({
+function LogStatCard({
 	label,
 	value,
 	cfg,
@@ -501,22 +504,22 @@ function ServiceLogsTab() {
 			{/* Stats */}
 			{stats && (
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-					<StatCard
+					<LogStatCard
 						label="Debug"
 						value={stats.debug ?? 0}
 						cfg={LEVEL_CONFIG.debug}
 					/>
-					<StatCard
+					<LogStatCard
 						label="Info"
 						value={stats.info ?? 0}
 						cfg={LEVEL_CONFIG.info}
 					/>
-					<StatCard
+					<LogStatCard
 						label="Warn"
 						value={stats.warn ?? 0}
 						cfg={LEVEL_CONFIG.warn}
 					/>
-					<StatCard
+					<LogStatCard
 						label="Error"
 						value={stats.error ?? 0}
 						cfg={LEVEL_CONFIG.error}
@@ -525,13 +528,7 @@ function ServiceLogsTab() {
 			)}
 
 			{/* Log list */}
-			<Card
-				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-				}}
-				className="overflow-hidden"
-			>
+			<Panel padding="none" className="overflow-hidden">
 				<div
 					className="px-4 py-3 flex items-center justify-between"
 					style={{ borderBottom: "1px solid var(--border-default)" }}
@@ -551,14 +548,21 @@ function ServiceLogsTab() {
 				</div>
 
 				{!selectedServiceId ? (
-					<EmptyState
+					<SharedEmptyState
 						icon={Server}
-						text="Logları görüntülemek için servis seçin"
+						title="Servis seçin"
+						description="Logları görüntülemek için yukarıdan bir servis seçin."
+						tone="muted"
 					/>
 				) : isLoading ? (
 					<LoadingState />
 				) : !data?.logs.length ? (
-					<EmptyState icon={Terminal} text="Bu servis için log bulunamadı" />
+					<SharedEmptyState
+						icon={Terminal}
+						title="Log yok"
+						description="Bu servis için log bulunamadı."
+						tone="muted"
+					/>
 				) : (
 					<div>
 						{data.logs.map((log) => (
@@ -607,7 +611,7 @@ function ServiceLogsTab() {
 						</div>
 					</div>
 				)}
-			</Card>
+			</Panel>
 		</div>
 	);
 }
@@ -646,13 +650,7 @@ function AuditLogsTab() {
 				</Button>
 			</div>
 
-			<Card
-				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-				}}
-				className="overflow-hidden"
-			>
+			<Panel padding="none" className="overflow-hidden">
 				<div
 					className="px-4 py-3 flex items-center gap-3"
 					style={{ borderBottom: "1px solid var(--border-default)" }}
@@ -689,7 +687,12 @@ function AuditLogsTab() {
 				{isLoading ? (
 					<LoadingState />
 				) : !logs.length ? (
-					<EmptyState icon={Shield} text="Audit log bulunamadı" />
+					<SharedEmptyState
+						icon={Shield}
+						title="Kayıt yok"
+						description="Audit log bulunamadı."
+						tone="muted"
+					/>
 				) : (
 					logs.map((log, i) => <AuditRow key={auditID(log, i)} log={log} />)
 				)}
@@ -722,7 +725,7 @@ function AuditLogsTab() {
 						</div>
 					</div>
 				)}
-			</Card>
+			</Panel>
 		</div>
 	);
 }
@@ -810,13 +813,7 @@ function K8sLogsTab() {
 				</Button>
 			</div>
 
-			<Card
-				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-				}}
-				className="overflow-hidden"
-			>
+			<Panel padding="none" className="overflow-hidden">
 				<div
 					className="px-4 py-3 flex items-center justify-between"
 					style={{ borderBottom: "1px solid var(--border-default)" }}
@@ -835,11 +832,21 @@ function K8sLogsTab() {
 				</div>
 
 				{!podName ? (
-					<EmptyState icon={Cloud} text="Pod adını girin ve logları getirin" />
+					<SharedEmptyState
+						icon={Cloud}
+						title="Pod adını girin"
+						description="Yukarıdan pod adını girip 'Getir' butonuna tıklayın."
+						tone="accent"
+					/>
 				) : isLoading ? (
 					<LoadingState />
 				) : !logLines.length ? (
-					<EmptyState icon={Terminal} text="Log bulunamadı" />
+					<SharedEmptyState
+						icon={Terminal}
+						title="Log yok"
+						description="Bu pod için log bulunamadı."
+						tone="muted"
+					/>
 				) : (
 					<div
 						className="overflow-y-auto font-mono text-xs"
@@ -869,37 +876,12 @@ function K8sLogsTab() {
 						})}
 					</div>
 				)}
-			</Card>
+			</Panel>
 		</div>
 	);
 }
 
 // ── Ortak yardımcı bileşenler ────────────────────────────────────
-function EmptyState({
-	icon: Icon,
-	text,
-}: {
-	icon: React.ElementType;
-	text: string;
-}) {
-	return (
-		<div className="py-14 flex flex-col items-center gap-3">
-			<div
-				className="w-12 h-12 rounded-2xl flex items-center justify-center"
-				style={{
-					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-default)",
-				}}
-			>
-				<Icon className="w-5 h-5" style={{ color: "var(--text-faint)" }} />
-			</div>
-			<p className="text-sm" style={{ color: "var(--text-faint)" }}>
-				{text}
-			</p>
-		</div>
-	);
-}
-
 function LoadingState() {
 	return (
 		<div className="py-14 flex justify-center">
@@ -924,7 +906,6 @@ export function LogsPage() {
 	return (
 		<PageShell width="wide" fill>
 			<PageHeader
-				compact
 				eyebrow="Observability"
 				title="Log merkezi"
 				description="Servis logları, denetim kayıtları ve Kubernetes pod logları"

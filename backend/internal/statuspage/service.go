@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -68,7 +69,7 @@ func (s *Service) BuildPublicView(ctx context.Context, slug string) (*PublicView
 		SELECT id, name, status
 		FROM services
 		WHERE user_id = ? AND id::text = ANY(?)
-	`, page.UserID, []string(page.ServiceIDs)).Scan(&rows).Error; err != nil {
+	`, page.UserID, pq.StringArray(page.ServiceIDs)).Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	if len(rows) == 0 {
@@ -83,8 +84,10 @@ func (s *Service) BuildPublicView(ctx context.Context, slug string) (*PublicView
 	}
 
 	ids := make([]uuid.UUID, 0, len(rows))
+	idStrs := make(pq.StringArray, 0, len(rows))
 	for _, r := range rows {
 		ids = append(ids, r.ID)
+		idStrs = append(idStrs, r.ID.String())
 	}
 
 	// Latest latency per service (single round trip).
@@ -96,17 +99,17 @@ func (s *Service) BuildPublicView(ctx context.Context, slug string) (*PublicView
 	_ = s.db.WithContext(ctx).Raw(`
 		SELECT DISTINCT ON (service_id) service_id, latency_ms
 		FROM metrics
-		WHERE service_id = ANY(?) AND time > NOW() - INTERVAL '15 minutes'
+		WHERE service_id::text = ANY(?) AND time > NOW() - INTERVAL '15 minutes'
 		ORDER BY service_id, time DESC
-	`, ids).Scan(&lats).Error
+	`, idStrs).Scan(&lats).Error
 	latByID := make(map[uuid.UUID]*float64, len(lats))
 	for _, l := range lats {
 		latByID[l.ServiceID] = l.LatencyMS
 	}
 
 	// Bulk uptime — 24h and 30d.
-	uptime24 := bulkUptime(ctx, s.db, ids, 24*time.Hour)
-	uptime30d := bulkUptime(ctx, s.db, ids, 30*24*time.Hour)
+	uptime24 := bulkUptime(ctx, s.db, ids, idStrs, 24*time.Hour)
+	uptime30d := bulkUptime(ctx, s.db, ids, idStrs, 30*24*time.Hour)
 
 	// Public-friendly status mapping.
 	pubServices := make([]PublicService, 0, len(rows))
@@ -148,12 +151,12 @@ func (s *Service) BuildPublicView(ctx context.Context, slug string) (*PublicView
 		SELECT a.type, a.severity, a.triggered_at, a.resolved_at, s.name
 		FROM alerts a
 		JOIN services s ON s.id = a.service_id
-		WHERE a.service_id = ANY(?)
+		WHERE a.service_id::text = ANY(?)
 		  AND a.severity IN ('warn','crit')
 		  AND a.triggered_at > NOW() - INTERVAL '14 days'
 		ORDER BY a.triggered_at DESC
 		LIMIT 25
-	`, ids).Scan(&arows).Error
+	`, idStrs).Scan(&arows).Error
 
 	incidents := make([]PublicIncident, 0, len(arows))
 	for _, a := range arows {
@@ -215,7 +218,7 @@ func overallLabel(worst int) string {
 	}
 }
 
-func bulkUptime(ctx context.Context, db *gorm.DB, ids []uuid.UUID, dur time.Duration) map[uuid.UUID]float64 {
+func bulkUptime(ctx context.Context, db *gorm.DB, ids []uuid.UUID, idStrs pq.StringArray, dur time.Duration) map[uuid.UUID]float64 {
 	out := make(map[uuid.UUID]float64, len(ids))
 	type row struct {
 		ServiceID uuid.UUID `gorm:"column:service_id"`
@@ -231,9 +234,9 @@ func bulkUptime(ctx context.Context, db *gorm.DB, ids []uuid.UUID, dur time.Dura
 		         100.0
 		       ) AS uptime
 		FROM metrics
-		WHERE service_id = ANY(?) AND time > ?
+		WHERE service_id::text = ANY(?) AND time > ?
 		GROUP BY service_id
-	`, ids, since).Scan(&rows).Error; err != nil {
+	`, idStrs, since).Scan(&rows).Error; err != nil {
 		return out
 	}
 	for _, r := range rows {

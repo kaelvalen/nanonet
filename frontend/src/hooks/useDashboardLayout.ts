@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 export type DashboardWidget =
 	| "health"
@@ -60,65 +60,67 @@ function load(): DashboardLayoutConfig {
 	}
 }
 
-/**
- * Dashboard layout config persisted to localStorage. Hides/shows individual
- * widgets and switches density. Subscribes to `storage` events so multiple
- * tabs stay in sync.
- */
-export function useDashboardLayout() {
-	const [config, setConfig] = useState<DashboardLayoutConfig>(() => {
-		if (typeof window === "undefined") return defaults();
-		return load();
-	});
+// ── Singleton store so every consumer shares the same reference ────────────
+let snapshot: DashboardLayoutConfig =
+	typeof window === "undefined" ? defaults() : load();
+const listeners = new Set<() => void>();
 
-	useEffect(() => {
-		const onStorage = (e: StorageEvent) => {
-			if (e.key === STORAGE_KEY) setConfig(load());
-		};
-		window.addEventListener("storage", onStorage);
-		return () => window.removeEventListener("storage", onStorage);
-	}, []);
+function emit() {
+	for (const l of listeners) l();
+}
 
-	const persist = useCallback((next: DashboardLayoutConfig) => {
-		setConfig(next);
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-		} catch {
-			// ignore quota/Safari private mode errors
+function subscribe(cb: () => void) {
+	listeners.add(cb);
+	return () => {
+		listeners.delete(cb);
+	};
+}
+
+function getSnapshot() {
+	return snapshot;
+}
+
+function setStore(next: DashboardLayoutConfig) {
+	snapshot = next;
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+	} catch {
+		// ignore quota / Safari private mode errors
+	}
+	emit();
+}
+
+if (typeof window !== "undefined") {
+	window.addEventListener("storage", (e) => {
+		if (e.key === STORAGE_KEY) {
+			snapshot = load();
+			emit();
 		}
+	});
+}
+
+export function useDashboardLayout() {
+	const config = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+	const toggle = useCallback((id: DashboardWidget) => {
+		setStore({
+			...snapshot,
+			visible: { ...snapshot.visible, [id]: !snapshot.visible[id] },
+		});
 	}, []);
 
-	const toggle = useCallback(
-		(id: DashboardWidget) => {
-			persist({
-				...config,
-				visible: { ...config.visible, [id]: !config.visible[id] },
-			});
-		},
-		[config, persist],
-	);
-
-	const setDensity = useCallback(
-		(density: DashboardDensity) => {
-			persist({ ...config, density });
-		},
-		[config, persist],
-	);
+	const setDensity = useCallback((density: DashboardDensity) => {
+		setStore({ ...snapshot, density });
+	}, []);
 
 	const reset = useCallback(() => {
-		persist(defaults());
-	}, [persist]);
+		setStore(defaults());
+	}, []);
 
 	const isVisible = useCallback(
 		(id: DashboardWidget) => config.visible[id] !== false,
 		[config],
 	);
 
-	return {
-		config,
-		toggle,
-		setDensity,
-		reset,
-		isVisible,
-	};
+	return { config, toggle, setDensity, reset, isVisible };
 }

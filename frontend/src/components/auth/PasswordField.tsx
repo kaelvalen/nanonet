@@ -18,10 +18,6 @@ interface PasswordFieldProps {
 	className?: string;
 }
 
-/**
- * Password input with show/hide toggle. Used across all auth pages for
- * consistent interaction.
- */
 export function PasswordField({
 	id,
 	label,
@@ -39,17 +35,18 @@ export function PasswordField({
 	const [show, setShow] = useState(false);
 
 	const borderColor = error
-		? "border-red-300 focus-visible:ring-red-400"
+		? "var(--status-down-border)"
 		: success
-			? "border-emerald-300 focus-visible:ring-emerald-400"
-			: "border-slate-200 focus-visible:ring-teal-500 focus-visible:border-teal-500";
+			? "var(--status-up-border)"
+			: undefined;
 
 	return (
 		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
 				<Label
 					htmlFor={id}
-					className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400"
+					className="text-[11px] font-black uppercase tracking-[0.15em]"
+					style={{ color: "var(--text-faint)" }}
 				>
 					{label}
 				</Label>
@@ -65,12 +62,14 @@ export function PasswordField({
 					onChange={(e) => onChange(e.target.value)}
 					required={required}
 					disabled={disabled}
-					className={`h-11 rounded-lg bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 transition-colors pr-11 ${borderColor} ${className ?? ""}`}
+					className={`h-11 rounded-lg text-sm font-medium pr-11 ${className ?? ""}`}
+					style={borderColor ? { borderColor } : undefined}
 				/>
 				<button
 					type="button"
 					onClick={() => setShow((v) => !v)}
-					className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+					className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors"
+					style={{ color: "var(--text-faint)" }}
 					tabIndex={-1}
 					aria-label={show ? "Şifreyi gizle" : "Şifreyi göster"}
 				>
@@ -78,7 +77,12 @@ export function PasswordField({
 				</button>
 			</div>
 			{error && (
-				<p className="text-[10px] text-red-500 font-medium mt-0.5">{error}</p>
+				<p
+					className="text-[10px] font-medium mt-0.5"
+					style={{ color: "var(--status-down-text)" }}
+				>
+					{error}
+				</p>
 			)}
 		</div>
 	);

@@ -6,14 +6,14 @@ import {
 	Flame,
 	Loader2,
 	Save,
+	Search,
 	Terminal,
 	Trash2,
 	X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-	type IncidentDetail,
 	type IncidentListItem,
 	type TimelineEvent,
 	incidentsApi,
@@ -22,17 +22,58 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	FilterChip,
+	Panel,
+	SkeletonList,
+	Toolbar,
+	ToolbarChips,
+	ToolbarDivider,
+} from "@/components/ui/primitives";
 import { Textarea } from "@/components/ui/textarea";
+
+type StatusFilter = "all" | "open" | "resolved";
+type SeverityFilter = "all" | "crit" | "warn" | "info";
 
 export function IncidentsPage() {
 	const qc = useQueryClient();
 	const [selected, setSelected] = useState<string | null>(null);
+	const [status, setStatus] = useState<StatusFilter>("all");
+	const [severity, setSeverity] = useState<SeverityFilter>("all");
+	const [search, setSearch] = useState("");
 
 	const { data: list = [], isLoading } = useQuery({
 		queryKey: ["incidents"],
 		queryFn: () => incidentsApi.list(100),
 		refetchInterval: 30_000,
 	});
+
+	const filtered = useMemo(() => {
+		const q = search.trim().toLowerCase();
+		return list.filter((it) => {
+			if (status === "open" && it.resolved_at) return false;
+			if (status === "resolved" && !it.resolved_at) return false;
+			if (severity !== "all" && it.severity !== severity) return false;
+			if (
+				q &&
+				!it.title.toLowerCase().includes(q) &&
+				!(it.service_name ?? "").toLowerCase().includes(q)
+			) {
+				return false;
+			}
+			return true;
+		});
+	}, [list, status, severity, search]);
+
+	const counts = useMemo(() => {
+		const c = { all: list.length, open: 0, resolved: 0 };
+		for (const it of list) {
+			if (it.resolved_at) c.resolved++;
+			else c.open++;
+		}
+		return c;
+	}, [list]);
 
 	const resolveMut = useMutation({
 		mutationFn: incidentsApi.resolve,
@@ -52,6 +93,9 @@ export function IncidentsPage() {
 		},
 	});
 
+	const filtersActive =
+		status !== "all" || severity !== "all" || search.trim().length > 0;
+
 	return (
 		<PageShell width="wide">
 			<PageHeader
@@ -60,25 +104,124 @@ export function IncidentsPage() {
 				description="Korelasyonlu uyarılar tek bir incident altında gruplanır. Açıklama ve postmortem ekleyerek hafıza oluşturun."
 			/>
 
-			<div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-3 mt-4 flex-1 min-h-0">
-				<div className="flex flex-col gap-2 overflow-y-auto pr-1 max-h-[calc(100vh-220px)]">
+			<Toolbar className="mt-3 flex-wrap gap-y-2">
+				<ToolbarChips>
+					<FilterChip
+						active={status === "all"}
+						onClick={() => setStatus("all")}
+						count={counts.all}
+					>
+						Hepsi
+					</FilterChip>
+					<FilterChip
+						active={status === "open"}
+						onClick={() => setStatus("open")}
+						count={counts.open}
+						tone="danger"
+					>
+						Açık
+					</FilterChip>
+					<FilterChip
+						active={status === "resolved"}
+						onClick={() => setStatus("resolved")}
+						count={counts.resolved}
+						tone="success"
+					>
+						Çözüldü
+					</FilterChip>
+				</ToolbarChips>
+
+				<ToolbarDivider />
+
+				<ToolbarChips>
+					<FilterChip
+						active={severity === "all"}
+						onClick={() => setSeverity("all")}
+					>
+						Tümü
+					</FilterChip>
+					<FilterChip
+						active={severity === "crit"}
+						onClick={() => setSeverity("crit")}
+						tone="danger"
+					>
+						Kritik
+					</FilterChip>
+					<FilterChip
+						active={severity === "warn"}
+						onClick={() => setSeverity("warn")}
+						tone="warn"
+					>
+						Uyarı
+					</FilterChip>
+					<FilterChip
+						active={severity === "info"}
+						onClick={() => setSeverity("info")}
+						tone="info"
+					>
+						Bilgi
+					</FilterChip>
+				</ToolbarChips>
+
+				<ToolbarDivider />
+
+				<div className="relative flex-1 min-w-[180px] max-w-xs">
+					<Search
+						className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+						style={{ color: "var(--text-faint)" }}
+					/>
+					<Input
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						placeholder="Başlık veya servis ara..."
+						className="h-8 pl-8 text-xs"
+					/>
+				</div>
+
+				{filtersActive && (
+					<button
+						type="button"
+						onClick={() => {
+							setStatus("all");
+							setSeverity("all");
+							setSearch("");
+						}}
+						className="text-[11px] font-medium px-2 h-8 rounded inline-flex items-center gap-1 hover:bg-[var(--surface-sunken)]"
+						style={{ color: "var(--text-muted)" }}
+					>
+						<X className="w-3 h-3" /> Temizle
+					</button>
+				)}
+
+				<span
+					className="ml-auto text-[10px] font-mono tabular-nums"
+					style={{ color: "var(--text-faint)" }}
+				>
+					{filtered.length}/{list.length}
+				</span>
+			</Toolbar>
+
+			<div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-3 mt-3 flex-1 min-h-0">
+				<div className="flex flex-col gap-2 overflow-y-auto pr-1 min-h-0">
 					{isLoading ? (
-						<div className="space-y-2">
-							{[0, 1, 2].map((i) => (
-								<div
-									key={i}
-									className="h-20 rounded-lg animate-pulse"
-									style={{
-										background: "var(--surface-card)",
-										border: "1px solid var(--border-default)",
-									}}
-								/>
-							))}
-						</div>
-					) : list.length === 0 ? (
-						<EmptyState />
+						<SkeletonList rows={3} rowHeight={80} />
+					) : filtered.length === 0 ? (
+						<SharedEmptyState
+							icon={FileText}
+							title={
+								list.length === 0
+									? "Henüz incident yok"
+									: "Filtrelere uyan kayıt yok"
+							}
+							description={
+								list.length === 0
+									? "Yeni bir uyarı oluştuğunda otomatik olarak burada gruplanacak."
+									: "Filtreleri temizleyip tekrar deneyin."
+							}
+							tone="muted"
+						/>
 					) : (
-						list.map((it) => (
+						filtered.map((it) => (
 							<IncidentRow
 								key={it.id}
 								item={it}
@@ -98,16 +241,13 @@ export function IncidentsPage() {
 							onClose={() => setSelected(null)}
 						/>
 					) : (
-						<div
-							className="h-full rounded-lg flex items-center justify-center text-xs"
-							style={{
-								background: "var(--surface-card)",
-								border: "1px dashed var(--border-default)",
-								color: "var(--text-muted)",
-							}}
-						>
-							Detay için sol taraftan bir incident seçin.
-						</div>
+						<SharedEmptyState
+							icon={FileText}
+							title="Detay için bir incident seçin"
+							description="Sol taraftaki listeden bir kayıt seçtiğinizde özet, postmortem ve zaman çizelgesi burada görünür."
+							tone="muted"
+							className="h-full"
+						/>
 					)}
 				</div>
 			</div>
@@ -216,31 +356,19 @@ function DetailPanel({
 
 	if (isLoading || !data) {
 		return (
-			<div
-				className="h-full rounded-lg flex items-center justify-center"
-				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-				}}
-			>
+			<Panel className="h-full flex items-center justify-center">
 				<Loader2
 					className="w-5 h-5 animate-spin"
 					style={{ color: "var(--text-faint)" }}
 				/>
-			</div>
+			</Panel>
 		);
 	}
 
 	const open = !data.incident.resolved_at;
 
 	return (
-		<div
-			className="rounded-lg overflow-hidden flex flex-col h-full"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
-			}}
-		>
+		<Panel padding="none" className="overflow-hidden flex flex-col h-full">
 			<div
 				className="flex items-start justify-between gap-3 px-4 py-3"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
@@ -376,7 +504,7 @@ function DetailPanel({
 					</div>
 				</section>
 			</div>
-		</div>
+		</Panel>
 	);
 }
 
@@ -439,40 +567,6 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 				);
 			})}
 		</ol>
-	);
-}
-
-function EmptyState() {
-	return (
-		<div
-			className="flex flex-col items-center justify-center p-12 rounded-lg text-center"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px dashed var(--border-default)",
-			}}
-		>
-			<span
-				className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
-				style={{
-					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-default)",
-				}}
-			>
-				<FileText className="w-4 h-4" style={{ color: "var(--text-faint)" }} />
-			</span>
-			<p
-				className="text-sm font-semibold mb-1"
-				style={{ color: "var(--text-primary)" }}
-			>
-				Henüz incident yok
-			</p>
-			<p
-				className="text-xs leading-relaxed max-w-sm"
-				style={{ color: "var(--text-muted)" }}
-			>
-				Yeni bir uyarı oluştuğunda otomatik olarak burada gruplanacak.
-			</p>
-		</div>
 	);
 }
 

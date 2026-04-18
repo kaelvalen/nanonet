@@ -48,16 +48,29 @@ export function ResetPasswordPage() {
 				subtitle="Sıfırlama token'ı bulunamadı veya süresi dolmuş."
 			>
 				<div className="space-y-5">
-					<div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-100">
-						<AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-						<p className="text-sm text-slate-700">
+					<div
+						className="flex items-start gap-3 p-4 rounded-lg"
+						style={{
+							background: "var(--status-warn-subtle)",
+							border: "1px solid var(--status-warn-border)",
+						}}
+					>
+						<AlertCircle
+							className="w-5 h-5 shrink-0 mt-0.5"
+							style={{ color: "var(--status-warn-text)" }}
+						/>
+						<p
+							className="text-sm"
+							style={{ color: "var(--text-primary)" }}
+						>
 							Bağlantı geçersiz ya da süresi dolmuş olabilir. Yeni bir sıfırlama
 							bağlantısı talep edin.
 						</p>
 					</div>
 					<Link
 						to="/forgot-password"
-						className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+						className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+						style={{ color: "var(--brand-primary)" }}
 					>
 						Yeni bağlantı talep et →
 					</Link>
@@ -72,9 +85,21 @@ export function ResetPasswordPage() {
 				title="Şifre güncellendi"
 				subtitle="Giriş sayfasına yönlendiriliyorsunuz."
 			>
-				<div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-100">
-					<CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-					<p className="text-sm text-slate-700">
+				<div
+					className="flex items-start gap-3 p-4 rounded-lg"
+					style={{
+						background: "var(--status-up-subtle)",
+						border: "1px solid var(--status-up-border)",
+					}}
+				>
+					<CheckCircle
+						className="w-5 h-5 shrink-0 mt-0.5"
+						style={{ color: "var(--status-up-text)" }}
+					/>
+					<p
+						className="text-sm"
+						style={{ color: "var(--text-primary)" }}
+					>
 						Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş
 						yapabilirsiniz.
 					</p>
@@ -90,7 +115,8 @@ export function ResetPasswordPage() {
 			footer={
 				<Link
 					to="/login"
-					className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-teal-600 transition-colors"
+					className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+					style={{ color: "var(--text-muted)" }}
 				>
 					<ArrowLeft className="w-4 h-4" />
 					Girişe dön

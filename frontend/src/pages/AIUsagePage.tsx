@@ -5,12 +5,18 @@ import {
 	CheckCircle2,
 	CircleDollarSign,
 	Cpu,
-	Loader2,
 	Wallet,
 } from "lucide-react";
 import { useMemo } from "react";
 import { aiUsageApi } from "@/api/aiUsage";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState,
+	Panel,
+	PanelHeader,
+	SkeletonGrid,
+	StatCard,
+} from "@/components/ui/primitives";
 
 const fmtUSD = (n: number) =>
 	new Intl.NumberFormat("en-US", {
@@ -56,7 +62,7 @@ export function AIUsagePage() {
 	}, [summary]);
 
 	return (
-		<PageShell>
+		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="AI"
 				title="AI Maliyetleri"
@@ -64,135 +70,135 @@ export function AIUsagePage() {
 			/>
 
 			{sumLoading ? (
-				<div className="flex items-center justify-center py-20">
-					<Loader2 className="size-6 animate-spin text-muted-foreground" />
-				</div>
+				<SkeletonGrid cols={4} cells={4} />
 			) : (
 				<>
-					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-						<MetricCard
+					<div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+						<StatCard
 							icon={CircleDollarSign}
 							label="Bu ay harcanan"
 							value={fmtUSD(summary?.month_spend_usd ?? 0)}
 							hint={`${fmtInt(summary?.month_call_count ?? 0)} çağrı`}
+							tone="violet"
 						/>
-						<MetricCard
+						<StatCard
 							icon={Cpu}
 							label="Input tokens"
 							value={fmtInt(summary?.month_input_tokens ?? 0)}
 							hint="prompt'a giren"
+							tone="info"
 						/>
-						<MetricCard
+						<StatCard
 							icon={Activity}
 							label="Output tokens"
 							value={fmtInt(summary?.month_output_tokens ?? 0)}
 							hint="modelden dönen"
+							tone="accent"
 						/>
-						<MetricCard
+						<StatCard
 							icon={CheckCircle2}
 							label="Cache hit oranı"
 							value={`%${cacheRate.toFixed(0)}`}
 							hint={`${fmtInt(summary?.month_cache_hits ?? 0)} hit`}
+							tone="success"
 						/>
 					</div>
 
-					<div
-						className="mt-4 rounded border p-5"
-						style={{
-							background: "var(--card-bg)",
-							borderColor: "var(--border-subtle)",
-						}}
-					>
-						<div className="flex items-center justify-between mb-3">
-							<div className="flex items-center gap-2">
-								<Wallet className="size-4 text-muted-foreground" />
-								<span
-									className="text-sm font-medium"
-									style={{ color: "var(--text-primary)" }}
-								>
-									Aylık bütçe
-								</span>
-							</div>
+					<Panel className="mt-4">
+						<PanelHeader
+							dense
+							icon={
+								<Wallet
+									className="w-3.5 h-3.5"
+									style={{ color: "var(--text-muted)" }}
+								/>
+							}
+							actions={
+								summary?.budget_usd ? (
+									<span
+										className="text-xs tabular-nums font-mono"
+										style={{ color: "var(--text-secondary)" }}
+									>
+										{fmtUSD(summary.month_spend_usd)} /{" "}
+										{fmtUSD(summary.budget_usd)}
+									</span>
+								) : (
+									<span
+										className="text-xs"
+										style={{ color: "var(--text-faint)" }}
+									>
+										Henüz bütçe ayarlanmadı
+									</span>
+								)
+							}
+						>
+							Aylık bütçe
+						</PanelHeader>
+						<div className="px-4 py-4">
 							{summary?.budget_usd ? (
-								<span
-									className="text-xs"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									{fmtUSD(summary.month_spend_usd)} /{" "}
-									{fmtUSD(summary.budget_usd)}
-								</span>
+								<>
+									<div
+										className="h-2 w-full overflow-hidden rounded"
+										style={{ background: "var(--surface-sunken)" }}
+									>
+										<div
+											className="h-full transition-[width] duration-500"
+											style={{
+												width: `${Math.min(100, usedPct)}%`,
+												background: overBudget
+													? "var(--status-down)"
+													: nearBudget
+														? "var(--status-warn)"
+														: "var(--status-up)",
+											}}
+										/>
+									</div>
+									<div className="mt-2 flex items-center justify-between text-[11px]">
+										<span style={{ color: "var(--text-faint)" }}>
+											{summary.budget_remaining_usd != null &&
+												`${fmtUSD(summary.budget_remaining_usd)} kaldı`}
+										</span>
+										{overBudget && (
+											<span
+												className="flex items-center gap-1"
+												style={{ color: "var(--status-down-text)" }}
+											>
+												<AlertTriangle className="size-3" /> Bütçe aşıldı —
+												yeni AI çağrıları engellenir
+											</span>
+										)}
+										{nearBudget && (
+											<span
+												className="flex items-center gap-1"
+												style={{ color: "var(--status-warn-text)" }}
+											>
+												<AlertTriangle className="size-3" /> Bütçeye yakın
+											</span>
+										)}
+									</div>
+								</>
 							) : (
-								<span
+								<p
 									className="text-xs"
 									style={{ color: "var(--text-faint)" }}
 								>
-									Henüz bütçe ayarlanmadı — Settings → AI Analiz
-								</span>
+									Settings → AI Analiz menüsünden aylık bütçenizi
+									belirleyebilirsiniz.
+								</p>
 							)}
 						</div>
+					</Panel>
 
-						{summary?.budget_usd ? (
-							<>
-								<div
-									className="h-2 w-full overflow-hidden rounded"
-									style={{ background: "var(--input-bg)" }}
-								>
-									<div
-										className="h-full transition-[width] duration-500"
-										style={{
-											width: `${Math.min(100, usedPct)}%`,
-											background: overBudget
-												? "var(--severity-critical, #ef4444)"
-												: nearBudget
-													? "var(--severity-warning, #f59e0b)"
-													: "var(--accent-success, #22c55e)",
-										}}
-									/>
-								</div>
-								<div className="mt-2 flex items-center justify-between text-[11px]">
-									<span style={{ color: "var(--text-faint)" }}>
-										{summary.budget_remaining_usd != null &&
-											`${fmtUSD(summary.budget_remaining_usd)} kaldı`}
-									</span>
-									{overBudget && (
-										<span className="flex items-center gap-1 text-red-400">
-											<AlertTriangle className="size-3" /> Bütçe aşıldı —
-											yeni AI çağrıları engellenir
-										</span>
-									)}
-									{nearBudget && (
-										<span className="flex items-center gap-1 text-amber-400">
-											<AlertTriangle className="size-3" /> Bütçeye yakın
-										</span>
-									)}
-								</div>
-							</>
-						) : null}
-					</div>
-
-					<div
-						className="mt-4 rounded border overflow-hidden"
-						style={{
-							background: "var(--card-bg)",
-							borderColor: "var(--border-subtle)",
-						}}
-					>
-						<div
-							className="px-4 py-3 border-b text-xs font-medium uppercase tracking-wider"
-							style={{
-								color: "var(--text-secondary)",
-								borderColor: "var(--border-subtle)",
-							}}
-						>
-							Son 50 çağrı
-						</div>
+					<Panel className="mt-4 overflow-hidden">
+						<PanelHeader dense>Son 50 çağrı</PanelHeader>
 						{!recent || recent.length === 0 ? (
-							<div
-								className="p-6 text-center text-xs"
-								style={{ color: "var(--text-faint)" }}
-							>
-								Henüz AI çağrısı kaydı yok.
-							</div>
+							<EmptyState
+								icon={Activity}
+								title="Henüz AI çağrısı kaydı yok"
+								description="Sistem AI çağrıları yaptıkça burada listeleneceklerdir."
+								tone="muted"
+								size="md"
+							/>
 						) : (
 							<div className="overflow-x-auto">
 								<table className="w-full text-xs">
@@ -273,7 +279,14 @@ export function AIUsagePage() {
 												</td>
 												<td className="px-4 py-2">
 													{row.cache_hit ? (
-														<span className="inline-flex items-center gap-1 rounded bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+														<span
+															className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium"
+															style={{
+																background: "var(--status-up-subtle)",
+																color: "var(--status-up-text)",
+																border: "1px solid var(--status-up-border)",
+															}}
+														>
 															<CheckCircle2 className="size-3" /> hit
 														</span>
 													) : (
@@ -291,50 +304,9 @@ export function AIUsagePage() {
 								</table>
 							</div>
 						)}
-					</div>
+					</Panel>
 				</>
 			)}
 		</PageShell>
-	);
-}
-
-function MetricCard({
-	icon: Icon,
-	label,
-	value,
-	hint,
-}: {
-	icon: typeof Activity;
-	label: string;
-	value: string;
-	hint?: string;
-}) {
-	return (
-		<div
-			className="rounded border p-4"
-			style={{
-				background: "var(--card-bg)",
-				borderColor: "var(--border-subtle)",
-			}}
-		>
-			<div className="flex items-center gap-2 text-[11px] uppercase tracking-wider">
-				<Icon className="size-3.5" style={{ color: "var(--text-faint)" }} />
-				<span style={{ color: "var(--text-faint)" }}>{label}</span>
-			</div>
-			<div
-				className="mt-2 text-xl font-semibold tabular-nums"
-				style={{ color: "var(--text-primary)" }}
-			>
-				{value}
-			</div>
-			{hint && (
-				<div
-					className="mt-1 text-[11px]"
-					style={{ color: "var(--text-secondary)" }}
-				>
-					{hint}
-				</div>
-			)}
-		</div>
 	);
 }

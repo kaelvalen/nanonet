@@ -33,20 +33,36 @@ export function ForgotPasswordPage() {
 				subtitle="Kayıtlı ise e-postanıza sıfırlama bağlantısı gönderdik."
 			>
 				<div className="space-y-5">
-					<div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-100">
-						<CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+					<div
+						className="flex items-start gap-3 p-4 rounded-lg"
+						style={{
+							background: "var(--status-up-subtle)",
+							border: "1px solid var(--status-up-border)",
+						}}
+					>
+						<CheckCircle
+							className="w-5 h-5 shrink-0 mt-0.5"
+							style={{ color: "var(--status-up-text)" }}
+						/>
 						<div className="min-w-0">
-							<p className="text-sm font-semibold text-slate-900">
+							<p
+								className="text-sm font-semibold"
+								style={{ color: "var(--text-primary)" }}
+							>
 								Bağlantı gönderildi
 							</p>
-							<p className="text-xs text-slate-500 mt-1 leading-relaxed break-all">
+							<p
+								className="text-xs mt-1 leading-relaxed break-all"
+								style={{ color: "var(--text-muted)" }}
+							>
 								{email} adresini kontrol edin. Bağlantı 1 saat geçerlidir.
 							</p>
 						</div>
 					</div>
 					<Link
 						to="/login"
-						className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+						className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+						style={{ color: "var(--brand-primary)" }}
 					>
 						<ArrowLeft className="w-4 h-4" />
 						Giriş sayfasına dön
@@ -63,7 +79,8 @@ export function ForgotPasswordPage() {
 			footer={
 				<Link
 					to="/login"
-					className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-teal-600 transition-colors"
+					className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+					style={{ color: "var(--text-muted)" }}
 				>
 					<ArrowLeft className="w-4 h-4" />
 					Girişe dön
@@ -74,7 +91,8 @@ export function ForgotPasswordPage() {
 				<div className="space-y-1.5">
 					<Label
 						htmlFor="email"
-						className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400"
+						className="text-[11px] font-black uppercase tracking-[0.15em]"
+						style={{ color: "var(--text-faint)" }}
 					>
 						E-posta
 					</Label>
@@ -85,7 +103,7 @@ export function ForgotPasswordPage() {
 						placeholder="ornek@nanonet.dev"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className="h-11 rounded-lg border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-teal-500 focus-visible:border-teal-500 transition-colors"
+						className="h-11 rounded-lg text-sm font-medium"
 						required
 						disabled={loading}
 					/>

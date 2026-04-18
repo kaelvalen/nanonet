@@ -8,9 +8,6 @@ interface AuthSubmitButtonProps {
 	children: ReactNode;
 }
 
-/**
- * Shared submit button for auth forms — consistent teal CTA with spinner.
- */
 export function AuthSubmitButton({
 	loading,
 	loadingLabel,
@@ -21,7 +18,11 @@ export function AuthSubmitButton({
 		<Button
 			type="submit"
 			disabled={loading || disabled}
-			className="w-full h-11 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-black tracking-wide transition-all duration-200 active:scale-[0.99] disabled:opacity-40 mt-2 shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+			className="w-full h-11 rounded-lg text-white text-sm font-black tracking-wide transition-all duration-200 active:scale-[0.99] disabled:opacity-40 mt-2"
+			style={{
+				background: "var(--gradient-btn-primary)",
+				boxShadow: "var(--btn-shadow)",
+			}}
 		>
 			{loading ? (
 				<span className="flex items-center gap-2.5">

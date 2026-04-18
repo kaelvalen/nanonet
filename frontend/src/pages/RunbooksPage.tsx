@@ -21,6 +21,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	PanelBody,
+	PanelFooter,
+	PanelHeader,
+	SkeletonList,
+} from "@/components/ui/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useServices } from "@/hooks/useServices";
@@ -55,11 +63,6 @@ const DEFAULT_DRAFT: CreateRunbookInput = {
 	cooldown_seconds: 600,
 	max_per_hour: 6,
 };
-
-const cardStyle = {
-	background: "var(--surface-card)",
-	border: "1px solid var(--border-default)",
-} as const;
 
 export function RunbooksPage() {
 	const qc = useQueryClient();
@@ -122,7 +125,7 @@ export function RunbooksPage() {
 						<span className="inline-flex items-center gap-1.5">
 							<Zap
 								className="h-3.5 w-3.5"
-								style={{ color: "var(--color-amber, #f59e0b)" }}
+								style={{ color: "var(--color-amber)" }}
 							/>
 							{activeCount} aktif
 						</span>
@@ -148,7 +151,7 @@ export function RunbooksPage() {
 				}
 			/>
 
-			<div className="flex-1 min-h-0 overflow-y-auto pr-1">
+			<div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
 				{draft && (
 					<DraftEditor
 						value={draft}
@@ -164,14 +167,26 @@ export function RunbooksPage() {
 				)}
 
 				{isLoading ? (
-					<div
-						className="flex items-center justify-center py-16"
-						style={{ color: "var(--text-muted)" }}
-					>
-						<Loader2 className="h-5 w-5 animate-spin" />
-					</div>
+					<SkeletonList rows={4} rowHeight={88} />
 				) : items.length === 0 && !draft ? (
-					<EmptyState onCreate={() => setDraft(DEFAULT_DRAFT)} />
+					<SharedEmptyState
+						icon={Pause}
+						title="Henüz runbook yok"
+						description="Tekrarlayan müdahaleleri otomatikleştir: alert tetiklendiğinde restart/exec/webhook çalıştır."
+						tone="accent"
+						size="lg"
+						action={
+							<Button
+								className="text-white"
+								size="sm"
+								style={{ background: "var(--gradient-btn-primary)" }}
+								onClick={() => setDraft(DEFAULT_DRAFT)}
+							>
+								<Plus className="mr-1 h-4 w-4" />
+								İlk runbook'u oluştur
+							</Button>
+						}
+					/>
 				) : (
 					<div className="flex flex-col gap-2 mt-2">
 						{items.map((r) => (
@@ -216,14 +231,8 @@ function RunbookRow({
 }) {
 	const sev = severityTone(book.min_severity);
 	return (
-		<div
-			className="rounded-lg px-4 py-3"
-			style={{
-				...cardStyle,
-				opacity: book.enabled ? 1 : 0.65,
-			}}
-		>
-			<div className="flex items-start justify-between gap-4">
+		<Panel padding="sm" style={{ opacity: book.enabled ? 1 : 0.65 }}>
+			<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 px-1">
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
 						<span
@@ -288,7 +297,7 @@ function RunbookRow({
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-3 shrink-0">
+				<div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
 					<Switch
 						checked={book.enabled}
 						onCheckedChange={onToggle}
@@ -309,7 +318,7 @@ function RunbookRow({
 					</button>
 				</div>
 			</div>
-		</div>
+		</Panel>
 	);
 }
 
@@ -330,29 +339,23 @@ function DraftEditor({
 }) {
 	const argsJson = JSON.stringify(value.args ?? {}, null, 2);
 	return (
-		<div
-			className="mb-3 rounded-lg p-5"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-strong)",
-			}}
-		>
-			<div className="mb-3 flex items-center justify-between">
-				<div
-					className="text-[13px] font-semibold"
-					style={{ color: "var(--text-primary)" }}
-				>
-					Yeni Runbook
-				</div>
-				<button
-					type="button"
-					onClick={onCancel}
-					className="text-[11px]"
-					style={{ color: "var(--text-muted)" }}
-				>
-					İptal
-				</button>
-			</div>
+		<Panel className="mb-3">
+			<PanelHeader
+				dense
+				actions={
+					<button
+						type="button"
+						onClick={onCancel}
+						className="text-[11px]"
+						style={{ color: "var(--text-muted)" }}
+					>
+						İptal
+					</button>
+				}
+			>
+				Yeni Runbook
+			</PanelHeader>
+			<PanelBody scroll={false}>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 				<div>
 					<Label
@@ -562,7 +565,8 @@ function DraftEditor({
 					</div>
 				</div>
 			</div>
-			<div className="mt-4 flex justify-end gap-2">
+			</PanelBody>
+			<PanelFooter>
 				<Button
 					variant="outline"
 					size="sm"
@@ -586,47 +590,8 @@ function DraftEditor({
 					)}
 					Oluştur
 				</Button>
-			</div>
-		</div>
-	);
-}
-
-function EmptyState({ onCreate }: { onCreate: () => void }) {
-	return (
-		<div
-			className="rounded-xl py-16 text-center"
-			style={{
-				background: "var(--surface-card)",
-				border: "1px dashed var(--border-default)",
-			}}
-		>
-			<Pause
-				className="mx-auto h-8 w-8"
-				style={{ color: "var(--text-faint)" }}
-			/>
-			<div
-				className="mt-3 text-[14px] font-semibold"
-				style={{ color: "var(--text-primary)" }}
-			>
-				Henüz runbook yok
-			</div>
-			<div
-				className="mt-1 text-[12px] max-w-md mx-auto"
-				style={{ color: "var(--text-muted)" }}
-			>
-				Tekrarlayan müdahaleleri otomatikleştir: alert tetiklendiğinde
-				restart/exec/webhook çalıştır.
-			</div>
-			<Button
-				className="mt-4 text-white"
-				size="sm"
-				style={{ background: "var(--gradient-btn-primary)" }}
-				onClick={onCreate}
-			>
-				<Plus className="mr-1 h-4 w-4" />
-				İlk runbook'u oluştur
-			</Button>
-		</div>
+			</PanelFooter>
+		</Panel>
 	);
 }
 

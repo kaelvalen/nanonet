@@ -19,6 +19,11 @@ import { servicesApi } from "@/api/services";
 import { AlertRulesPanel } from "@/components/alerts/AlertRulesPanel";
 import { Button } from "@/components/ui/button";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import {
+	EmptyState as SharedEmptyState,
+	Panel,
+	SkeletonList,
+} from "@/components/ui/primitives";
 import { type Severity, SeverityBadge } from "@/components/ui/status-atoms";
 import type { Alert } from "@/types/alerts";
 
@@ -405,7 +410,6 @@ export function AlertsPage() {
 	return (
 		<PageShell width="wide" fill>
 			<PageHeader
-				compact
 				eyebrow="Uyarılar"
 				title="Uyarı merkezi"
 				description={
@@ -447,13 +451,9 @@ export function AlertsPage() {
 				ref={panelRef}
 			>
 				{/* Feed */}
-				<div
+				<Panel
+					padding="none"
 					className="lg:col-span-8 flex flex-col min-h-0 overflow-hidden"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-						borderRadius: "var(--radius)",
-					}}
 				>
 					{/* Feed header */}
 					<div
@@ -517,58 +517,19 @@ export function AlertsPage() {
 					{/* Scrollable feed body */}
 					<div className="flex-1 min-h-0 overflow-y-auto p-3">
 						{isLoading ? (
-							<div className="flex flex-col gap-2">
-								{[1, 2, 3].map((i) => (
-									<div
-										key={i}
-										className="p-4 animate-pulse rounded-lg"
-										style={{ background: "var(--surface-sunken)" }}
-									>
-										<div className="flex gap-3">
-											<div
-												className="w-8 h-8 rounded-lg shrink-0"
-												style={{ background: "var(--border-subtle)" }}
-											/>
-											<div className="flex-1 space-y-2">
-												<div
-													className="h-3 w-2/3 rounded"
-													style={{ background: "var(--border-subtle)" }}
-												/>
-												<div
-													className="h-2.5 w-1/3 rounded"
-													style={{ background: "var(--border-subtle)" }}
-												/>
-											</div>
-										</div>
-									</div>
-								))}
-							</div>
+							<SkeletonList rows={3} rowHeight={80} />
 						) : filtered.length === 0 ? (
-							<div className="flex flex-col items-center gap-3 h-full justify-center py-12 text-center">
-								<div
-									className="w-14 h-14 rounded-xl flex items-center justify-center"
-									style={{
-										background: "var(--status-up-subtle)",
-										border: "1px solid var(--status-up-border)",
-									}}
-								>
-									<Shield
-										className="w-7 h-7"
-										style={{ color: "var(--status-up)" }}
-									/>
-								</div>
-								<p
-									className="text-sm font-semibold"
-									style={{ color: "var(--text-primary)" }}
-								>
-									Tüm sistemler normal
-								</p>
-								<p className="text-xs" style={{ color: "var(--text-faint)" }}>
-									{severityFilter !== "all"
+							<SharedEmptyState
+								icon={Shield}
+								title="Tüm sistemler normal"
+								description={
+									severityFilter !== "all"
 										? "Bu filtreye uygun uyarı yok"
-										: "Aktif uyarı yok"}
-								</p>
-							</div>
+										: "Aktif uyarı yok"
+								}
+								tone="success"
+								className="h-full"
+							/>
 						) : (
 							<ul className="flex flex-col gap-2">
 								<AnimatePresence mode="popLayout">
@@ -602,21 +563,17 @@ export function AlertsPage() {
 							</ul>
 						)}
 					</div>
-				</div>
+				</Panel>
 
 				{/* Rules panel */}
-				<div
+				<Panel
+					padding="none"
 					className="lg:col-span-4 flex flex-col min-h-0 overflow-hidden"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
-						borderRadius: "var(--radius)",
-					}}
 				>
 					<div className="flex-1 min-h-0 overflow-y-auto p-4">
 						<AlertRulesPanel />
 					</div>
-				</div>
+				</Panel>
 			</div>
 		</PageShell>
 	);
