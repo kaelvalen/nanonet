@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useServices } from "@/hooks/useServices";
 
 const ACTIONS: { id: RunbookAction; label: string; help: string }[] = [
@@ -43,9 +44,26 @@ const ALERT_TYPES = [
 	"probe_down",
 ];
 
+const DEFAULT_DRAFT: CreateRunbookInput = {
+	name: "",
+	service_id: null,
+	alert_type: "high_cpu",
+	min_severity: "warn",
+	action: "restart",
+	args: {},
+	enabled: true,
+	cooldown_seconds: 600,
+	max_per_hour: 6,
+};
+
+const cardStyle = {
+	background: "var(--surface-card)",
+	border: "1px solid var(--border-default)",
+} as const;
+
 export function RunbooksPage() {
 	const qc = useQueryClient();
-	const { data: services } = useServices();
+	const { services } = useServices();
 	const [draft, setDraft] = useState<CreateRunbookInput | null>(null);
 
 	const { data, isLoading } = useQuery({
@@ -65,8 +83,13 @@ export function RunbooksPage() {
 	});
 
 	const updateMut = useMutation({
-		mutationFn: ({ id, patch }: { id: string; patch: Partial<CreateRunbookInput> }) =>
-			runbooksApi.update(id, patch),
+		mutationFn: ({
+			id,
+			patch,
+		}: {
+			id: string;
+			patch: Partial<CreateRunbookInput>;
+		}) => runbooksApi.update(id, patch),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: ["runbooks"] });
 		},
@@ -83,6 +106,7 @@ export function RunbooksPage() {
 	});
 
 	const items = data ?? [];
+	const activeCount = items.filter((r) => r.enabled).length;
 
 	return (
 		<PageShell fill>
@@ -91,34 +115,34 @@ export function RunbooksPage() {
 				title="Runbooks"
 				description="Alert tetiklendiğinde otomatik aksiyon (restart, exec, webhook) çalıştır."
 				meta={
-					<div className="flex items-center gap-3 text-[12px] text-white/60">
+					<div
+						className="flex items-center gap-3 text-[12px]"
+						style={{ color: "var(--text-muted)" }}
+					>
 						<span className="inline-flex items-center gap-1.5">
-							<Zap className="h-3.5 w-3.5 text-amber-300" />
-							{items.filter((r) => r.enabled).length} aktif
+							<Zap
+								className="h-3.5 w-3.5"
+								style={{ color: "var(--color-amber, #f59e0b)" }}
+							/>
+							{activeCount} aktif
 						</span>
 						<span className="inline-flex items-center gap-1.5">
-							<BookOpen className="h-3.5 w-3.5 text-white/40" />
+							<BookOpen
+								className="h-3.5 w-3.5"
+								style={{ color: "var(--text-faint)" }}
+							/>
 							{items.length} toplam
 						</span>
 					</div>
 				}
 				actions={
 					<Button
-						onClick={() =>
-							setDraft({
-								name: "",
-								service_id: null,
-								alert_type: "high_cpu",
-								min_severity: "warn",
-								action: "restart",
-								args: {},
-								enabled: true,
-								cooldown_seconds: 600,
-								max_per_hour: 6,
-							})
-						}
+						size="sm"
+						onClick={() => setDraft(DEFAULT_DRAFT)}
+						className="h-8 px-3 text-xs text-white"
+						style={{ background: "var(--gradient-btn-primary)" }}
 					>
-						<Plus className="mr-1 h-4 w-4" />
+						<Plus className="mr-1 h-3.5 w-3.5" />
 						Yeni Runbook
 					</Button>
 				}
@@ -128,7 +152,10 @@ export function RunbooksPage() {
 				{draft && (
 					<DraftEditor
 						value={draft}
-						services={(services ?? []).map((s) => ({ id: s.id, name: s.name }))}
+						services={services.map((s) => ({
+							id: s.id,
+							name: s.name,
+						}))}
 						onChange={setDraft}
 						onCancel={() => setDraft(null)}
 						onSubmit={() => createMut.mutate(draft)}
@@ -137,33 +164,29 @@ export function RunbooksPage() {
 				)}
 
 				{isLoading ? (
-					<div className="flex items-center justify-center py-16 text-white/50">
+					<div
+						className="flex items-center justify-center py-16"
+						style={{ color: "var(--text-muted)" }}
+					>
 						<Loader2 className="h-5 w-5 animate-spin" />
 					</div>
 				) : items.length === 0 && !draft ? (
-					<EmptyState onCreate={() => setDraft({
-						name: "",
-						service_id: null,
-						alert_type: "high_cpu",
-						min_severity: "warn",
-						action: "restart",
-						args: {},
-						enabled: true,
-						cooldown_seconds: 600,
-						max_per_hour: 6,
-					})} />
+					<EmptyState onCreate={() => setDraft(DEFAULT_DRAFT)} />
 				) : (
-					<div className="flex flex-col gap-2">
+					<div className="flex flex-col gap-2 mt-2">
 						{items.map((r) => (
 							<RunbookRow
 								key={r.id}
 								book={r}
 								serviceName={
 									r.service_id
-										? (services ?? []).find((s) => s.id === r.service_id)?.name ?? "—"
+										? (services.find((s) => s.id === r.service_id)?.name ??
+											"—")
 										: "Tüm servisler"
 								}
-								onToggle={(enabled) => updateMut.mutate({ id: r.id, patch: { enabled } })}
+								onToggle={(enabled) =>
+									updateMut.mutate({ id: r.id, patch: { enabled } })
+								}
 								onDelete={() => deleteMut.mutate(r.id)}
 								busy={
 									(updateMut.isPending && updateMut.variables?.id === r.id) ||
@@ -193,42 +216,94 @@ function RunbookRow({
 }) {
 	const sev = severityTone(book.min_severity);
 	return (
-		<div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+		<div
+			className="rounded-lg px-4 py-3"
+			style={{
+				...cardStyle,
+				opacity: book.enabled ? 1 : 0.65,
+			}}
+		>
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<span className="text-[13px] font-semibold text-white">{book.name}</span>
+						<span
+							className="text-[13px] font-semibold"
+							style={{ color: "var(--text-primary)" }}
+						>
+							{book.name}
+						</span>
 						<span
 							className="rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] font-bold"
-							style={{ background: sev.bg, color: sev.fg, border: `1px solid ${sev.border}` }}
+							style={{
+								background: sev.bg,
+								color: sev.fg,
+								border: `1px solid ${sev.border}`,
+							}}
 						>
 							≥ {book.min_severity}
 						</span>
-						<span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] font-bold text-white/70">
+						<span
+							className="rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] font-bold"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "1px solid var(--border-default)",
+								color: "var(--text-secondary)",
+							}}
+						>
 							{book.action}
 						</span>
 					</div>
-					<div className="mt-1 text-[12px] text-white/55">
+					<div
+						className="mt-1 text-[12px]"
+						style={{ color: "var(--text-muted)" }}
+					>
 						<span className="font-mono">{book.alert_type}</span>
-						<span className="mx-2 text-white/30">→</span>
+						<span
+							className="mx-2"
+							style={{ color: "var(--text-faint)" }}
+						>
+							→
+						</span>
 						<span>{serviceName}</span>
 					</div>
-					<div className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-white/40">
+					<div
+						className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em]"
+						style={{ color: "var(--text-faint)" }}
+					>
 						<span>cooldown {book.cooldown_seconds}s</span>
 						<span>≤ {book.max_per_hour}/sa</span>
-						<span className="font-mono normal-case tracking-normal text-white/55">{book.fire_count} kez tetiklendi</span>
+						<span
+							className="font-mono normal-case tracking-normal"
+							style={{ color: "var(--text-muted)" }}
+						>
+							{book.fire_count} kez tetiklendi
+						</span>
 						{book.last_fired_at && (
-							<span className="normal-case tracking-normal text-white/45">son: {relative(book.last_fired_at)}</span>
+							<span
+								className="normal-case tracking-normal"
+								style={{ color: "var(--text-muted)" }}
+							>
+								son: {relative(book.last_fired_at)}
+							</span>
 						)}
 					</div>
 				</div>
 				<div className="flex items-center gap-3 shrink-0">
-					<Switch checked={book.enabled} onCheckedChange={onToggle} disabled={busy} />
+					<Switch
+						checked={book.enabled}
+						onCheckedChange={onToggle}
+						disabled={busy}
+					/>
 					<button
 						type="button"
 						onClick={onDelete}
 						disabled={busy}
-						className="rounded-md border border-rose-500/30 p-1.5 text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
+						className="rounded-md p-1.5 disabled:opacity-50 transition-colors"
+						style={{
+							border: "1px solid var(--status-down-border)",
+							color: "var(--status-down-text)",
+							background: "var(--status-down-subtle)",
+						}}
 					>
 						<Trash2 className="h-3.5 w-3.5" />
 					</button>
@@ -255,122 +330,260 @@ function DraftEditor({
 }) {
 	const argsJson = JSON.stringify(value.args ?? {}, null, 2);
 	return (
-		<div className="mb-3 rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
+		<div
+			className="mb-3 rounded-lg p-5"
+			style={{
+				background: "var(--surface-card)",
+				border: "1px solid var(--border-strong)",
+			}}
+		>
 			<div className="mb-3 flex items-center justify-between">
-				<div className="text-[13px] font-semibold text-white">Yeni Runbook</div>
-				<button type="button" onClick={onCancel} className="text-[11px] text-white/50 hover:text-white">İptal</button>
+				<div
+					className="text-[13px] font-semibold"
+					style={{ color: "var(--text-primary)" }}
+				>
+					Yeni Runbook
+				</div>
+				<button
+					type="button"
+					onClick={onCancel}
+					className="text-[11px]"
+					style={{ color: "var(--text-muted)" }}
+				>
+					İptal
+				</button>
 			</div>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 				<div>
-					<Label className="text-[11px] text-white/60">Ad</Label>
-					<Input value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} placeholder="Auto-restart on CPU spike" />
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Ad
+					</Label>
+					<Input
+						value={value.name}
+						onChange={(e) => onChange({ ...value, name: e.target.value })}
+						placeholder="Auto-restart on CPU spike"
+						className="mt-1.5"
+					/>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Servis</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Servis
+					</Label>
 					<select
-						className="h-9 w-full rounded-md border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-white"
+						className="mt-1.5 h-9 w-full rounded-md px-3 text-[13px]"
+						style={{
+							background: "var(--input-bg)",
+							border: "1px solid var(--input-border)",
+							color: "var(--text-primary)",
+						}}
 						value={value.service_id ?? ""}
-						onChange={(e) => onChange({ ...value, service_id: e.target.value || null })}
+						onChange={(e) =>
+							onChange({ ...value, service_id: e.target.value || null })
+						}
 					>
 						<option value="">Tüm servisler</option>
 						{services.map((s) => (
-							<option key={s.id} value={s.id}>{s.name}</option>
+							<option key={s.id} value={s.id}>
+								{s.name}
+							</option>
 						))}
 					</select>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Alert Tipi</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Alert Tipi
+					</Label>
 					<select
-						className="h-9 w-full rounded-md border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-white"
+						className="mt-1.5 h-9 w-full rounded-md px-3 text-[13px]"
+						style={{
+							background: "var(--input-bg)",
+							border: "1px solid var(--input-border)",
+							color: "var(--text-primary)",
+						}}
 						value={value.alert_type}
-						onChange={(e) => onChange({ ...value, alert_type: e.target.value })}
+						onChange={(e) =>
+							onChange({ ...value, alert_type: e.target.value })
+						}
 					>
 						{ALERT_TYPES.map((t) => (
-							<option key={t} value={t}>{t}</option>
+							<option key={t} value={t}>
+								{t}
+							</option>
 						))}
 					</select>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Minimum Severity</Label>
-					<div className="flex gap-2">
-						{(["info", "warn", "crit"] as Severity[]).map((s) => (
-							<button
-								key={s}
-								type="button"
-								onClick={() => onChange({ ...value, min_severity: s })}
-								className={`flex-1 rounded-md border px-3 py-2 text-[12px] uppercase tracking-[0.15em] ${value.min_severity === s ? "border-emerald-400/50 bg-emerald-400/10 text-white" : "border-white/[0.08] text-white/60"}`}
-							>
-								{s}
-							</button>
-						))}
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Minimum Severity
+					</Label>
+					<div className="flex gap-1.5 mt-1.5">
+						{(["info", "warn", "crit"] as Severity[]).map((s) => {
+							const active = value.min_severity === s;
+							const tone = severityTone(s);
+							return (
+								<button
+									key={s}
+									type="button"
+									onClick={() => onChange({ ...value, min_severity: s })}
+									className="flex-1 rounded-md px-3 py-2 text-[12px] uppercase tracking-[0.15em] font-bold transition-colors"
+									style={{
+										background: active ? tone.bg : "var(--surface-sunken)",
+										border: `1px solid ${active ? tone.border : "var(--border-default)"}`,
+										color: active ? tone.fg : "var(--text-muted)",
+									}}
+								>
+									{s}
+								</button>
+							);
+						})}
 					</div>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Aksiyon</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Aksiyon
+					</Label>
 					<select
-						className="h-9 w-full rounded-md border border-white/[0.08] bg-white/[0.02] px-3 text-[13px] text-white"
+						className="mt-1.5 h-9 w-full rounded-md px-3 text-[13px]"
+						style={{
+							background: "var(--input-bg)",
+							border: "1px solid var(--input-border)",
+							color: "var(--text-primary)",
+						}}
 						value={value.action}
-						onChange={(e) => onChange({ ...value, action: e.target.value as RunbookAction })}
+						onChange={(e) =>
+							onChange({ ...value, action: e.target.value as RunbookAction })
+						}
 					>
 						{ACTIONS.map((a) => (
-							<option key={a.id} value={a.id}>{a.label} — {a.help}</option>
+							<option key={a.id} value={a.id}>
+								{a.label} — {a.help}
+							</option>
 						))}
 					</select>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Aktif</Label>
-					<div className="flex h-9 items-center">
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Aktif
+					</Label>
+					<div className="flex h-9 items-center mt-1.5">
 						<Switch
 							checked={value.enabled !== false}
-							onCheckedChange={(checked) => onChange({ ...value, enabled: checked })}
+							onCheckedChange={(checked) =>
+								onChange({ ...value, enabled: checked })
+							}
 						/>
 					</div>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Cooldown (s)</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Cooldown (s)
+					</Label>
 					<Input
 						type="number"
 						min={0}
 						value={value.cooldown_seconds}
-						onChange={(e) => onChange({ ...value, cooldown_seconds: Number(e.target.value) || 0 })}
+						onChange={(e) =>
+							onChange({
+								...value,
+								cooldown_seconds: Number(e.target.value) || 0,
+							})
+						}
+						className="mt-1.5"
 					/>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Saat başına maksimum</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Saat başına maksimum
+					</Label>
 					<Input
 						type="number"
 						min={1}
 						max={60}
 						value={value.max_per_hour}
-						onChange={(e) => onChange({ ...value, max_per_hour: Number(e.target.value) || 6 })}
+						onChange={(e) =>
+							onChange({
+								...value,
+								max_per_hour: Number(e.target.value) || 6,
+							})
+						}
+						className="mt-1.5"
 					/>
 				</div>
 				<div className="md:col-span-2">
-					<Label className="text-[11px] text-white/60">Args (JSON)</Label>
-					<textarea
-						className="min-h-[80px] w-full rounded-md border border-white/[0.08] bg-white/[0.02] p-2 font-mono text-[12px] text-white"
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Args (JSON)
+					</Label>
+					<Textarea
+						className="mt-1.5 min-h-[80px] font-mono text-[12px]"
 						value={argsJson}
 						onChange={(e) => {
 							try {
 								const parsed = JSON.parse(e.target.value || "{}");
 								onChange({ ...value, args: parsed });
 							} catch {
-								// ignore until valid
+								/* ignore until valid JSON */
 							}
 						}}
 					/>
-					<div className="mt-1 text-[10px] text-white/40">
-						exec için <span className="font-mono">{`{"command":"systemctl restart svc"}`}</span>, scale için <span className="font-mono">{`{"replicas":3}`}</span>, webhook için <span className="font-mono">{`{"url":"https://..."}`}</span>
+					<div
+						className="mt-1 text-[10px]"
+						style={{ color: "var(--text-faint)" }}
+					>
+						exec için <span className="font-mono">{`{"command":"systemctl restart svc"}`}</span>,
+						scale için <span className="font-mono">{`{"replicas":3}`}</span>,
+						webhook için <span className="font-mono">{`{"url":"https://..."}`}</span>
 					</div>
 				</div>
 			</div>
 			<div className="mt-4 flex justify-end gap-2">
-				<Button variant="outline" onClick={onCancel} disabled={submitting}>İptal</Button>
 				<Button
+					variant="outline"
+					size="sm"
+					className="h-8 px-3 text-xs"
+					onClick={onCancel}
+					disabled={submitting}
+				>
+					İptal
+				</Button>
+				<Button
+					size="sm"
+					className="h-8 px-3 text-xs text-white"
+					style={{ background: "var(--gradient-btn-primary)" }}
 					onClick={onSubmit}
 					disabled={submitting || !value.name.trim()}
 				>
-					{submitting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Play className="mr-1 h-4 w-4" />}
+					{submitting ? (
+						<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+					) : (
+						<Play className="mr-1 h-3.5 w-3.5" />
+					)}
 					Oluştur
 				</Button>
 			</div>
@@ -380,13 +593,36 @@ function DraftEditor({
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
 	return (
-		<div className="rounded-xl border border-dashed border-white/[0.08] py-16 text-center">
-			<Pause className="mx-auto h-8 w-8 text-white/30" />
-			<div className="mt-3 text-[14px] font-semibold text-white">Henüz runbook yok</div>
-			<div className="mt-1 text-[12px] text-white/50">
-				Tekrarlayan müdahaleleri otomatikleştir: alert tetiklendiğinde restart/exec/webhook çalıştır.
+		<div
+			className="rounded-xl py-16 text-center"
+			style={{
+				background: "var(--surface-card)",
+				border: "1px dashed var(--border-default)",
+			}}
+		>
+			<Pause
+				className="mx-auto h-8 w-8"
+				style={{ color: "var(--text-faint)" }}
+			/>
+			<div
+				className="mt-3 text-[14px] font-semibold"
+				style={{ color: "var(--text-primary)" }}
+			>
+				Henüz runbook yok
 			</div>
-			<Button className="mt-4" onClick={onCreate}>
+			<div
+				className="mt-1 text-[12px] max-w-md mx-auto"
+				style={{ color: "var(--text-muted)" }}
+			>
+				Tekrarlayan müdahaleleri otomatikleştir: alert tetiklendiğinde
+				restart/exec/webhook çalıştır.
+			</div>
+			<Button
+				className="mt-4 text-white"
+				size="sm"
+				style={{ background: "var(--gradient-btn-primary)" }}
+				onClick={onCreate}
+			>
 				<Plus className="mr-1 h-4 w-4" />
 				İlk runbook'u oluştur
 			</Button>
@@ -397,11 +633,23 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 function severityTone(s: Severity) {
 	switch (s) {
 		case "crit":
-			return { bg: "rgba(244,63,94,0.10)", fg: "rgb(253,164,175)", border: "rgba(244,63,94,0.30)" };
+			return {
+				bg: "var(--status-down-subtle)",
+				fg: "var(--status-down-text)",
+				border: "var(--status-down-border)",
+			};
 		case "warn":
-			return { bg: "rgba(234,179,8,0.10)", fg: "rgb(253,224,71)", border: "rgba(234,179,8,0.30)" };
+			return {
+				bg: "var(--status-degraded-subtle)",
+				fg: "var(--status-degraded-text)",
+				border: "var(--status-degraded-border)",
+			};
 		default:
-			return { bg: "rgba(59,130,246,0.10)", fg: "rgb(147,197,253)", border: "rgba(59,130,246,0.30)" };
+			return {
+				bg: "var(--color-blue-subtle)",
+				fg: "var(--color-blue)",
+				border: "var(--color-blue-border)",
+			};
 	}
 }
 

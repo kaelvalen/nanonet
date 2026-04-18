@@ -228,43 +228,49 @@ export function ComparePage() {
 				title="Servis Karşılaştırması"
 				description="2-4 servisi yan yana koyup CPU, bellek veya latency'lerini aynı eksen üzerinde inceleyin."
 				meta={
-					<div className="flex items-center gap-3 flex-wrap">
-						<div className="flex items-center gap-1.5">
+					<div className="flex items-center gap-4 flex-wrap">
+						<div
+							className="inline-flex rounded-lg p-0.5 gap-0.5"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "1px solid var(--border-default)",
+							}}
+						>
 							{(["avg_cpu", "avg_memory", "avg_latency"] as MetricKey[]).map((m) => (
 								<button
 									type="button"
 									key={m}
 									onClick={() => setMetric(m)}
-									className="text-[10px] px-2.5 py-1 rounded-md uppercase tracking-wider font-bold"
+									className="text-[10px] px-3 py-1.5 rounded-md uppercase tracking-wider font-bold transition-colors"
 									style={{
 										background:
-											metric === m ? "var(--surface-raised)" : "var(--surface-sunken)",
-										border: `1px solid ${
-											metric === m ? "var(--border-strong)" : "var(--border-subtle)"
-										}`,
+											metric === m ? "var(--brand-primary)" : "transparent",
 										color:
-											metric === m ? "var(--text-primary)" : "var(--text-muted)",
+											metric === m ? "#ffffff" : "var(--text-muted)",
 									}}
 								>
 									{METRIC_LABELS[m]}
 								</button>
 							))}
 						</div>
-						<div className="flex items-center gap-1.5">
+						<div
+							className="inline-flex rounded-lg p-0.5 gap-0.5"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "1px solid var(--border-default)",
+							}}
+						>
 							{(["1h", "6h", "24h"] as const).map((d) => (
 								<button
 									type="button"
 									key={d}
 									onClick={() => setDuration(d)}
-									className="text-[10px] px-2 py-1 rounded-md font-mono"
+									className="text-[10px] px-3 py-1.5 rounded-md font-mono font-bold transition-colors"
 									style={{
 										background:
-											duration === d ? "var(--surface-raised)" : "var(--surface-sunken)",
-										border: `1px solid ${
-											duration === d ? "var(--border-strong)" : "var(--border-subtle)"
-										}`,
+											duration === d ? "var(--brand-primary)" : "transparent",
 										color:
-											duration === d ? "var(--text-primary)" : "var(--text-muted)",
+											duration === d ? "#ffffff" : "var(--text-muted)",
 									}}
 								>
 									{d}
@@ -311,23 +317,31 @@ export function ComparePage() {
 						{services.map((s) => {
 							const active = selectedIds.includes(s.id);
 							const idx = selectedIds.indexOf(s.id);
+							const seriesColor = active ? SERIES_COLORS[idx] : null;
 							return (
 								<button
 									type="button"
 									key={s.id}
 									onClick={() => toggle(s.id)}
 									disabled={!active && selectedIds.length >= 4}
-									className="text-[11px] px-2.5 py-1 rounded-md font-mono flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+									className="text-[11px] px-2.5 py-1.5 rounded-md font-mono flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
 									style={{
-										background: active ? "var(--surface-sunken)" : "transparent",
-										border: `1px solid ${active ? SERIES_COLORS[idx] : "var(--border-subtle)"}`,
-										color: active ? "var(--text-primary)" : "var(--text-muted)",
+										background: seriesColor
+											? `${seriesColor}1a`
+											: "var(--surface-sunken)",
+										border: `1px solid ${
+											seriesColor ? seriesColor : "var(--border-default)"
+										}`,
+										color: seriesColor
+											? seriesColor
+											: "var(--text-secondary)",
+										fontWeight: active ? 600 : 500,
 									}}
 								>
 									{active && (
 										<span
 											className="w-2 h-2 rounded-sm"
-											style={{ background: SERIES_COLORS[idx] }}
+											style={{ background: seriesColor ?? undefined }}
 										/>
 									)}
 									{s.name}

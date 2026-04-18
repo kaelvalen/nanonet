@@ -224,7 +224,7 @@ export function AIUsagePage() {
 										{recent.map((row) => (
 											<tr
 												key={row.id}
-												className="border-b last:border-0 hover:bg-white/[0.02]"
+												className="border-b last:border-0 hover:bg-[var(--surface-sunken)]"
 												style={{ borderColor: "var(--border-divider)" }}
 											>
 												<td

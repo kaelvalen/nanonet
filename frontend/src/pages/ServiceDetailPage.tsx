@@ -435,23 +435,25 @@ function MetricChip({
 				</span>
 			</div>
 			<div className="flex items-end justify-between gap-2 mt-3">
-				<div className="flex items-baseline gap-1 min-w-0">
+				<div className="flex items-baseline gap-1 shrink-0 whitespace-nowrap">
 					<span
-						className="text-[26px] font-mono font-bold tabular-nums leading-none truncate"
+						className="text-[20px] sm:text-[22px] font-mono font-bold tabular-nums leading-none"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{value}
 					</span>
 					{unit && (
 						<span
-							className="text-xs font-mono leading-none"
+							className="text-[10px] font-mono leading-none"
 							style={{ color: "var(--text-faint)" }}
 						>
 							{unit}
 						</span>
 					)}
 				</div>
-				<Sparkline data={sparkData} color={sparkColor} />
+				<div className="flex-1 min-w-0 flex justify-end">
+					<Sparkline data={sparkData} color={sparkColor} width={56} />
+				</div>
 			</div>
 		</motion.div>
 	);

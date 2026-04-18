@@ -25,10 +25,33 @@ import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import { Switch } from "@/components/ui/switch";
 
-const KIND_META: Record<"http" | "tcp", { label: string; icon: typeof Globe; help: string }> = {
+const KIND_META: Record<
+	"http" | "tcp",
+	{ label: string; icon: typeof Globe; help: string }
+> = {
 	http: { label: "HTTP", icon: Globe, help: "https://… veya http://… URL" },
-	tcp: { label: "TCP", icon: Plug, help: "host:port (örn. db.example.com:5432)" },
+	tcp: {
+		label: "TCP",
+		icon: Plug,
+		help: "host:port (örn. db.example.com:5432)",
+	},
 };
+
+const DEFAULT_DRAFT: CreateProbeInput = {
+	name: "",
+	kind: "http",
+	target: "",
+	method: "GET",
+	expected_status: 200,
+	interval_seconds: 60,
+	timeout_seconds: 10,
+	enabled: true,
+};
+
+const cardStyle = {
+	background: "var(--surface-card)",
+	border: "1px solid var(--border-default)",
+} as const;
 
 export function ProbesPage() {
 	const qc = useQueryClient();
@@ -51,8 +74,13 @@ export function ProbesPage() {
 	});
 
 	const updateMut = useMutation({
-		mutationFn: ({ id, patch }: { id: string; patch: Partial<CreateProbeInput> }) =>
-			probesApi.update(id, patch),
+		mutationFn: ({
+			id,
+			patch,
+		}: {
+			id: string;
+			patch: Partial<CreateProbeInput>;
+		}) => probesApi.update(id, patch),
 		onSuccess: () => {
 			toast.success("Probe güncellendi");
 			qc.invalidateQueries({ queryKey: ["probes"] });
@@ -80,37 +108,41 @@ export function ProbesPage() {
 				title="Probes"
 				description="Sunucu tarafından yürütülen HTTP/TCP sağlık denetimleri."
 				meta={
-					<div className="flex items-center gap-3 text-[12px] text-white/60">
+					<div
+						className="flex items-center gap-3 text-[12px]"
+						style={{ color: "var(--text-muted)" }}
+					>
 						<span className="inline-flex items-center gap-1.5">
-							<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+							<CheckCircle2
+								className="h-3.5 w-3.5"
+								style={{ color: "var(--status-up)" }}
+							/>
 							{upCount} up
 						</span>
 						<span className="inline-flex items-center gap-1.5">
-							<XCircle className="h-3.5 w-3.5 text-rose-400" />
+							<XCircle
+								className="h-3.5 w-3.5"
+								style={{ color: "var(--status-down)" }}
+							/>
 							{downCount} down
 						</span>
 						<span className="inline-flex items-center gap-1.5">
-							<Activity className="h-3.5 w-3.5 text-white/40" />
+							<Activity
+								className="h-3.5 w-3.5"
+								style={{ color: "var(--text-faint)" }}
+							/>
 							{items.length} toplam
 						</span>
 					</div>
 				}
 				actions={
 					<Button
-						onClick={() =>
-							setDraft({
-								name: "",
-								kind: "http",
-								target: "",
-								method: "GET",
-								expected_status: 200,
-								interval_seconds: 60,
-								timeout_seconds: 10,
-								enabled: true,
-							})
-						}
+						size="sm"
+						onClick={() => setDraft(DEFAULT_DRAFT)}
+						className="h-8 px-3 text-xs text-white"
+						style={{ background: "var(--gradient-btn-primary)" }}
 					>
-						<Plus className="mr-1 h-4 w-4" />
+						<Plus className="mr-1 h-3.5 w-3.5" />
 						Yeni Probe
 					</Button>
 				}
@@ -128,27 +160,23 @@ export function ProbesPage() {
 				)}
 
 				{isLoading ? (
-					<div className="flex items-center justify-center py-16 text-white/50">
+					<div
+						className="flex items-center justify-center py-16"
+						style={{ color: "var(--text-muted)" }}
+					>
 						<Loader2 className="h-5 w-5 animate-spin" />
 					</div>
 				) : items.length === 0 && !draft ? (
-					<EmptyState onCreate={() => setDraft({
-						name: "",
-						kind: "http",
-						target: "",
-						method: "GET",
-						expected_status: 200,
-						interval_seconds: 60,
-						timeout_seconds: 10,
-						enabled: true,
-					})} />
+					<EmptyState onCreate={() => setDraft(DEFAULT_DRAFT)} />
 				) : (
-					<div className="flex flex-col gap-2">
+					<div className="flex flex-col gap-2 mt-2">
 						{items.map((p) => (
 							<ProbeRow
 								key={p.id}
 								probe={p}
-								onToggle={(enabled) => updateMut.mutate({ id: p.id, patch: { enabled } })}
+								onToggle={(enabled) =>
+									updateMut.mutate({ id: p.id, patch: { enabled } })
+								}
 								onDelete={() => deleteMut.mutate(p.id)}
 								busy={
 									(updateMut.isPending && updateMut.variables?.id === p.id) ||
@@ -177,39 +205,75 @@ function ProbeRow({
 	const tone = statusTone(probe.last_status);
 	const Icon = KIND_META[probe.kind].icon;
 	return (
-		<div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+		<div className="rounded-lg px-4 py-3" style={cardStyle}>
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<Icon className="h-3.5 w-3.5 text-white/50" />
-						<span className="text-[13px] font-semibold text-white">{probe.name}</span>
+						<Icon
+							className="h-3.5 w-3.5"
+							style={{ color: "var(--text-muted)" }}
+						/>
+						<span
+							className="text-[13px] font-semibold"
+							style={{ color: "var(--text-primary)" }}
+						>
+							{probe.name}
+						</span>
 						<span
 							className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-[0.15em] font-bold"
-							style={{ background: tone.bg, color: tone.fg, border: `1px solid ${tone.border}` }}
+							style={{
+								background: tone.bg,
+								color: tone.fg,
+								border: `1px solid ${tone.border}`,
+							}}
 						>
-							{tone.dot}
+							<span
+								className="h-1.5 w-1.5 rounded-full"
+								style={{ background: tone.dot }}
+							/>
 							{probe.last_status ?? "—"}
 						</span>
 					</div>
-					<div className="mt-1 truncate font-mono text-[11px] text-white/55">{probe.target}</div>
-					<div className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-white/40">
+					<div
+						className="mt-1 truncate font-mono text-[11px]"
+						style={{ color: "var(--text-muted)" }}
+					>
+						{probe.target}
+					</div>
+					<div
+						className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em]"
+						style={{ color: "var(--text-faint)" }}
+					>
 						<span>{KIND_META[probe.kind].label}</span>
 						<span>her {probe.interval_seconds}s</span>
 						<span>timeout {probe.timeout_seconds}s</span>
 						{probe.last_latency_ms != null && (
-							<span className="font-mono normal-case tabular-nums tracking-normal text-white/55">
+							<span
+								className="font-mono normal-case tabular-nums tracking-normal"
+								style={{ color: "var(--text-muted)" }}
+							>
 								{probe.last_latency_ms}ms
 							</span>
 						)}
 						{probe.last_run_at && (
-							<span className="inline-flex items-center gap-1 normal-case tracking-normal text-white/45">
+							<span
+								className="inline-flex items-center gap-1 normal-case tracking-normal"
+								style={{ color: "var(--text-muted)" }}
+							>
 								<Clock className="h-3 w-3" />
 								{relative(probe.last_run_at)}
 							</span>
 						)}
 					</div>
 					{probe.last_error && probe.last_status !== "up" && (
-						<div className="mt-2 flex items-start gap-1.5 rounded-md border border-rose-500/20 bg-rose-500/5 px-2 py-1.5 text-[11px] text-rose-200">
+						<div
+							className="mt-2 flex items-start gap-1.5 rounded-md px-2 py-1.5 text-[11px]"
+							style={{
+								background: "var(--status-down-subtle)",
+								border: "1px solid var(--status-down-border)",
+								color: "var(--status-down-text)",
+							}}
+						>
 							<AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
 							<span className="font-mono">{probe.last_error}</span>
 						</div>
@@ -225,7 +289,12 @@ function ProbeRow({
 						type="button"
 						onClick={onDelete}
 						disabled={busy}
-						className="rounded-md border border-rose-500/30 p-1.5 text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
+						className="rounded-md p-1.5 disabled:opacity-50 transition-colors"
+						style={{
+							background: "var(--status-down-subtle)",
+							border: "1px solid var(--status-down-border)",
+							color: "var(--status-down-text)",
+						}}
 						title="Sil"
 					>
 						<Trash2 className="h-3.5 w-3.5" />
@@ -250,108 +319,215 @@ function DraftEditor({
 	submitting: boolean;
 }) {
 	return (
-		<div className="mb-3 rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
+		<div
+			className="mb-3 rounded-lg p-5"
+			style={{
+				background: "var(--surface-card)",
+				border: "1px solid var(--border-strong)",
+			}}
+		>
 			<div className="mb-3 flex items-center justify-between">
-				<div className="text-[13px] font-semibold text-white">Yeni Probe</div>
-				<button type="button" onClick={onCancel} className="text-[11px] text-white/50 hover:text-white">İptal</button>
+				<div
+					className="text-[13px] font-semibold"
+					style={{ color: "var(--text-primary)" }}
+				>
+					Yeni Probe
+				</div>
+				<button
+					type="button"
+					onClick={onCancel}
+					className="text-[11px]"
+					style={{ color: "var(--text-muted)" }}
+				>
+					İptal
+				</button>
 			</div>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 				<div>
-					<Label className="text-[11px] text-white/60">Ad</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Ad
+					</Label>
 					<Input
 						value={value.name}
 						onChange={(e) => onChange({ ...value, name: e.target.value })}
 						placeholder="Public API"
+						className="mt-1.5"
 					/>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Tür</Label>
-					<div className="flex gap-2">
-						{(["http", "tcp"] as const).map((k) => (
-							<button
-								key={k}
-								type="button"
-								onClick={() => onChange({ ...value, kind: k })}
-								className={`flex-1 rounded-md border px-3 py-2 text-[12px] ${value.kind === k ? "border-emerald-400/50 bg-emerald-400/10 text-white" : "border-white/[0.08] text-white/60"}`}
-							>
-								{KIND_META[k].label}
-							</button>
-						))}
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Tür
+					</Label>
+					<div className="flex gap-1.5 mt-1.5">
+						{(["http", "tcp"] as const).map((k) => {
+							const active = value.kind === k;
+							return (
+								<button
+									key={k}
+									type="button"
+									onClick={() => onChange({ ...value, kind: k })}
+									className="flex-1 rounded-md px-3 py-2 text-[12px] font-bold uppercase tracking-wider transition-colors"
+									style={{
+										background: active
+											? "var(--color-teal-subtle)"
+											: "var(--surface-sunken)",
+										border: `1px solid ${active ? "var(--color-teal-border)" : "var(--border-default)"}`,
+										color: active ? "var(--color-teal)" : "var(--text-muted)",
+									}}
+								>
+									{KIND_META[k].label}
+								</button>
+							);
+						})}
 					</div>
 				</div>
 				<div className="md:col-span-2">
-					<Label className="text-[11px] text-white/60">Hedef</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Hedef
+					</Label>
 					<Input
 						value={value.target}
 						onChange={(e) => onChange({ ...value, target: e.target.value })}
 						placeholder={KIND_META[value.kind].help}
+						className="mt-1.5 font-mono"
 					/>
 				</div>
 				{value.kind === "http" && (
 					<>
 						<div>
-							<Label className="text-[11px] text-white/60">Method</Label>
+							<Label
+								className="text-[11px] uppercase tracking-[0.18em] font-bold"
+								style={{ color: "var(--text-faint)" }}
+							>
+								Method
+							</Label>
 							<Input
 								value={value.method ?? "GET"}
-								onChange={(e) => onChange({ ...value, method: e.target.value.toUpperCase() })}
+								onChange={(e) =>
+									onChange({
+										...value,
+										method: e.target.value.toUpperCase(),
+									})
+								}
+								className="mt-1.5 font-mono"
 							/>
 						</div>
 						<div>
-							<Label className="text-[11px] text-white/60">Beklenen Status</Label>
+							<Label
+								className="text-[11px] uppercase tracking-[0.18em] font-bold"
+								style={{ color: "var(--text-faint)" }}
+							>
+								Beklenen Status
+							</Label>
 							<Input
 								type="number"
 								value={value.expected_status ?? 200}
 								onChange={(e) =>
-									onChange({ ...value, expected_status: Number(e.target.value) || 200 })
+									onChange({
+										...value,
+										expected_status: Number(e.target.value) || 200,
+									})
 								}
+								className="mt-1.5 font-mono"
 							/>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-[11px] text-white/60">Body içermeli (opsiyonel)</Label>
+							<Label
+								className="text-[11px] uppercase tracking-[0.18em] font-bold"
+								style={{ color: "var(--text-faint)" }}
+							>
+								Body içermeli (opsiyonel)
+							</Label>
 							<Input
 								value={value.body_contains ?? ""}
 								onChange={(e) =>
-									onChange({ ...value, body_contains: e.target.value || null })
+									onChange({
+										...value,
+										body_contains: e.target.value || null,
+									})
 								}
 								placeholder='örn. "ok" veya "status":"healthy"'
+								className="mt-1.5 font-mono"
 							/>
 						</div>
 					</>
 				)}
 				<div>
-					<Label className="text-[11px] text-white/60">Aralık (saniye)</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Aralık (saniye)
+					</Label>
 					<Input
 						type="number"
 						min={30}
 						max={3600}
 						value={value.interval_seconds}
 						onChange={(e) =>
-							onChange({ ...value, interval_seconds: Number(e.target.value) || 60 })
+							onChange({
+								...value,
+								interval_seconds: Number(e.target.value) || 60,
+							})
 						}
+						className="mt-1.5 font-mono"
 					/>
 				</div>
 				<div>
-					<Label className="text-[11px] text-white/60">Timeout (saniye)</Label>
+					<Label
+						className="text-[11px] uppercase tracking-[0.18em] font-bold"
+						style={{ color: "var(--text-faint)" }}
+					>
+						Timeout (saniye)
+					</Label>
 					<Input
 						type="number"
 						min={1}
 						max={60}
 						value={value.timeout_seconds}
 						onChange={(e) =>
-							onChange({ ...value, timeout_seconds: Number(e.target.value) || 10 })
+							onChange({
+								...value,
+								timeout_seconds: Number(e.target.value) || 10,
+							})
 						}
+						className="mt-1.5 font-mono"
 					/>
 				</div>
 			</div>
 			<div className="mt-4 flex justify-end gap-2">
-				<Button variant="outline" onClick={onCancel} disabled={submitting}>
+				<Button
+					variant="outline"
+					size="sm"
+					className="h-8 px-3 text-xs"
+					onClick={onCancel}
+					disabled={submitting}
+				>
 					İptal
 				</Button>
 				<Button
+					size="sm"
+					className="h-8 px-3 text-xs text-white"
+					style={{ background: "var(--gradient-btn-primary)" }}
 					onClick={onSubmit}
-					disabled={submitting || !value.name.trim() || !value.target.trim()}
+					disabled={
+						submitting || !value.name.trim() || !value.target.trim()
+					}
 				>
-					{submitting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />}
+					{submitting ? (
+						<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+					) : (
+						<Plus className="mr-1 h-3.5 w-3.5" />
+					)}
 					Oluştur
 				</Button>
 			</div>
@@ -361,13 +537,36 @@ function DraftEditor({
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
 	return (
-		<div className="rounded-xl border border-dashed border-white/[0.08] py-16 text-center">
-			<Activity className="mx-auto h-8 w-8 text-white/30" />
-			<div className="mt-3 text-[14px] font-semibold text-white">Henüz probe yok</div>
-			<div className="mt-1 text-[12px] text-white/50">
-				Public bir endpoint'i veya 3rd-party API'yi izlemek için bir HTTP/TCP probe ekle.
+		<div
+			className="rounded-xl py-16 text-center"
+			style={{
+				background: "var(--surface-card)",
+				border: "1px dashed var(--border-default)",
+			}}
+		>
+			<Activity
+				className="mx-auto h-8 w-8"
+				style={{ color: "var(--text-faint)" }}
+			/>
+			<div
+				className="mt-3 text-[14px] font-semibold"
+				style={{ color: "var(--text-primary)" }}
+			>
+				Henüz probe yok
 			</div>
-			<Button className="mt-4" onClick={onCreate}>
+			<div
+				className="mt-1 text-[12px] max-w-md mx-auto"
+				style={{ color: "var(--text-muted)" }}
+			>
+				Public bir endpoint'i veya 3rd-party API'yi izlemek için bir HTTP/TCP
+				probe ekle.
+			</div>
+			<Button
+				className="mt-4 text-white"
+				size="sm"
+				style={{ background: "var(--gradient-btn-primary)" }}
+				onClick={onCreate}
+			>
 				<Plus className="mr-1 h-4 w-4" />
 				İlk probe'u oluştur
 			</Button>
@@ -379,31 +578,31 @@ function statusTone(s: ProbeStatus | null | undefined) {
 	switch (s) {
 		case "up":
 			return {
-				bg: "rgba(16, 185, 129, 0.10)",
-				fg: "rgb(110, 231, 183)",
-				border: "rgba(16, 185, 129, 0.30)",
-				dot: <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />,
+				bg: "var(--status-up-subtle)",
+				fg: "var(--status-up-text)",
+				border: "var(--status-up-border)",
+				dot: "var(--status-up)",
 			};
 		case "degraded":
 			return {
-				bg: "rgba(234, 179, 8, 0.10)",
-				fg: "rgb(253, 224, 71)",
-				border: "rgba(234, 179, 8, 0.30)",
-				dot: <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />,
+				bg: "var(--status-degraded-subtle)",
+				fg: "var(--status-degraded-text)",
+				border: "var(--status-degraded-border)",
+				dot: "var(--status-degraded)",
 			};
 		case "down":
 			return {
-				bg: "rgba(244, 63, 94, 0.10)",
-				fg: "rgb(253, 164, 175)",
-				border: "rgba(244, 63, 94, 0.30)",
-				dot: <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />,
+				bg: "var(--status-down-subtle)",
+				fg: "var(--status-down-text)",
+				border: "var(--status-down-border)",
+				dot: "var(--status-down)",
 			};
 		default:
 			return {
-				bg: "rgba(255,255,255,0.04)",
-				fg: "rgba(255,255,255,0.55)",
-				border: "rgba(255,255,255,0.10)",
-				dot: <span className="h-1.5 w-1.5 rounded-full bg-white/40" />,
+				bg: "var(--surface-sunken)",
+				fg: "var(--text-muted)",
+				border: "var(--border-default)",
+				dot: "var(--text-faint)",
 			};
 	}
 }
