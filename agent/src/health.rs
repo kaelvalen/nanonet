@@ -66,3 +66,113 @@ pub async fn check_health(client: &Client, url: &str) -> HealthResult {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::response::IntoResponse;
+    use axum::{routing::get, Router};
+    use std::net::SocketAddr;
+    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::sync::Arc;
+    use std::time::Duration;
+    use tokio::net::TcpListener;
+
+    /// Verilen handler ile loopback üzerinde geçici HTTP sunucusu kurar.
+    /// Sunucu task'ı testin sonunda otomatik temizlenir.
+    async fn start_test_server<F, Fut>(handler: F) -> SocketAddr
+    where
+        F: Fn() -> Fut + Send + Sync + Clone + 'static,
+        Fut: std::future::Future<Output = axum::response::Response> + Send + 'static,
+    {
+        let app = Router::new().route("/health", get(move || handler.clone()()));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+        // Başlama için kısa uyku.
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        addr
+    }
+
+    fn client() -> Client {
+        // Yavaş yanıt testleri için client timeout uzun tutulur; check_health
+        // zaten her isteğe per-request 10s timeout uygular.
+        Client::builder()
+            .timeout(Duration::from_secs(15))
+            .build()
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn returns_up_for_2xx_fast() {
+        let addr = start_test_server(|| async { "ok".into_response() }).await;
+        let url = format!("http://{}/health", addr);
+        let r = check_health(&client(), &url).await;
+        assert_eq!(r.status, "up");
+        assert!(!r.is_error);
+        assert_eq!(r.http_status, Some(200));
+    }
+
+    #[tokio::test]
+    async fn returns_degraded_with_error_for_5xx() {
+        let addr = start_test_server(|| async {
+            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "boom").into_response()
+        })
+        .await;
+        let url = format!("http://{}/health", addr);
+        let r = check_health(&client(), &url).await;
+        assert_eq!(r.status, "degraded");
+        assert!(r.is_error, "5xx hata olarak sayılmalı");
+        assert_eq!(r.http_status, Some(500));
+    }
+
+    #[tokio::test]
+    async fn returns_degraded_without_error_for_4xx() {
+        let addr = start_test_server(|| async {
+            (axum::http::StatusCode::NOT_FOUND, "nope").into_response()
+        })
+        .await;
+        let url = format!("http://{}/health", addr);
+        let r = check_health(&client(), &url).await;
+        assert_eq!(r.status, "degraded");
+        assert!(!r.is_error, "4xx hata sayılmamalı");
+        assert_eq!(r.http_status, Some(404));
+    }
+
+    #[tokio::test]
+    async fn returns_down_when_unreachable() {
+        // Port 1: TCP RST garanti.
+        let r = check_health(&client(), "http://127.0.0.1:1/health").await;
+        assert_eq!(r.status, "down");
+        assert!(r.is_error);
+        assert!(r.http_status.is_none());
+    }
+
+    #[tokio::test]
+    async fn slow_2xx_marked_degraded() {
+        // İlk istek normal, sonraki 2.1 saniye sonra cevap verir.
+        let counter = Arc::new(AtomicU32::new(0));
+        let counter_handler = Arc::clone(&counter);
+        let addr = start_test_server(move || {
+            let n = counter_handler.fetch_add(1, Ordering::Relaxed);
+            async move {
+                if n == 0 {
+                    "fast".into_response()
+                } else {
+                    tokio::time::sleep(Duration::from_millis(2100)).await;
+                    "slow".into_response()
+                }
+            }
+        })
+        .await;
+        let url = format!("http://{}/health", addr);
+        // Birinci çağrı uyumadan döner; warm-up ölçümü.
+        let _ = check_health(&client(), &url).await;
+        let r = check_health(&client(), &url).await;
+        assert_eq!(r.http_status, Some(200));
+        assert_eq!(r.status, "degraded", "yavaş 2xx degraded olmalı");
+        assert!(!r.is_error);
+    }
+}

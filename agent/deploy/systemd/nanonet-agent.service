@@ -1,0 +1,72 @@
+; nanonet-agent.service — sertleştirilmiş systemd birimi.
+;
+; Bu dosya operatör kullanım için referans bir systemd unit'idir. Üretimde
+; `/etc/nanonet/agent.env` dosyasında env değişkenlerini yönetin (chmod 600);
+; secret'lar (NANONET_AGENT_TOKEN, NANONET_AGENT_SIGN_SECRET) buraya yazılır.
+;
+; Kurulum:
+;   sudo install -m 0644 nanonet-agent.service /etc/systemd/system/
+;   sudo install -d -m 0755 /etc/nanonet
+;   sudo install -m 0600 /dev/stdin /etc/nanonet/agent.env <<EOF
+;   NANONET_BACKEND=wss://backend.example.com
+;   NANONET_SERVICE_ID=00000000-0000-0000-0000-000000000000
+;   NANONET_AGENT_TOKEN=...
+;   NANONET_AGENT_SIGN_SECRET=...   # backend ile aynı
+;   NANONET_AUDIT_LOG_PATH=/var/lib/nanonet/audit.ndjson
+;   NANONET_BUFFER_PERSIST_PATH=/var/lib/nanonet/buffer.snap
+;   NANONET_AGENT_PORT=9100
+;   EOF
+;   sudo systemctl daemon-reload
+;   sudo systemctl enable --now nanonet-agent
+
+[Unit]
+Description=NanoNet Monitoring Agent
+Documentation=https://github.com/nanonet/agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=nanonet
+StateDirectoryMode=0750
+LogsDirectory=nanonet
+LogsDirectoryMode=0750
+EnvironmentFile=-/etc/nanonet/agent.env
+ExecStart=/usr/local/bin/nanonet-agent
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# ---- Hardening ---------------------------------------------------------
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @mount @debug
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0027
+# Agent çalıştığı süreçten /proc/net/tcp[6] okuyarak dependency keşfi yapar
+# — read-only fs ile uyumlu.
+ReadOnlyPaths=/proc/net
+
+[Install]
+WantedBy=multi-user.target

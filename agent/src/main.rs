@@ -1,31 +1,179 @@
-mod agent_health;
-mod buffer;
-mod commands;
-mod config;
-mod dependencies;
-mod error;
-mod health;
-mod metrics;
-mod ws;
+//! NanoNet agent binary entry point.
+//!
+//! `main.rs` kasıtlı olarak ince tutulur: tüm gerçek mantık `lib.rs` ve
+//! `tasks/` altındaki modüllerdedir; burada yapılan işler:
+//!
+//! 1. Logging başlat (text veya JSON)
+//! 2. CLI/env yapılandırmasını parse et
+//! 3. Banner yazdır
+//! 4. Stable agent_id'yi oku/üret
+//! 5. Paylaşılan [`AppState`] oluştur
+//! 6. WS task'ı, metric, heartbeat, dependency, agent_health, signal
+//!    task'larını spawn et
+//! 7. Graceful shutdown'a kadar bekle, final istatistikleri bas
 
-use chrono::Utc;
-use clap::Parser;
-use config::Config;
-use reqwest::Client;
-use serde_json::json;
-use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
-use sysinfo::{Disks, Networks, System};
+
+use clap::Parser;
 use tokio::sync::watch;
 
-use buffer::MetricBuffer;
+use nanonet_agent::buffer::MetricBuffer;
+use nanonet_agent::error::{AgentError, Result};
+use nanonet_agent::tasks;
+use nanonet_agent::{agent_health, ws};
+use nanonet_agent::{AppState, Config, VERSION};
 
 #[tokio::main]
-async fn main() -> error::Result<()> {
-    // ─── Structured Logging ───
-    // NANONET_LOG_JSON=1 ile JSON log formatı aktifleşir
+async fn main() -> Result<()> {
+    init_logging();
+
+    let config = Config::parse();
+    print_banner(&config);
+
+    let agent_id = load_or_create_agent_id(&config);
+    tracing::info!("  Agent ID:      {}", agent_id);
+    tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    let buffer = MetricBuffer::new(config.buffer_size);
+
+    // Persist dosyası varsa önceki snapshot'ı yükle.
+    if let Some(path) = config.buffer_persist_path.as_deref() {
+        match buffer.load_from_disk(std::path::Path::new(path)).await {
+            Ok(0) => tracing::info!(path, "Buffer snapshot bulunamadı, temiz başlanıyor"),
+            Ok(n) => tracing::info!(path, count = n, "Buffer snapshot yüklendi"),
+            Err(e) => tracing::warn!(path, error = %e, "Buffer snapshot yüklenemedi"),
+        }
+    }
+
+    let mut state =
+        AppState::with_command_concurrency(agent_id, buffer, config.max_concurrent_commands);
+
+    // Audit logger varsa state'i bununla genişlet. Hata varsa warn'la geç —
+    // audit eksikliği agent'ı bloklamamalı.
+    if let Some(path) = config.audit_log_path.as_deref() {
+        match nanonet_agent::audit::AuditLogger::open(path).await {
+            Ok(audit) => {
+                tracing::info!(path, "Audit log açıldı");
+                state = state.with_audit(audit);
+            }
+            Err(e) => {
+                tracing::warn!(path, error = %e, "Audit log açılamadı, audit kapalı");
+            }
+        }
+    }
+
+    // HMAC komut imzalama secret'ı verilmişse zorunlu doğrulamayı devreye al.
+    if let Some(secret) = config.sign_secret.as_deref() {
+        let ttl = std::time::Duration::from_secs(config.nonce_ttl_sec.max(1));
+        let verifier = nanonet_agent::sign::Verifier::new(secret.as_bytes().to_vec(), ttl);
+        state = state.with_verifier(nanonet_agent::sign::OptionalVerifier::new(Some(verifier)));
+        tracing::info!(
+            ttl_sec = config.nonce_ttl_sec,
+            "Komut HMAC imza doğrulaması zorunlu"
+        );
+    }
+
+    // Panik hook'u state oluşturulduktan sonra kuruyoruz; observability sayacı
+    // ilk paniği bile yakalayabilsin diye spawnlardan önce.
+    nanonet_agent::panic_hook::install(Arc::clone(&state));
+
+    let (ws_tx, ws_rx) = ws::channel();
+    let (shutdown_tx, _) = watch::channel(false);
+
+    // ── WebSocket istemcisi ────────────────────────────────────────
+    let ws_task = tokio::spawn({
+        let config = config.clone();
+        let state = Arc::clone(&state);
+        let shutdown_rx = shutdown_tx.subscribe();
+        async move { ws::run(&config, ws_rx, state, shutdown_rx).await }
+    });
+
+    // ── Agent kendi health endpoint'i ──────────────────────────────
+    let agent_health_task = tokio::spawn({
+        let port = config.agent_port;
+        let state = Arc::clone(&state);
+        async move {
+            if let Err(e) = agent_health::serve(port, state).await {
+                tracing::error!(error = %e, "agent health server başlatılamadı");
+            }
+        }
+    });
+
+    // ── Periyodik metric toplayıcı ─────────────────────────────────
+    let metrics_task = tokio::spawn({
+        let config = config.clone();
+        let state = Arc::clone(&state);
+        let ws_tx = ws_tx.clone();
+        let shutdown_rx = shutdown_tx.subscribe();
+        async move {
+            if let Err(e) = tasks::metrics::run(config, state, ws_tx, shutdown_rx).await {
+                tracing::error!(error = %e, "metrics task hatası");
+            }
+        }
+    });
+
+    // ── Heartbeat ──────────────────────────────────────────────────
+    let _heartbeat_task = tokio::spawn({
+        let config = config.clone();
+        let state = Arc::clone(&state);
+        let ws_tx = ws_tx.clone();
+        let shutdown_rx = shutdown_tx.subscribe();
+        async move { tasks::heartbeat::run(config, state, ws_tx, shutdown_rx).await }
+    });
+
+    // ── Dependency keşfi ───────────────────────────────────────────
+    let _deps_task = tokio::spawn({
+        let config = config.clone();
+        let state = Arc::clone(&state);
+        let ws_tx = ws_tx.clone();
+        let shutdown_rx = shutdown_tx.subscribe();
+        async move { tasks::deps::run(config, state, ws_tx, shutdown_rx).await }
+    });
+
+    // ── Sinyal dinleyici ──────────────────────────────────────────
+    let signal_task = tokio::spawn(async move {
+        if let Err(e) = tasks::signal::wait_and_signal(shutdown_tx).await {
+            tracing::error!(error = %e, "sinyal dinleyici hatası");
+        }
+    });
+
+    // ── Ana bekleme: aşağıdakilerden hangisi önce biterse çıkılır ──
+    tokio::select! {
+        result = ws_task => {
+            if let Err(e) = result {
+                tracing::error!("WebSocket task panic: {}", e);
+            }
+        }
+        result = metrics_task => {
+            if let Err(e) = result {
+                tracing::error!("Metrics task panic: {}", e);
+            }
+        }
+        result = agent_health_task => {
+            if let Err(e) = result {
+                tracing::error!("Agent health task panic: {}", e);
+            }
+        }
+        _ = signal_task => {
+            tracing::info!("Agent temiz şekilde kapatıldı.");
+        }
+    }
+
+    // Shutdown sırasında buffer'ı diske yaz (yapılandırılmışsa).
+    if let Some(path) = config.buffer_persist_path.as_deref() {
+        match state.buffer.save_to_disk(std::path::Path::new(path)).await {
+            Ok(n) => tracing::info!(path, count = n, "Buffer snapshot diske yazıldı"),
+            Err(e) => tracing::warn!(path, error = %e, "Buffer snapshot yazılamadı"),
+        }
+    }
+
+    print_final_stats(&state);
+    Ok(())
+}
+
+/// Tracing subscriber'ı `NANONET_LOG_JSON=1` env'i varsa JSON olarak,
+/// yoksa metin olarak başlatır.
+fn init_logging() {
     let json_logs = std::env::var("NANONET_LOG_JSON").is_ok();
     let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| "nanonet_agent=info".into());
@@ -39,19 +187,16 @@ async fn main() -> error::Result<()> {
     } else {
         tracing_subscriber::fmt().with_env_filter(env_filter).init();
     }
+}
 
-    let config = Config::parse();
-
+/// Başlangıçta operatöre kullanılan ayarları net şekilde gösterir.
+fn print_banner(config: &Config) {
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    tracing::info!("  NanoNet Agent v{}", env!("CARGO_PKG_VERSION"));
+    tracing::info!("  NanoNet Agent v{}", VERSION);
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     tracing::info!("  Backend:       {}", config.backend);
     tracing::info!("  Service ID:    {}", config.service_id);
-    tracing::info!(
-        "  WS URL:        {}/ws/agent?service_id={}",
-        config.backend,
-        config.service_id
-    );
+    tracing::info!("  WS URL:        {}", config.ws_url());
     tracing::info!(
         "  Auth:          {}",
         if config.effective_token().is_some() {
@@ -64,6 +209,10 @@ async fn main() -> error::Result<()> {
     tracing::info!("  Poll interval: {}s", config.poll_interval);
     tracing::info!("  Error window:  {} checks", config.error_rate_window);
     tracing::info!("  Buffer size:   {} metrics", config.buffer_size);
+    tracing::info!(
+        "  Cmd parallel:  {} (max concurrent commands)",
+        config.max_concurrent_commands.max(1)
+    );
 
     match &config.metrics_endpoint {
         Some(url) => tracing::info!("  App metrics:   {}", url),
@@ -84,342 +233,58 @@ async fn main() -> error::Result<()> {
     if config.agent_port > 0 {
         tracing::info!("  Agent port:    {}", config.agent_port);
     }
-
-    let agent_id = load_or_create_agent_id(&config);
-    tracing::info!("  Agent ID:      {}", agent_id);
-    tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-    let start_time = std::time::Instant::now();
-
-    // ─── Channels & Shared State ───
-    let (ws_tx, ws_rx) = ws::channel();
-    let restart_count = Arc::new(AtomicU64::new(0));
-    let metric_buffer = MetricBuffer::new(config.buffer_size);
-
-    // Graceful shutdown kanalı
-    let (shutdown_tx, _) = watch::channel(false);
-    let shutdown_rx_ws = shutdown_tx.subscribe();
-    let mut shutdown_rx_metrics = shutdown_tx.subscribe();
-
-    // ─── WebSocket Task ───
-    let ws_config = config.clone();
-    let ws_restart_count = Arc::clone(&restart_count);
-    let ws_buffer = metric_buffer.clone();
-    let ws_task = tokio::spawn(async move {
-        ws::run(
-            &ws_config,
-            ws_rx,
-            ws_restart_count,
-            ws_buffer,
-            shutdown_rx_ws,
-        )
-        .await;
-    });
-
-    // ─── Agent Health Endpoint ───
-    let health_port = config.agent_port;
-    let health_buffer = metric_buffer.clone();
-    let _health_task = tokio::spawn(async move {
-        agent_health::serve(health_port, start_time, health_buffer).await;
-    });
-
-    // ─── Metrik Toplama Task ───
-    let metrics_config = config.clone();
-    let metrics_restart_count = Arc::clone(&restart_count);
-    let metrics_buffer = metric_buffer.clone();
-    let metrics_agent_id = agent_id.clone();
-    let metrics_ws_tx = ws_tx.clone();
-    let metrics_task = tokio::spawn(async move {
-        let mut sys = System::new_all();
-        let mut disks = Disks::new_with_refreshed_list();
-        let mut networks = Networks::new_with_refreshed_list();
-        let mut prev_disk_snap = metrics::DiskIOSnapshot::default();
-        let mut last_tick = std::time::Instant::now();
-
-        let http_client = Client::builder()
-            .timeout(Duration::from_secs(5))
-            .user_agent(format!("nanonet-agent/{}", env!("CARGO_PKG_VERSION")))
-            .build()
-            .expect("HTTP client oluşturulamadı");
-
-        let health_url = metrics_config.health_url();
-        let service_id = metrics_config.service_id.clone();
-        let error_window_size = metrics_config.error_rate_window.max(1);
-        let app_metrics_url = metrics_config.metrics_endpoint.clone();
-        let process_target = metrics_config.process.clone();
-
-        // CPU kullanımı için iki ölçüm noktası gerekli
-        sys.refresh_cpu_usage();
-        tokio::time::sleep(Duration::from_secs(1)).await;
-
-        let mut interval = tokio::time::interval(Duration::from_secs(metrics_config.poll_interval));
-        let agent_start = std::time::Instant::now();
-
-        // Hata oranı için kayan pencere
-        let mut error_window: VecDeque<bool> = VecDeque::with_capacity(error_window_size);
-
-        loop {
-            tokio::select! {
-                _ = interval.tick() => {},
-                _ = shutdown_rx_metrics.changed() => {
-                    tracing::info!("Metrics task kapatılıyor (shutdown sinyali)");
-                    break;
-                }
-            }
-
-            // Sistem metrikleri
-            let elapsed = last_tick.elapsed().as_secs_f64();
-            last_tick = std::time::Instant::now();
-            let (mut snapshot, new_disk_snap) = metrics::collect_system(
-                &mut sys,
-                &mut disks,
-                &mut networks,
-                &prev_disk_snap,
-                elapsed,
-            );
-            prev_disk_snap = new_disk_snap;
-
-            // Per-process metrikleri
-            sys.refresh_processes();
-            let process_metrics = process_target
-                .as_deref()
-                .and_then(|t| metrics::collect_process(&sys, t));
-
-            // App metrics endpoint
-            if let Some(ref url) = app_metrics_url {
-                metrics::fetch_app_metrics(&http_client, &mut snapshot, url).await;
-            }
-
-            // Delta ağ metrikleri (MB/s)
-            let net_rx_mb = snapshot.net_rx_bytes as f64 / 1024.0 / 1024.0;
-            let net_tx_mb = snapshot.net_tx_bytes as f64 / 1024.0 / 1024.0;
-
-            // Health check
-            let health_result = health::check_health(&http_client, &health_url).await;
-
-            // Hata penceresi güncelle
-            error_window.push_back(health_result.is_error);
-            if error_window.len() > error_window_size {
-                error_window.pop_front();
-            }
-
-            let error_rate: f32 = if error_window.is_empty() {
-                0.0
-            } else {
-                let errors = error_window.iter().filter(|&&e| e).count();
-                (errors as f32 / error_window.len() as f32) * 100.0
-            };
-
-            let restarts = metrics_restart_count.load(Ordering::Relaxed);
-            let uptime_secs = agent_start.elapsed().as_secs();
-
-            tracing::debug!(
-                cpu = snapshot.cpu_percent,
-                mem_mb = snapshot.memory_used_mb,
-                status = %health_result.status,
-                latency_ms = health_result.latency_ms,
-                error_rate = error_rate,
-                ws_connected = ws::WS_CONNECTED.load(Ordering::Relaxed),
-                "Metrik"
-            );
-
-            // Mesaj oluştur
-            let mut message = json!({
-                "type": "metrics",
-                "agent_id": metrics_agent_id,
-                "agent_version": env!("CARGO_PKG_VERSION"),
-                "service_id": service_id,
-                "timestamp": Utc::now().to_rfc3339(),
-                "system": {
-                    "cpu_percent": snapshot.cpu_percent,
-                    "memory_used_mb": snapshot.memory_used_mb,
-                    "memory_total_mb": snapshot.memory_total_mb,
-                    "disk_used_gb": snapshot.disk_used_gb,
-                    "disk_total_gb": snapshot.disk_total_gb,
-                    "net_rx_mb": net_rx_mb,
-                    "net_tx_mb": net_tx_mb,
-                    "disk_read_bytes_sec": snapshot.disk_read_bytes_sec,
-                    "disk_write_bytes_sec": snapshot.disk_write_bytes_sec,
-                },
-                "app": {
-                    "cpu_percent": snapshot.app_cpu_percent,
-                    "memory_used_mb": snapshot.app_memory_used_mb,
-                },
-                "service": {
-                    "status": health_result.status,
-                    "latency_ms": health_result.latency_ms,
-                    "http_status": health_result.http_status,
-                    "error_rate": error_rate,
-                },
-                "process": {
-                    "pid": std::process::id(),
-                    "uptime_seconds": uptime_secs,
-                    "restart_count": restarts,
-                }
-            });
-
-            // Process-level metrikler varsa ekle
-            if let Some(ref pm) = process_metrics {
-                if let Some(obj) = message.as_object_mut() {
-                    obj.insert(
-                        "target_process".to_string(),
-                        json!({
-                            "pid": pm.pid,
-                            "name": pm.name,
-                            "cpu_percent": pm.cpu_percent,
-                            "memory_mb": pm.memory_mb,
-                            "status": pm.status,
-                        }),
-                    );
-                }
-            }
-
-            let msg_str = message.to_string();
-
-            // WS bağlıysa doğrudan gönder, değilse buffer'a ekle
-            if ws::WS_CONNECTED.load(Ordering::Relaxed) {
-                if let Err(e) = metrics_ws_tx.send(msg_str.clone()).await {
-                    tracing::warn!(
-                        "Metrik WS kanalına gönderilemedi: {} — buffer'a alınıyor",
-                        e
-                    );
-                    metrics_buffer.push(msg_str).await;
-                }
-            } else {
-                metrics_buffer.push(msg_str).await;
-                let buf_len = metrics_buffer.len().await;
-                if buf_len % 10 == 0 {
-                    tracing::info!(
-                        buffered = buf_len,
-                        dropped = metrics_buffer.dropped_count(),
-                        "WS bağlantısız — metrikler biriktiriliyor"
-                    );
-                }
-            }
-        }
-    });
-
-    // ─── Dependency Discovery Task ───
-    // Outbound TCP destinations are scanned every 60s and sent over WS.
-    // Backend deduplicates and ages-out entries, so missing a tick is fine.
-    let deps_ws_tx = ws_tx.clone();
-    let deps_service_id = config.service_id.clone();
-    let deps_agent_id = agent_id.clone();
-    let mut deps_shutdown_rx = shutdown_tx.subscribe();
-    let _deps_task = tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(60));
-        // First tick fires immediately — skip it so we don't burst at startup.
-        interval.tick().await;
-        loop {
-            tokio::select! {
-                _ = interval.tick() => {},
-                _ = deps_shutdown_rx.changed() => {
-                    tracing::info!("Dependency task kapatılıyor (shutdown sinyali)");
-                    break;
-                }
-            }
-            let observations = dependencies::discover();
-            if observations.is_empty() {
-                continue;
-            }
-            let msg = json!({
-                "type": "dependencies",
-                "agent_id": deps_agent_id,
-                "service_id": deps_service_id,
-                "timestamp": Utc::now().to_rfc3339(),
-                "dependencies": observations,
-            });
-            if ws::WS_CONNECTED.load(Ordering::Relaxed) {
-                if let Err(e) = deps_ws_tx.send(msg.to_string()).await {
-                    tracing::debug!("Dependency mesajı gönderilemedi: {}", e);
-                }
-            }
-        }
-    });
-
-    // ─── Heartbeat Task ───
-    // Backend tracks per-service agent_last_heartbeat_at to flag stale agents.
-    // We send an explicit lightweight "heartbeat" frame every 30s on top of the
-    // regular metrics so heartbeat liveness survives even when metric sampling
-    // is paused (e.g. health probe disabled).
-    let hb_ws_tx = ws_tx.clone();
-    let hb_service_id = config.service_id.clone();
-    let hb_agent_id = agent_id.clone();
-    let mut hb_shutdown_rx = shutdown_tx.subscribe();
-    let _heartbeat_task = tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(30));
-        interval.tick().await;
-        loop {
-            tokio::select! {
-                _ = interval.tick() => {},
-                _ = hb_shutdown_rx.changed() => break,
-            }
-            let msg = json!({
-                "type": "heartbeat",
-                "agent_id": hb_agent_id,
-                "agent_version": env!("CARGO_PKG_VERSION"),
-                "service_id": hb_service_id,
-                "timestamp": Utc::now().to_rfc3339(),
-            });
-            if ws::WS_CONNECTED.load(Ordering::Relaxed) {
-                if let Err(e) = hb_ws_tx.send(msg.to_string()).await {
-                    tracing::debug!("Heartbeat gönderilemedi: {}", e);
-                }
-            }
-        }
-    });
-
-    // ─── Sinyal Dinleyici ───
-    let signal_task = tokio::spawn(async move {
-        #[cfg(unix)]
-        {
-            use tokio::signal::unix::{signal, SignalKind};
-            let mut sigterm = signal(SignalKind::terminate()).expect("SIGTERM handler kurulamadı");
-            let mut sigint = signal(SignalKind::interrupt()).expect("SIGINT handler kurulamadı");
-            tokio::select! {
-                _ = sigterm.recv() => tracing::info!("SIGTERM alındı, kapatılıyor..."),
-                _ = sigint.recv()  => tracing::info!("SIGINT alındı, kapatılıyor..."),
-            }
-        }
-        #[cfg(not(unix))]
-        {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("Ctrl+C handler kurulamadı");
-            tracing::info!("Ctrl+C alındı, kapatılıyor...");
-        }
-        let _ = shutdown_tx.send(true);
-    });
-
-    // ─── Ana Bekleme ───
-    tokio::select! {
-        result = ws_task => {
-            if let Err(e) = result {
-                tracing::error!("WebSocket task hatası: {}", e);
-            }
-        }
-        result = metrics_task => {
-            if let Err(e) = result {
-                tracing::error!("Metrics task hatası: {}", e);
-            }
-        }
-        _ = signal_task => {
-            tracing::info!("Agent temiz şekilde kapatıldı.");
-        }
+    match &config.buffer_persist_path {
+        Some(path) => tracing::info!("  Buffer file:   {}", path),
+        None => tracing::info!("  Buffer file:   (yok — kapatma sonrası buffer kaybedilir)"),
     }
-
-    // Final istatistikleri
-    tracing::info!(
-        metrics_sent = ws::METRICS_SENT.load(Ordering::Relaxed),
-        commands_handled = ws::COMMANDS_HANDLED.load(Ordering::Relaxed),
-        metrics_dropped = metric_buffer.dropped_count(),
-        uptime_secs = start_time.elapsed().as_secs(),
-        "Agent kapatıldı — final istatistikleri"
-    );
-
-    Ok(())
+    match &config.audit_log_path {
+        Some(path) => tracing::info!("  Audit log:     {}", path),
+        None => tracing::info!("  Audit log:     (yok)"),
+    }
+    let labels = config.label_map();
+    if labels.is_empty() {
+        tracing::info!("  Labels:        (yok)");
+    } else {
+        let summary = labels
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        tracing::info!("  Labels:        {}", summary);
+    }
+    if config.sign_secret.is_some() {
+        tracing::info!(
+            "  Cmd signing:   ENFORCED (HMAC-SHA256, nonce TTL {}s)",
+            config.nonce_ttl_sec
+        );
+    } else {
+        tracing::info!("  Cmd signing:   (yok — komutlar imzasız kabul edilir)");
+    }
 }
 
+/// Kapatıldığında özet istatistikleri yazdırır — operatör için kolay bir
+/// post-mortem.
+fn print_final_stats(state: &Arc<AppState>) {
+    use std::sync::atomic::Ordering;
+    tracing::info!(
+        metrics_sent = state.metrics_sent.load(Ordering::Relaxed),
+        commands_handled = state.commands_handled.load(Ordering::Relaxed),
+        metrics_dropped = state.buffer.dropped_count(),
+        ws_reconnects = state.ws_reconnects.load(Ordering::Relaxed),
+        restart_count = state.restart_count.load(Ordering::Relaxed),
+        uptime_secs = state.uptime_secs(),
+        "Agent kapatıldı — final istatistikleri"
+    );
+}
+
+/// Stable agent kimliği oluşturur ya da daha önce oluşturulanı yükler.
+///
+/// Dosya konumu:
+/// - `$HOME/.nanonet/.agent_id.<service_id>` (varsa)
+/// - aksi halde `/var/lib/nanonet/.agent_id.<service_id>`
+///
+/// Yazma/okuma hataları log'a düşürülür ama agent başlatılmasına engel olmaz —
+/// kötü senaryoda her açılışta yeni UUID üretiriz.
 fn load_or_create_agent_id(config: &Config) -> String {
     let state_dir = std::env::var("HOME")
         .map(|h| format!("{}/.nanonet", h))
@@ -444,3 +309,11 @@ fn load_or_create_agent_id(config: &Config) -> String {
 
     new_id
 }
+
+// `AgentError`'ı main'in dönüş tipi olarak kullanmak için işaretle.
+#[allow(dead_code)]
+const _: fn() = || {
+    fn _assert_error() -> std::result::Result<(), AgentError> {
+        Ok(())
+    }
+};

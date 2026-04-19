@@ -152,6 +152,42 @@ fn process_to_metrics(p: &sysinfo::Process) -> ProcessMetrics {
     }
 }
 
+/// Servis /metrics endpoint'inden uygulama metriklerini çeker ve snapshot'a ekler
+pub async fn fetch_app_metrics(client: &Client, snapshot: &mut MetricSnapshot, metrics_url: &str) {
+    match client
+        .get(metrics_url)
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await
+    {
+        Ok(resp) if resp.status().is_success() => match resp.json::<AppMetricsResponse>().await {
+            Ok(app) => {
+                if let Some(cpu) = app.cpu_percent {
+                    snapshot.app_cpu_percent = Some(cpu);
+                }
+                if let Some(mem) = app.memory_used_mb {
+                    snapshot.app_memory_used_mb = Some(mem);
+                }
+                tracing::debug!(
+                    url = metrics_url,
+                    app_cpu = ?snapshot.app_cpu_percent,
+                    app_mem_mb = ?snapshot.app_memory_used_mb,
+                    "app metrics fetched"
+                );
+            }
+            Err(e) => {
+                tracing::debug!(url = metrics_url, error = %e, "app metrics parse hatası");
+            }
+        },
+        Ok(resp) => {
+            tracing::debug!(url = metrics_url, status = %resp.status(), "app metrics non-2xx");
+        }
+        Err(e) => {
+            tracing::debug!(url = metrics_url, error = %e, "app metrics fetch hatası");
+        }
+    }
+}
+
 /// /proc/diskstats'tan tüm disk aygıtlarının kümülatif okuma/yazma baytlarını toplar.
 /// Dosya yoksa (Linux dışı) (0, 0) döner.
 ///
@@ -279,14 +315,14 @@ mod tests {
 
     #[test]
     fn test_cpu_average_single_core() {
-        let cpus = vec![42.5_f32];
+        let cpus = [42.5_f32];
         let avg = cpus.iter().sum::<f32>() / cpus.len() as f32;
         assert!((avg - 42.5).abs() < 0.001);
     }
 
     #[test]
     fn test_cpu_average_multi_core() {
-        let cpus = vec![20.0_f32, 40.0, 60.0, 80.0];
+        let cpus = [20.0_f32, 40.0, 60.0, 80.0];
         let avg = cpus.iter().sum::<f32>() / cpus.len() as f32;
         assert!((avg - 50.0).abs() < 0.001);
     }
@@ -355,41 +391,5 @@ mod tests {
         assert!((back.cpu_percent - snap.cpu_percent).abs() < 0.001);
         assert_eq!(back.net_rx_bytes, snap.net_rx_bytes);
         assert_eq!(back.app_memory_used_mb, snap.app_memory_used_mb);
-    }
-}
-
-/// Servis /metrics endpoint'inden uygulama metriklerini çeker ve snapshot'a ekler
-pub async fn fetch_app_metrics(client: &Client, snapshot: &mut MetricSnapshot, metrics_url: &str) {
-    match client
-        .get(metrics_url)
-        .timeout(Duration::from_secs(3))
-        .send()
-        .await
-    {
-        Ok(resp) if resp.status().is_success() => match resp.json::<AppMetricsResponse>().await {
-            Ok(app) => {
-                if let Some(cpu) = app.cpu_percent {
-                    snapshot.app_cpu_percent = Some(cpu);
-                }
-                if let Some(mem) = app.memory_used_mb {
-                    snapshot.app_memory_used_mb = Some(mem);
-                }
-                tracing::debug!(
-                    url = metrics_url,
-                    app_cpu = ?snapshot.app_cpu_percent,
-                    app_mem_mb = ?snapshot.app_memory_used_mb,
-                    "app metrics fetched"
-                );
-            }
-            Err(e) => {
-                tracing::debug!(url = metrics_url, error = %e, "app metrics parse hatası");
-            }
-        },
-        Ok(resp) => {
-            tracing::debug!(url = metrics_url, status = %resp.status(), "app metrics non-2xx");
-        }
-        Err(e) => {
-            tracing::debug!(url = metrics_url, error = %e, "app metrics fetch hatası");
-        }
     }
 }

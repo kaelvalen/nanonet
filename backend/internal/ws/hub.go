@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"nanonet-backend/pkg/agentsign"
 )
 
 type AgentMessage struct {
@@ -21,6 +23,7 @@ type AgentMessage struct {
 	Output       *string                  `json:"output,omitempty"`
 	Error        *string                  `json:"error,omitempty"`
 	Data         map[string]interface{}   `json:"data,omitempty"`
+	Labels       map[string]string        `json:"labels,omitempty"`
 	System       map[string]interface{}   `json:"system,omitempty"`
 	App          map[string]interface{}   `json:"app,omitempty"`
 	Service      map[string]interface{}   `json:"service,omitempty"`
@@ -58,6 +61,10 @@ type Hub struct {
 
 	// redisClient is nil when Redis is not configured (in-memory mode).
 	redisClient *redis.Client
+
+	// signer — agent komutlarını imzalamak için opsiyonel HMAC signer.
+	// `NANONET_AGENT_SIGN_SECRET` env'i set değilse no-op davranır.
+	signer *agentsign.Signer
 }
 
 type pendingCommand struct {
@@ -78,7 +85,15 @@ func NewHub(maxConnections int) *Hub {
 		unregister:       make(chan *Client),
 		maxConnections:   maxConnections,
 		pendingCommands:  make(map[string][]pendingCommand),
+		signer:           agentsign.NewFromEnv(),
 	}
+}
+
+// SetSigner replaces the default env-derived signer (test/override).
+func (h *Hub) SetSigner(s *agentsign.Signer) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.signer = s
 }
 
 // NewHubWithRedis creates a Hub backed by Redis for multi-instance deployments.
@@ -396,6 +411,13 @@ func (h *Hub) BroadcastCommandResult(serviceID, commandID, status string, output
 // SendCommandToAgent — komutu servise bağlı TÜM agent'lara gönderir (multi-instance).
 // Hiçbir agent bağlı değilse komut kuyruğa eklenir.
 func (h *Hub) SendCommandToAgent(serviceID string, command map[string]interface{}) bool {
+	// HMAC imzalama yapılandırılmışsa komut'a nonce + signature alanlarını ekle.
+	// Agent tarafı `NANONET_AGENT_SIGN_SECRET` ile çalışıyorsa imzasız komutu
+	// reddedecek; bu yüzden imzalamayı serialize öncesi yapıyoruz.
+	if h.signer != nil && h.signer.IsEnabled() {
+		h.signer.SignInPlace(command)
+	}
+
 	jsonData, err := json.Marshal(command)
 	if err != nil {
 		slog.Error("Komut serialize hatası", slog.String("error", err.Error()))

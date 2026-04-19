@@ -12,6 +12,16 @@ export interface Service {
 	agent_version?: string | null;
 	agent_status?: "healthy" | "stale" | "down" | "unknown";
 	agent_last_heartbeat_at?: string | null;
+	/**
+	 * Agent tarafından gönderilen statik etiketler (`--labels` ile yapılandırılır).
+	 * Örn: `{ region: "eu-west", role: "db" }`. Yoksa undefined.
+	 */
+	agent_labels?: Record<string, string>;
+	/**
+	 * Agent imza zorunlu mu çalışıyor? Backend `commands.signing_enforced`
+	 * kümesi vasıtasıyla agent /status endpoint'inden öğrenir.
+	 */
+	agent_signing_enforced?: boolean;
 	created_at: string;
 	updated_at: string;
 }
