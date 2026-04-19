@@ -32,6 +32,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Logo } from "@/components/Logo";
+import { NanonetAd } from "@/components/landing/NanonetAd";
 import { useServices } from "@/hooks/useServices";
 import { useAuthStore } from "@/store/authStore";
 
@@ -302,111 +303,132 @@ function Hero({ authed, liveCount }: { authed: boolean; liveCount: number }) {
 			<GridBackdrop />
 
 			<div className="relative max-w-[1200px] mx-auto px-6">
-				<motion.div
-					initial={reduce ? false : { opacity: 0, y: -4 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.4 }}
-					className="inline-flex items-center gap-2 mb-8"
-				>
-					<span
-						aria-hidden
-						className="relative flex w-2 h-2 items-center justify-center"
+				<div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+					<div className="lg:col-span-7">
+						<motion.div
+							initial={reduce ? false : { opacity: 0, y: -4 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.4 }}
+							className="inline-flex items-center gap-2 mb-8"
+						>
+							<span
+								aria-hidden
+								className="relative flex w-2 h-2 items-center justify-center"
+							>
+								<span
+									className="absolute inset-0 rounded-full"
+									style={{
+										background: STATUS_UP,
+										opacity: 0.35,
+										animation: reduce
+											? undefined
+											: "nn-pulse 2.4s ease-in-out infinite",
+									}}
+								/>
+								<span
+									className="relative w-1.5 h-1.5 rounded-full"
+									style={{ background: STATUS_UP }}
+								/>
+							</span>
+							<span
+								className="text-[11px] font-mono uppercase tracking-[0.16em]"
+								style={{ color: TXT_DIM }}
+							>
+								{authed && liveCount > 0
+									? `${liveCount} servis · canlı`
+									: "Self-hosted · açık kaynak"}
+							</span>
+						</motion.div>
+
+						<motion.h1
+							initial={reduce ? false : { opacity: 0, y: 12 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+							className="text-[44px] sm:text-[60px] lg:text-[68px] font-semibold tracking-[-0.035em] leading-[0.98]"
+							style={{ color: TXT }}
+						>
+							Altyapınızın
+							<br />
+							<span style={{ color: TXT_DIM }}>sinir sistemi.</span>
+						</motion.h1>
+
+						<motion.p
+							initial={reduce ? false : { opacity: 0, y: 8 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.1 }}
+							className="mt-7 max-w-xl text-[16px] sm:text-[17px] leading-relaxed"
+							style={{ color: TXT_MUTED }}
+						>
+							Mikroservislerinizden gelen her sinyali gerçek zamanlı yakalar,
+							anomalileri AI ile yorumlar, çözümü size yazılı olarak sunar.
+							Verileriniz hiç sunucularınızdan çıkmaz.
+						</motion.p>
+
+						<motion.div
+							initial={reduce ? false : { opacity: 0, y: 8 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.2 }}
+							className="mt-10 flex items-center gap-3 flex-wrap"
+						>
+							<Link
+								to={authed ? "/app" : "/register"}
+								className="group inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-semibold transition-colors"
+								style={{
+									background: BRAND,
+									color: INK,
+								}}
+							>
+								{authed ? "Uygulamaya git" : "Ücretsiz başla"}
+								<ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+							</Link>
+							<button
+								type="button"
+								onClick={() =>
+									document
+										.getElementById("how")
+										?.scrollIntoView({ behavior: "smooth" })
+								}
+								className="inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-medium transition-colors"
+								style={{
+									color: TXT,
+									border: `1px solid ${INK_LINE}`,
+								}}
+							>
+								Nasıl çalışır
+							</button>
+						</motion.div>
+
+						<div
+							aria-hidden
+							className="mt-6 flex items-center gap-4 text-[11px] font-mono"
+							style={{ color: TXT_FAINT }}
+						>
+							<span className="inline-flex items-center gap-1.5">
+								<CheckCircle2 className="w-3 h-3" /> Kart gerekmiyor
+							</span>
+							<span>·</span>
+							<span>30 sn'de kurulum</span>
+							<span>·</span>
+							<span>MIT lisanslı</span>
+						</div>
+					</div>
+
+					<motion.div
+						initial={reduce ? false : { opacity: 0, x: 12 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ duration: 0.6, delay: 0.2 }}
+						className="lg:col-span-5"
 					>
-						<span
-							className="absolute inset-0 rounded-full"
+						<div
+							className="relative w-full rounded-[8px] overflow-hidden"
 							style={{
-								background: STATUS_UP,
-								opacity: 0.35,
-								animation: reduce
-									? undefined
-									: "nn-pulse 2.4s ease-in-out infinite",
+								border: `1px solid ${INK_LINE}`,
+								background: INK_RAISED,
 							}}
-						/>
-						<span
-							className="relative w-1.5 h-1.5 rounded-full"
-							style={{ background: STATUS_UP }}
-						/>
-					</span>
-					<span
-						className="text-[11px] font-mono uppercase tracking-[0.16em]"
-						style={{ color: TXT_DIM }}
-					>
-						{authed && liveCount > 0
-							? `${liveCount} servis · canlı`
-							: "Self-hosted · açık kaynak"}
-					</span>
-				</motion.div>
-
-				<motion.h1
-					initial={reduce ? false : { opacity: 0, y: 12 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-					className="max-w-4xl text-[44px] sm:text-[64px] lg:text-[80px] font-semibold tracking-[-0.035em] leading-[0.98]"
-					style={{ color: TXT }}
-				>
-					Altyapınızın
-					<br />
-					<span style={{ color: TXT_DIM }}>sinir sistemi.</span>
-				</motion.h1>
-
-				<motion.p
-					initial={reduce ? false : { opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.1 }}
-					className="mt-7 max-w-xl text-[16px] sm:text-[17px] leading-relaxed"
-					style={{ color: TXT_MUTED }}
-				>
-					Mikroservislerinizden gelen her sinyali gerçek zamanlı yakalar,
-					anomalileri AI ile yorumlar, çözümü size yazılı olarak sunar.
-					Verileriniz hiç sunucularınızdan çıkmaz.
-				</motion.p>
-
-				<motion.div
-					initial={reduce ? false : { opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.2 }}
-					className="mt-10 flex items-center gap-3 flex-wrap"
-				>
-					<Link
-						to={authed ? "/app" : "/register"}
-						className="group inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-semibold transition-colors"
-						style={{
-							background: BRAND,
-							color: INK,
-						}}
-					>
-						{authed ? "Uygulamaya git" : "Ücretsiz başla"}
-						<ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-					</Link>
-					<button
-						type="button"
-						onClick={() =>
-							document
-								.getElementById("how")
-								?.scrollIntoView({ behavior: "smooth" })
-						}
-						className="inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-medium transition-colors"
-						style={{
-							color: TXT,
-							border: `1px solid ${INK_LINE}`,
-						}}
-					>
-						Nasıl çalışır
-					</button>
-				</motion.div>
-
-				<div
-					aria-hidden
-					className="mt-6 flex items-center gap-4 text-[11px] font-mono"
-					style={{ color: TXT_FAINT }}
-				>
-					<span className="inline-flex items-center gap-1.5">
-						<CheckCircle2 className="w-3 h-3" /> Kart gerekmiyor
-					</span>
-					<span>·</span>
-					<span>30 sn'de kurulum</span>
-					<span>·</span>
-					<span>MIT lisanslı</span>
+						>
+							<NanonetAd className="block aspect-[16/9] w-full" />
+						</div>
+					</motion.div>
 				</div>
 
 				<motion.div
