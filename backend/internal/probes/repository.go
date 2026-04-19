@@ -66,12 +66,12 @@ func (r *Repository) ListDue(ctx context.Context, now time.Time) ([]Probe, error
 func (r *Repository) UpdateRunResult(ctx context.Context, p *Probe, run *Run) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&Probe{}).Where("id = ?", p.ID).Updates(map[string]interface{}{
-			"last_run_at":           p.LastRunAt,
-			"last_status":           p.LastStatus,
-			"last_latency_ms":       p.LastLatencyMS,
-			"last_error":            p.LastError,
-			"consecutive_failures":  p.ConsecutiveFailures,
-			"updated_at":            time.Now(),
+			"last_run_at":          p.LastRunAt,
+			"last_status":          p.LastStatus,
+			"last_latency_ms":      p.LastLatencyMS,
+			"last_error":           p.LastError,
+			"consecutive_failures": p.ConsecutiveFailures,
+			"updated_at":           time.Now(),
 		}).Error; err != nil {
 			return err
 		}

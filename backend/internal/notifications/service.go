@@ -33,9 +33,11 @@ func NewService(db *gorm.DB, email EmailSender) *Service {
 
 // CRUD passthroughs for the handler.
 
-func (s *Service) Create(ctx context.Context, ch *Channel) error    { return s.repo.Create(ctx, ch) }
-func (s *Service) Update(ctx context.Context, ch *Channel) error    { return s.repo.Update(ctx, ch) }
-func (s *Service) Delete(ctx context.Context, u, id uuid.UUID) error { return s.repo.Delete(ctx, u, id) }
+func (s *Service) Create(ctx context.Context, ch *Channel) error { return s.repo.Create(ctx, ch) }
+func (s *Service) Update(ctx context.Context, ch *Channel) error { return s.repo.Update(ctx, ch) }
+func (s *Service) Delete(ctx context.Context, u, id uuid.UUID) error {
+	return s.repo.Delete(ctx, u, id)
+}
 func (s *Service) Get(ctx context.Context, u, id uuid.UUID) (*Channel, error) {
 	return s.repo.GetByID(ctx, u, id)
 }

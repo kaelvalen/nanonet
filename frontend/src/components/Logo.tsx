@@ -20,7 +20,7 @@
  *    it with a wordmark).
  */
 
-import { type SVGProps } from "react";
+import type { SVGProps } from "react";
 
 interface LogoProps extends Omit<SVGProps<SVGSVGElement>, "title"> {
 	title?: string;
@@ -63,12 +63,7 @@ export function Logo({ title, className, ...rest }: LogoProps) {
 				/>
 			))}
 			{/* Active node — brand cyan, fixed across themes. */}
-			<circle
-				cx={19}
-				cy={12}
-				r={2.75}
-				fill="var(--brand-primary, #22D3EE)"
-			/>
+			<circle cx={19} cy={12} r={2.75} fill="var(--brand-primary, #22D3EE)" />
 		</svg>
 	);
 }

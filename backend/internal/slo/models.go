@@ -23,8 +23,8 @@ type SLO struct {
 	ServiceID  uuid.UUID `gorm:"type:uuid;not null;index" json:"service_id"`
 	Name       string    `gorm:"type:varchar(120);not null" json:"name"`
 	SLIType    SLI       `gorm:"type:varchar(20);not null" json:"sli_type"`
-	Threshold  *float64  `json:"threshold,omitempty"`        // ms or %
-	Target     float64   `gorm:"not null" json:"target"`     // e.g. 99.9
+	Threshold  *float64  `json:"threshold,omitempty"`    // ms or %
+	Target     float64   `gorm:"not null" json:"target"` // e.g. 99.9
 	WindowDays int       `gorm:"not null;default:30" json:"window_days"`
 	Enabled    bool      `gorm:"not null;default:true" json:"enabled"`
 	CreatedAt  time.Time `gorm:"not null;default:now()" json:"created_at"`
@@ -53,17 +53,17 @@ type UpdateSLORequest struct {
 
 // Compliance is the computed view returned by GET /slos/:id/compliance.
 type Compliance struct {
-	SLO             SLO              `json:"slo"`
-	WindowStart     time.Time        `json:"window_start"`
-	WindowEnd       time.Time        `json:"window_end"`
-	TotalSamples    int              `json:"total_samples"`
-	GoodSamples     int              `json:"good_samples"`
-	BadSamples      int              `json:"bad_samples"`
-	CurrentSLI      float64          `json:"current_sli"`         // 0-100
-	ErrorBudgetUsed float64          `json:"error_budget_used"`   // 0-100, % of allowed errors consumed
-	BurnRate        float64          `json:"burn_rate"`           // current burn vs target
-	Healthy         bool             `json:"healthy"`             // current_sli >= target
-	Burndown        []BurndownPoint  `json:"burndown"`
+	SLO             SLO             `json:"slo"`
+	WindowStart     time.Time       `json:"window_start"`
+	WindowEnd       time.Time       `json:"window_end"`
+	TotalSamples    int             `json:"total_samples"`
+	GoodSamples     int             `json:"good_samples"`
+	BadSamples      int             `json:"bad_samples"`
+	CurrentSLI      float64         `json:"current_sli"`       // 0-100
+	ErrorBudgetUsed float64         `json:"error_budget_used"` // 0-100, % of allowed errors consumed
+	BurnRate        float64         `json:"burn_rate"`         // current burn vs target
+	Healthy         bool            `json:"healthy"`           // current_sli >= target
+	Burndown        []BurndownPoint `json:"burndown"`
 }
 
 type BurndownPoint struct {

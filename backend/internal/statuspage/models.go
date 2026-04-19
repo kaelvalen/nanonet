@@ -40,20 +40,20 @@ type UpdateRequest struct {
 // PublicView is the unauthenticated payload returned to anonymous visitors.
 // We deliberately omit IDs and any owner metadata.
 type PublicView struct {
-	Title       string             `json:"title"`
-	Description *string            `json:"description,omitempty"`
-	GeneratedAt time.Time          `json:"generated_at"`
-	Overall     string             `json:"overall"` // operational | degraded | down
-	Services    []PublicService    `json:"services"`
-	Incidents   []PublicIncident   `json:"incidents"`
+	Title       string           `json:"title"`
+	Description *string          `json:"description,omitempty"`
+	GeneratedAt time.Time        `json:"generated_at"`
+	Overall     string           `json:"overall"` // operational | degraded | down
+	Services    []PublicService  `json:"services"`
+	Incidents   []PublicIncident `json:"incidents"`
 }
 
 type PublicService struct {
-	Name        string  `json:"name"`
-	Status      string  `json:"status"`              // up | degraded | down | unknown
-	Uptime24h   float64 `json:"uptime_24h"`          // 0-100
-	Uptime30d   float64 `json:"uptime_30d"`          // 0-100
-	LatencyMS   *float64 `json:"latency_ms,omitempty"`
+	Name      string   `json:"name"`
+	Status    string   `json:"status"`     // up | degraded | down | unknown
+	Uptime24h float64  `json:"uptime_24h"` // 0-100
+	Uptime30d float64  `json:"uptime_30d"` // 0-100
+	LatencyMS *float64 `json:"latency_ms,omitempty"`
 }
 
 type PublicIncident struct {

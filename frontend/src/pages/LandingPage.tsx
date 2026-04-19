@@ -1044,10 +1044,7 @@ function SLOMockCard() {
 					</div>
 					<p className="mt-1 text-[12px]" style={{ color: TXT_DIM }}>
 						payments-api · hedef{" "}
-						<span
-							className="tabular-nums font-semibold"
-							style={{ color: TXT }}
-						>
+						<span className="tabular-nums font-semibold" style={{ color: TXT }}>
 							99.9 %
 						</span>{" "}
 						· 30 g pencere
@@ -1101,10 +1098,7 @@ function MiniMetric({
 				<span className="text-[18px] font-semibold tabular-nums tracking-tight">
 					{value}
 				</span>
-				<span
-					className="text-[11px] font-medium"
-					style={{ color: TXT_FAINT }}
-				>
+				<span className="text-[11px] font-medium" style={{ color: TXT_FAINT }}>
 					{unit}
 				</span>
 			</p>
@@ -1116,8 +1110,7 @@ function MockBurndown() {
 	const values = [100, 96, 91, 87, 80, 76, 70, 66, 60, 56, 50, 47, 44, 42];
 	const pts = values
 		.map(
-			(v, i) =>
-				`${(i / (values.length - 1)) * 240},${60 - (v / 100) * 50 - 5}`,
+			(v, i) => `${(i / (values.length - 1)) * 240},${60 - (v / 100) * 50 - 5}`,
 		)
 		.join(" ");
 	return (
@@ -1148,12 +1141,7 @@ function MockBurndown() {
 					</linearGradient>
 				</defs>
 				<polygon fill="url(#bd-grad)" points={`0,60 ${pts} 240,60`} />
-				<polyline
-					fill="none"
-					stroke={BRAND}
-					strokeWidth="1.25"
-					points={pts}
-				/>
+				<polyline fill="none" stroke={BRAND} strokeWidth="1.25" points={pts} />
 			</svg>
 		</div>
 	);
@@ -1208,14 +1196,8 @@ function IncidentTimelineMock() {
 				className="px-5 h-11 flex items-center gap-2"
 				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
 			>
-				<AlertTriangle
-					className="w-3.5 h-3.5"
-					style={{ color: STATUS_DOWN }}
-				/>
-				<span
-					className="text-[12px] font-semibold"
-					style={{ color: TXT }}
-				>
+				<AlertTriangle className="w-3.5 h-3.5" style={{ color: STATUS_DOWN }} />
+				<span className="text-[12px] font-semibold" style={{ color: TXT }}>
 					INC-104 · Payments degraded
 				</span>
 				<span
@@ -1255,10 +1237,7 @@ function IncidentTimelineMock() {
 								>
 									{e.time}
 								</span>
-								<span
-									className="text-[13px]"
-									style={{ color: TXT_MUTED }}
-								>
+								<span className="text-[13px]" style={{ color: TXT_MUTED }}>
 									{e.title}
 								</span>
 							</li>
@@ -1296,7 +1275,9 @@ function StatusPageMock() {
 	];
 	const days = Array.from({ length: 60 }, (_, i) => {
 		const r = (i * 9301 + 49297) % 100;
-		return r > 96 ? "down" : r > 92 ? "warn" : "up";
+		const status: "up" | "warn" | "down" =
+			r > 96 ? "down" : r > 92 ? "warn" : "up";
+		return { id: `d${i}`, status };
 	});
 	return (
 		<div
@@ -1311,10 +1292,7 @@ function StatusPageMock() {
 				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
 			>
 				<Globe className="w-3.5 h-3.5" style={{ color: BRAND }} />
-				<span
-					className="text-[12px] font-semibold"
-					style={{ color: TXT }}
-				>
+				<span className="text-[12px] font-semibold" style={{ color: TXT }}>
 					status.acme.dev
 				</span>
 				<span
@@ -1332,10 +1310,7 @@ function StatusPageMock() {
 				{services.map((s) => (
 					<div key={s.name}>
 						<div className="flex items-center justify-between mb-1.5">
-							<span
-								className="text-[13px] font-medium"
-								style={{ color: TXT }}
-							>
+							<span className="text-[13px] font-medium" style={{ color: TXT }}>
 								{s.name}
 							</span>
 							<span
@@ -1348,16 +1323,16 @@ function StatusPageMock() {
 							</span>
 						</div>
 						<div className="flex gap-[2px] h-3">
-							{days.map((d, i) => (
+							{days.map((d) => (
 								<span
-									key={`${s.name}-${i}`}
+									key={`${s.name}-${d.id}`}
 									aria-hidden
 									className="flex-1 rounded-[1px]"
 									style={{
 										background:
-											d === "up"
+											d.status === "up"
 												? "rgba(163, 230, 53, 0.55)"
-												: d === "warn"
+												: d.status === "warn"
 													? "rgba(251, 191, 36, 0.65)"
 													: "rgba(248, 113, 113, 0.65)",
 									}}
@@ -1397,7 +1372,14 @@ function IntegrationsStrip() {
 		},
 		{
 			label: "Altyapı",
-			items: ["Kubernetes", "Docker", "systemd", "HTTP / TCP", "Linux", "Windows"],
+			items: [
+				"Kubernetes",
+				"Docker",
+				"systemd",
+				"HTTP / TCP",
+				"Linux",
+				"Windows",
+			],
 		},
 		{
 			label: "Erişim",
@@ -1915,10 +1897,7 @@ function Footer() {
 			}}
 		>
 			<div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-				<div
-					className="flex items-center gap-2.5"
-					style={{ color: TXT_MUTED }}
-				>
+				<div className="flex items-center gap-2.5" style={{ color: TXT_MUTED }}>
 					<Logo className="w-4 h-4" />
 					<span className="text-[12.5px] font-semibold" style={{ color: TXT }}>
 						NanoNet

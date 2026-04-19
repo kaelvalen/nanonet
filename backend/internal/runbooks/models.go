@@ -53,13 +53,13 @@ func (Runbook) TableName() string { return "runbooks" }
 
 // Fire is an audit record of one execution attempt.
 type Fire struct {
-	ID         int64     `gorm:"primaryKey"               json:"id"`
-	RunbookID  uuid.UUID `gorm:"type:uuid;not null;index" json:"runbook_id"`
-	ServiceID  uuid.UUID `gorm:"type:uuid;not null"       json:"service_id"`
-	AlertID    *uuid.UUID `gorm:"type:uuid"               json:"alert_id,omitempty"`
-	FiredAt    time.Time `gorm:"not null;default:now()"   json:"fired_at"`
-	Status     string    `gorm:"type:varchar(20);not null" json:"status"`
-	Note       *string   `gorm:"type:text"                 json:"note,omitempty"`
+	ID        int64      `gorm:"primaryKey"               json:"id"`
+	RunbookID uuid.UUID  `gorm:"type:uuid;not null;index" json:"runbook_id"`
+	ServiceID uuid.UUID  `gorm:"type:uuid;not null"       json:"service_id"`
+	AlertID   *uuid.UUID `gorm:"type:uuid"               json:"alert_id,omitempty"`
+	FiredAt   time.Time  `gorm:"not null;default:now()"   json:"fired_at"`
+	Status    string     `gorm:"type:varchar(20);not null" json:"status"`
+	Note      *string    `gorm:"type:text"                 json:"note,omitempty"`
 }
 
 func (Fire) TableName() string { return "runbook_fires" }

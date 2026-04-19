@@ -53,8 +53,11 @@ function mergeSeries(
 	for (const { service, data } of results) {
 		for (const row of data) {
 			const key = row.bucket;
-			if (!byBucket.has(key)) byBucket.set(key, { bucket: key });
-			const target = byBucket.get(key)!;
+			let target = byBucket.get(key);
+			if (!target) {
+				target = { bucket: key };
+				byBucket.set(key, target);
+			}
 			target[service.id] = row[metric];
 		}
 	}

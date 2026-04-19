@@ -79,7 +79,7 @@ func (h *Handler) Create(c *gin.Context) {
 	h.audit.Record(c.Request.Context(), audit.Entry{
 		UserID: &userID, Action: "notification.create", ResourceType: "notification_channel",
 		ResourceID: &ch.ID, IPAddress: c.ClientIP(), UserAgent: c.GetHeader("User-Agent"),
-		Status: audit.StatusSuccess,
+		Status:  audit.StatusSuccess,
 		Details: map[string]any{"type": ch.Type, "name": ch.Name},
 	})
 

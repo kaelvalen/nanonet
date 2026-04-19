@@ -43,7 +43,7 @@ type UpdateRequest struct {
 // TimelineEvent is the union row returned by GET /incidents/:id.
 // Kind drives which fields are populated.
 type TimelineEvent struct {
-	Kind      string    `json:"kind"`            // "alert" | "alert_resolved" | "command" | "status_change"
+	Kind      string    `json:"kind"` // "alert" | "alert_resolved" | "command" | "status_change"
 	Timestamp time.Time `json:"timestamp"`
 	Title     string    `json:"title"`
 	Detail    string    `json:"detail,omitempty"`

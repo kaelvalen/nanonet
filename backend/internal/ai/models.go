@@ -155,7 +155,7 @@ type ClaudeResponse struct {
 	Content []struct {
 		Text string `json:"text"`
 	} `json:"content"`
-	StopReason string `json:"stop_reason"`
+	StopReason string      `json:"stop_reason"`
 	Usage      ClaudeUsage `json:"usage"`
 }
 

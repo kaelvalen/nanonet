@@ -118,8 +118,8 @@ type StaleEvaluation struct {
 // returned, so callers can fire alerts exactly once.
 func (s *Service) EvaluateStaleness(ctx context.Context, now time.Time) (*StaleEvaluation, error) {
 	type row struct {
-		ID                   uuid.UUID `gorm:"column:id"`
-		AgentStatus          string    `gorm:"column:agent_status"`
+		ID                   uuid.UUID  `gorm:"column:id"`
+		AgentStatus          string     `gorm:"column:agent_status"`
 		AgentLastHeartbeatAt *time.Time `gorm:"column:agent_last_heartbeat_at"`
 	}
 	var rows []row

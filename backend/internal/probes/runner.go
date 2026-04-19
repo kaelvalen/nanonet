@@ -167,7 +167,7 @@ func (r *Runner) execHTTP(ctx context.Context, p Probe) execResult {
 	if err != nil {
 		return execResult{status: "down", latency: lat, errMsg: err.Error()}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	hs := resp.StatusCode
 	res := execResult{latency: lat, httpStatus: &hs}

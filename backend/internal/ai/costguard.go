@@ -51,39 +51,39 @@ func EstimateCost(model string, inputTokens, outputTokens int) float64 {
 
 // UsageRow is what we expose to handlers / the dashboard.
 type UsageRow struct {
-	ID            uuid.UUID `gorm:"column:id"            json:"id"`
-	UserID        uuid.UUID `gorm:"column:user_id"       json:"user_id"`
-	ServiceID     *uuid.UUID `gorm:"column:service_id"   json:"service_id,omitempty"`
-	Model         string    `gorm:"column:model"         json:"model"`
-	Kind          string    `gorm:"column:kind"          json:"kind"`
-	InputTokens   int       `gorm:"column:input_tokens"  json:"input_tokens"`
-	OutputTokens  int       `gorm:"column:output_tokens" json:"output_tokens"`
-	CostUSD       float64   `gorm:"column:cost_usd"      json:"cost_usd"`
-	CacheHit      bool      `gorm:"column:cache_hit"     json:"cache_hit"`
-	LatencyMS     int       `gorm:"column:latency_ms"    json:"latency_ms"`
-	CreatedAt     time.Time `gorm:"column:created_at"    json:"created_at"`
+	ID           uuid.UUID  `gorm:"column:id"            json:"id"`
+	UserID       uuid.UUID  `gorm:"column:user_id"       json:"user_id"`
+	ServiceID    *uuid.UUID `gorm:"column:service_id"   json:"service_id,omitempty"`
+	Model        string     `gorm:"column:model"         json:"model"`
+	Kind         string     `gorm:"column:kind"          json:"kind"`
+	InputTokens  int        `gorm:"column:input_tokens"  json:"input_tokens"`
+	OutputTokens int        `gorm:"column:output_tokens" json:"output_tokens"`
+	CostUSD      float64    `gorm:"column:cost_usd"      json:"cost_usd"`
+	CacheHit     bool       `gorm:"column:cache_hit"     json:"cache_hit"`
+	LatencyMS    int        `gorm:"column:latency_ms"    json:"latency_ms"`
+	CreatedAt    time.Time  `gorm:"column:created_at"    json:"created_at"`
 }
 
 func (UsageRow) TableName() string { return "ai_usage" }
 
 // UsageSummary is a month-to-date roll-up plus the user's configured budget.
 type UsageSummary struct {
-	MonthSpendUSD     float64    `json:"month_spend_usd"`
-	MonthInputTokens  int        `json:"month_input_tokens"`
-	MonthOutputTokens int        `json:"month_output_tokens"`
-	MonthCallCount    int        `json:"month_call_count"`
-	CacheHitCount     int        `json:"month_cache_hits"`
-	BudgetUSD         *float64   `json:"budget_usd,omitempty"`
-	BudgetUsedPct     *float64   `json:"budget_used_pct,omitempty"`
+	MonthSpendUSD      float64   `json:"month_spend_usd"`
+	MonthInputTokens   int       `json:"month_input_tokens"`
+	MonthOutputTokens  int       `json:"month_output_tokens"`
+	MonthCallCount     int       `json:"month_call_count"`
+	CacheHitCount      int       `json:"month_cache_hits"`
+	BudgetUSD          *float64  `json:"budget_usd,omitempty"`
+	BudgetUsedPct      *float64  `json:"budget_used_pct,omitempty"`
 	BudgetRemainingUSD *float64  `json:"budget_remaining_usd,omitempty"`
-	WindowStart       time.Time  `json:"window_start"`
+	WindowStart        time.Time `json:"window_start"`
 }
 
 // CostGuard wraps the Claude call with budget enforcement, prompt caching, and
 // usage logging. It owns the *gorm.DB so it can write/read all three tables.
 type CostGuard struct {
-	db        *gorm.DB
-	cacheTTL  time.Duration
+	db       *gorm.DB
+	cacheTTL time.Duration
 }
 
 func NewCostGuard(db *gorm.DB) *CostGuard {

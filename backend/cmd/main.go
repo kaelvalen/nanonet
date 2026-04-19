@@ -15,21 +15,21 @@ import (
 	"nanonet-backend/internal/auth"
 	"nanonet-backend/internal/commands"
 	"nanonet-backend/internal/demo"
+	"nanonet-backend/internal/dependencies"
+	"nanonet-backend/internal/grants"
+	"nanonet-backend/internal/incidents"
 	"nanonet-backend/internal/k8s"
 	"nanonet-backend/internal/logs"
 	"nanonet-backend/internal/maintenance"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/notifications"
-	"nanonet-backend/internal/security"
-	"nanonet-backend/internal/services"
-	"nanonet-backend/internal/slo"
-	"nanonet-backend/internal/dependencies"
-	"nanonet-backend/internal/grants"
-	"nanonet-backend/internal/incidents"
 	"nanonet-backend/internal/probes"
 	"nanonet-backend/internal/runbooks"
-	"nanonet-backend/internal/statuspage"
+	"nanonet-backend/internal/security"
+	"nanonet-backend/internal/services"
 	"nanonet-backend/internal/settings"
+	"nanonet-backend/internal/slo"
+	"nanonet-backend/internal/statuspage"
 	"nanonet-backend/internal/ws"
 	"nanonet-backend/pkg/audit"
 	"nanonet-backend/pkg/config"
@@ -344,8 +344,8 @@ func main() {
 	go func() {
 		runRetention := func() {
 			type row struct {
-				UserID  uuid.UUID `gorm:"column:user_id"`
-				Days    *int      `gorm:"column:log_retention_days"`
+				UserID uuid.UUID `gorm:"column:user_id"`
+				Days   *int      `gorm:"column:log_retention_days"`
 			}
 			var rows []row
 			if err := db.Raw(`SELECT user_id, log_retention_days FROM user_settings`).Scan(&rows).Error; err != nil {
@@ -551,25 +551,25 @@ func main() {
 			sloGroup.PUT("/:id", sloHandler.Update)
 			sloGroup.DELETE("/:id", sloHandler.Delete)
 			sloGroup.GET("/:id/compliance", sloHandler.Compliance)
-			}
+		}
 
-			probesGroup := v1.Group("/probes", authMiddleware.Required())
-			{
-				probesGroup.GET("", probesHandler.List)
-				probesGroup.POST("", probesHandler.Create)
-				probesGroup.PUT("/:id", probesHandler.Update)
-				probesGroup.DELETE("/:id", probesHandler.Delete)
-				probesGroup.GET("/:id/runs", probesHandler.Runs)
-			}
+		probesGroup := v1.Group("/probes", authMiddleware.Required())
+		{
+			probesGroup.GET("", probesHandler.List)
+			probesGroup.POST("", probesHandler.Create)
+			probesGroup.PUT("/:id", probesHandler.Update)
+			probesGroup.DELETE("/:id", probesHandler.Delete)
+			probesGroup.GET("/:id/runs", probesHandler.Runs)
+		}
 
-			runbooksGroup := v1.Group("/runbooks", authMiddleware.Required())
-			{
-				runbooksGroup.GET("", runbooksHandler.List)
-				runbooksGroup.POST("", runbooksHandler.Create)
-				runbooksGroup.PUT("/:id", runbooksHandler.Update)
-				runbooksGroup.DELETE("/:id", runbooksHandler.Delete)
-				runbooksGroup.GET("/:id/fires", runbooksHandler.Fires)
-			}
+		runbooksGroup := v1.Group("/runbooks", authMiddleware.Required())
+		{
+			runbooksGroup.GET("", runbooksHandler.List)
+			runbooksGroup.POST("", runbooksHandler.Create)
+			runbooksGroup.PUT("/:id", runbooksHandler.Update)
+			runbooksGroup.DELETE("/:id", runbooksHandler.Delete)
+			runbooksGroup.GET("/:id/fires", runbooksHandler.Fires)
+		}
 
 		notifGroup := v1.Group("/notifications", authMiddleware.Required())
 		{

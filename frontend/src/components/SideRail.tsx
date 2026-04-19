@@ -340,10 +340,7 @@ export function SideRail() {
 						style={{ color: "var(--text-primary)" }}
 						aria-label="NanoNet"
 					>
-						<Logo
-							className="shrink-0"
-							style={{ width: 28, height: 28 }}
-						/>
+						<Logo className="shrink-0" style={{ width: 28, height: 28 }} />
 						{expanded && (
 							<span
 								className="text-[14px] font-semibold tracking-tight"

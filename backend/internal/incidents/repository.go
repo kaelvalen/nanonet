@@ -160,7 +160,7 @@ func (r *Repository) ListByUser(ctx context.Context, userID uuid.UUID, limit int
 	`, userID, limit).Scan(&rows).Error
 	out := make([]ListItem, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, ListItem{Incident: r.Incident, ServiceName: r.ServiceName, AlertCount: r.AlertCount})
+		out = append(out, ListItem(r))
 	}
 	return out, err
 }

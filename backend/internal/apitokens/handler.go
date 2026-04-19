@@ -28,8 +28,8 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 	response.Success(c, gin.H{
-		"tokens":            rows,
-		"available_scopes":  AvailableScopes,
+		"tokens":           rows,
+		"available_scopes": AvailableScopes,
 	})
 }
 

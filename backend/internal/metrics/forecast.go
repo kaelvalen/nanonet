@@ -13,8 +13,8 @@ import (
 // "where is this trending?" overlay alongside live metrics.
 type Forecast struct {
 	Series      []ForecastPoint `json:"series"`
-	Confidence  float64         `json:"confidence"`   // 0–1, based on residual variance
-	NextValue   *float64        `json:"next_value"`   // 1 step ahead, convenience
+	Confidence  float64         `json:"confidence"` // 0–1, based on residual variance
+	NextValue   *float64        `json:"next_value"` // 1 step ahead, convenience
 	NextAlertAt *time.Time      `json:"next_alert_at,omitempty"`
 	Threshold   *float64        `json:"threshold,omitempty"`
 }

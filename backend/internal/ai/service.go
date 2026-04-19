@@ -182,13 +182,6 @@ func (s *Service) Analyze(ctx context.Context, userID, serviceID uuid.UUID, wind
 	return &result, nil
 }
 
-// callClaude tek Claude isteği yapar ve ham JSON'u döner; caller kendi struct'ına Unmarshal eder.
-// Geriye dönük uyumluluk için sarmalayıcı — gerçek implementasyon callClaudeRaw.
-func (s *Service) callClaude(prompt, model string, maxTokens int) ([]byte, error) {
-	out, _, err := s.callClaudeRaw(prompt, model, maxTokens)
-	return out, err
-}
-
 // callClaudeRaw, çıktı metnine ek olarak token kullanımını da döndürür. Maliyet
 // hesaplaması ve kullanım kaydı (ai_usage) bunu gerektirir.
 func (s *Service) callClaudeRaw(prompt, model string, maxTokens int) ([]byte, ClaudeUsage, error) {

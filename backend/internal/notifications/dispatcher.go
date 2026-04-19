@@ -83,11 +83,11 @@ func (d *Dispatcher) sendSlack(ctx context.Context, ch *Channel, ev Event) (Send
 		"text": fmt.Sprintf("*%s* — %s", ev.Title, ev.Message),
 		"attachments": []map[string]any{
 			{
-				"color":      color,
-				"title":      ev.Title,
-				"text":       ev.Message,
-				"footer":     "NanoNet",
-				"ts":         ev.Timestamp.Unix(),
+				"color":  color,
+				"title":  ev.Title,
+				"text":   ev.Message,
+				"footer": "NanoNet",
+				"ts":     ev.Timestamp.Unix(),
 				"fields": []map[string]any{
 					{"title": "Severity", "value": strings.ToUpper(ev.Severity), "short": true},
 					{"title": "Service", "value": fallback(ev.ServiceName, "—"), "short": true},
@@ -230,7 +230,7 @@ func (d *Dispatcher) postJSON(ctx context.Context, url string, body any, headers
 	if err != nil {
 		return SendResult{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	status := resp.StatusCode
 	res := SendResult{HTTPStatus: &status}

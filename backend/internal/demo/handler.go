@@ -40,7 +40,7 @@ func (h *Handler) Seed(c *gin.Context) {
 		return
 	}
 	response.Success(c, gin.H{
-		"created_count":      len(ids),
+		"created_count":       len(ids),
 		"created_service_ids": ids,
 	})
 }

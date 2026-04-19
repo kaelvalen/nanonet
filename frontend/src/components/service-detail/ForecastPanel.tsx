@@ -56,7 +56,7 @@ const METRICS: {
 
 export function ForecastPanel({ serviceId }: { serviceId: string }) {
 	const [metric, setMetric] = useState<ForecastMetric>("cpu");
-	const meta = METRICS.find((m) => m.key === metric)!;
+	const meta = METRICS.find((m) => m.key === metric) ?? METRICS[0];
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["metric-forecast", serviceId, metric, meta.threshold],
