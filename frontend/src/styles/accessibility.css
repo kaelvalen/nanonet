@@ -1,101 +1,136 @@
-/* Accessibility Modes and Enhanced Typography */
+/* Accessibility primitives — focus-visible, reduced-motion, skip-link, sr-only.
+   Every animation and transition in the app MUST respect prefers-reduced-motion;
+   the universal selector below enforces this even for unrewritten Faz 2-6 pages. */
 
 :root {
 	--line-height: 1.5;
 	--letter-spacing: 0px;
-	--font-size-base: 16px;
 }
 
-/* Enhanced Typography with CSS Variables */
 html {
 	scroll-behavior: smooth;
 }
 
 body {
-	line-height: var(--line-height);
 	letter-spacing: var(--letter-spacing);
 }
 
-/* Reduced Motion Mode */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Reduced motion — respects OS preference automatically + opt-in `.reduce-motion`
+   ═══════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-	html.reduce-motion,
-	html.reduce-motion * {
-		animation-duration: 0.01ms;
-		animation-iteration-count: 1;
-		transition-duration: 0.01ms;
-		scroll-behavior: auto;
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: required to override third-party animation libraries */
+		animation-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: required to override third-party animation libraries */
+		animation-iteration-count: 1 !important;
+		/* biome-ignore lint/complexity/noImportantStyles: required to override third-party transitions */
+		transition-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: required to override third-party scroll behavior */
+		scroll-behavior: auto !important;
 	}
 }
 
-html.reduce-motion {
-	scroll-behavior: auto;
+html.reduce-motion,
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+	/* biome-ignore lint/complexity/noImportantStyles: required to override third-party animation libraries */
+	animation-duration: 0.01ms !important;
+	/* biome-ignore lint/complexity/noImportantStyles: required to override third-party animation libraries */
+	animation-iteration-count: 1 !important;
+	/* biome-ignore lint/complexity/noImportantStyles: required to override third-party transitions */
+	transition-duration: 0.01ms !important;
+	/* biome-ignore lint/complexity/noImportantStyles: required to override third-party scroll behavior */
+	scroll-behavior: auto !important;
 }
 
-/* High Contrast Mode */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Focus-visible — single source of truth for keyboard focus rings.
+   2px brand outline + 2px offset against surface; readable on every theme.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:focus {
+	outline: none;
+}
+
+:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+	border-radius: inherit;
+}
+
+/* Buttons / links: ring instead of outline so they don't clip box-shadow */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+/* Form fields use border-focus + subtle ring (defined per primitive) */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: 0 0 0 3px var(--input-border-focus);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   High Contrast Mode — opt-in via `html.high-contrast`
+   ═══════════════════════════════════════════════════════════════════════════ */
 html.high-contrast {
 	--background: #ffffff;
 	--foreground: #000000;
-	--primary: #0000ee;
+	--primary: #003e7e;
 	--primary-foreground: #ffffff;
-	--secondary: #cc0000;
-	--secondary-foreground: #ffffff;
+	--secondary: #ffffff;
+	--secondary-foreground: #000000;
 	--accent: #000000;
-	--muted: #666666;
+	--muted: #595959;
 	--border: #000000;
-	--ring: #0000ee;
-	--surface-bg: #f5f5f5;
-	--surface-raised: #f0f0f0;
+	--ring: #003e7e;
+	--text-primary: #000000;
+	--text-secondary: #1a1a1a;
+	--text-tertiary: #333333;
+	--border-subtle: #595959;
+	--border-default: #000000;
+	--border-strong: #000000;
 }
 
 html.high-contrast.dark {
 	--background: #000000;
 	--foreground: #ffffff;
-	--primary: #ffff00;
+	--primary: #ffeb3b;
 	--primary-foreground: #000000;
-	--secondary: #ff6666;
-	--secondary-foreground: #000000;
+	--secondary: #000000;
+	--secondary-foreground: #ffffff;
 	--accent: #ffffff;
 	--muted: #cccccc;
 	--border: #ffffff;
-	--ring: #ffff00;
-	--surface-bg: #1a1a1a;
-	--surface-raised: #2a2a2a;
+	--ring: #ffeb3b;
+	--text-primary: #ffffff;
+	--text-secondary: #e6e6e6;
+	--text-tertiary: #cccccc;
+	--border-subtle: #cccccc;
+	--border-default: #ffffff;
+	--border-strong: #ffffff;
 }
 
-/* Focus Indicator Enhancement for High Contrast */
 html.high-contrast :focus-visible {
 	outline: 3px solid var(--ring);
 	outline-offset: 2px;
 }
 
-html.high-contrast button:focus-visible,
-html.high-contrast a:focus-visible,
-html.high-contrast input:focus-visible,
-html.high-contrast select:focus-visible,
-html.high-contrast textarea:focus-visible {
-	outline: 3px solid var(--ring);
-	outline-offset: 2px;
-	box-shadow: 0 0 0 4px var(--background);
-}
-
-/* Text Selection Enhancement */
-html.high-contrast ::selection {
-	background-color: var(--primary);
-	color: var(--primary-foreground);
-}
-
-/* Link Enhancement */
 html.high-contrast a {
 	text-decoration: underline;
 	text-decoration-thickness: 2px;
 	text-underline-offset: 3px;
 }
 
-html.high-contrast a:visited {
-	color: var(--secondary);
-}
-
-/* Form Elements Enhancement */
 html.high-contrast input,
 html.high-contrast textarea,
 html.high-contrast select {
@@ -103,24 +138,11 @@ html.high-contrast select {
 	border-color: var(--border);
 }
 
-html.high-contrast input:focus-visible,
-html.high-contrast textarea:focus-visible,
-html.high-contrast select:focus-visible {
-	border-width: 3px;
-	border-color: var(--ring);
-}
-
 html.high-contrast button {
 	border-width: 2px;
 	border-color: var(--border);
 }
 
-html.high-contrast button:focus-visible {
-	border-width: 3px;
-	border-color: var(--ring);
-}
-
-/* Better button contrast */
 html.high-contrast button[aria-pressed="true"],
 html.high-contrast button[aria-selected="true"] {
 	background-color: var(--primary);
@@ -128,46 +150,41 @@ html.high-contrast button[aria-selected="true"] {
 	border-color: var(--primary);
 }
 
-/* Alert and Status Colors Enhancement for High Contrast */
-html.high-contrast [role="alert"],
-html.high-contrast .alert,
-html.high-contrast .warning,
-html.high-contrast .error {
-	border-width: 2px;
-	font-weight: 600;
-}
-
-/* Skip Link Styling */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Skip-link — keyboard-only entry point to main content
+   ═══════════════════════════════════════════════════════════════════════════ */
 .skip-to-content {
 	position: absolute;
 	top: -40px;
 	left: 0;
-	background-color: var(--primary);
-	color: var(--primary-foreground);
+	background-color: var(--brand-primary);
+	color: var(--brand-on-primary);
 	padding: 8px 16px;
 	text-decoration: none;
 	z-index: 100;
-	border-radius: 0 0 4px 0;
+	border-radius: 0 0 var(--radius) 0;
 	font-weight: 600;
+	font-size: 13px;
 }
 
 .skip-to-content:focus {
 	top: 0;
-	outline: 3px solid var(--ring);
+	outline: 2px solid var(--ring);
 	outline-offset: 2px;
 }
 
-/* Main content region for screen readers */
 #main-content {
 	outline: none;
 }
 
 #main-content:focus-visible {
-	outline: 3px solid var(--ring);
+	outline: 2px solid var(--ring);
 	outline-offset: 2px;
 }
 
-/* Visually Hidden but Available to Screen Readers */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Visually hidden (sr-only) — same as Tailwind's, repeated for non-utility callers
+   ═══════════════════════════════════════════════════════════════════════════ */
 .sr-only {
 	position: absolute;
 	width: 1px;
@@ -190,39 +207,13 @@ html.high-contrast .error {
 	white-space: normal;
 	padding: 8px;
 	margin: 0;
-	background-color: var(--primary);
-	color: var(--primary-foreground);
+	background-color: var(--brand-primary);
+	color: var(--brand-on-primary);
 	z-index: 1000;
 }
 
-/* Placeholder Enhancement */
-html.high-contrast input::placeholder,
-html.high-contrast textarea::placeholder {
-	color: var(--muted);
-	font-weight: 500;
-}
-
-/* Code and Monospace Enhancement */
-html.high-contrast code,
-html.high-contrast pre {
-	background-color: var(--surface-raised);
-	border: 1px solid var(--border);
-	border-radius: 4px;
-	padding: 2px 4px;
-}
-
-html.high-contrast pre {
-	padding: 12px;
-}
-
-/* Ensures proper line height application */
-html {
-	--line-height-multiplier: 1;
-}
-
-/* Responsive line height adjustments */
-@media (max-width: 640px) {
-	html {
-		--line-height-multiplier: 1.1;
-	}
+/* Selection */
+::selection {
+	background-color: var(--brand-primary-muted);
+	color: var(--text-primary);
 }

@@ -5,19 +5,32 @@ import {
 	Settings,
 	Sparkles,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router";
 import { useServices } from "@/hooks/useServices";
+import { preloadRoute } from "@/routes";
 
 const navItems = [
-	{ to: "/app", label: "Ana Sayfa", icon: LayoutDashboard, end: true },
-	{ to: "/app/services", label: "Servisler", icon: Server },
-	{ to: "/app/alerts", label: "Uyarılar", icon: AlertCircle, badge: true },
-	{ to: "/app/ai-insights", label: "AI", icon: Sparkles },
-	{ to: "/app/settings", label: "Ayarlar", icon: Settings },
+	{
+		to: "/app",
+		labelKey: "shell.mobile.home",
+		icon: LayoutDashboard,
+		end: true,
+	},
+	{ to: "/app/services", labelKey: "shell.mobile.services", icon: Server },
+	{
+		to: "/app/alerts",
+		labelKey: "shell.mobile.alerts",
+		icon: AlertCircle,
+		badge: true,
+	},
+	{ to: "/app/ai-insights", labelKey: "shell.mobile.ai", icon: Sparkles },
+	{ to: "/app/settings", labelKey: "shell.mobile.settings", icon: Settings },
 ];
 
 export function MobileNav() {
 	const location = useLocation();
+	const { t } = useTranslation();
 	const { services } = useServices();
 	const downCount = services.filter(
 		(s) => s.status === "down" || s.status === "degraded",
@@ -40,11 +53,15 @@ export function MobileNav() {
 			{navItems.map((item) => {
 				const active = isActive(item.to, item.end);
 				const showBadge = item.badge && downCount > 0;
+				const warm = () => preloadRoute(item.to);
 				return (
 					<NavLink
 						key={item.to}
 						to={item.to}
 						end={item.end}
+						onTouchStart={warm}
+						onFocus={warm}
+						onMouseEnter={warm}
 						className="relative flex flex-col items-center justify-center flex-1 py-2.5 gap-0.5 transition-colors"
 						style={{
 							color: active ? "var(--sidebar-primary)" : "var(--text-faint)",
@@ -75,7 +92,7 @@ export function MobileNav() {
 								color: active ? "var(--sidebar-primary)" : "var(--text-faint)",
 							}}
 						>
-							{item.label}
+							{t(item.labelKey)}
 						</span>
 					</NavLink>
 				);

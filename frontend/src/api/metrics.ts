@@ -75,10 +75,9 @@ export const metricsApi = {
 	): Promise<{ forecast: ForecastResponse; metric: ForecastMetric }> => {
 		const params: Record<string, string | number> = { metric, horizon };
 		if (threshold != null) params.threshold = threshold;
-		const r = await apiClient.get(
-			`/services/${serviceId}/metrics/forecast`,
-			{ params },
-		);
+		const r = await apiClient.get(`/services/${serviceId}/metrics/forecast`, {
+			params,
+		});
 		return r.data.data;
 	},
 

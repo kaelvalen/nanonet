@@ -3,9 +3,10 @@ import {
 	Activity,
 	AlertTriangle,
 	CheckCircle2,
-	Clock,
 	Flame,
 	Loader2,
+	type LucideIcon,
+	Pencil,
 	Plus,
 	Target,
 	Trash2,
@@ -21,24 +22,26 @@ import {
 	YAxis,
 } from "recharts";
 import { toast } from "sonner";
-import {
-	type CreateSLOInput,
-	type SLIType,
-	type SLO,
-	sloApi,
-} from "@/api/slo";
+import { type CreateSLOInput, type SLIType, type SLO, sloApi } from "@/api/slo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
-	EmptyState as SharedEmptyState,
 	Panel,
 	PanelBody,
 	PanelFooter,
 	PanelHeader,
+	EmptyState as SharedEmptyState,
 	SkeletonList,
 } from "@/components/ui/primitives";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { useServices } from "@/hooks/useServices";
 
 const SLI_LABELS: Record<SLIType, { label: string; helper: string }> = {
@@ -51,15 +54,19 @@ const SLI_LABELS: Record<SLIType, { label: string; helper: string }> = {
 		helper: "eşik altındaki örneklerin toplam içindeki oranı",
 	},
 	error_rate: {
-		label: "Hata Oranı",
+		label: "Hata oranı",
 		helper: "eşik altındaki hata oranlı örneklerin toplam içindeki oranı",
 	},
 };
 
+/* Same dual-mode draft pattern as Probes/Runbooks: __editingId !== undefined
+   means we're editing a server SLO; otherwise we're creating a new one. */
+type Draft = CreateSLOInput & { __editingId?: string };
+
 export function SLOPage() {
 	const qc = useQueryClient();
 	const { services } = useServices();
-	const [draft, setDraft] = useState<CreateSLOInput | null>(null);
+	const [draft, setDraft] = useState<Draft | null>(null);
 
 	const { data: slos = [], isLoading } = useQuery({
 		queryKey: ["slos"],
@@ -76,6 +83,22 @@ export function SLOPage() {
 		onError: () => toast.error("SLO oluşturulamadı"),
 	});
 
+	const updateMut = useMutation({
+		mutationFn: ({
+			id,
+			patch,
+		}: {
+			id: string;
+			patch: Partial<CreateSLOInput>;
+		}) => sloApi.update(id, patch),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: ["slos"] });
+			setDraft(null);
+			toast.success("SLO güncellendi");
+		},
+		onError: () => toast.error("Güncelleme başarısız"),
+	});
+
 	const deleteMut = useMutation({
 		mutationFn: sloApi.remove,
 		onSuccess: () => {
@@ -88,7 +111,7 @@ export function SLOPage() {
 		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="güvenilirlik"
-				title="SLO & Hata Bütçesi"
+				title="SLO & hata bütçesi"
 				description="Servis seviyesi hedeflerinizi tanımlayın; hata bütçesi yanma hızını canlı izleyin."
 				actions={
 					<Button
@@ -102,11 +125,10 @@ export function SLOPage() {
 								window_days: 30,
 							})
 						}
-						className="h-8 px-3 text-xs text-white"
-						style={{ background: "var(--gradient-btn-primary)" }}
 						disabled={services.length === 0}
 					>
-						<Plus className="w-3.5 h-3.5 mr-1.5" /> SLO Ekle
+						<Plus className="w-3.5 h-3.5 mr-1.5" />
+						SLO ekle
 					</Button>
 				}
 			/>
@@ -114,11 +136,19 @@ export function SLOPage() {
 			{draft && (
 				<DraftEditor
 					value={draft}
+					editing={Boolean(draft.__editingId)}
 					services={services.map((s) => ({ id: s.id, name: s.name }))}
 					onChange={setDraft}
 					onCancel={() => setDraft(null)}
-					onSubmit={() => createMut.mutate(draft)}
-					submitting={createMut.isPending}
+					onSubmit={() => {
+						if (draft.__editingId) {
+							const { __editingId, ...patch } = draft;
+							updateMut.mutate({ id: __editingId, patch });
+						} else {
+							createMut.mutate(draft);
+						}
+					}}
+					submitting={createMut.isPending || updateMut.isPending}
 				/>
 			)}
 
@@ -129,7 +159,7 @@ export function SLOPage() {
 					<SharedEmptyState
 						icon={Target}
 						title="Henüz SLO tanımlı değil"
-						description='Bir servis seçip "99.9% availability / 30 gün" gibi bir hedef tanımlayarak başla.'
+						description='Bir servis seçip "99.9% availability / 30 gün" gibi bir hedef tanımlayarak başlayın.'
 						tone="accent"
 						size="lg"
 					/>
@@ -138,6 +168,18 @@ export function SLOPage() {
 						<SLOCard
 							key={sl.id}
 							slo={sl}
+							editing={draft?.__editingId === sl.id}
+							onEdit={() =>
+								setDraft({
+									__editingId: sl.id,
+									service_id: sl.service_id,
+									name: sl.name,
+									sli_type: sl.sli_type,
+									threshold: sl.threshold ?? null,
+									target: sl.target,
+									window_days: sl.window_days,
+								})
+							}
 							onDelete={() => deleteMut.mutate(sl.id)}
 							serviceName={
 								services.find((s) => s.id === sl.service_id)?.name ?? "?"
@@ -152,10 +194,14 @@ export function SLOPage() {
 
 function SLOCard({
 	slo,
+	editing,
+	onEdit,
 	onDelete,
 	serviceName,
 }: {
 	slo: SLO;
+	editing: boolean;
+	onEdit: () => void;
 	onDelete: () => void;
 	serviceName: string;
 }) {
@@ -170,6 +216,7 @@ function SLOCard({
 	const sli = data?.current_sli ?? 100;
 	const used = data?.error_budget_used ?? 0;
 	const burn = data?.burn_rate ?? 0;
+	const accent = healthy ? "var(--status-up)" : "var(--status-down)";
 	const burndown = (data?.burndown ?? []).map((p) => ({
 		t: new Date(p.timestamp).toLocaleDateString("tr-TR", {
 			day: "2-digit",
@@ -182,20 +229,28 @@ function SLOCard({
 	return (
 		<Panel
 			padding="none"
-			className="overflow-hidden rounded-2xl"
-			style={{
-				borderColor: healthy
-					? "var(--border-default)"
-					: "var(--status-down-border)",
-			}}
+			className="overflow-hidden relative transition-colors"
+			style={
+				editing
+					? {
+							background: "var(--surface-sunken)",
+							borderColor: "var(--border-strong)",
+						}
+					: undefined
+			}
 		>
+			<span
+				aria-hidden
+				className="absolute left-0 top-3.5 bottom-3.5 w-[2px] rounded-r-full"
+				style={{ background: accent }}
+			/>
 			<div
-				className="flex items-center justify-between gap-3 px-4 py-3.5"
+				className="flex items-center justify-between gap-3 px-4 py-3 pl-5"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
 				<div className="flex items-center gap-3 min-w-0">
 					<span
-						className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+						className="w-9 h-9 rounded-[6px] flex items-center justify-center shrink-0"
 						style={{
 							background: healthy
 								? "var(--status-up-subtle)"
@@ -217,16 +272,16 @@ function SLOCard({
 					<div className="min-w-0">
 						<div className="flex items-center gap-2 flex-wrap">
 							<p
-								className="text-[14px] font-semibold truncate tracking-tight"
+								className="text-[14px] font-semibold truncate"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{slo.name}
 							</p>
 							<span
-								className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0"
+								className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[4px] shrink-0"
 								style={{
-									color: "var(--color-teal)",
-									background: "var(--color-teal-subtle)",
+									color: "var(--brand-primary)",
+									background: "var(--brand-primary-subtle)",
 								}}
 							>
 								{meta.label}
@@ -234,11 +289,11 @@ function SLOCard({
 						</div>
 						<p
 							className="text-[12px] mt-1"
-							style={{ color: "var(--text-muted)" }}
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							{serviceName} · hedef{" "}
 							<span
-								className="tabular-nums font-semibold"
+								className="tnum font-semibold"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{slo.target}%
@@ -248,40 +303,56 @@ function SLOCard({
 					</div>
 				</div>
 
-				<Button
-					size="sm"
-					variant="ghost"
-					className="h-8 w-8 p-0 rounded-full"
-					onClick={onDelete}
-				>
-					<Trash2
-						className="w-3.5 h-3.5"
-						style={{ color: "var(--status-down)" }}
-					/>
-				</Button>
+				<div className="flex items-center gap-1 shrink-0">
+					<Button
+						size="icon"
+						variant="ghost"
+						onClick={onEdit}
+						aria-label="SLO düzenle"
+					>
+						<Pencil
+							className="w-3.5 h-3.5"
+							style={{ color: "var(--text-tertiary)" }}
+						/>
+					</Button>
+					<Button
+						size="icon"
+						variant="ghost"
+						onClick={onDelete}
+						aria-label="SLO sil"
+					>
+						<Trash2
+							className="w-3.5 h-3.5"
+							style={{ color: "var(--status-down)" }}
+						/>
+					</Button>
+				</div>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-[minmax(260px,300px)_1fr] gap-0">
 				<div
-					className="grid grid-cols-3 gap-3 p-4"
+					className="grid grid-cols-3 gap-2 p-3"
 					style={{ borderRight: "1px solid var(--border-subtle)" }}
 				>
 					<MetricChip
 						icon={Target}
 						label="SLI"
-						value={`${sli.toFixed(2)}%`}
+						value={formatPercent(sli)}
+						unit="%"
 						tone={healthy ? "good" : "bad"}
 					/>
 					<MetricChip
 						icon={Activity}
-						label="Bütçe Kullanımı"
-						value={`${Math.min(used, 999).toFixed(1)}%`}
+						label="Bütçe"
+						value={formatBudget(used)}
+						unit={used > 999 ? "%+" : "%"}
 						tone={used > 100 ? "bad" : used > 75 ? "warn" : "good"}
 					/>
 					<MetricChip
 						icon={Flame}
 						label="Yanma"
-						value={`${burn.toFixed(2)}x`}
+						value={formatBurn(burn)}
+						unit="×"
 						tone={burn > 1.5 ? "bad" : burn > 1 ? "warn" : "good"}
 					/>
 				</div>
@@ -289,13 +360,13 @@ function SLOCard({
 				<div className="p-2">
 					{isLoading ? (
 						<div
-							className="h-[160px] rounded animate-pulse"
+							className="h-[160px] rounded-[6px] animate-pulse"
 							style={{ background: "var(--surface-sunken)" }}
 						/>
 					) : burndown.length === 0 ? (
 						<div
 							className="h-[160px] flex items-center justify-center text-[11px] font-mono"
-							style={{ color: "var(--text-muted)" }}
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							Yeterli veri yok.
 						</div>
@@ -309,12 +380,12 @@ function SLOCard({
 									<linearGradient id="bd" x1="0" y1="0" x2="0" y2="1">
 										<stop
 											offset="0%"
-											stopColor="var(--color-teal)"
-											stopOpacity={0.3}
+											stopColor="var(--brand-primary)"
+											stopOpacity={0.22}
 										/>
 										<stop
 											offset="95%"
-											stopColor="var(--color-teal)"
+											stopColor="var(--brand-primary)"
 											stopOpacity={0}
 										/>
 									</linearGradient>
@@ -327,8 +398,8 @@ function SLOCard({
 								<XAxis
 									dataKey="t"
 									tick={{
-										fontSize: 9,
-										fontFamily: "IBM Plex Mono, monospace",
+										fontSize: 10,
+										fontFamily: "var(--font-mono)",
 										fill: "var(--text-faint)",
 									}}
 									stroke="var(--border-subtle)"
@@ -340,8 +411,8 @@ function SLOCard({
 								<YAxis
 									domain={[0, 100]}
 									tick={{
-										fontSize: 9,
-										fontFamily: "IBM Plex Mono, monospace",
+										fontSize: 10,
+										fontFamily: "var(--font-mono)",
 										fill: "var(--text-faint)",
 									}}
 									stroke="var(--border-subtle)"
@@ -352,19 +423,20 @@ function SLOCard({
 								<Tooltip
 									contentStyle={{
 										background: "var(--surface-overlay)",
-										border: "1px solid var(--border-strong)",
+										border: "1px solid var(--border-default)",
+										borderRadius: 6,
 										fontSize: 11,
-										fontFamily: "IBM Plex Mono, monospace",
+										fontFamily: "var(--font-mono)",
 									}}
 								/>
 								<Area
 									type="monotone"
 									dataKey="remaining"
-									stroke="var(--color-teal)"
+									stroke="var(--brand-primary)"
 									fill="url(#bd)"
-									strokeWidth={1.75}
+									strokeWidth={1.5}
 									dot={false}
-									name="Bütçe Kalan %"
+									name="Bütçe kalan %"
 								/>
 							</AreaChart>
 						</ResponsiveContainer>
@@ -375,46 +447,87 @@ function SLOCard({
 	);
 }
 
+/* Smart formatters — precision should track magnitude. A budget of 999%+
+   doesn't need a `.0` decimal (it's a saturation marker); a 504× burn rate
+   doesn't need 2 decimals either (the magnitude is the headline, not the
+   sub-percent). Keeping high precision on big numbers reads as fake-precise
+   and visually busy. */
+
+function formatPercent(value: number): string {
+	if (value >= 99.95) return "100";
+	if (value >= 10) return value.toFixed(1);
+	return value.toFixed(2);
+}
+
+function formatBudget(used: number): string {
+	if (used > 999) return "999";
+	if (used >= 100) return Math.round(used).toString();
+	if (used >= 10) return used.toFixed(1);
+	return used.toFixed(2);
+}
+
+function formatBurn(burn: number): string {
+	if (burn >= 100) return Math.round(burn).toString();
+	if (burn >= 10) return burn.toFixed(1);
+	return burn.toFixed(2);
+}
+
 function MetricChip({
 	icon: Icon,
 	label,
 	value,
+	unit,
 	tone,
 }: {
-	icon: typeof Clock;
+	icon: LucideIcon;
 	label: string;
 	value: string;
+	unit: string;
 	tone: "good" | "warn" | "bad";
 }) {
-	const color =
+	/* Tone is carried entirely by the icon color — a single, small signal.
+	   The number itself stays in --text-primary so big/bad numbers don't
+	   shout twice (icon red + value red). The parent SLOCard's left accent
+	   already conveys overall health for the whole row. Quiet Swiss = one
+	   accent per scope, and within a scope, one tonal cue per fact.
+
+	   The unit is rendered as a smaller, lighter sibling so the number
+	   itself dominates and the column of values across chips aligns by
+	   digit, not by glyph width. */
+	const iconTint =
 		tone === "bad"
-			? "var(--status-down-text)"
+			? "var(--status-down)"
 			: tone === "warn"
-				? "var(--status-warn-text)"
-				: "var(--status-up-text)";
-	const bg =
-		tone === "bad"
-			? "var(--status-down-subtle)"
-			: tone === "warn"
-				? "var(--status-warn-subtle)"
-				: "var(--status-up-subtle)";
+				? "var(--status-degraded)"
+				: "var(--text-faint)";
 	return (
 		<div
-			className="rounded-xl p-3 flex flex-col gap-1.5"
-			style={{ background: bg }}
+			className="rounded-[6px] px-3 py-2.5 flex flex-col gap-1.5"
+			style={{
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
+			}}
 		>
 			<div
-				className="flex items-center gap-1.5 text-[11px] font-medium"
-				style={{ color }}
+				className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider"
+				style={{ color: "var(--text-faint)" }}
 			>
-				<Icon className="w-3.5 h-3.5" />
+				<Icon className="w-3 h-3" style={{ color: iconTint }} />
 				{label}
 			</div>
 			<p
-				className="text-[18px] font-semibold tabular-nums leading-none tracking-tight"
+				className="flex items-baseline gap-0.5 leading-none"
 				style={{ color: "var(--text-primary)" }}
 			>
-				{value}
+				<span className="text-[20px] font-semibold tnum tracking-tight">
+					{value}
+				</span>
+				<span
+					className="text-[11px] font-medium"
+					style={{ color: "var(--text-faint)" }}
+				>
+					{unit}
+				</span>
 			</p>
 		</div>
 	);
@@ -422,161 +535,182 @@ function MetricChip({
 
 function DraftEditor({
 	value,
+	editing,
 	services,
 	onChange,
 	onCancel,
 	onSubmit,
 	submitting,
 }: {
-	value: CreateSLOInput;
+	value: Draft;
+	editing: boolean;
 	services: { id: string; name: string }[];
-	onChange: (v: CreateSLOInput) => void;
+	onChange: (v: Draft) => void;
 	onCancel: () => void;
 	onSubmit: () => void;
 	submitting: boolean;
 }) {
 	return (
-		<Panel className="mt-4">
-			<PanelHeader dense>Yeni SLO</PanelHeader>
+		<Panel className="mt-4" padding="none">
+			<PanelHeader dense>{editing ? "SLO düzenle" : "Yeni SLO"}</PanelHeader>
 			<PanelBody scroll={false} className="flex flex-col gap-4">
-
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Ad
-					</Label>
-					<Input
-						value={value.name}
-						onChange={(e) => onChange({ ...value, name: e.target.value })}
-						placeholder="api availability 30d"
-						className="mt-1.5 h-9 text-[13px] rounded-lg"
-					/>
-				</div>
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Servis
-					</Label>
-					<select
-						value={value.service_id}
-						onChange={(e) =>
-							onChange({ ...value, service_id: e.target.value })
-						}
-						className="mt-1.5 w-full h-9 px-3 rounded-lg text-[13px]"
-						style={{
-							background: "var(--input-bg)",
-							border: "1px solid var(--input-border)",
-							color: "var(--text-primary)",
-						}}
-					>
-						{services.map((s) => (
-							<option key={s.id} value={s.id}>
-								{s.name}
-							</option>
-						))}
-					</select>
-				</div>
-			</div>
-
-			<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						SLI Tipi
-					</Label>
-					<select
-						value={value.sli_type}
-						onChange={(e) =>
-							onChange({ ...value, sli_type: e.target.value as SLIType })
-						}
-						className="mt-1.5 w-full h-9 px-3 rounded-lg text-[13px]"
-						style={{
-							background: "var(--input-bg)",
-							border: "1px solid var(--input-border)",
-							color: "var(--text-primary)",
-						}}
-					>
-						<option value="availability">availability</option>
-						<option value="latency">latency</option>
-						<option value="error_rate">error_rate</option>
-					</select>
-				</div>
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Hedef %
-					</Label>
-					<Input
-						type="number"
-						step="0.01"
-						min={0.01}
-						max={99.99}
-						value={value.target}
-						onChange={(e) =>
-							onChange({ ...value, target: Number(e.target.value) })
-						}
-						className="mt-1.5 h-9 text-[13px] font-mono tabular-nums rounded-lg"
-					/>
-				</div>
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Pencere (gün)
-					</Label>
-					<Input
-						type="number"
-						min={1}
-						max={90}
-						value={value.window_days}
-						onChange={(e) =>
-							onChange({ ...value, window_days: Number(e.target.value) })
-						}
-						className="mt-1.5 h-9 text-[13px] font-mono tabular-nums rounded-lg"
-					/>
-				</div>
-				{value.sli_type !== "availability" && (
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 					<div>
-						<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-							Eşik {value.sli_type === "latency" ? "(ms)" : "(%)"}
+						<Label
+							htmlFor="slo-name"
+							className="text-[11px] font-medium uppercase tracking-wider"
+							style={{ color: "var(--text-faint)" }}
+						>
+							Ad
 						</Label>
 						<Input
-							type="number"
-							value={value.threshold ?? 0}
-							onChange={(e) =>
-								onChange({ ...value, threshold: Number(e.target.value) })
-							}
-							className="mt-1.5 h-9 text-[13px] font-mono tabular-nums rounded-lg"
+							id="slo-name"
+							value={value.name}
+							onChange={(e) => onChange({ ...value, name: e.target.value })}
+							placeholder="api availability 30d"
+							className="mt-1.5 h-9 text-[13px]"
 						/>
 					</div>
-				)}
-			</div>
+					<div>
+						<Label
+							htmlFor="slo-service"
+							className="text-[11px] font-medium uppercase tracking-wider"
+							style={{ color: "var(--text-faint)" }}
+						>
+							Servis
+						</Label>
+						<Select
+							value={value.service_id}
+							onValueChange={(v) => onChange({ ...value, service_id: v })}
+						>
+							<SelectTrigger
+								id="slo-service"
+								className="mt-1.5 h-9 text-[13px]"
+							>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{services.map((s) => (
+									<SelectItem key={s.id} value={s.id}>
+										{s.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				</div>
 
-			<p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-				{SLI_LABELS[value.sli_type].helper}
-			</p>
+				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+					<div>
+						<Label
+							htmlFor="slo-sli"
+							className="text-[11px] font-medium uppercase tracking-wider"
+							style={{ color: "var(--text-faint)" }}
+						>
+							SLI tipi
+						</Label>
+						<Select
+							value={value.sli_type}
+							onValueChange={(v) =>
+								onChange({ ...value, sli_type: v as SLIType })
+							}
+						>
+							<SelectTrigger id="slo-sli" className="mt-1.5 h-9 text-[13px]">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="availability">availability</SelectItem>
+								<SelectItem value="latency">latency</SelectItem>
+								<SelectItem value="error_rate">error_rate</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div>
+						<Label
+							htmlFor="slo-target"
+							className="text-[11px] font-medium uppercase tracking-wider"
+							style={{ color: "var(--text-faint)" }}
+						>
+							Hedef %
+						</Label>
+						<Input
+							id="slo-target"
+							type="number"
+							step="0.01"
+							min={0.01}
+							max={99.99}
+							value={value.target}
+							onChange={(e) =>
+								onChange({ ...value, target: Number(e.target.value) })
+							}
+							className="mt-1.5 h-9 text-[13px] font-mono tnum"
+						/>
+					</div>
+					<div>
+						<Label
+							htmlFor="slo-window"
+							className="text-[11px] font-medium uppercase tracking-wider"
+							style={{ color: "var(--text-faint)" }}
+						>
+							Pencere (gün)
+						</Label>
+						<Input
+							id="slo-window"
+							type="number"
+							min={1}
+							max={90}
+							value={value.window_days}
+							onChange={(e) =>
+								onChange({ ...value, window_days: Number(e.target.value) })
+							}
+							className="mt-1.5 h-9 text-[13px] font-mono tnum"
+						/>
+					</div>
+					{value.sli_type !== "availability" && (
+						<div>
+							<Label
+								htmlFor="slo-threshold"
+								className="text-[11px] font-medium uppercase tracking-wider"
+								style={{ color: "var(--text-faint)" }}
+							>
+								Eşik {value.sli_type === "latency" ? "(ms)" : "(%)"}
+							</Label>
+							<Input
+								id="slo-threshold"
+								type="number"
+								value={value.threshold ?? 0}
+								onChange={(e) =>
+									onChange({ ...value, threshold: Number(e.target.value) })
+								}
+								className="mt-1.5 h-9 text-[13px] font-mono tnum"
+							/>
+						</div>
+					)}
+				</div>
 
+				<p className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+					{SLI_LABELS[value.sli_type].helper}
+				</p>
 			</PanelBody>
 			<PanelFooter>
-				<Button
-					variant="outline"
-					size="sm"
-					className="h-9 px-4 text-[13px] rounded-full"
-					onClick={onCancel}
-				>
+				<Button variant="outline" size="sm" onClick={onCancel}>
 					Vazgeç
 				</Button>
 				<Button
 					size="sm"
-					className="h-9 px-4 text-[13px] text-white rounded-full"
-					style={{ background: "var(--gradient-btn-primary)" }}
 					disabled={submitting || !value.name.trim() || !value.service_id}
 					onClick={onSubmit}
 				>
 					{submitting ? (
 						<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+					) : editing ? (
+						<Pencil className="w-3.5 h-3.5 mr-1.5" />
 					) : (
 						<Plus className="w-3.5 h-3.5 mr-1.5" />
 					)}
-					Oluştur
+					{editing ? "Kaydet" : "Oluştur"}
 				</Button>
 			</PanelFooter>
 		</Panel>
 	);
 }
-

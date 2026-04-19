@@ -14,11 +14,11 @@ import { type AggregatedMetric, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
-	EmptyState as SharedEmptyState,
 	Panel,
 	PanelBody,
 	PanelHeader,
 	seriesColor as paletteColor,
+	EmptyState as SharedEmptyState,
 } from "@/components/ui/primitives";
 import type { Service } from "@/types/service";
 
@@ -88,91 +88,157 @@ function StatusHeatmap({ services }: { services: Service[] }) {
 		const cpu = row.avg_cpu ?? 0;
 		const lat = row.max_latency ?? 0;
 		if (cpu > 90 || lat > 1500) return "var(--status-down)";
-		if (cpu > 70 || lat > 800) return "var(--status-warn)";
+		if (cpu > 70 || lat > 800) return "var(--status-degraded)";
 		if (cpu > 0 || lat > 0) return "var(--status-up)";
 		return "var(--surface-sunken)";
 	}
 
 	return (
-		<Panel>
+		<Panel padding="none">
 			<PanelHeader
 				dense
 				actions={
-					<div className="flex items-center gap-2 text-[10px]" style={{ color: "var(--text-faint)" }}>
+					<div
+						className="flex items-center gap-3 text-[10px]"
+						style={{ color: "var(--text-faint)" }}
+					>
 						<span className="flex items-center gap-1">
-							<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-up)" }} />
+							<span
+								className="w-2 h-2 rounded-[2px]"
+								style={{ background: "var(--status-up)" }}
+							/>
 							Sağlıklı
 						</span>
 						<span className="flex items-center gap-1">
-							<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-warn)" }} />
+							<span
+								className="w-2 h-2 rounded-[2px]"
+								style={{ background: "var(--status-degraded)" }}
+							/>
 							Yüklü
 						</span>
 						<span className="flex items-center gap-1">
-							<span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-down)" }} />
+							<span
+								className="w-2 h-2 rounded-[2px]"
+								style={{ background: "var(--status-down)" }}
+							/>
 							Kritik
 						</span>
 					</div>
 				}
 			>
-				24 Saatlik Sağlık Heatmap
+				24 saatlik sağlık heatmap
 			</PanelHeader>
 			<PanelBody scroll={false}>
 				<div className="overflow-x-auto">
-				<table className="text-xs w-full border-separate" style={{ borderSpacing: "2px" }}>
-					<thead>
-						<tr>
-							<th className="text-left px-2 py-1" style={{ color: "var(--text-faint)" }} />
-							{slots.map((s) => (
+					<table
+						className="text-xs w-full border-separate"
+						style={{ borderSpacing: "2px" }}
+					>
+						<thead>
+							<tr>
 								<th
-									key={s.toISOString()}
-									className="text-[9px] font-mono"
+									className="text-left px-2 py-1"
 									style={{ color: "var(--text-faint)" }}
-								>
-									{s.getHours().toString().padStart(2, "0")}
-								</th>
-							))}
-						</tr>
-					</thead>
-					<tbody>
-						{services.map((svc, idx) => {
-							const data = heatQueries[idx]?.data ?? [];
-							const byHour = new Map<number, AggregatedMetric>();
-							for (const row of data) {
-								const d = new Date(row.bucket);
-								d.setMinutes(0, 0, 0);
-								byHour.set(d.getTime(), row);
-							}
-							return (
-								<tr key={svc.id}>
-									<td
-										className="text-[11px] font-mono pr-3 py-0.5 truncate max-w-[140px]"
-										style={{ color: "var(--text-secondary)" }}
+								/>
+								{slots.map((s) => (
+									<th
+										key={s.toISOString()}
+										className="text-[9px] font-mono tnum"
+										style={{ color: "var(--text-faint)" }}
 									>
-										{svc.name}
-									</td>
-									{slots.map((s) => {
-										const row = byHour.get(s.getTime());
-										return (
-											<td
-												key={s.toISOString()}
-												title={`${svc.name} · ${s.toLocaleString("tr-TR")} · CPU ${row?.avg_cpu?.toFixed(0) ?? "—"}% · Lat ${row?.max_latency?.toFixed(0) ?? "—"}ms`}
-												style={{
-													background: cellColor(row),
-													width: 14,
-													height: 14,
-													borderRadius: 3,
-												}}
-											/>
-										);
-									})}
-								</tr>
-							);
-						})}
-					</tbody>
-				</table>
-			</div>
+										{s.getHours().toString().padStart(2, "0")}
+									</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{services.map((svc, idx) => {
+								const data = heatQueries[idx]?.data ?? [];
+								const byHour = new Map<number, AggregatedMetric>();
+								for (const row of data) {
+									const d = new Date(row.bucket);
+									d.setMinutes(0, 0, 0);
+									byHour.set(d.getTime(), row);
+								}
+								return (
+									<tr key={svc.id}>
+										<td
+											className="text-[11px] font-mono pr-3 py-0.5 truncate max-w-[140px]"
+											style={{ color: "var(--text-secondary)" }}
+										>
+											{svc.name}
+										</td>
+										{slots.map((s) => {
+											const row = byHour.get(s.getTime());
+											return (
+												<td
+													key={s.toISOString()}
+													title={`${svc.name} · ${s.toLocaleString("tr-TR")} · CPU ${row?.avg_cpu?.toFixed(0) ?? "—"}% · Lat ${row?.max_latency?.toFixed(0) ?? "—"}ms`}
+													style={{
+														background: cellColor(row),
+														width: 14,
+														height: 14,
+														borderRadius: 2,
+													}}
+												/>
+											);
+										})}
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				</div>
 			</PanelBody>
 		</Panel>
+	);
+}
+
+function Segmented<T extends string>({
+	value,
+	onChange,
+	options,
+	ariaLabel,
+	mono,
+}: {
+	value: T;
+	onChange: (v: T) => void;
+	options: { value: T; label: string }[];
+	ariaLabel: string;
+	mono?: boolean;
+}) {
+	return (
+		<div
+			role="radiogroup"
+			aria-label={ariaLabel}
+			className="inline-flex p-0.5 gap-0.5 rounded-[6px]"
+			style={{
+				background: "var(--surface-sunken)",
+				border: "1px solid var(--border-subtle)",
+			}}
+		>
+			{options.map((o) => {
+				const active = value === o.value;
+				return (
+					// biome-ignore lint/a11y/useSemanticElements: segmented control inside explicit radiogroup
+					<button
+						type="button"
+						key={o.value}
+						role="radio"
+						aria-checked={active}
+						onClick={() => onChange(o.value)}
+						className={`text-[12px] px-2.5 h-7 rounded-[4px] transition-colors ${mono ? "font-mono tnum" : "font-medium"}`}
+						style={{
+							background: active ? "var(--surface-base)" : "transparent",
+							color: active ? "var(--text-primary)" : "var(--text-tertiary)",
+							boxShadow: active ? "0 0 0 1px var(--border-subtle)" : "none",
+						}}
+					>
+						{o.label}
+					</button>
+				);
+			})}
+		</div>
 	);
 }
 
@@ -198,7 +264,11 @@ export function ComparePage() {
 				metricsApi.getAggregated(
 					svc.id,
 					duration,
-					duration === "1h" ? "1 minute" : duration === "6h" ? "5 minutes" : "15 minutes",
+					duration === "1h"
+						? "1 minute"
+						: duration === "6h"
+							? "5 minutes"
+							: "15 minutes",
 				),
 			staleTime: 30_000,
 		})),
@@ -223,64 +293,34 @@ export function ComparePage() {
 		<PageShell width="wide" fill>
 			<PageHeader
 				eyebrow="Karşılaştırma"
-				title="Servis Karşılaştırması"
+				title="Servis karşılaştırması"
 				description="2-4 servisi yan yana koyup CPU, bellek veya latency'lerini aynı eksen üzerinde inceleyin."
 				meta={
-					<div className="flex items-center gap-3 flex-wrap">
-						<div
-							className="inline-flex rounded-full p-1 gap-0.5"
-							style={{
-								background: "var(--surface-sunken)",
-							}}
-						>
-							{(["avg_cpu", "avg_memory", "avg_latency"] as MetricKey[]).map((m) => (
-								<button
-									type="button"
-									key={m}
-									onClick={() => setMetric(m)}
-									className="text-[12px] px-3 h-7 rounded-full font-medium transition-all"
-									style={{
-										background:
-											metric === m ? "var(--brand-primary)" : "transparent",
-										color:
-											metric === m ? "#ffffff" : "var(--text-muted)",
-										boxShadow: metric === m ? "0 1px 2px rgba(0,0,0,0.08)" : undefined,
-									}}
-								>
-									{METRIC_LABELS[m]}
-								</button>
-							))}
-						</div>
-						<div
-							className="inline-flex rounded-full p-1 gap-0.5"
-							style={{
-								background: "var(--surface-sunken)",
-							}}
-						>
-							{(["1h", "6h", "24h"] as const).map((d) => (
-								<button
-									type="button"
-									key={d}
-									onClick={() => setDuration(d)}
-									className="text-[12px] px-3 h-7 rounded-full font-mono font-medium tabular-nums transition-all"
-									style={{
-										background:
-											duration === d ? "var(--brand-primary)" : "transparent",
-										color:
-											duration === d ? "#ffffff" : "var(--text-muted)",
-										boxShadow: duration === d ? "0 1px 2px rgba(0,0,0,0.08)" : undefined,
-									}}
-								>
-									{d}
-								</button>
-							))}
-						</div>
+					<div className="flex items-center gap-2 flex-wrap">
+						<Segmented
+							ariaLabel="Metrik"
+							value={metric}
+							onChange={(v) => setMetric(v as MetricKey)}
+							options={(
+								["avg_cpu", "avg_memory", "avg_latency"] as MetricKey[]
+							).map((m) => ({ value: m, label: METRIC_LABELS[m] }))}
+						/>
+						<Segmented
+							ariaLabel="Süre"
+							value={duration}
+							onChange={(v) => setDuration(v as "1h" | "6h" | "24h")}
+							options={(["1h", "6h", "24h"] as const).map((d) => ({
+								value: d,
+								label: d,
+							}))}
+							mono
+						/>
 					</div>
 				}
 			/>
 
 			<div className="flex-1 min-h-0 overflow-y-auto pr-1 flex flex-col gap-4">
-				<Panel>
+				<Panel padding="none">
 					<PanelHeader
 						dense
 						actions={
@@ -288,22 +328,26 @@ export function ComparePage() {
 								<button
 									type="button"
 									onClick={() => setSelectedIds([])}
-									className="text-[10px] px-2 py-1 rounded-md flex items-center gap-1 font-mono"
-									style={{
-										background: "var(--surface-sunken)",
-										color: "var(--text-muted)",
-										border: "1px solid var(--border-subtle)",
-									}}
+									className="text-[11px] px-2 py-1 rounded-[4px] flex items-center gap-1 transition-colors hover:bg-[var(--surface-sunken)]"
+									style={{ color: "var(--text-tertiary)" }}
 								>
 									<X className="w-3 h-3" />
 									Temizle
 								</button>
 							) : null
 						}
-						icon={<GitCompare className="w-4 h-4" />}
+						icon={
+							<GitCompare
+								className="w-4 h-4"
+								style={{ color: "var(--text-tertiary)" }}
+							/>
+						}
 					>
-						Servis Seçimi
-						<span className="text-[10px] font-normal ml-2" style={{ color: "var(--text-faint)" }}>
+						Servis seçimi
+						<span
+							className="text-[10px] font-normal ml-2 tnum"
+							style={{ color: "var(--text-faint)" }}
+						>
 							{selectedIds.length}/4
 						</span>
 					</PanelHeader>
@@ -319,19 +363,19 @@ export function ComparePage() {
 										key={s.id}
 										onClick={() => toggle(s.id)}
 										disabled={!active && selectedIds.length >= 4}
-										className="text-[11px] px-2.5 py-1.5 rounded-md font-mono flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+										className="text-[12px] px-2.5 h-8 rounded-[6px] font-mono flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
 										style={{
 											background: color
 												? `color-mix(in srgb, ${color} 14%, transparent)`
-												: "var(--surface-sunken)",
-											border: `1px solid ${color ?? "var(--border-default)"}`,
-											color: color ?? "var(--text-secondary)",
+												: "transparent",
+											border: `1px solid ${color ?? "var(--border-subtle)"}`,
+											color: color ?? "var(--text-tertiary)",
 											fontWeight: active ? 600 : 500,
 										}}
 									>
 										{active && (
 											<span
-												className="w-2 h-2 rounded-sm"
+												className="w-1.5 h-1.5 rounded-full"
 												style={{ background: color ?? undefined }}
 											/>
 										)}
@@ -352,30 +396,50 @@ export function ComparePage() {
 					/>
 				) : (
 					<>
-						<Panel>
+						<Panel padding="none">
 							<PanelHeader dense>
-								{METRIC_LABELS[metric]} — Son {duration}
+								{METRIC_LABELS[metric]} ·{" "}
+								<span
+									className="font-mono tnum ml-1"
+									style={{ color: "var(--text-tertiary)" }}
+								>
+									son {duration}
+								</span>
 							</PanelHeader>
 							<PanelBody scroll={false}>
 								<div className="h-64 sm:h-72">
 									<ResponsiveContainer width="100%" height="100%">
 										<LineChart data={merged}>
-											<CartesianGrid stroke="var(--border-subtle)" strokeDasharray="3 3" />
+											<CartesianGrid
+												stroke="var(--border-subtle)"
+												strokeDasharray="3 3"
+												vertical={false}
+											/>
 											<XAxis
 												dataKey="bucket"
 												tickFormatter={formatBucket}
-												tick={{ fill: "var(--text-faint)", fontSize: 10 }}
+												tick={{
+													fill: "var(--text-faint)",
+													fontSize: 10,
+													fontFamily: "var(--font-mono)",
+												}}
 												stroke="var(--border-subtle)"
+												tickLine={false}
 											/>
 											<YAxis
-												tick={{ fill: "var(--text-faint)", fontSize: 10 }}
+												tick={{
+													fill: "var(--text-faint)",
+													fontSize: 10,
+													fontFamily: "var(--font-mono)",
+												}}
 												stroke="var(--border-subtle)"
 												width={40}
+												tickLine={false}
 											/>
 											<Tooltip
 												contentStyle={{
-													background: "var(--surface-raised)",
-													border: "1px solid var(--border-default)",
+													background: "var(--surface-overlay)",
+													border: "1px solid var(--border-subtle)",
 													borderRadius: 6,
 													fontSize: 11,
 												}}
@@ -388,7 +452,7 @@ export function ComparePage() {
 													dataKey={svc.id}
 													name={svc.name}
 													stroke={paletteColor(i)}
-													strokeWidth={1.8}
+													strokeWidth={1.5}
 													dot={false}
 													isAnimationActive={false}
 													connectNulls

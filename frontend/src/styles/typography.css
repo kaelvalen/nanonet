@@ -1,0 +1,259 @@
+/* NanoNet typography system — Vignelli-decisive scale, MB-quiet weights for chrome.
+   Six levels total. All numeric content is tabular & lining for column alignment. */
+
+:root {
+	/* ── Type scale (px / rem) ───────────────────────────────────────────── */
+	/* display-l — primary KPI numbers, public status hero */
+	--ts-display-l-size: 3rem; /* 48px */
+	--ts-display-l-line: 1.05;
+	--ts-display-l-weight: 700;
+	--ts-display-l-tracking: -0.025em;
+
+	/* display-m — page hero numbers, big metrics */
+	--ts-display-m-size: 2rem; /* 32px */
+	--ts-display-m-line: 1.1;
+	--ts-display-m-weight: 700;
+	--ts-display-m-tracking: -0.02em;
+
+	/* h1 — page titles inside content (TopBar uses h1-compact internally) */
+	--ts-h1-size: 1.5rem; /* 24px */
+	--ts-h1-line: 1.2;
+	--ts-h1-weight: 600;
+	--ts-h1-tracking: -0.015em;
+
+	/* h2 — section titles */
+	--ts-h2-size: 1.125rem; /* 18px */
+	--ts-h2-line: 1.3;
+	--ts-h2-weight: 600;
+	--ts-h2-tracking: -0.01em;
+
+	/* body — default text */
+	--ts-body-size: 0.875rem; /* 14px */
+	--ts-body-line: 1.5;
+	--ts-body-weight: 400;
+
+	/* body-sm — dense table/log text */
+	--ts-body-sm-size: 0.8125rem; /* 13px */
+	--ts-body-sm-line: 1.45;
+	--ts-body-sm-weight: 400;
+
+	/* caption — labels, breadcrumbs, microcopy */
+	--ts-caption-size: 0.75rem; /* 12px */
+	--ts-caption-line: 1.4;
+	--ts-caption-weight: 500;
+
+	/* eyebrow — uppercase section label above title */
+	--ts-eyebrow-size: 0.6875rem; /* 11px */
+	--ts-eyebrow-line: 1;
+	--ts-eyebrow-weight: 600;
+	--ts-eyebrow-tracking: 0.08em;
+
+	/* mono-sm — log line, terminal */
+	--ts-mono-sm-size: 0.75rem; /* 12px */
+	--ts-mono-sm-line: 1.5;
+
+	/* ── Legacy aliases (preserve so unrewritten Faz 2-6 pages don't blow up) ── */
+	--font-size-xs: 0.6875rem;
+	--font-size-sm: 0.75rem;
+	--font-size-base: 0.875rem;
+	--font-size-lg: 0.9375rem;
+	--font-size-xl: 1rem;
+	--font-size-2xl: 1.125rem;
+	--font-size-3xl: 1.5rem;
+	--font-size-4xl: 2rem;
+
+	--line-height-tight: 1.2;
+	--line-height-snug: 1.35;
+	--line-height-normal: 1.5;
+	--line-height-relaxed: 1.625;
+	--line-height-loose: 2;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Element defaults — restrained, MB chrome.
+   Pages override per-component when a louder voice is needed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+h1 {
+	font-size: var(--ts-h1-size);
+	line-height: var(--ts-h1-line);
+	font-weight: var(--ts-h1-weight);
+	letter-spacing: var(--ts-h1-tracking);
+}
+h2 {
+	font-size: var(--ts-h2-size);
+	line-height: var(--ts-h2-line);
+	font-weight: var(--ts-h2-weight);
+	letter-spacing: var(--ts-h2-tracking);
+}
+h3 {
+	font-size: var(--ts-body-size);
+	line-height: var(--ts-body-line);
+	font-weight: 600;
+}
+h4 {
+	font-size: var(--ts-body-sm-size);
+	line-height: var(--ts-body-sm-line);
+	font-weight: 600;
+}
+h5 {
+	font-size: var(--ts-caption-size);
+	line-height: var(--ts-caption-line);
+	font-weight: 600;
+}
+h6 {
+	font-size: var(--ts-eyebrow-size);
+	line-height: var(--ts-eyebrow-line);
+	font-weight: var(--ts-eyebrow-weight);
+	letter-spacing: var(--ts-eyebrow-tracking);
+	text-transform: uppercase;
+}
+
+p {
+	font-size: var(--ts-body-size);
+	line-height: var(--ts-body-line);
+}
+
+small {
+	font-size: var(--ts-caption-size);
+	line-height: var(--ts-caption-line);
+}
+
+label {
+	font-size: var(--ts-body-sm-size);
+	font-weight: var(--font-weight-medium);
+	line-height: var(--ts-body-sm-line);
+}
+
+input,
+textarea,
+select,
+button {
+	font-family: inherit;
+	font-size: var(--ts-body-size);
+	line-height: var(--ts-body-line);
+}
+
+textarea {
+	font-family: var(--font-mono);
+	font-size: var(--ts-body-sm-size);
+}
+
+code,
+pre {
+	font-family: var(--font-mono);
+	font-size: var(--ts-mono-sm-size);
+	line-height: var(--ts-mono-sm-line);
+}
+code {
+	font-size: 0.9em;
+	background-color: var(--surface-sunken);
+	padding: 0.1em 0.3em;
+	border-radius: 3px;
+}
+pre {
+	line-height: var(--line-height-relaxed);
+	padding: 0.875em;
+	overflow-x: auto;
+	background-color: var(--surface-sunken);
+	border-radius: var(--radius);
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+	text-underline-offset: 2px;
+	transition: color var(--duration-fast) var(--ease-standard);
+}
+a:hover {
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+}
+
+ul,
+ol {
+	padding-left: 1.25em;
+}
+li {
+	line-height: var(--ts-body-line);
+}
+
+table {
+	font-size: var(--ts-body-sm-size);
+	line-height: var(--ts-body-sm-line);
+	border-collapse: collapse;
+}
+
+blockquote {
+	font-size: var(--ts-body-size);
+	font-style: italic;
+	line-height: var(--line-height-relaxed);
+	margin: 0 0 0.875em 0;
+	padding-left: 0.875em;
+	border-left: 2px solid var(--border-default);
+	color: var(--text-secondary);
+}
+
+hr {
+	margin: 1.25em 0;
+	border: none;
+	border-top: 1px solid var(--border-subtle);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Utilities
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Numeric content discipline — tabular, lining, slashed-zero.
+   Apply on every number: KPIs, table cells, kbd hints, percentages. */
+.tnum,
+.tabular {
+	font-variant-numeric: tabular-nums lining-nums slashed-zero;
+	font-feature-settings:
+		"tnum" 1,
+		"lnum" 1,
+		"zero" 1;
+}
+
+/* Display utilities (use on big numbers / hero metrics) */
+.text-display-l {
+	font-size: var(--ts-display-l-size);
+	line-height: var(--ts-display-l-line);
+	font-weight: var(--ts-display-l-weight);
+	letter-spacing: var(--ts-display-l-tracking);
+	font-variant-numeric: tabular-nums lining-nums slashed-zero;
+}
+.text-display-m {
+	font-size: var(--ts-display-m-size);
+	line-height: var(--ts-display-m-line);
+	font-weight: var(--ts-display-m-weight);
+	letter-spacing: var(--ts-display-m-tracking);
+	font-variant-numeric: tabular-nums lining-nums slashed-zero;
+}
+.text-eyebrow {
+	font-size: var(--ts-eyebrow-size);
+	line-height: var(--ts-eyebrow-line);
+	font-weight: var(--ts-eyebrow-weight);
+	letter-spacing: var(--ts-eyebrow-tracking);
+	text-transform: uppercase;
+	color: var(--text-tertiary);
+}
+.text-caption {
+	font-size: var(--ts-caption-size);
+	line-height: var(--ts-caption-line);
+	font-weight: var(--ts-caption-weight);
+	color: var(--text-tertiary);
+}
+.text-mono {
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums lining-nums slashed-zero;
+}
+
+/* Small responsive bump for narrow viewports */
+@media (max-width: 640px) {
+	h1 {
+		font-size: 1.25rem;
+	}
+	h2 {
+		font-size: 1rem;
+	}
+}

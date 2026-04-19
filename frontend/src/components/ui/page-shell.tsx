@@ -3,17 +3,15 @@ import { useRegisterPageMeta } from "@/components/PageMetaContext";
 import { cn } from "./utils";
 
 /**
- * Unified page wrapper.
+ * PageShell — uniform wrapper for every authenticated page.
  *
- * The app convention is: every authenticated page renders inside a
- * `PageShell` so spacing, max-width, and viewport behavior stay uniform.
- *
- * - `width`: caps the content (`default` 1280px / `wide` 1440px / `full` no cap).
- *   Defaults to `wide` because most product pages need the breathing room.
- * - `fill`: locks to parent height and becomes a flex column so children can
- *   use `flex-1 min-h-0 overflow-auto` to scroll internally instead of letting
- *   the whole page scroll. Defaults to `true` — opt out only for pages that
- *   genuinely need document-level scroll (long marketing/auth pages).
+ * - `width`: caps content (`default` 1280px / `wide` 1440px / `full` no cap).
+ *   Defaults to `wide` because most NanoNet product pages need the breathing
+ *   room a 1440px ceiling provides for two-column dense layouts.
+ * - `fill`: locks to parent height + becomes a flex column so children can
+ *   use `flex-1 min-h-0 overflow-auto` to scroll internally instead of
+ *   leaking into document scroll. Defaults to `true` — opt out only for
+ *   pages with genuine document-level scroll (long marketing/auth pages).
  * - `gap`: vertical rhythm between top-level sections (default `md`).
  */
 export function PageShell({
@@ -78,22 +76,27 @@ interface PageHeaderProps {
 	meta?: ReactNode;
 	className?: string;
 	/**
-	 * Compat prop — used to control margin in the legacy implementation.
-	 * The current TopBar-driven layout always renders compactly, so this
-	 * is kept only to avoid touching every consumer.
+	 * Compat — legacy callers passed this to control margin. The TopBar-driven
+	 * layout always renders compactly, so this is a no-op kept to avoid
+	 * touching every page in Faz 2.
 	 */
 	compact?: boolean;
 }
 
 /**
- * PageHeader — pushes the page title/eyebrow up into the global TopBar
- * (via PageMetaContext) and renders an inline action strip directly
- * above the page content for description, actions, and meta rows.
+ * PageHeader — the canonical Faz 1+ page header.
  *
- * The TopBar owns identity (title, breadcrumb) and global utilities
- * (search, health, user). Pages keep ownership of their own primary
- * actions ("Yeni X", filters, save buttons) so they live next to the
- * content they affect — much easier on the eyes than a crowded topbar.
+ * It pushes the page title/eyebrow up into the global TopBar (via
+ * PageMetaContext) and renders an inline strip directly above the page
+ * content for description, actions, and meta rows.
+ *
+ * The TopBar owns identity (title, breadcrumb, account) and global utilities
+ * (search, health, alerts). Pages keep ownership of their own primary
+ * actions ("Yeni X", filters, save buttons) so they live next to the content
+ * they affect — much easier to scan than a crowded topbar.
+ *
+ * If a page has neither description, actions, nor meta, this component
+ * renders nothing (the TopBar already shows the title).
  */
 export function PageHeader({
 	eyebrow,
@@ -109,17 +112,17 @@ export function PageHeader({
 
 	return (
 		<header
-			className={cn(
-				"flex flex-col gap-3 shrink-0",
-				className,
-			)}
+			className={cn("flex flex-col gap-3 shrink-0 pb-3", className)}
+			style={{
+				borderBottom: meta ? "1px solid var(--border-subtle)" : undefined,
+			}}
 		>
 			{(description || actions) && (
 				<div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
 					{description ? (
 						<p
 							className="text-[13px] leading-relaxed max-w-2xl"
-							style={{ color: "var(--text-muted)" }}
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							{description}
 						</p>

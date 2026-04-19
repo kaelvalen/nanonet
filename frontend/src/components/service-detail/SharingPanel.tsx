@@ -61,10 +61,7 @@ export function SharingPanel({ serviceId }: { serviceId: string }) {
 			}}
 		>
 			<div className="mb-3 flex items-center gap-2">
-				<Shield
-					className="size-4"
-					style={{ color: "var(--text-faint)" }}
-				/>
+				<Shield className="size-4" style={{ color: "var(--text-faint)" }} />
 				<span
 					className="text-sm font-medium"
 					style={{ color: "var(--text-primary)" }}

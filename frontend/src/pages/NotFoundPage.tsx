@@ -1,6 +1,6 @@
-import { ArrowLeft, Home, Search } from "lucide-react";
-import { motion } from "motion/react";
+import { ArrowLeft, Home } from "lucide-react";
 import { useNavigate } from "react-router";
+import { DotMatrix } from "@/components/DotMatrix";
 import { Button } from "@/components/ui/button";
 
 export function NotFoundPage() {
@@ -9,93 +9,57 @@ export function NotFoundPage() {
 	return (
 		<div
 			className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden"
-			style={{ background: "var(--gradient-bg)" }}
+			style={{ background: "var(--surface-canvas)" }}
 		>
-			<div
-				className="fixed inset-0 pointer-events-none z-0"
-				style={{
-					backgroundImage: `radial-gradient(var(--dot-pattern) 1px, transparent 1px)`,
-					backgroundSize: "28px 28px",
-				}}
-			/>
+			<div className="absolute inset-0 pointer-events-none opacity-[0.35]">
+				<DotMatrix />
+			</div>
 
-			<motion.div
-				initial={{ opacity: 0, y: 32 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.6 }}
-				className="relative z-10 rounded p-12 max-w-lg w-full text-center"
+			<div
+				className="relative z-10 w-full max-w-md text-center"
 				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-					boxShadow: "var(--card-shadow)",
+					background: "var(--surface-base)",
+					border: "1px solid var(--border-subtle)",
+					borderRadius: "8px",
+					padding: "40px 32px",
 				}}
 			>
-				{/* 404 Big Number */}
-				<motion.h1
-					initial={{ scale: 0.8, opacity: 0 }}
-					animate={{ scale: 1, opacity: 1 }}
-					transition={{ duration: 0.5, delay: 0.2 }}
-					className="text-8xl font-black bg-clip-text text-transparent mb-2"
-					style={{ backgroundImage: "var(--gradient-heading)" }}
+				<p
+					className="text-[10px] font-mono uppercase tracking-wider mb-3"
+					style={{ color: "var(--text-faint)" }}
+				>
+					Error 404
+				</p>
+				<h1
+					className="text-[64px] leading-none font-semibold tnum mb-4"
+					style={{ color: "var(--text-primary)" }}
 				>
 					404
-				</motion.h1>
-
-				<motion.div
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ delay: 0.4 }}
+				</h1>
+				<h2
+					className="text-[16px] font-semibold mb-2"
+					style={{ color: "var(--text-primary)" }}
 				>
-					<div
-						className="w-16 h-16 rounded flex items-center justify-center mx-auto mb-4"
-						style={{ backgroundColor: "var(--color-lavender-subtle)" }}
-					>
-						<Search
-							className="w-8 h-8 opacity-50"
-							style={{ color: "var(--color-lavender)" }}
-						/>
-					</div>
+					Sayfa bulunamadı
+				</h2>
+				<p
+					className="text-[13px] leading-relaxed mb-8"
+					style={{ color: "var(--text-tertiary)" }}
+				>
+					Aradığınız sayfa mevcut değil veya taşınmış olabilir.
+				</p>
 
-					<h2
-						className="text-lg font-bold mb-2"
-						style={{ color: "var(--text-secondary)" }}
-					>
-						Sayfa Bulunamadı
-					</h2>
-					<p
-						className="text-sm mb-8 leading-relaxed"
-						style={{ color: "var(--text-muted)" }}
-					>
-						Aradığınız sayfa mevcut değil veya taşınmış olabilir.
-					</p>
-
-					<div className="flex gap-3 justify-center">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => navigate(-1)}
-							className="rounded text-xs h-9 px-4"
-							style={{
-								borderColor: "var(--border-default)",
-								color: "var(--text-muted)",
-							}}
-						>
-							<ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Geri Dön
-						</Button>
-						<Button
-							size="sm"
-							onClick={() => navigate("/", { replace: true })}
-							className="text-white rounded text-xs h-9 px-4 border-0 hover:opacity-90"
-							style={{
-								background: "var(--gradient-btn-primary)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							<Home className="w-3.5 h-3.5 mr-1.5" /> Ana Sayfaya Git
-						</Button>
-					</div>
-				</motion.div>
-			</motion.div>
+				<div className="flex gap-2 justify-center">
+					<Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+						<ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+						Geri dön
+					</Button>
+					<Button size="sm" onClick={() => navigate("/", { replace: true })}>
+						<Home className="w-3.5 h-3.5 mr-1.5" />
+						Ana sayfa
+					</Button>
+				</div>
+			</div>
 		</div>
 	);
 }

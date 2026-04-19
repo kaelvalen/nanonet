@@ -108,44 +108,45 @@ function StatCard({
 }) {
 	return (
 		<div
-			className="relative overflow-hidden px-4 py-3.5 rounded-xl"
+			className="relative overflow-hidden px-4 py-3.5 rounded-[6px]"
 			style={{
-				background: `color-mix(in srgb, ${color} 8%, var(--surface-card))`,
-				border: `1.5px solid color-mix(in srgb, ${color} 28%, var(--border-default))`,
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
-			<div
-				className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+			<span
+				aria-hidden
+				className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
 				style={{ background: color }}
 			/>
 			<div className="flex items-center justify-between">
-				<div className="min-w-0">
+				<div className="min-w-0 ml-1">
 					<p
-						className="text-[11px] font-medium mb-1"
+						className="text-[11px] font-medium uppercase tracking-wider mb-1.5"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{label}
 					</p>
 					<p
-						className="text-2xl font-bold tabular-nums leading-none"
-						style={{ color }}
+						className="text-[22px] font-semibold leading-none tnum"
+						style={{ color: "var(--text-primary)" }}
 					>
 						{value}
 					</p>
 					{sub && (
 						<p
-							className="text-[10px] mt-1"
-							style={{ color: "var(--text-faint)" }}
+							className="text-[11px] font-mono tnum mt-1.5"
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							{sub}
 						</p>
 					)}
 				</div>
 				<div
-					className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+					className="w-9 h-9 rounded-[6px] flex items-center justify-center shrink-0"
 					style={{
-						background: "var(--surface-card)",
-						border: `1px solid color-mix(in srgb, ${color} 30%, var(--border-default))`,
+						background: "var(--surface-sunken)",
+						border: "1px solid var(--border-subtle)",
 					}}
 				>
 					<Icon className="w-4 h-4" style={{ color }} />
@@ -156,38 +157,33 @@ function StatCard({
 }
 
 function PodStatusBadge({ status }: { status: string }) {
-	const cfg: Record<string, { bg: string; text: string; border: string }> = {
+	const cfg: Record<string, { bg: string; text: string }> = {
 		Running: {
 			bg: "var(--status-up-subtle)",
 			text: "var(--status-up-text)",
-			border: "var(--status-up-border)",
 		},
 		Pending: {
-			bg: "var(--status-warn-subtle)",
-			text: "var(--status-warn-text)",
-			border: "var(--status-warn-border)",
+			bg: "var(--status-degraded-subtle)",
+			text: "var(--status-degraded-text)",
 		},
 		Failed: {
 			bg: "var(--status-down-subtle)",
 			text: "var(--status-down-text)",
-			border: "var(--status-down-border)",
 		},
 		Succeeded: {
-			bg: "var(--color-teal-subtle)",
-			text: "var(--color-teal)",
-			border: "var(--color-teal-border)",
+			bg: "var(--brand-primary-subtle)",
+			text: "var(--brand-primary)",
 		},
 		Unknown: {
 			bg: "var(--surface-sunken)",
-			text: "var(--text-faint)",
-			border: "var(--border-subtle)",
+			text: "var(--text-tertiary)",
 		},
 	};
 	const s = cfg[status] ?? cfg.Failed;
 	return (
 		<Badge
-			className="text-[9px] px-2 py-0.5 rounded-full border shrink-0"
-			style={{ background: s.bg, color: s.text, borderColor: s.border }}
+			className="text-[10px] px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider font-medium shrink-0"
+			style={{ background: s.bg, color: s.text }}
 		>
 			{status}
 		</Badge>
@@ -203,33 +199,29 @@ function MemoryToGB(raw: string): string {
 
 // ─── Servis tipi rozeti ─────────────────────────────────────────────────────────────────
 function ServiceTypeBadge({ type }: { type: string }) {
-	const cfg: Record<string, { bg: string; text: string; border: string }> = {
+	const cfg: Record<string, { bg: string; text: string }> = {
 		ClusterIP: {
-			bg: "var(--color-blue-subtle)",
-			text: "var(--color-blue)",
-			border: "var(--color-blue-border)",
+			bg: "var(--brand-primary-subtle)",
+			text: "var(--brand-primary)",
 		},
 		NodePort: {
-			bg: "var(--status-warn-subtle)",
-			text: "var(--status-warn-text)",
-			border: "var(--status-warn-border)",
+			bg: "var(--status-degraded-subtle)",
+			text: "var(--status-degraded-text)",
 		},
 		LoadBalancer: {
 			bg: "var(--status-up-subtle)",
 			text: "var(--status-up-text)",
-			border: "var(--status-up-border)",
 		},
 		ExternalName: {
-			bg: "var(--color-lavender-subtle)",
-			text: "var(--color-lavender)",
-			border: "var(--color-lavender-border)",
+			bg: "var(--surface-sunken)",
+			text: "var(--text-tertiary)",
 		},
 	};
 	const s = cfg[type] ?? cfg.ClusterIP;
 	return (
 		<Badge
-			className="text-[9px] px-2 py-0.5 rounded-full border shrink-0"
-			style={{ background: s.bg, color: s.text, borderColor: s.border }}
+			className="text-[10px] px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider font-medium shrink-0"
+			style={{ background: s.bg, color: s.text }}
 		>
 			{type}
 		</Badge>
@@ -266,16 +258,16 @@ function PodLogModal({
 			>
 				<DialogHeader>
 					<DialogTitle
-						className="flex items-center gap-2 text-sm font-semibold"
-						style={{ color: "var(--text-secondary)" }}
+						className="flex items-center gap-2 text-[14px] font-semibold"
+						style={{ color: "var(--text-primary)" }}
 					>
 						<Terminal
 							className="w-4 h-4"
-							style={{ color: "var(--color-teal)" }}
+							style={{ color: "var(--brand-primary)" }}
 						/>
 						<span style={{ fontFamily: "var(--font-mono)" }}>{podName}</span>
 						<span
-							className="text-[10px] font-normal ml-1"
+							className="text-[11px] font-normal ml-1 uppercase tracking-wider"
 							style={{ color: "var(--text-faint)" }}
 						>
 							logları
@@ -297,17 +289,16 @@ function PodLogModal({
 							type="button"
 							key={n}
 							onClick={() => setLines(n)}
-							className="px-2.5 py-0.5 rounded-lg text-[10px] border transition-all"
+							aria-pressed={lines === n}
+							className="px-2 h-6 rounded-[4px] text-[11px] font-medium transition-colors"
 							style={
 								lines === n
 									? {
-											background: "var(--color-teal-subtle)",
-											color: "var(--color-teal)",
-											borderColor: "var(--color-teal-border)",
+											background: "var(--brand-primary-subtle)",
+											color: "var(--brand-primary)",
 										}
 									: {
-											color: "var(--text-muted)",
-											borderColor: "var(--border-subtle)",
+											color: "var(--text-tertiary)",
 											background: "transparent",
 										}
 							}
@@ -315,28 +306,25 @@ function PodLogModal({
 							{n} satır
 						</button>
 					))}
-					<button
-						type="button"
+					<Button
+						variant="ghost"
+						size="sm"
 						onClick={() => refetch()}
 						disabled={isFetching}
-						className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] border ml-auto transition-all"
-						style={{
-							borderColor: "var(--color-teal-border)",
-							color: "var(--color-teal)",
-						}}
+						className="ml-auto h-7 text-[11px]"
 					>
 						{isFetching ? (
-							<Loader2 className="w-3 h-3 animate-spin" />
+							<Loader2 className="w-3 h-3 animate-spin mr-1" />
 						) : (
-							<RefreshCw className="w-3 h-3" />
+							<RefreshCw className="w-3 h-3 mr-1" />
 						)}
 						Yenile
-					</button>
+					</Button>
 				</div>
 				<div className="relative">
 					{isFetching && (
 						<div
-							className="absolute inset-0 flex items-center justify-center rounded-lg z-10"
+							className="absolute inset-0 flex items-center justify-center rounded-[6px] z-10"
 							style={{
 								background:
 									"color-mix(in srgb, var(--surface-base) 80%, transparent)",
@@ -344,12 +332,12 @@ function PodLogModal({
 						>
 							<Loader2
 								className="w-5 h-5 animate-spin"
-								style={{ color: "var(--color-teal)" }}
+								style={{ color: "var(--brand-primary)" }}
 							/>
 						</div>
 					)}
 					<pre
-						className="text-[10px] leading-relaxed p-4 rounded overflow-auto max-h-96 whitespace-pre-wrap break-all"
+						className="text-[11px] leading-relaxed p-4 rounded-[6px] overflow-auto max-h-96 whitespace-pre-wrap break-all"
 						style={{
 							background: "var(--surface-sunken)",
 							border: "1px solid var(--border-subtle)",
@@ -391,10 +379,9 @@ function ConfirmButton({
 						setAsking(false);
 						onConfirm();
 					}}
-					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border"
+					className="flex items-center gap-1 px-2 h-6 rounded-[4px] text-[10px] font-medium uppercase tracking-wider"
 					style={{
 						background: "var(--status-down-subtle)",
-						borderColor: "var(--status-down-border)",
 						color: "var(--status-down-text)",
 					}}
 				>
@@ -404,10 +391,10 @@ function ConfirmButton({
 				<button
 					type="button"
 					onClick={() => setAsking(false)}
-					className="flex items-center gap-1 px-2 py-1 rounded text-[10px] border"
+					aria-label="İptal"
+					className="flex items-center justify-center w-6 h-6 rounded-[4px]"
 					style={{
-						borderColor: "var(--border-subtle)",
-						color: "var(--text-muted)",
+						color: "var(--text-tertiary)",
 					}}
 				>
 					<X className="w-3 h-3" />
@@ -712,47 +699,52 @@ export function KubernetesPage() {
 	}[] = [
 		{
 			key: "overview",
-			label: "Genel Bakış",
+			label: "Genel bakış",
 			icon: Activity,
-			colorVar: "var(--color-teal)",
+			colorVar: "var(--brand-primary)",
 		},
-		{ key: "pods", label: "Pod'lar", icon: Box, colorVar: "var(--color-blue)" },
+		{
+			key: "pods",
+			label: "Pod'lar",
+			icon: Box,
+			colorVar: "var(--brand-primary)",
+		},
 		{
 			key: "deployments",
 			label: "Deployment'lar",
 			icon: Layers,
-			colorVar: "var(--color-lavender)",
+			colorVar: "var(--text-secondary)",
 		},
 		{
 			key: "hpa",
-			label: "Auto-Scale",
+			label: "Auto-scale",
 			icon: Gauge,
-			colorVar: "var(--color-pink)",
+			colorVar: "var(--text-secondary)",
 		},
 		{
 			key: "services",
 			label: "Servisler",
 			icon: Share2,
-			colorVar: "var(--color-teal)",
+			colorVar: "var(--brand-primary)",
 		},
 		{
 			key: "endpoints",
 			label: "Endpoints",
 			icon: Network,
-			colorVar: "var(--status-warn)",
+			colorVar: "var(--status-degraded)",
 		},
 		{
 			key: "events",
 			label: "Events",
 			icon: Bell,
-			colorVar: "var(--status-warn)",
+			colorVar: "var(--status-degraded)",
 			badge: warningCount,
 		},
 		{
 			key: "nanonet",
-			label: "K8s Yayınla",
+			label: "K8s yayınla",
 			icon: Package2,
-			colorVar: "var(--color-teal)",
+			colorVar: "var(--brand-primary)",
 		},
 	];
 
@@ -765,45 +757,38 @@ export function KubernetesPage() {
 			<PageHeader
 				eyebrow="Altyapı"
 				title="Kubernetes"
-				description="Cluster yönetimi · pod izleme · auto-scaling"
+				description="Cluster yönetimi, pod izleme ve auto-scaling."
 				actions={
 					isAvailable ? (
-						<button
-							type="button"
+						<Button
+							variant="outline"
+							size="sm"
 							onClick={() => {
 								refetchNodes();
 								refetchAllPods();
 								refetchDeployments();
 							}}
-							className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all hover:opacity-80"
-							style={{
-								borderColor: "var(--border-subtle)",
-								color: "var(--text-muted)",
-								background: "var(--surface-card)",
-							}}
 						>
 							{nodesLoading || allPodsLoading || deploymentsLoading ? (
-								<Loader2 className="w-3 h-3 animate-spin" />
+								<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
 							) : (
-								<RefreshCw className="w-3 h-3" />
+								<RefreshCw className="w-3.5 h-3.5 mr-1.5" />
 							)}
 							Yenile
-						</button>
+						</Button>
 					) : null
 				}
 				meta={
-					<div
-						className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium border"
+					<span
+						className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[11px] font-medium uppercase tracking-wider"
 						style={
 							isAvailable
 								? {
 										background: "var(--status-up-subtle)",
-										borderColor: "var(--status-up-border)",
 										color: "var(--status-up-text)",
 									}
 								: {
 										background: "var(--status-down-subtle)",
-										borderColor: "var(--status-down-border)",
 										color: "var(--status-down-text)",
 									}
 						}
@@ -821,7 +806,7 @@ export function KubernetesPage() {
 								<CloudOff className="w-3 h-3" /> Bağlantısız
 							</>
 						)}
-					</div>
+					</span>
 				}
 			/>
 			{/* Cluster summary strip */}
@@ -832,40 +817,48 @@ export function KubernetesPage() {
 							{
 								label: "Nodes",
 								value: `${readyNodes}/${nodes.length}`,
-								color: "var(--color-teal)",
+								color: "var(--brand-primary)",
 								icon: Server,
 							},
 							{
 								label: "Pods",
 								value: `${runningPods}/${pods.length}`,
-								color: "var(--color-blue)",
+								color: "var(--brand-primary)",
 								icon: Box,
 							},
 							{
 								label: "Deployments",
 								value: `${readyDeployments}/${deployments.length}`,
-								color: "var(--color-lavender)",
+								color: "var(--text-secondary)",
 								icon: Layers,
 							},
 							{
 								label: "Namespace",
 								value: k8sStatus?.namespace ?? "—",
-								color: "var(--color-pink)",
+								color: "var(--text-secondary)",
 								icon: GitBranch,
 							},
 						] as const
 					).map(({ label, value, color, icon: Icon }) => (
 						<div
 							key={label}
-							className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
+							className="flex items-center gap-1.5 px-2.5 h-7 rounded-[6px] text-[12px]"
 							style={{
-								background: `color-mix(in srgb, ${color} 10%, var(--surface-card))`,
-								border: `1px solid color-mix(in srgb, ${color} 25%, var(--border-default))`,
+								background: "var(--surface-base)",
+								border: "1px solid var(--border-subtle)",
 							}}
 						>
-							<Icon className="w-3 h-3" style={{ color }} />
-							<span style={{ color: "var(--text-faint)" }}>{label}:</span>
-							<span className="font-semibold" style={{ color }}>
+							<Icon className="w-3.5 h-3.5" style={{ color }} />
+							<span
+								className="uppercase tracking-wider text-[10px] font-medium"
+								style={{ color: "var(--text-faint)" }}
+							>
+								{label}
+							</span>
+							<span
+								className="font-semibold tnum"
+								style={{ color: "var(--text-primary)" }}
+							>
 								{value}
 							</span>
 						</div>
@@ -875,52 +868,55 @@ export function KubernetesPage() {
 
 			{/* Bağlanamadı */}
 			{!statusLoading && !isAvailable && (
-				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-					<Card
-						className="p-8 rounded text-center"
-						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--status-warn-border)",
-						}}
+				<div
+					className="relative p-8 rounded-[6px] text-center"
+					style={{
+						background: "var(--surface-base)",
+						border: "1px solid var(--border-subtle)",
+					}}
+				>
+					<span
+						aria-hidden
+						className="absolute left-0 top-6 bottom-6 w-[2px] rounded-r-full"
+						style={{ background: "var(--status-degraded)" }}
+					/>
+					<CloudOff
+						className="w-8 h-8 mx-auto mb-3"
+						style={{ color: "var(--status-degraded)" }}
+					/>
+					<h3
+						className="text-[14px] font-semibold mb-1"
+						style={{ color: "var(--text-primary)" }}
 					>
-						<CloudOff
-							className="w-10 h-10 mx-auto mb-3"
-							style={{ color: "var(--status-warn)" }}
-						/>
-						<h3
-							className="text-sm font-semibold mb-1"
-							style={{ color: "var(--text-secondary)" }}
+						Kubernetes entegrasyonu aktif değil
+					</h3>
+					<p
+						className="text-[12px] max-w-sm mx-auto leading-relaxed"
+						style={{ color: "var(--text-tertiary)" }}
+					>
+						Backend'de{" "}
+						<code
+							className="px-1.5 py-0.5 rounded-[4px] font-mono text-[11px]"
+							style={{
+								background: "var(--surface-sunken)",
+								border: "1px solid var(--border-subtle)",
+							}}
 						>
-							Kubernetes Entegrasyonu Aktif Değil
-						</h3>
-						<p
-							className="text-xs max-w-sm mx-auto"
-							style={{ color: "var(--text-muted)" }}
-						>
-							Backend'de{" "}
-							<code
-								className="px-1 py-0.5 rounded"
-								style={{ background: "var(--surface-sunken)" }}
-							>
-								K8S_NAMESPACE
-							</code>{" "}
-							değişkenini tanımlayın ve backend container'ını yeniden başlatın.
-						</p>
-					</Card>
-				</motion.div>
+							K8S_NAMESPACE
+						</code>{" "}
+						değişkenini tanımlayın ve backend container'ını yeniden başlatın.
+					</p>
+				</div>
 			)}
 
 			{isAvailable && (
 				<div className="flex-1 min-h-0 flex flex-col gap-4">
 					{/* Tabs */}
-					<motion.div
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.05 }}
-						className="shrink-0"
-					>
+					<div className="shrink-0">
 						<div
-							className="flex items-center gap-0.5 p-0.5 rounded-xl overflow-x-auto"
+							role="tablist"
+							aria-label="Kubernetes sekme"
+							className="flex items-center gap-0.5 p-0.5 rounded-[6px] overflow-x-auto"
 							style={{
 								background: "var(--surface-sunken)",
 								border: "1px solid var(--border-subtle)",
@@ -930,30 +926,39 @@ export function KubernetesPage() {
 								<button
 									type="button"
 									key={tab.key}
+									role="tab"
+									aria-selected={activeTab === tab.key}
 									onClick={() => setActiveTab(tab.key)}
-									className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0"
+									className="flex items-center gap-1.5 px-3 h-7 rounded-[4px] text-[12px] font-medium whitespace-nowrap transition-colors shrink-0"
 									style={
 										activeTab === tab.key
 											? {
-													background: "var(--surface-raised)",
-													color: tab.colorVar,
-													boxShadow: "var(--btn-shadow)",
+													background: "var(--surface-base)",
+													color: "var(--text-primary)",
+													boxShadow: "0 0 0 1px var(--border-subtle)",
 												}
 											: {
-													color: "var(--text-muted)",
+													color: "var(--text-tertiary)",
 													background: "transparent",
 												}
 									}
 								>
-									<tab.icon className="w-3.5 h-3.5" />
+									<tab.icon
+										className="w-3.5 h-3.5"
+										style={{
+											color:
+												activeTab === tab.key
+													? tab.colorVar
+													: "var(--text-faint)",
+										}}
+									/>
 									{tab.label}
 									{tab.badge !== undefined && tab.badge > 0 && (
 										<span
-											className="ml-0.5 min-w-4 h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+											className="ml-0.5 min-w-4 h-4 px-1 rounded-[4px] text-[10px] font-medium tnum flex items-center justify-center"
 											style={{
-												background: "var(--status-warn-subtle)",
-												color: "var(--status-warn-text)",
-												border: "1px solid var(--status-warn-border)",
+												background: "var(--status-degraded-subtle)",
+												color: "var(--status-degraded-text)",
 											}}
 										>
 											{tab.badge}
@@ -962,47 +967,41 @@ export function KubernetesPage() {
 								</button>
 							))}
 						</div>
-					</motion.div>
+					</div>
 
 					<div className="flex-1 min-h-0 overflow-y-auto -mx-2 px-2 pb-4">
 						<AnimatePresence mode="wait">
 							{/* ── OVERVIEW TAB ── */}
 							{activeTab === "overview" && (
-								<motion.div
-									key="overview"
-									initial={{ opacity: 0, y: 8 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0 }}
-									className="space-y-5"
-								>
+								<div key="overview" className="space-y-5">
 									{/* Summary Stats */}
 									<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 										<StatCard
 											label="Node'lar"
 											value={`${readyNodes}/${nodes.length}`}
 											icon={Server}
-											color="var(--color-teal)"
+											color="var(--brand-primary)"
 											sub="Ready / Total"
 										/>
 										<StatCard
 											label="Pod'lar"
 											value={`${runningPods}/${pods.length}`}
 											icon={Box}
-											color="var(--color-blue)"
+											color="var(--brand-primary)"
 											sub="Running / Total"
 										/>
 										<StatCard
 											label="Deployment'lar"
 											value={`${readyDeployments}/${deployments.length}`}
 											icon={Layers}
-											color="var(--color-lavender)"
+											color="var(--text-secondary)"
 											sub="Ready / Total"
 										/>
 										<StatCard
 											label="Namespace"
 											value={k8sStatus?.namespace ?? "—"}
 											icon={GitBranch}
-											color="var(--color-pink)"
+											color="var(--text-secondary)"
 										/>
 									</div>
 
@@ -1274,7 +1273,7 @@ export function KubernetesPage() {
 											</div>
 										</div>
 									)}
-								</motion.div>
+								</div>
 							)}
 
 							{/* ── PODS TAB ── */}
@@ -1295,37 +1294,30 @@ export function KubernetesPage() {
 
 							{/* ── DEPLOYMENTS TAB ── */}
 							{activeTab === "deployments" && (
-								<motion.div
-									key="deployments"
-									initial={{ opacity: 0, y: 8 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0 }}
-									className="space-y-4"
-								>
+								<div key="deployments" className="space-y-4">
 									<div className="flex items-center justify-between">
 										<p
-											className="text-[11px] font-medium"
-											style={{ color: "var(--text-muted)" }}
+											className="text-[12px] tnum"
+											style={{ color: "var(--text-tertiary)" }}
 										>
-											{deployments.length} dağıtım
+											<span className="font-semibold tnum">
+												{deployments.length}
+											</span>{" "}
+											dağıtım
 										</p>
-										<button
-											type="button"
+										<Button
+											variant="outline"
+											size="sm"
 											onClick={() => refetchDeployments()}
 											disabled={deploymentsLoading}
-											className="flex items-center gap-1.5 px-3 h-8 rounded text-xs border"
-											style={{
-												borderColor: "var(--color-lavender-border)",
-												color: "var(--color-lavender)",
-											}}
 										>
 											{deploymentsLoading ? (
-												<Loader2 className="w-3.5 h-3.5 animate-spin" />
+												<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
 											) : (
-												<RefreshCw className="w-3.5 h-3.5" />
+												<RefreshCw className="w-3.5 h-3.5 mr-1.5" />
 											)}
 											Yenile
-										</button>
+										</Button>
 									</div>
 
 									{deploymentsLoading && deployments.length === 0 ? (
@@ -1610,18 +1602,12 @@ export function KubernetesPage() {
 											})}
 										</div>
 									)}
-								</motion.div>
+								</div>
 							)}
 
 							{/* ── HPA TAB ── */}
 							{activeTab === "hpa" && (
-								<motion.div
-									key="hpa"
-									initial={{ opacity: 0, y: 8 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0 }}
-									className="space-y-4"
-								>
+								<div key="hpa" className="space-y-4">
 									{/* Existing HPAs list */}
 									<div className="flex items-center justify-between">
 										<p
@@ -1974,8 +1960,7 @@ export function KubernetesPage() {
 										<Button
 											onClick={() => hpaMutation.mutate()}
 											disabled={hpaMutation.isPending || !hpaDeployment}
-											className="w-full text-white rounded h-9 text-sm"
-											style={{ background: "var(--color-pink)" }}
+											className="w-full"
 										>
 											{hpaMutation.isPending ? (
 												<>
@@ -1985,12 +1970,12 @@ export function KubernetesPage() {
 											) : (
 												<>
 													<Gauge className="w-4 h-4 mr-2" />
-													HPA Uygula
+													HPA uygula
 												</>
 											)}
 										</Button>
 									</Card>
-								</motion.div>
+								</div>
 							)}
 
 							{/* ── SERVICES TAB ── */}

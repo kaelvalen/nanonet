@@ -10,6 +10,74 @@
 		"platform": "Platform",
 		"skipToContent": "Skip to main content"
 	},
+	"shell": {
+		"sections": {
+			"monitor": "Monitor",
+			"intelligence": "Intelligence",
+			"reliability": "Reliability",
+			"infra": "Infrastructure",
+			"platform": "Platform"
+		},
+		"nav": {
+			"overview": "Overview",
+			"services": "Services",
+			"alerts": "Alerts",
+			"incidents": "Incidents",
+			"logs": "Logs",
+			"aiInsights": "AI Insights",
+			"serviceMap": "Service Map",
+			"compare": "Compare",
+			"slo": "SLO",
+			"probes": "Probes",
+			"runbooks": "Runbooks",
+			"notifications": "Notifications",
+			"kubernetes": "Kubernetes",
+			"statusPages": "Status Pages",
+			"security": "Security",
+			"apiTokens": "API Tokens",
+			"aiUsage": "AI Usage",
+			"settings": "Settings"
+		},
+		"topbar": {
+			"searchPlaceholder": "Search, jump, ask, run…",
+			"searchHint": "Command palette (⌘K)",
+			"healthHover": "{{up}} healthy / {{total}} services",
+			"openIncidents": "{{count}} active incidents",
+			"liveOn": "Live",
+			"liveOff": "Offline",
+			"liveTooltipOn": "WebSocket connected",
+			"liveTooltipOff": "WebSocket disconnected",
+			"aiAssistant": "AI assistant",
+			"aiAssistantHint": "AI assistant (⌘K + ?)",
+			"notifications": "Notifications",
+			"accountMenu": "Account menu",
+			"account": "Account",
+			"profile": "Profile",
+			"themeLight": "Light theme",
+			"themeDark": "Dark theme",
+			"logout": "Log out",
+			"guest": "Guest",
+			"searchAria": "Search"
+		},
+		"rail": {
+			"primary": "Primary navigation",
+			"expand": "Expand",
+			"collapse": "Collapse",
+			"expandHint": "Expand  (⌘\\)",
+			"collapseHint": "Collapse  (⌘\\)",
+			"logout": "Log out"
+		},
+		"mobile": {
+			"home": "Home",
+			"services": "Services",
+			"alerts": "Alerts",
+			"ai": "AI",
+			"settings": "Settings"
+		},
+		"breadcrumb": {
+			"detail": "Detail"
+		}
+	},
 	"auth": {
 		"login": "Log In",
 		"register": "Register",

@@ -18,15 +18,17 @@ export function AuthSubmitButton({
 		<Button
 			type="submit"
 			disabled={loading || disabled}
-			className="w-full h-11 rounded-lg text-white text-sm font-black tracking-wide transition-all duration-200 active:scale-[0.99] disabled:opacity-40 mt-2"
-			style={{
-				background: "var(--gradient-btn-primary)",
-				boxShadow: "var(--btn-shadow)",
-			}}
+			className="w-full h-10 mt-2"
 		>
 			{loading ? (
-				<span className="flex items-center gap-2.5">
-					<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+				<span className="flex items-center gap-2">
+					<span
+						className="w-3.5 h-3.5 rounded-full animate-spin"
+						style={{
+							border: "2px solid rgba(255,255,255,0.3)",
+							borderTopColor: "var(--brand-on-primary)",
+						}}
+					/>
 					{loadingLabel}
 				</span>
 			) : (

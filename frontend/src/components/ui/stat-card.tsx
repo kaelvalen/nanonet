@@ -4,8 +4,8 @@ import { cn } from "./utils";
 
 /**
  * StatCard — single metric tile used in dashboards, summary headers, and
- * detail pages. Mobile-friendly: text scales gracefully and the card
- * stays one row tall.
+ * detail pages. Quiet Swiss: no gradient backgrounds, 2px left accent bar
+ * for tone, tabular nums on the value.
  *
  * Variants:
  *   - tone: default / accent / success / warn / danger / info / violet
@@ -21,42 +21,27 @@ export type StatTone =
 	| "info"
 	| "violet";
 
-const TONES: Record<StatTone, { color: string; bg: string; border: string }> = {
-	default: {
-		color: "var(--text-muted)",
-		bg: "var(--surface-sunken)",
-		border: "var(--border-default)",
-	},
-	accent: {
-		color: "var(--color-teal)",
-		bg: "var(--color-teal-subtle)",
-		border: "var(--color-teal-border)",
-	},
-	success: {
-		color: "var(--status-up)",
-		bg: "var(--status-up-subtle)",
-		border: "var(--status-up-border)",
-	},
+const TONE_ACCENT: Record<StatTone, string> = {
+	default: "var(--border-strong)",
+	accent: "var(--brand-primary)",
+	success: "var(--status-up)",
+	warn: "var(--status-degraded)",
+	danger: "var(--status-down)",
+	info: "var(--brand-primary)",
+	violet: "var(--text-secondary)",
+};
+
+const TONE_ICON: Record<StatTone, { bg: string; color: string }> = {
+	default: { bg: "var(--surface-sunken)", color: "var(--text-tertiary)" },
+	accent: { bg: "var(--brand-primary-subtle)", color: "var(--brand-primary)" },
+	success: { bg: "var(--status-up-subtle)", color: "var(--status-up)" },
 	warn: {
-		color: "var(--status-warn)",
-		bg: "var(--status-warn-subtle)",
-		border: "var(--status-warn-border)",
+		bg: "var(--status-degraded-subtle)",
+		color: "var(--status-degraded)",
 	},
-	danger: {
-		color: "var(--status-down)",
-		bg: "var(--status-down-subtle)",
-		border: "var(--status-down-border)",
-	},
-	info: {
-		color: "var(--color-blue)",
-		bg: "var(--color-blue-subtle)",
-		border: "var(--color-blue-border)",
-	},
-	violet: {
-		color: "var(--color-violet)",
-		bg: "var(--color-violet-subtle)",
-		border: "var(--color-violet-border)",
-	},
+	danger: { bg: "var(--status-down-subtle)", color: "var(--status-down)" },
+	info: { bg: "var(--brand-primary-subtle)", color: "var(--brand-primary)" },
+	violet: { bg: "var(--surface-sunken)", color: "var(--text-secondary)" },
 };
 
 interface StatCardProps {
@@ -80,57 +65,62 @@ export function StatCard({
 	to,
 	className,
 }: StatCardProps) {
-	const t = TONES[tone];
+	const accent = TONE_ACCENT[tone];
+	const iconStyle = TONE_ICON[tone];
 
 	const labelSize = size === "lg" ? "text-[12px]" : "text-[11px]";
 	const valueSize =
 		size === "lg"
-			? "text-[28px]"
+			? "text-[26px]"
 			: size === "sm"
 				? "text-[18px]"
 				: "text-[22px]";
-	const iconBox = size === "lg" ? "w-11 h-11" : size === "sm" ? "w-8 h-8" : "w-10 h-10";
-	const iconSize = size === "lg" ? "w-5 h-5" : size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4";
-	const padding = size === "sm" ? "p-3" : "p-4";
+	const iconBox =
+		size === "lg" ? "w-10 h-10" : size === "sm" ? "w-8 h-8" : "w-9 h-9";
+	const iconSize =
+		size === "lg" ? "w-5 h-5" : size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4";
+	const padding = size === "sm" ? "px-3 py-2.5" : "px-3.5 py-3";
 
 	const inner = (
 		<div
 			className={cn(
-				"flex items-center gap-3 rounded-xl transition-all",
+				"relative flex items-center gap-3 rounded-[6px] transition-colors",
 				to && "hover:border-[color:var(--border-strong)] cursor-pointer",
 				padding,
 				className,
 			)}
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
+			<span
+				aria-hidden
+				className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full"
+				style={{ background: accent }}
+			/>
 			{Icon && (
 				<div
 					className={cn(
-						"rounded-xl flex items-center justify-center shrink-0",
+						"rounded-[6px] flex items-center justify-center shrink-0 ml-1",
 						iconBox,
 					)}
-					style={{
-						background: t.bg,
-						color: t.color,
-					}}
+					style={{ background: iconStyle.bg, color: iconStyle.color }}
 				>
 					<Icon className={iconSize} />
 				</div>
 			)}
-			<div className="min-w-0 flex-1">
+			<div className={cn("min-w-0 flex-1", !Icon && "ml-2")}>
 				<p
 					className={cn("font-medium leading-none", labelSize)}
-					style={{ color: "var(--text-muted)" }}
+					style={{ color: "var(--text-tertiary)" }}
 				>
 					{label}
 				</p>
-				<div className="flex items-baseline gap-1.5 mt-2 min-w-0">
+				<div className="flex items-baseline gap-1.5 mt-1.5 min-w-0">
 					<p
 						className={cn(
-							"font-semibold tabular-nums leading-none truncate tracking-tight",
+							"font-semibold tnum leading-none truncate",
 							valueSize,
 						)}
 						style={{ color: "var(--text-primary)" }}
@@ -140,7 +130,7 @@ export function StatCard({
 					{hint && (
 						<p
 							className="text-[11px] leading-none truncate font-medium"
-							style={{ color: t.color }}
+							style={{ color: accent }}
 						>
 							{hint}
 						</p>

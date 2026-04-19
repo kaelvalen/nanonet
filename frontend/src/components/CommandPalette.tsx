@@ -1,7 +1,9 @@
 import {
 	Activity,
 	AlertCircle,
+	ArrowRight,
 	Cloud,
+	CornerDownLeft,
 	GitCompare,
 	Home,
 	Play,
@@ -15,10 +17,12 @@ import {
 	Sparkles,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { servicesApi } from "@/api/services";
+import { preloadRoute } from "@/routes";
+import { useAIAssistantStore } from "@/store/aiAssistantStore";
 import { useServiceStore } from "@/store/serviceStore";
 import {
 	Command,
@@ -30,56 +34,134 @@ import {
 	CommandSeparator,
 } from "./ui/command";
 
-const navigationItems = [
-	{ label: "Ana Sayfa", icon: Home, path: "/app", shortcut: "⌘1" },
-	{ label: "Servisler", icon: Server, path: "/app/services", shortcut: "⌘2" },
-	{ label: "Uyarılar", icon: AlertCircle, path: "/app/alerts", shortcut: "⌘3" },
+/* CommandPalette — single keyboard surface for: navigation, services, AI ask,
+   and slash-commands. The mode is derived from the input prefix:
+
+       (none)  — fuzzy search across nav + services + actions
+       /       — slash command (e.g. `/restart api-gateway`)
+       ?       — AI ask mode (free-form question to assistant)
+       >       — context actions for the currently active page
+
+   Mode switching is symmetric — backspace past the prefix returns to the
+   default mode. Empty palette also defaults to the search mode. */
+
+type Mode = "search" | "slash" | "ask" | "context";
+
+interface NavLinkItem {
+	label: string;
+	icon: React.ElementType;
+	path: string;
+	shortcut?: string;
+}
+
+const NAV_ITEMS: NavLinkItem[] = [
+	{ label: "Genel Bakış", icon: Home, path: "/app", shortcut: "G D" },
+	{ label: "Servisler", icon: Server, path: "/app/services", shortcut: "G S" },
+	{
+		label: "Uyarılar",
+		icon: AlertCircle,
+		path: "/app/alerts",
+		shortcut: "G A",
+	},
 	{
 		label: "AI İçgörüler",
 		icon: Sparkles,
 		path: "/app/ai-insights",
-		shortcut: "⌘4",
+		shortcut: "G I",
 	},
-	{ label: "Kubernetes", icon: Cloud, path: "/app/kubernetes", shortcut: "⌘5" },
-	{ label: "Karşılaştır", icon: GitCompare, path: "/app/compare", shortcut: "⌘6" },
-	{ label: "Ayarlar", icon: Settings, path: "/app/settings", shortcut: "⌘7" },
+	{
+		label: "Kubernetes",
+		icon: Cloud,
+		path: "/app/kubernetes",
+		shortcut: "G K",
+	},
+	{ label: "Karşılaştır", icon: GitCompare, path: "/app/compare" },
+	{ label: "Ayarlar", icon: Settings, path: "/app/settings" },
 ];
 
-const actionItems = [
-	{ label: "Yeni Servis Ekle", icon: Plus, action: "add-service" },
-	{ label: "Tam Analiz Çalıştır", icon: Sparkles, action: "analyze" },
-	{
-		label: "Tüm Servisleri Yeniden Başlat",
-		icon: RotateCw,
-		action: "restart-all",
-	},
-	{ label: "Sistem Sağlık Kontrolü", icon: Activity, action: "health-check" },
-];
+const ACTION_ITEMS: { label: string; icon: React.ElementType; key: string }[] =
+	[
+		{ label: "Yeni Servis Ekle", icon: Plus, key: "add-service" },
+		{ label: "Tam Analiz Çalıştır", icon: Sparkles, key: "analyze" },
+		{
+			label: "Tüm Servisleri Yeniden Başlat",
+			icon: RotateCw,
+			key: "restart-all",
+		},
+		{ label: "Sistem Sağlık Kontrolü", icon: Activity, key: "health-check" },
+	];
 
 function statusColor(status: string) {
 	if (status === "up") return "var(--status-up)";
-	if (status === "degraded") return "var(--status-warn)";
+	if (status === "degraded") return "var(--status-degraded)";
 	return "var(--status-down)";
 }
 
 function statusBg(status: string) {
 	if (status === "up") return "var(--status-up-subtle)";
-	if (status === "degraded") return "var(--status-warn-subtle)";
+	if (status === "degraded") return "var(--status-degraded-subtle)";
 	return "var(--status-down-subtle)";
 }
 
 function statusText(status: string) {
 	if (status === "up") return "var(--status-up-text)";
-	if (status === "degraded") return "var(--status-warn-text)";
+	if (status === "degraded") return "var(--status-degraded-text)";
 	return "var(--status-down-text)";
+}
+
+function statusLabel(status: string) {
+	if (status === "up") return "Aktif";
+	if (status === "degraded") return "Bozuk";
+	return "Kapalı";
+}
+
+function detectMode(value: string): Mode {
+	if (!value) return "search";
+	const c = value[0];
+	if (c === "/") return "slash";
+	if (c === "?") return "ask";
+	if (c === ">") return "context";
+	return "search";
+}
+
+function ModeChip({ mode }: { mode: Mode }) {
+	const labels: Record<Mode, { label: string; tone: string }> = {
+		search: { label: "Ara", tone: "var(--text-tertiary)" },
+		slash: { label: "Komut", tone: "var(--brand-primary)" },
+		ask: { label: "AI'ye Sor", tone: "var(--brand-primary)" },
+		context: { label: "Sayfa Aksiyonları", tone: "var(--text-secondary)" },
+	};
+	const { label, tone } = labels[mode];
+	return (
+		<span
+			className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider"
+			style={{
+				color: tone,
+				background: "var(--surface-sunken)",
+				border: "1px solid var(--border-subtle)",
+			}}
+		>
+			{label}
+		</span>
+	);
 }
 
 export function CommandPalette() {
 	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
 	const navigate = useNavigate();
 	const { services } = useServiceStore();
+	const openAIAssistant = useAIAssistantStore((s) => s.open);
 	const gPressedRef = useRef(false);
-	const gTimerRef = useRef<ReturnType<typeof setTimeout>>();
+	const gTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
+
+	const mode = detectMode(query);
+	const queryStripped = useMemo(() => {
+		if (mode === "search") return query;
+		return query.slice(1).trimStart();
+	}, [query, mode]);
 
 	useEffect(() => {
 		const VIM_NAV: Record<string, string> = {
@@ -105,10 +187,10 @@ export function CommandPalette() {
 			}
 
 			if (open && e.metaKey) {
-				const num = parseInt(e.key, 10);
+				const num = Number.parseInt(e.key, 10);
 				if (num >= 1 && num <= 5) {
 					e.preventDefault();
-					const item = navigationItems[num - 1];
+					const item = NAV_ITEMS[num - 1];
 					if (item) {
 						navigate(item.path);
 						setOpen(false);
@@ -142,21 +224,32 @@ export function CommandPalette() {
 		};
 	}, [open, navigate]);
 
+	useEffect(() => {
+		if (!open) {
+			setQuery("");
+		}
+	}, [open]);
+
+	const close = useCallback(() => {
+		setOpen(false);
+	}, []);
+
 	const handleNavigate = useCallback(
 		(path: string) => {
 			navigate(path);
-			setOpen(false);
+			close();
 		},
-		[navigate],
+		[navigate, close],
 	);
 
 	const handleAction = useCallback(
 		(action: string) => {
 			if (action === "add-service") navigate("/app/services");
-			else if (action === "analyze") navigate("/app/ai-insights");
-			setOpen(false);
+			else if (action === "analyze") openAIAssistant({ mode: "report" });
+			else if (action === "health-check") navigate("/app");
+			close();
 		},
-		[navigate],
+		[navigate, close, openAIAssistant],
 	);
 
 	const handleServiceAction = useCallback(
@@ -165,7 +258,7 @@ export function CommandPalette() {
 			serviceName: string,
 			action: "start" | "restart" | "stop",
 		) => {
-			setOpen(false);
+			close();
 			try {
 				if (action === "start") await servicesApi.start(serviceId);
 				else if (action === "restart") await servicesApi.restart(serviceId);
@@ -175,62 +268,132 @@ export function CommandPalette() {
 				toast.error(`${serviceName}: komut gönderilemedi`);
 			}
 		},
-		[],
+		[close],
 	);
+
+	const handleAskSubmit = useCallback(() => {
+		if (!queryStripped) return;
+		openAIAssistant({ mode: "chat", seed: queryStripped });
+		close();
+	}, [queryStripped, openAIAssistant, close]);
+
+	const handleSlashSubmit = useCallback(() => {
+		const parts = queryStripped.split(/\s+/).filter(Boolean);
+		if (parts.length === 0) return;
+		const [verb, ...rest] = parts;
+		const target = rest.join(" ");
+
+		if (verb === "go" || verb === "git") {
+			const match = NAV_ITEMS.find((n) =>
+				n.label
+					.toLocaleLowerCase("tr-TR")
+					.includes(target.toLocaleLowerCase("tr-TR")),
+			);
+			if (match) handleNavigate(match.path);
+			else toast.error(`Sayfa bulunamadı: ${target}`);
+			return;
+		}
+		if (verb === "restart" || verb === "start" || verb === "stop") {
+			const svc = services.find(
+				(s) =>
+					s.name.toLocaleLowerCase("tr-TR") ===
+						target.toLocaleLowerCase("tr-TR") || s.id === target,
+			);
+			if (svc) {
+				handleServiceAction(
+					svc.id,
+					svc.name,
+					verb as "start" | "restart" | "stop",
+				);
+			} else {
+				toast.error(`Servis bulunamadı: ${target}`);
+			}
+			return;
+		}
+		toast.error(`Bilinmeyen komut: /${verb}`);
+	}, [queryStripped, services, handleNavigate, handleServiceAction]);
 
 	return (
 		<>
-			{/* Backdrop */}
 			<AnimatePresence>
 				{open && (
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
+						transition={{ duration: 0.12 }}
 						className="fixed inset-0 z-50"
 						style={{
 							backgroundColor: "rgba(0,0,0,0.4)",
 							backdropFilter: "blur(2px)",
 						}}
-						onClick={() => setOpen(false)}
+						onClick={close}
 					/>
 				)}
 			</AnimatePresence>
 
-			{/* Panel */}
 			<AnimatePresence>
 				{open && (
 					<motion.div
-						initial={{ opacity: 0, y: -12, scale: 0.97 }}
+						initial={{ opacity: 0, y: -8, scale: 0.98 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
-						exit={{ opacity: 0, y: -12, scale: 0.97 }}
-						transition={{ type: "spring", stiffness: 400, damping: 30 }}
-						className="fixed top-[12%] left-1/2 -translate-x-1/2 z-51 w-full max-w-2xl px-4"
+						exit={{ opacity: 0, y: -8, scale: 0.98 }}
+						transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}
+						className="fixed top-[12%] left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4"
 					>
 						<Command
-							className="rounded-xl overflow-hidden"
+							shouldFilter={mode === "search"}
+							className="rounded-[10px] overflow-hidden"
 							style={{
-								background: "var(--surface-raised)",
-								border: "1px solid var(--border-default)",
-								boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+								background: "var(--surface-overlay)",
+								border: "1px solid var(--border-subtle)",
+								boxShadow: "var(--shadow-lg)",
+							}}
+							onKeyDown={(e) => {
+								if (e.key === "Backspace" && query.length === 1) {
+									setQuery("");
+								}
+								if (e.key === "Enter") {
+									if (mode === "ask") {
+										e.preventDefault();
+										handleAskSubmit();
+									}
+									if (mode === "slash" && queryStripped) {
+										// Let CommandItem capture if there's a match; otherwise fall
+										// back to slash dispatch.
+										if (
+											!document.querySelector(
+												'[cmdk-item][aria-selected="true"]',
+											)
+										) {
+											e.preventDefault();
+											handleSlashSubmit();
+										}
+									}
+								}
 							}}
 						>
-							{/* Header */}
 							<div
-								className="flex items-center justify-between px-4 pt-3 pb-2"
+								className="flex items-center justify-between px-3 pt-2.5 pb-1.5"
 								style={{ borderBottom: "1px solid var(--border-subtle)" }}
 							>
-								<span
-									className="text-xs font-medium"
-									style={{ color: "var(--text-muted)" }}
-								>
-									NanoNet Komut
-								</span>
+								<div className="flex items-center gap-2">
+									<ModeChip mode={mode} />
+									<span
+										className="text-[11px]"
+										style={{ color: "var(--text-faint)" }}
+									>
+										{mode === "search" && "Sayfa, servis veya komut yaz"}
+										{mode === "slash" && "Slash komutu — `/restart svc-adı`"}
+										{mode === "ask" && "Sorunu yaz — Enter ile gönder"}
+										{mode === "context" && "Aktif sayfa için aksiyonlar"}
+									</span>
+								</div>
 								<kbd
-									className="text-[10px] px-1.5 py-0.5 rounded"
+									className="text-[10px] px-1.5 py-0.5 rounded font-semibold"
 									style={{
 										background: "var(--surface-sunken)",
-										border: "1px solid var(--border-default)",
+										border: "1px solid var(--border-subtle)",
 										color: "var(--text-faint)",
 									}}
 								>
@@ -239,209 +402,272 @@ export function CommandPalette() {
 							</div>
 
 							<CommandInput
-								placeholder="Komut yaz veya ara..."
-								className="text-sm"
-								style={{ color: "var(--text-secondary)" }}
+								placeholder={
+									mode === "search"
+										? "Komut yaz veya ara…   (?  AI'ye sor   /  komut)"
+										: mode === "slash"
+											? "/restart api-gateway"
+											: mode === "ask"
+												? "?  Servis neden 502 dönüyor?"
+												: ">  Bu sayfada yapılabilecekler"
+								}
+								value={query}
+								onValueChange={setQuery}
+								className="text-[13px]"
+								style={{ color: "var(--text-primary)" }}
 							/>
 
-							<CommandList className="max-h-96 px-1.5 pb-1.5">
+							<CommandList className="max-h-[420px] px-1.5 pb-1.5">
 								<CommandEmpty>
 									<div
-										className="flex flex-col items-center gap-2 py-8 text-sm"
-										style={{ color: "var(--text-muted)" }}
+										className="flex flex-col items-center gap-2 py-8 text-[13px]"
+										style={{ color: "var(--text-tertiary)" }}
 									>
 										<Search
-											className="w-7 h-7"
+											className="w-6 h-6"
 											style={{ color: "var(--text-faint)" }}
 										/>
-										Sonuç bulunamadı
+										{mode === "ask"
+											? "AI'ye gönder: Enter"
+											: mode === "slash"
+												? "Tanınan komut yok"
+												: "Sonuç bulunamadı"}
 									</div>
 								</CommandEmpty>
 
-								{/* Navigation */}
-								<CommandGroup heading="Navigasyon">
-									{navigationItems.map((item) => (
+								{/* ── ASK MODE ──────────────────────────────────────── */}
+								{mode === "ask" && queryStripped && (
+									<CommandGroup heading="AI'ye gönder">
 										<CommandItem
-											key={item.path}
-											onSelect={() => handleNavigate(item.path)}
-											className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
-											style={{ color: "var(--text-secondary)" }}
+											value={`ask-${queryStripped}`}
+											onSelect={handleAskSubmit}
+											className="flex items-center gap-3 px-3 py-2.5 rounded-[6px] cursor-pointer"
+											style={{ color: "var(--text-primary)" }}
 										>
-											<item.icon
+											<Sparkles
 												className="w-4 h-4 shrink-0"
-												style={{ color: "var(--text-muted)" }}
+												style={{ color: "var(--brand-primary)" }}
 											/>
-											<span className="flex-1 text-sm">{item.label}</span>
-											<kbd
-												className="text-[10px] px-1.5 py-0.5 rounded"
-												style={{
-													background: "var(--surface-sunken)",
-													border: "1px solid var(--border-subtle)",
-													color: "var(--text-faint)",
-												}}
-											>
-												{item.shortcut}
-											</kbd>
+											<span className="flex-1 text-[13px] truncate">
+												{queryStripped}
+											</span>
+											<CornerDownLeft
+												className="w-3.5 h-3.5"
+												style={{ color: "var(--text-faint)" }}
+											/>
 										</CommandItem>
-									))}
-								</CommandGroup>
+									</CommandGroup>
+								)}
 
-								{services.length > 0 && (
+								{/* ── SLASH / SEARCH — Navigation ───────────────────── */}
+								{(mode === "search" || mode === "slash") && (
+									<CommandGroup heading="Navigasyon">
+										{NAV_ITEMS.map((item) => (
+											<CommandItem
+												key={item.path}
+												value={`go ${item.label}`}
+												onSelect={() => handleNavigate(item.path)}
+												onMouseEnter={() => preloadRoute(item.path)}
+												className="flex items-center gap-3 px-3 py-2 rounded-[6px] cursor-pointer"
+												style={{ color: "var(--text-secondary)" }}
+											>
+												<item.icon
+													className="w-4 h-4 shrink-0"
+													style={{ color: "var(--text-tertiary)" }}
+												/>
+												<span className="flex-1 text-[13px]">{item.label}</span>
+												{item.shortcut && (
+													<kbd
+														className="text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold"
+														style={{
+															background: "var(--surface-sunken)",
+															border: "1px solid var(--border-subtle)",
+															color: "var(--text-faint)",
+														}}
+													>
+														{item.shortcut}
+													</kbd>
+												)}
+											</CommandItem>
+										))}
+									</CommandGroup>
+								)}
+
+								{/* ── Services list ─────────────────────────────────── */}
+								{(mode === "search" || mode === "slash") &&
+									services.length > 0 && (
+										<>
+											<CommandSeparator
+												className="my-1"
+												style={{
+													backgroundColor: "var(--border-subtle)",
+												}}
+											/>
+											<CommandGroup heading="Servisler">
+												{services.slice(0, 8).map((service) => (
+													<CommandItem
+														key={service.id}
+														value={`svc ${service.name}`}
+														onSelect={() =>
+															handleNavigate(`/app/services/${service.id}`)
+														}
+														onMouseEnter={() =>
+															preloadRoute(`/app/services/${service.id}`)
+														}
+														className="flex items-center gap-3 px-3 py-2 rounded-[6px] cursor-pointer"
+														style={{ color: "var(--text-secondary)" }}
+													>
+														<div className="relative shrink-0">
+															<Server
+																className="w-4 h-4"
+																style={{ color: "var(--text-tertiary)" }}
+															/>
+															<span
+																className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+																style={{
+																	background: statusColor(service.status),
+																}}
+															/>
+														</div>
+														<span className="flex-1 text-[13px] font-mono">
+															{service.name}
+														</span>
+														<span
+															className="text-[10px] px-1.5 py-0.5 rounded font-semibold"
+															style={{
+																background: statusBg(service.status),
+																color: statusText(service.status),
+															}}
+														>
+															{statusLabel(service.status)}
+														</span>
+													</CommandItem>
+												))}
+											</CommandGroup>
+
+											{/* Service control verbs */}
+											<CommandSeparator
+												className="my-1"
+												style={{
+													backgroundColor: "var(--border-subtle)",
+												}}
+											/>
+											<CommandGroup heading="Servis Kontrolleri">
+												{services
+													.slice(0, 3)
+													.flatMap((service) => [
+														{
+															key: `${service.id}-restart`,
+															icon: RefreshCw,
+															label: `Yeniden başlat — ${service.name}`,
+															value: `restart ${service.name}`,
+															color: "var(--brand-primary)",
+															action: () =>
+																handleServiceAction(
+																	service.id,
+																	service.name,
+																	"restart",
+																),
+														},
+														{
+															key: `${service.id}-start`,
+															icon: Play,
+															label: `Başlat — ${service.name}`,
+															value: `start ${service.name}`,
+															color: "var(--status-up-text)",
+															action: () =>
+																handleServiceAction(
+																	service.id,
+																	service.name,
+																	"start",
+																),
+														},
+														{
+															key: `${service.id}-stop`,
+															icon: Power,
+															label: `Durdur — ${service.name}`,
+															value: `stop ${service.name}`,
+															color: "var(--status-degraded-text)",
+															action: () =>
+																handleServiceAction(
+																	service.id,
+																	service.name,
+																	"stop",
+																),
+														},
+													])
+													.map((item) => (
+														<CommandItem
+															key={item.key}
+															value={item.value}
+															onSelect={item.action}
+															className="flex items-center gap-3 px-3 py-1.5 rounded-[6px] cursor-pointer"
+															style={{ color: "var(--text-secondary)" }}
+														>
+															<item.icon
+																className="w-3.5 h-3.5 shrink-0"
+																style={{ color: item.color }}
+															/>
+															<span className="flex-1 text-[13px]">
+																{item.label}
+															</span>
+														</CommandItem>
+													))}
+											</CommandGroup>
+										</>
+									)}
+
+								{/* ── Quick actions ─────────────────────────────────── */}
+								{(mode === "search" || mode === "context") && (
 									<>
 										<CommandSeparator
 											className="my-1"
 											style={{ backgroundColor: "var(--border-subtle)" }}
 										/>
-
-										{/* Services */}
-										<CommandGroup heading="Servisler">
-											{services.map((service) => (
+										<CommandGroup heading="Aksiyonlar">
+											{ACTION_ITEMS.map((action) => (
 												<CommandItem
-													key={service.id}
-													onSelect={() =>
-														handleNavigate(`/app/services/${service.id}`)
-													}
-													className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
+													key={action.key}
+													value={`act ${action.label}`}
+													onSelect={() => handleAction(action.key)}
+													className="flex items-center gap-3 px-3 py-2 rounded-[6px] cursor-pointer"
 													style={{ color: "var(--text-secondary)" }}
 												>
-													<div className="relative shrink-0">
-														<Server
-															className="w-4 h-4"
-															style={{ color: "var(--text-muted)" }}
-														/>
-														<span
-															className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
-															style={{
-																background: statusColor(service.status),
-															}}
-														/>
-													</div>
-													<span className="flex-1 text-sm font-mono">
-														{service.name}
+													<action.icon
+														className="w-4 h-4 shrink-0"
+														style={{ color: "var(--text-tertiary)" }}
+													/>
+													<span className="flex-1 text-[13px]">
+														{action.label}
 													</span>
-													<span
-														className="text-[10px] px-1.5 py-0.5 rounded-md"
-														style={{
-															background: statusBg(service.status),
-															color: statusText(service.status),
-														}}
-													>
-														{service.status === "up"
-															? "Aktif"
-															: service.status === "degraded"
-																? "Bozuk"
-																: "Kapalı"}
-													</span>
+													<ArrowRight
+														className="w-3.5 h-3.5"
+														style={{ color: "var(--text-faint)" }}
+													/>
 												</CommandItem>
 											))}
 										</CommandGroup>
-
-										<CommandSeparator
-											className="my-1"
-											style={{ backgroundColor: "var(--border-subtle)" }}
-										/>
-
-										{/* Service controls (first 3 services only) */}
-										<CommandGroup heading="Servis Kontrolleri">
-											{services
-												.slice(0, 3)
-												.flatMap((service) => [
-													{
-														key: `${service.id}-start`,
-														icon: Play,
-														label: `Başlat — ${service.name}`,
-														color: "var(--status-up-text)",
-														action: () =>
-															handleServiceAction(
-																service.id,
-																service.name,
-																"start",
-															),
-													},
-													{
-														key: `${service.id}-restart`,
-														icon: RefreshCw,
-														label: `Yeniden Başlat — ${service.name}`,
-														color: "var(--color-teal)",
-														action: () =>
-															handleServiceAction(
-																service.id,
-																service.name,
-																"restart",
-															),
-													},
-													{
-														key: `${service.id}-stop`,
-														icon: Power,
-														label: `Durdur — ${service.name}`,
-														color: "var(--status-warn-text)",
-														action: () =>
-															handleServiceAction(
-																service.id,
-																service.name,
-																"stop",
-															),
-													},
-												])
-												.map((item) => (
-													<CommandItem
-														key={item.key}
-														onSelect={item.action}
-														className="flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer"
-														style={{ color: "var(--text-secondary)" }}
-													>
-														<item.icon
-															className="w-3.5 h-3.5 shrink-0"
-															style={{ color: item.color }}
-														/>
-														<span className="flex-1 text-sm">{item.label}</span>
-													</CommandItem>
-												))}
-										</CommandGroup>
-
-										<CommandSeparator
-											className="my-1"
-											style={{ backgroundColor: "var(--border-subtle)" }}
-										/>
 									</>
 								)}
-
-								{/* Actions */}
-								<CommandGroup heading="Aksiyonlar">
-									{actionItems.map((action) => (
-										<CommandItem
-											key={action.action}
-											onSelect={() => handleAction(action.action)}
-											className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
-											style={{ color: "var(--text-secondary)" }}
-										>
-											<action.icon
-												className="w-4 h-4 shrink-0"
-												style={{ color: "var(--text-muted)" }}
-											/>
-											<span className="flex-1 text-sm">{action.label}</span>
-										</CommandItem>
-									))}
-								</CommandGroup>
 							</CommandList>
 
-							{/* Footer */}
 							<div
-								className="flex items-center gap-4 px-4 py-2 text-[10px] font-mono"
+								className="flex items-center gap-3 px-3 py-2 text-[10px]"
 								style={{
 									borderTop: "1px solid var(--border-subtle)",
 									color: "var(--text-faint)",
 								}}
 							>
 								{[
-									{ key: "↑↓", label: "navigate" },
-									{ key: "↵", label: "select" },
-									{ key: "⌘K", label: "toggle" },
-									{ key: "g+d/s/a", label: "quick nav" },
+									{ key: "↑↓", label: "git" },
+									{ key: "↵", label: "seç" },
+									{ key: "?", label: "AI" },
+									{ key: "/", label: "komut" },
+									{ key: "⌘K", label: "aç/kapat" },
 								].map(({ key, label }) => (
 									<span key={key} className="flex items-center gap-1">
 										<kbd
-											className="px-1 py-0.5 rounded text-[10px]"
+											className="px-1 py-0.5 rounded text-[10px] font-mono font-semibold"
 											style={{
 												background: "var(--surface-sunken)",
 												border: "1px solid var(--border-subtle)",

@@ -20,10 +20,7 @@ import {
 	Server,
 	Shield,
 } from "lucide-react";
-import { motion } from "motion/react";
-import logo from "@/assets/logo.webp";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { Logo } from "@/components/Logo";
 
 type NodeStatus = "up" | "warn" | "down";
 type ServiceNodeData = Record<string, unknown> & {
@@ -32,13 +29,11 @@ type ServiceNodeData = Record<string, unknown> & {
 	icon: React.ElementType;
 };
 
-const STATUS: Record<NodeStatus, { dot: string; glow: string }> = {
-	up: { dot: "#34d399", glow: "rgba(52,211,153,0.35)" },
-	warn: { dot: "#f59e0b", glow: "rgba(245,158,11,0.35)" },
-	down: { dot: "#f43f5e", glow: "rgba(244,63,94,0.35)" },
+const STATUS: Record<NodeStatus, { dot: string; label: string }> = {
+	up: { dot: "var(--status-up)", label: "healthy" },
+	warn: { dot: "var(--status-degraded)", label: "degraded" },
+	down: { dot: "var(--status-down)", label: "down" },
 };
-
-// ─── Node ─────────────────────────────────────────────────────────────────────
 
 function ServiceNode({ data }: NodeProps) {
 	const d = data as ServiceNodeData;
@@ -47,11 +42,10 @@ function ServiceNode({ data }: NodeProps) {
 
 	return (
 		<div
-			className="w-36 rounded-xl overflow-hidden"
+			className="w-36 rounded-[6px] overflow-hidden"
 			style={{
-				background: "rgba(17, 20, 35, 0.9)",
-				border: "1px solid rgba(255,255,255,0.06)",
-				backdropFilter: "blur(12px)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
 			<Handle
@@ -65,31 +59,28 @@ function ServiceNode({ data }: NodeProps) {
 				style={{ opacity: 0, pointerEvents: "none" }}
 			/>
 
-			{/* Top accent */}
-			<div
-				className="h-px w-full"
-				style={{
-					background: `linear-gradient(90deg, transparent 10%, ${s.dot}66 50%, transparent 90%)`,
-				}}
-			/>
-
 			<div className="flex items-center gap-2.5 px-3 py-2.5">
-				<Icon className="w-3.5 h-3.5 shrink-0" style={{ color: s.dot }} />
-				<span className="text-[11px] font-mono text-slate-300 truncate flex-1">
+				<Icon
+					className="w-3.5 h-3.5 shrink-0"
+					style={{ color: "var(--text-tertiary)" }}
+					aria-hidden
+				/>
+				<span
+					className="text-[11px] font-mono truncate flex-1"
+					style={{ color: "var(--text-secondary)" }}
+				>
 					{d.label}
 				</span>
-				<motion.div
-					animate={{ opacity: [1, 0.3, 1] }}
-					transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-					className="w-1.5 h-1.5 rounded-full shrink-0"
-					style={{ backgroundColor: s.dot, boxShadow: `0 0 5px ${s.glow}` }}
+				<span
+					role="img"
+					aria-label={s.label}
+					className="w-1.5 h-1.5 rounded-full shrink-0 nn-orb-breathe"
+					style={{ backgroundColor: s.dot }}
 				/>
 			</div>
 		</div>
 	);
 }
-
-// ─── Edge ─────────────────────────────────────────────────────────────────────
 
 function AnimatedEdge({
 	sourceX,
@@ -113,30 +104,29 @@ function AnimatedEdge({
 			<path
 				d={path}
 				fill="none"
-				stroke="rgba(99,102,241,0.15)"
-				strokeWidth={1.5}
+				stroke="var(--border-default)"
+				strokeWidth={1}
 			/>
 			<path
 				d={path}
 				fill="none"
-				stroke="rgba(99,102,241,0.45)"
-				strokeWidth={1.5}
-				strokeDasharray="5 12"
+				stroke="var(--brand-primary)"
+				strokeOpacity={0.45}
+				strokeWidth={1}
+				strokeDasharray="4 10"
 				strokeLinecap="round"
 			>
 				<animate
 					attributeName="stroke-dashoffset"
 					from="0"
-					to="-68"
-					dur="2.2s"
+					to="-56"
+					dur="2.4s"
 					repeatCount="indefinite"
 				/>
 			</path>
 		</g>
 	);
 }
-
-// ─── Graph data ───────────────────────────────────────────────────────────────
 
 const NODES: Node[] = [
 	{
@@ -195,8 +185,6 @@ const EDGES: Edge[] = [
 const NODE_TYPES = { service: ServiceNode };
 const EDGE_TYPES = { animated: AnimatedEdge };
 
-// ─── Panel ─────────────────────────────────────────────────────────────────────
-
 function Inner() {
 	const [nodes, , onNodesChange] = useNodesState(NODES);
 	const [edges, , onEdgesChange] = useEdgesState(EDGES);
@@ -214,27 +202,33 @@ function Inner() {
 	return (
 		<div
 			className="h-full w-full flex flex-col"
-			style={{ background: "#0a0c14" }}
+			style={{ background: "var(--surface-sunken)" }}
 		>
-			{/* Header */}
-			<div className="shrink-0 flex items-center gap-2.5 px-8 pt-8 pb-6">
-				<img src={logo} alt="" aria-hidden="true" className="w-5 h-5" />
-				<span className="text-white font-black text-sm tracking-tight">
+			<div
+				className="shrink-0 flex items-center gap-2.5 px-8 pt-8 pb-6"
+				style={{ color: "var(--text-primary)" }}
+			>
+				<Logo className="w-5 h-5" />
+				<span
+					className="font-semibold text-[14px] tracking-tight"
+					style={{ color: "var(--text-primary)" }}
+				>
 					NanoNet
 				</span>
 				<div className="ml-auto flex items-center gap-1.5">
-					<motion.div
-						animate={{ opacity: [1, 0.4, 1] }}
-						transition={{ duration: 1.8, repeat: Infinity }}
-						className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+					<span
+						className="w-1.5 h-1.5 rounded-full nn-orb-breathe"
+						style={{ background: "var(--status-up)" }}
 					/>
-					<span className="text-[10px] font-mono text-emerald-400/70 tracking-widest">
+					<span
+						className="text-[10px] font-mono tracking-wider"
+						style={{ color: "var(--text-tertiary)" }}
+					>
 						LIVE
 					</span>
 				</div>
 			</div>
 
-			{/* Flow */}
 			<div className="flex-1 min-h-0">
 				<ReactFlow
 					nodes={nodes}
@@ -258,27 +252,32 @@ function Inner() {
 				/>
 			</div>
 
-			{/* Footer */}
 			<div
-				className="shrink-0 border-t px-8 py-5 flex items-center gap-5"
-				style={{ borderColor: "rgba(255,255,255,0.05)" }}
+				className="shrink-0 px-8 py-5 flex items-center gap-5"
+				style={{ borderTop: "1px solid var(--border-subtle)" }}
 			>
 				{[
-					{ count: up, color: "#34d399", label: "healthy" },
-					{ count: warn, color: "#f59e0b", label: "degraded" },
-					{ count: down, color: "#f43f5e", label: "down" },
+					{ count: up, color: "var(--status-up)", label: "healthy" },
+					{ count: warn, color: "var(--status-degraded)", label: "degraded" },
+					{ count: down, color: "var(--status-down)", label: "down" },
 				].map(({ count, color, label }) => (
 					<div key={label} className="flex items-center gap-2">
-						<div
+						<span
 							className="w-1.5 h-1.5 rounded-full"
 							style={{ backgroundColor: color }}
 						/>
-						<span className="text-[10px] font-mono text-slate-500">
+						<span
+							className="text-[10px] font-mono tnum"
+							style={{ color: "var(--text-tertiary)" }}
+						>
 							{count} {label}
 						</span>
 					</div>
 				))}
-				<span className="ml-auto text-[10px] font-mono text-slate-700">
+				<span
+					className="ml-auto text-[10px] font-mono tnum"
+					style={{ color: "var(--text-faint)" }}
+				>
 					{NODES.length} services
 				</span>
 			</div>

@@ -1,3 +1,4 @@
+import type { UseMutationResult } from "@tanstack/react-query";
 import {
 	AlertTriangle,
 	Check,
@@ -13,7 +14,6 @@ import {
 import { motion } from "motion/react";
 import type React from "react";
 import { useState } from "react";
-import type { UseMutationResult } from "@tanstack/react-query";
 import type { DeploymentInfo } from "@/api/k8s";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,12 @@ export interface NanonetTabProps {
 		{ name: string; image: string; port: number; replicas: number },
 		unknown
 	>;
-	undeployMutation: UseMutationResult<{ message: string }, unknown, string, unknown>;
+	undeployMutation: UseMutationResult<
+		{ message: string },
+		unknown,
+		string,
+		unknown
+	>;
 	refetchNanonetServices: () => void;
 	refetchDeployments: () => void;
 	slugifyForK8s: (name: string) => string;

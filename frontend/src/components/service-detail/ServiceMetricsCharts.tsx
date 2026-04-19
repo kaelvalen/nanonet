@@ -169,17 +169,14 @@ function SingleChart({
 							className="text-[10px] font-mono mt-0.5"
 							style={{ color: "var(--text-muted)" }}
 						>
-							son: {" "}
+							son:{" "}
 							<span
 								className="tabular-nums font-bold"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{latest != null ? latest.toFixed(series.decimals) : "—"}
 							</span>
-							<span style={{ color: "var(--text-faint)" }}>
-								{" "}
-								{series.unit}
-							</span>
+							<span style={{ color: "var(--text-faint)" }}> {series.unit}</span>
 						</p>
 					</div>
 				</div>
@@ -219,11 +216,7 @@ function SingleChart({
 						<defs>
 							<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
 								<stop offset="0%" stopColor={series.color} stopOpacity={0.3} />
-								<stop
-									offset="95%"
-									stopColor={series.color}
-									stopOpacity={0}
-								/>
+								<stop offset="95%" stopColor={series.color} stopOpacity={0} />
 							</linearGradient>
 						</defs>
 						<CartesianGrid

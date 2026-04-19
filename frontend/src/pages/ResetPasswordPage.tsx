@@ -49,27 +49,29 @@ export function ResetPasswordPage() {
 			>
 				<div className="space-y-5">
 					<div
-						className="flex items-start gap-3 p-4 rounded-lg"
+						className="relative flex items-start gap-3 px-4 py-3 rounded-[6px]"
 						style={{
-							background: "var(--status-warn-subtle)",
-							border: "1px solid var(--status-warn-border)",
+							background: "var(--status-degraded-subtle)",
+							border: "1px solid var(--border-subtle)",
 						}}
 					>
-						<AlertCircle
-							className="w-5 h-5 shrink-0 mt-0.5"
-							style={{ color: "var(--status-warn-text)" }}
+						<span
+							aria-hidden
+							className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+							style={{ background: "var(--status-degraded)" }}
 						/>
-						<p
-							className="text-sm"
-							style={{ color: "var(--text-primary)" }}
-						>
+						<AlertCircle
+							className="w-4 h-4 shrink-0 mt-0.5 ml-1"
+							style={{ color: "var(--status-degraded)" }}
+						/>
+						<p className="text-[13px]" style={{ color: "var(--text-primary)" }}>
 							Bağlantı geçersiz ya da süresi dolmuş olabilir. Yeni bir sıfırlama
 							bağlantısı talep edin.
 						</p>
 					</div>
 					<Link
 						to="/forgot-password"
-						className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+						className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:underline"
 						style={{ color: "var(--brand-primary)" }}
 					>
 						Yeni bağlantı talep et →
@@ -86,20 +88,22 @@ export function ResetPasswordPage() {
 				subtitle="Giriş sayfasına yönlendiriliyorsunuz."
 			>
 				<div
-					className="flex items-start gap-3 p-4 rounded-lg"
+					className="relative flex items-start gap-3 px-4 py-3 rounded-[6px]"
 					style={{
 						background: "var(--status-up-subtle)",
-						border: "1px solid var(--status-up-border)",
+						border: "1px solid var(--border-subtle)",
 					}}
 				>
-					<CheckCircle
-						className="w-5 h-5 shrink-0 mt-0.5"
-						style={{ color: "var(--status-up-text)" }}
+					<span
+						aria-hidden
+						className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+						style={{ background: "var(--status-up)" }}
 					/>
-					<p
-						className="text-sm"
-						style={{ color: "var(--text-primary)" }}
-					>
+					<CheckCircle
+						className="w-4 h-4 shrink-0 mt-0.5 ml-1"
+						style={{ color: "var(--status-up)" }}
+					/>
+					<p className="text-[13px]" style={{ color: "var(--text-primary)" }}>
 						Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş
 						yapabilirsiniz.
 					</p>
@@ -115,8 +119,8 @@ export function ResetPasswordPage() {
 			footer={
 				<Link
 					to="/login"
-					className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
-					style={{ color: "var(--text-muted)" }}
+					className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:underline"
+					style={{ color: "var(--text-tertiary)" }}
 				>
 					<ArrowLeft className="w-4 h-4" />
 					Girişe dön

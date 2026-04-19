@@ -15,16 +15,16 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
 	type IncidentListItem,
-	type TimelineEvent,
 	incidentsApi,
+	type TimelineEvent,
 } from "@/api/incidents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
-	EmptyState as SharedEmptyState,
 	FilterChip,
 	Panel,
+	EmptyState as SharedEmptyState,
 	SkeletonList,
 	Toolbar,
 	ToolbarChips,
@@ -166,14 +166,14 @@ export function IncidentsPage() {
 
 				<div className="relative flex-1 min-w-[200px] max-w-xs">
 					<Search
-						className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+						className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
 						style={{ color: "var(--text-faint)" }}
 					/>
 					<Input
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						placeholder="Başlık veya servis ara…"
-						className="h-8 pl-9 text-[12px] rounded-full"
+						className="h-8 pl-8 text-[12px]"
 					/>
 				</div>
 
@@ -185,25 +185,25 @@ export function IncidentsPage() {
 							setSeverity("all");
 							setSearch("");
 						}}
-						className="text-[12px] font-medium px-3 h-8 rounded-full inline-flex items-center gap-1.5 transition-colors hover:bg-[var(--surface-sunken)]"
-						style={{ color: "var(--text-muted)" }}
+						className="text-[12px] font-medium px-2.5 h-8 rounded-[6px] inline-flex items-center gap-1.5 transition-colors hover:bg-[var(--surface-sunken)]"
+						style={{ color: "var(--text-tertiary)" }}
 					>
 						<X className="w-3.5 h-3.5" /> Temizle
 					</button>
 				)}
 
 				<span
-					className="ml-auto text-[11px] tabular-nums font-medium"
+					className="ml-auto text-[11px] tnum"
 					style={{ color: "var(--text-faint)" }}
 				>
 					{filtered.length}/{list.length} kayıt
 				</span>
 			</Toolbar>
 
-			<div className="grid grid-cols-1 lg:grid-cols-[minmax(340px,400px)_1fr] gap-4 mt-2 flex-1 min-h-0">
+			<div className="grid grid-cols-1 lg:grid-cols-[minmax(340px,400px)_1fr] gap-3 mt-2 flex-1 min-h-0">
 				<div className="flex flex-col gap-2 overflow-y-auto pr-1 min-h-0">
 					{isLoading ? (
-						<SkeletonList rows={4} rowHeight={84} />
+						<SkeletonList rows={4} rowHeight={72} />
 					) : filtered.length === 0 ? (
 						<SharedEmptyState
 							icon={FileText}
@@ -254,6 +254,27 @@ export function IncidentsPage() {
 	);
 }
 
+function severityAccent(s: string) {
+	if (s === "crit") return "var(--status-down)";
+	if (s === "warn") return "var(--status-degraded)";
+	if (s === "info") return "var(--brand-primary)";
+	return "var(--border-strong)";
+}
+
+function severityBg(s: string) {
+	if (s === "crit") return "var(--status-down-subtle)";
+	if (s === "warn") return "var(--status-degraded-subtle)";
+	if (s === "info") return "var(--brand-primary-subtle)";
+	return "var(--surface-sunken)";
+}
+
+function severityText(s: string) {
+	if (s === "crit") return "var(--status-down-text)";
+	if (s === "warn") return "var(--status-degraded-text)";
+	if (s === "info") return "var(--brand-primary)";
+	return "var(--text-tertiary)";
+}
+
 function IncidentRow({
 	item,
 	active,
@@ -264,65 +285,44 @@ function IncidentRow({
 	onSelect: () => void;
 }) {
 	const open = !item.resolved_at;
-	const tone = severityTone(item.severity);
-	const dotColor = open ? tone.dot : "var(--status-up)";
+	const accent = open ? severityAccent(item.severity) : "var(--status-up)";
 	return (
 		<button
 			type="button"
 			onClick={onSelect}
-			className="group text-left rounded-xl p-3.5 transition-all hover:border-[color:var(--border-strong)]"
+			className="group relative text-left rounded-[6px] px-3.5 py-3 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
 			style={{
-				background: active ? "var(--surface-overlay)" : "var(--surface-card)",
-				border: `1px solid ${active ? "var(--border-strong)" : "var(--border-default)"}`,
-				boxShadow: active
-					? "0 4px 12px -4px rgba(0,0,0,0.08)"
-					: undefined,
+				background: active ? "var(--surface-overlay)" : "var(--surface-base)",
+				border: `1px solid ${active ? "var(--border-strong)" : "var(--border-subtle)"}`,
 			}}
 		>
-			<div className="flex items-start gap-3">
-				<span
-					className="relative flex items-center justify-center w-4 h-4 mt-1 shrink-0"
-					aria-hidden
-				>
-					{open && (
-						<span
-							className="absolute inset-0 rounded-full"
-							style={{
-								background: dotColor,
-								opacity: 0.25,
-								animation: "nn-orb-breathe 2.4s ease-in-out infinite",
-							}}
-						/>
-					)}
-					<span
-						className="relative w-2 h-2 rounded-full"
-						style={{
-							background: dotColor,
-							boxShadow: open
-								? `0 0 0 2px color-mix(in srgb, ${dotColor} 22%, transparent)`
-								: undefined,
-						}}
-					/>
-				</span>
-
+			<span
+				aria-hidden
+				className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+				style={{ background: accent }}
+			/>
+			<div className="flex items-start gap-3 pl-2">
 				<div className="flex-1 min-w-0">
 					<div className="flex items-start justify-between gap-2">
 						<p
-							className="text-[14px] font-semibold tracking-tight leading-snug truncate"
+							className="text-[13px] font-semibold leading-snug truncate"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{item.title}
 						</p>
 						<span
-							className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
-							style={{ color: tone.text, background: tone.bg }}
+							className="shrink-0 px-1.5 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider"
+							style={{
+								color: severityText(item.severity),
+								background: severityBg(item.severity),
+							}}
 						>
 							{severityLabel(item.severity)}
 						</span>
 					</div>
 					<p
 						className="mt-1 text-[12px] truncate"
-						style={{ color: "var(--text-muted)" }}
+						style={{ color: "var(--text-tertiary)" }}
 					>
 						<span style={{ color: "var(--text-secondary)" }}>
 							{item.service_name}
@@ -330,17 +330,14 @@ function IncidentRow({
 						<span className="mx-1.5" style={{ color: "var(--text-faint)" }}>
 							·
 						</span>
-						{item.alert_count} uyarı
+						<span className="tnum">{item.alert_count}</span> uyarı
 						<span className="mx-1.5" style={{ color: "var(--text-faint)" }}>
 							·
 						</span>
 						{relativeTime(item.started_at)}
 						{item.resolved_at && (
 							<>
-								<span
-									className="mx-1.5"
-									style={{ color: "var(--text-faint)" }}
-								>
+								<span className="mx-1.5" style={{ color: "var(--text-faint)" }}>
 									·
 								</span>
 								<span style={{ color: "var(--status-up-text)" }}>çözüldü</span>
@@ -383,8 +380,11 @@ function DetailPanel({
 	}, [data]);
 
 	const updateMut = useMutation({
-		mutationFn: (patch: { title?: string; summary?: string; postmortem?: string }) =>
-			incidentsApi.update(id, patch),
+		mutationFn: (patch: {
+			title?: string;
+			summary?: string;
+			postmortem?: string;
+		}) => incidentsApi.update(id, patch),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: ["incident", id] });
 			qc.invalidateQueries({ queryKey: ["incidents"] });
@@ -404,18 +404,17 @@ function DetailPanel({
 	}
 
 	const open = !data.incident.resolved_at;
-	const dotColor = open ? "var(--status-down)" : "var(--status-up)";
 
 	return (
 		<Panel padding="none" className="overflow-hidden flex flex-col h-full">
 			<div
-				className="flex items-start justify-between gap-3 px-5 py-4"
+				className="flex items-start justify-between gap-3 px-4 py-3"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2 mb-2">
 						<span
-							className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+							className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider"
 							style={{
 								background: open
 									? "var(--status-down-subtle)"
@@ -427,13 +426,15 @@ function DetailPanel({
 						>
 							<span
 								className="w-1.5 h-1.5 rounded-full"
-								style={{ background: dotColor }}
+								style={{
+									background: open ? "var(--status-down)" : "var(--status-up)",
+								}}
 							/>
 							{open ? "Açık" : "Çözüldü"}
 						</span>
 						<span
 							className="text-[12px]"
-							style={{ color: "var(--text-muted)" }}
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							<span style={{ color: "var(--text-secondary)" }}>
 								{data.service_name}
@@ -441,31 +442,25 @@ function DetailPanel({
 							<span className="mx-1.5" style={{ color: "var(--text-faint)" }}>
 								·
 							</span>
-							{data.alert_count} uyarı
+							<span className="tnum">{data.alert_count}</span> uyarı
 						</span>
 					</div>
 					<Input
 						value={title}
 						onChange={(e) => setTitle(e.target.value)}
-						className="h-9 text-[15px] font-semibold tracking-tight border-transparent rounded-lg focus-visible:border-[var(--border-strong)] -ml-2 px-2"
+						className="h-9 text-[15px] font-semibold border-transparent rounded-[6px] focus-visible:border-[var(--border-strong)] -ml-2 px-2"
 						style={{ background: "transparent" }}
 					/>
 				</div>
 				<div className="flex items-center gap-1.5 shrink-0">
 					{open && (
-						<Button
-							size="sm"
-							variant="outline"
-							className="h-8 px-3 rounded-full text-[12px] font-medium"
-							onClick={onResolve}
-						>
+						<Button size="sm" variant="outline" onClick={onResolve}>
 							<CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Kapat
 						</Button>
 					)}
 					<Button
-						size="sm"
+						size="icon"
 						variant="ghost"
-						className="h-8 w-8 p-0 rounded-full"
 						onClick={onDelete}
 						aria-label="Sil"
 					>
@@ -475,9 +470,8 @@ function DetailPanel({
 						/>
 					</Button>
 					<Button
-						size="sm"
+						size="icon"
 						variant="ghost"
-						className="h-8 w-8 p-0 rounded-full"
 						onClick={onClose}
 						aria-label="Kapat"
 					>
@@ -486,42 +480,44 @@ function DetailPanel({
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-6">
+			<div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5">
 				<section>
 					<label
-						className="text-[12px] font-medium block mb-2"
-						style={{ color: "var(--text-muted)" }}
+						htmlFor="incident-summary"
+						className="text-[11px] font-medium uppercase tracking-wider block mb-2"
+						style={{ color: "var(--text-faint)" }}
 					>
 						Özet (one-liner)
 					</label>
 					<Input
+						id="incident-summary"
 						value={summary}
 						onChange={(e) => setSummary(e.target.value)}
 						placeholder="Kısa, tek cümlelik açıklama"
-						className="h-10 text-[13px] rounded-lg"
+						className="h-9 text-[13px]"
 					/>
 				</section>
 
 				<section>
 					<label
-						className="text-[12px] font-medium block mb-2"
-						style={{ color: "var(--text-muted)" }}
+						htmlFor="incident-postmortem"
+						className="text-[11px] font-medium uppercase tracking-wider block mb-2"
+						style={{ color: "var(--text-faint)" }}
 					>
 						Postmortem (markdown)
 					</label>
 					<Textarea
+						id="incident-postmortem"
 						value={postmortem}
 						onChange={(e) => setPostmortem(e.target.value)}
 						placeholder={"## Sebep\n\n## Etki\n\n## Aksiyonlar"}
-						className="text-[13px] min-h-[180px] font-mono rounded-lg leading-relaxed"
+						className="text-[13px] min-h-[180px] font-mono leading-relaxed"
 					/>
 				</section>
 
 				<div className="flex justify-end">
 					<Button
 						size="sm"
-						className="h-9 px-4 rounded-full text-[12px] font-semibold text-white"
-						style={{ background: "var(--gradient-btn-primary)" }}
 						disabled={updateMut.isPending}
 						onClick={() =>
 							updateMut.mutate({
@@ -543,15 +539,15 @@ function DetailPanel({
 				<section>
 					<div className="flex items-baseline gap-2 mb-3">
 						<h3
-							className="text-[13px] font-semibold tracking-tight"
+							className="text-[13px] font-semibold"
 							style={{ color: "var(--text-primary)" }}
 						>
 							Zaman çizelgesi
 						</h3>
 						<span
-							className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
+							className="text-[11px] font-medium px-1.5 py-0.5 rounded-[4px] tnum"
 							style={{
-								color: "var(--text-muted)",
+								color: "var(--text-tertiary)",
 								background: "var(--surface-sunken)",
 							}}
 						>
@@ -570,31 +566,29 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 		return (
 			<p
 				className="text-[12px] text-center py-8"
-				style={{ color: "var(--text-muted)" }}
+				style={{ color: "var(--text-tertiary)" }}
 			>
 				Bu pencerede olay kaydı yok.
 			</p>
 		);
 	}
 	return (
-		<ol className="relative pl-7 space-y-4">
+		<ol className="relative pl-6 space-y-4">
 			<span
-				className="absolute left-2.5 top-1 bottom-1 w-px"
-				style={{
-					background:
-						"linear-gradient(to bottom, var(--border-default), transparent)",
-				}}
+				className="absolute left-[10px] top-1 bottom-1 w-px"
+				style={{ background: "var(--border-default)" }}
 				aria-hidden
 			/>
 			{events.map((e, idx) => {
 				const meta = eventMeta(e);
 				const Icon = meta.icon;
 				return (
+					// biome-ignore lint/suspicious/noArrayIndexKey: event timeline is append-only and stable per render
 					<li key={`${e.timestamp}-${idx}`} className="relative">
 						<span
-							className="absolute -left-[20px] top-0 w-5 h-5 rounded-full flex items-center justify-center"
+							className="absolute -left-[18px] top-0 w-5 h-5 rounded-full flex items-center justify-center"
 							style={{
-								background: "var(--background)",
+								background: "var(--surface-base)",
 								border: `1.5px solid ${meta.color}`,
 							}}
 						>
@@ -602,13 +596,13 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 						</span>
 						<div className="flex items-baseline gap-2 flex-wrap">
 							<span
-								className="text-[14px] font-medium tracking-tight"
+								className="text-[13px] font-medium"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{e.title}
 							</span>
 							<span
-								className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
+								className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider"
 								style={{
 									color: meta.color,
 									background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
@@ -617,7 +611,7 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 								{meta.label}
 							</span>
 							<span
-								className="ml-auto text-[11px] tabular-nums"
+								className="ml-auto text-[11px] tnum"
 								style={{ color: "var(--text-faint)" }}
 							>
 								{new Date(e.timestamp).toLocaleTimeString("tr-TR", {
@@ -629,7 +623,7 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 						{e.detail && (
 							<p
 								className="mt-1 text-[12px] leading-relaxed"
-								style={{ color: "var(--text-muted)" }}
+								style={{ color: "var(--text-tertiary)" }}
 							>
 								{e.detail}
 							</p>
@@ -659,37 +653,15 @@ function eventMeta(e: TimelineEvent) {
 			return {
 				label: "komut",
 				icon: Terminal,
-				color: "var(--color-teal)",
+				color: "var(--brand-primary)",
 			};
 		default:
 			return {
 				label: "durum",
 				icon: Flame,
-				color: "var(--status-warn)",
+				color: "var(--status-degraded)",
 			};
 	}
-}
-
-function severityTone(s: string) {
-	if (s === "crit") {
-		return {
-			text: "var(--status-down-text)",
-			bg: "var(--status-down-subtle)",
-			dot: "var(--status-down)",
-		};
-	}
-	if (s === "warn") {
-		return {
-			text: "var(--status-warn-text)",
-			bg: "var(--status-warn-subtle)",
-			dot: "var(--status-warn)",
-		};
-	}
-	return {
-		text: "var(--text-muted)",
-		bg: "var(--surface-sunken)",
-		dot: "var(--text-faint)",
-	};
 }
 
 function severityLabel(s: string) {

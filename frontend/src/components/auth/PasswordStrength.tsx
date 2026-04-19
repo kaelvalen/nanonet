@@ -1,13 +1,11 @@
-import { motion } from "motion/react";
-
 interface PasswordStrengthProps {
 	password: string;
 }
 
 const COLORS = [
-	"",
+	"transparent",
 	"var(--status-down)",
-	"var(--status-warn)",
+	"var(--status-degraded)",
 	"var(--status-up)",
 ];
 const LABELS = ["", "Zayıf", "Orta", "Güçlü"];
@@ -24,25 +22,26 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
 	const strength = computeStrength(password);
 
 	return (
-		<div className="flex items-center gap-3 pt-1">
+		<div className="flex items-center gap-3 pt-2">
 			<div className="flex gap-1 flex-1">
 				{[1, 2, 3].map((level) => (
 					<div
 						key={level}
-						className="h-0.5 flex-1 rounded-full overflow-hidden"
+						className="h-[2px] flex-1 rounded-full overflow-hidden"
 						style={{ background: "var(--surface-sunken)" }}
 					>
-						<motion.div
-							animate={{ width: strength >= level ? "100%" : "0%" }}
-							transition={{ duration: 0.3 }}
-							className="h-full"
-							style={{ backgroundColor: COLORS[strength] }}
+						<div
+							className="h-full transition-all duration-200"
+							style={{
+								width: strength >= level ? "100%" : "0%",
+								backgroundColor: COLORS[strength],
+							}}
 						/>
 					</div>
 				))}
 			</div>
 			<span
-				className="text-[10px] font-bold tabular-nums"
+				className="text-[10px] font-medium tnum"
 				style={{ color: COLORS[strength] }}
 			>
 				{LABELS[strength]}

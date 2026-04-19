@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
-import logo from "@/assets/logo.webp";
+import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useServices } from "@/hooks/useServices";
 import { useAuthStore } from "@/store/authStore";
@@ -92,7 +92,9 @@ const MORE_GROUPS: NavGroup[] = [
 	},
 	{
 		title: "AI",
-		items: [{ to: "/app/ai-usage", label: "AI Maliyetleri", icon: CircleDollarSign }],
+		items: [
+			{ to: "/app/ai-usage", label: "AI Maliyetleri", icon: CircleDollarSign },
+		],
 	},
 ];
 
@@ -224,9 +226,7 @@ function MoreToggle({
 						className="w-9 h-9 flex items-center justify-center rounded-lg relative transition-colors"
 						style={{
 							background:
-								open || hasActiveItem
-									? "var(--surface-sunken)"
-									: "transparent",
+								open || hasActiveItem ? "var(--surface-sunken)" : "transparent",
 							color:
 								open || hasActiveItem
 									? "var(--color-teal)"
@@ -394,8 +394,9 @@ export function HybridDock() {
 				onClick={() => navigate("/app")}
 				aria-label="Ana sayfa"
 				className="w-9 h-9 flex items-center justify-center rounded-lg shrink-0 transition-transform hover:scale-105 active:scale-95"
+				style={{ color: "var(--text-primary)" }}
 			>
-				<img src={logo} alt="NanoNet" className="w-7 h-7 object-contain" />
+				<Logo className="w-7 h-7" />
 			</button>
 
 			<div

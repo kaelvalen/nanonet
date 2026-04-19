@@ -26,8 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
-	EmptyState as SharedEmptyState,
 	Panel,
+	EmptyState as SharedEmptyState,
 } from "@/components/ui/primitives";
 import { useAuthStore } from "@/store/authStore";
 
@@ -194,32 +194,36 @@ function LogStatCard({
 	const Icon = cfg.icon;
 	return (
 		<div
-			className="rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden"
+			className="relative rounded-[6px] p-4 flex items-center gap-3"
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
 			<span
-				className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-15 pointer-events-none"
+				aria-hidden
+				className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
 				style={{ background: cfg.dotColor }}
 			/>
 			<div
-				className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-				style={{ background: cfg.bgColor }}
+				className="ml-1 w-9 h-9 rounded-[6px] flex items-center justify-center shrink-0"
+				style={{
+					background: "var(--surface-sunken)",
+					border: "1px solid var(--border-subtle)",
+				}}
 			>
 				<Icon className="w-4 h-4" style={{ color: cfg.textColor }} />
 			</div>
-			<div className="relative">
+			<div>
 				<p
-					className="text-[24px] font-semibold tabular-nums leading-none tracking-tight"
+					className="text-[22px] font-semibold leading-none tnum"
 					style={{ color: cfg.textColor }}
 				>
 					{value.toLocaleString()}
 				</p>
 				<p
-					className="text-[11px] font-medium mt-1.5"
-					style={{ color: "var(--text-muted)" }}
+					className="text-[11px] font-medium uppercase tracking-wider mt-1.5"
+					style={{ color: "var(--text-faint)" }}
 				>
 					{label}
 				</p>
@@ -285,10 +289,11 @@ function LogRow({ log }: { log: ServiceLog }) {
 			{expanded && log.fields && (
 				<div className="px-14 pb-3">
 					<pre
-						className="text-xs font-mono rounded-lg p-3 overflow-x-auto"
+						className="text-[12px] font-mono rounded-[6px] p-3 overflow-x-auto"
 						style={{
 							background: "var(--surface-sunken)",
-							color: "var(--text-muted)",
+							border: "1px solid var(--border-subtle)",
+							color: "var(--text-secondary)",
 						}}
 					>
 						{JSON.stringify(log.fields, null, 2)}
@@ -304,39 +309,38 @@ function AuditRow({ log }: { log: AuditLog }) {
 	const st = AUDIT_STATUS_CONFIG[statusKey] ?? AUDIT_STATUS_CONFIG.success;
 	return (
 		<div
-			className="px-4 py-2.5 flex items-center gap-3 transition-colors"
+			className="px-4 py-2 flex items-center gap-3"
 			style={{ borderBottom: "1px solid var(--border-subtle)" }}
 		>
 			<span
-				className="font-mono text-[10px] shrink-0 w-36"
+				className="font-mono text-[11px] tnum shrink-0 w-36"
 				style={{ color: "var(--text-faint)" }}
 			>
 				{auditTime(log)}
 			</span>
 			<span
-				className="text-[10px] px-2 py-0.5 rounded font-semibold uppercase shrink-0 border"
+				className="text-[10px] px-1.5 py-0.5 rounded-[4px] font-medium uppercase tracking-wider shrink-0"
 				style={{
 					color: st.textColor,
 					background: st.bgColor,
-					borderColor: st.borderColor,
 				}}
 			>
 				{st.label}
 			</span>
 			<span
-				className="text-xs font-mono shrink-0 w-44 truncate"
+				className="text-[12px] font-mono shrink-0 w-44 truncate"
 				style={{ color: "var(--text-secondary)" }}
 			>
 				{auditAction(log)}
 			</span>
 			<span
-				className="text-xs shrink-0 w-28 truncate"
-				style={{ color: "var(--text-muted)" }}
+				className="text-[12px] shrink-0 w-28 truncate"
+				style={{ color: "var(--text-tertiary)" }}
 			>
 				{auditResource(log)}
 			</span>
 			<span
-				className="text-xs flex-1 truncate font-mono"
+				className="text-[12px] flex-1 truncate font-mono tnum"
 				style={{ color: "var(--text-faint)" }}
 			>
 				{auditIP(log)}
@@ -386,10 +390,10 @@ function ServiceLogsTab() {
 			{/* Filters */}
 			<div className="flex flex-wrap gap-2">
 				<select
-					className="px-3.5 h-9 text-[13px] rounded-full appearance-none cursor-pointer"
+					className="px-3 h-9 text-[13px] rounded-[6px] appearance-none cursor-pointer"
 					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
+						background: "var(--surface-base)",
+						border: "1px solid var(--border-subtle)",
 						color: "var(--text-primary)",
 					}}
 					value={selectedServiceId}
@@ -407,10 +411,10 @@ function ServiceLogsTab() {
 				</select>
 
 				<select
-					className="px-3.5 h-9 text-[13px] rounded-full appearance-none cursor-pointer"
+					className="px-3 h-9 text-[13px] rounded-[6px] appearance-none cursor-pointer"
 					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
+						background: "var(--surface-base)",
+						border: "1px solid var(--border-subtle)",
 						color: "var(--text-primary)",
 					}}
 					value={params.level ?? ""}
@@ -431,10 +435,10 @@ function ServiceLogsTab() {
 				</select>
 
 				<select
-					className="px-3.5 h-9 text-[13px] rounded-full appearance-none cursor-pointer"
+					className="px-3 h-9 text-[13px] rounded-[6px] appearance-none cursor-pointer"
 					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
+						background: "var(--surface-base)",
+						border: "1px solid var(--border-subtle)",
 						color: "var(--text-primary)",
 					}}
 					value={params.source ?? ""}
@@ -456,11 +460,11 @@ function ServiceLogsTab() {
 
 				<div className="relative flex-1" style={{ minWidth: "180px" }}>
 					<Search
-						className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+						className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
 						style={{ color: "var(--text-faint)" }}
 					/>
 					<Input
-						className="pl-10 h-9 text-[13px] rounded-full"
+						className="pl-8 h-9 text-[13px]"
 						placeholder="Mesaj ara..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
@@ -469,8 +473,9 @@ function ServiceLogsTab() {
 						<button
 							type="button"
 							onClick={() => setSearch("")}
-							className="absolute right-3 top-1/2 -translate-y-1/2"
+							className="absolute right-2.5 top-1/2 -translate-y-1/2"
 							style={{ color: "var(--text-faint)" }}
+							aria-label="Aramayı temizle"
 						>
 							<X className="w-3.5 h-3.5" />
 						</button>
@@ -482,9 +487,8 @@ function ServiceLogsTab() {
 					size="sm"
 					onClick={() => refetch()}
 					disabled={isFetching}
-					className="h-9 px-3 text-[13px] rounded-full"
 				>
-					<RefreshCw className="w-4 h-4 mr-1.5" />
+					<RefreshCw className="w-3.5 h-3.5 mr-1.5" />
 					Yenile
 				</Button>
 				{data?.logs && data.logs.length > 0 && (
@@ -492,9 +496,8 @@ function ServiceLogsTab() {
 						variant="outline"
 						size="sm"
 						onClick={() => downloadLogs(data.logs)}
-						className="h-9 px-3 text-[13px] rounded-full"
 					>
-						<Download className="w-4 h-4 mr-1.5" />
+						<Download className="w-3.5 h-3.5 mr-1.5" />
 						İndir
 					</Button>
 				)}
@@ -527,16 +530,16 @@ function ServiceLogsTab() {
 			)}
 
 			{/* Log list */}
-			<Panel padding="none" className="overflow-hidden rounded-2xl">
+			<Panel padding="none" className="overflow-hidden">
 				<div
-					className="px-4 py-3 flex items-center justify-between"
+					className="px-4 py-2.5 flex items-center justify-between"
 					style={{ borderBottom: "1px solid var(--border-subtle)" }}
 				>
 					<span
-						className="text-[14px] font-semibold tracking-tight"
+						className="text-[13px] font-semibold tnum"
 						style={{ color: "var(--text-primary)" }}
 					>
-						{data ? `${data.total.toLocaleString()} kayıt` : "Servis Logları"}
+						{data ? `${data.total.toLocaleString()} kayıt` : "Servis logları"}
 					</span>
 					{isFetching && (
 						<Loader2
@@ -630,7 +633,10 @@ function AuditLogsTab() {
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
-				<p className="text-sm" style={{ color: "var(--text-muted)" }}>
+				<p
+					className="text-[13px] leading-relaxed"
+					style={{ color: "var(--text-tertiary)" }}
+				>
 					Kullanıcı işlemleri, giriş/çıkış ve kaynak değişikliklerini gösterir.
 				</p>
 				<Button
@@ -651,36 +657,30 @@ function AuditLogsTab() {
 
 			<Panel padding="none" className="overflow-hidden">
 				<div
-					className="px-4 py-3 flex items-center gap-3"
-					style={{ borderBottom: "1px solid var(--border-default)" }}
+					className="px-4 py-2.5 flex items-center gap-3"
+					style={{ borderBottom: "1px solid var(--border-subtle)" }}
 				>
-					<span
-						className="font-mono text-[10px] w-36"
-						style={{ color: "var(--text-faint)" }}
-					>
-						Zaman
-					</span>
-					<span
-						className="text-[10px] w-20"
-						style={{ color: "var(--text-faint)" }}
-					>
-						Durum
-					</span>
-					<span
-						className="text-[10px] w-44"
-						style={{ color: "var(--text-faint)" }}
-					>
-						İşlem
-					</span>
-					<span
-						className="text-[10px] w-28"
-						style={{ color: "var(--text-faint)" }}
-					>
-						Kaynak
-					</span>
-					<span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
-						IP
-					</span>
+					{["Zaman", "Durum", "İşlem", "Kaynak", "IP"].map((label, i) => (
+						<span
+							key={label}
+							className="text-[10px] uppercase tracking-wider font-medium"
+							style={{
+								color: "var(--text-faint)",
+								width:
+									i === 0
+										? "144px"
+										: i === 1
+											? "80px"
+											: i === 2
+												? "176px"
+												: i === 3
+													? "112px"
+													: undefined,
+							}}
+						>
+							{label}
+						</span>
+					))}
 				</div>
 
 				{isLoading ? (
@@ -782,10 +782,10 @@ function K8sLogsTab() {
 					/>
 				</div>
 				<select
-					className="px-3 py-2 text-sm rounded-lg"
+					className="px-3 h-9 text-[13px] rounded-[6px]"
 					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
+						background: "var(--surface-base)",
+						border: "1px solid var(--border-subtle)",
 						color: "var(--text-primary)",
 					}}
 					value={lines}
@@ -912,8 +912,13 @@ export function LogsPage() {
 
 			{/* Tabs */}
 			<div
-				className="inline-flex self-start gap-1 p-1 rounded-full mb-4 shrink-0"
-				style={{ background: "var(--surface-sunken)" }}
+				role="tablist"
+				aria-label="Log tipi"
+				className="inline-flex self-start gap-0.5 p-0.5 rounded-[6px] mb-4 shrink-0"
+				style={{
+					background: "var(--surface-sunken)",
+					border: "1px solid var(--border-subtle)",
+				}}
 			>
 				{tabs.map((tab) => {
 					const Icon = tab.icon;
@@ -922,19 +927,17 @@ export function LogsPage() {
 						<button
 							key={tab.key}
 							type="button"
+							role="tab"
+							aria-selected={active}
 							onClick={() => setActiveTab(tab.key)}
-							className="flex items-center justify-center gap-2 px-4 py-2 rounded-full text-[13px] font-medium transition-all"
-							style={
-								active
-									? {
-											background: "var(--surface-card)",
-											color: "var(--text-primary)",
-											boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-										}
-									: { background: "transparent", color: "var(--text-muted)" }
-							}
+							className="flex items-center justify-center gap-2 px-3 h-7 rounded-[4px] text-[12px] font-medium transition-colors"
+							style={{
+								background: active ? "var(--surface-base)" : "transparent",
+								color: active ? "var(--text-primary)" : "var(--text-tertiary)",
+								boxShadow: active ? "0 0 0 1px var(--border-subtle)" : "none",
+							}}
 						>
-							<Icon className="w-4 h-4" />
+							<Icon className="w-3.5 h-3.5" />
 							<span className="hidden sm:inline">{tab.label}</span>
 						</button>
 					);
@@ -943,20 +946,29 @@ export function LogsPage() {
 
 			{/* Retention bilgisi */}
 			<div
-				className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 text-[12px] mb-4 shrink-0"
+				className="relative flex items-center gap-2.5 rounded-[6px] px-4 py-2.5 text-[12px] mb-4 shrink-0"
 				style={{
-					background: "var(--color-blue-subtle)",
+					background: "var(--surface-base)",
+					border: "1px solid var(--border-subtle)",
 					color: "var(--text-secondary)",
 				}}
 			>
-				<Clock
-					className="w-4 h-4 shrink-0"
-					style={{ color: "var(--color-blue)" }}
+				<span
+					aria-hidden
+					className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full"
+					style={{ background: "var(--brand-primary)" }}
 				/>
-				<span>
+				<Clock
+					className="w-3.5 h-3.5 shrink-0 ml-1"
+					style={{ color: "var(--brand-primary)" }}
+				/>
+				<span className="leading-relaxed">
 					Loglar{" "}
-					<strong style={{ color: "var(--text-primary)" }}>30 gün</strong>{" "}
-					süreyle saklanır — servis logları TimescaleDB hypertable ile yönetilir.
+					<strong className="tnum" style={{ color: "var(--text-primary)" }}>
+						30 gün
+					</strong>{" "}
+					süreyle saklanır — servis logları TimescaleDB hypertable ile
+					yönetilir.
 				</span>
 			</div>
 

@@ -6,9 +6,11 @@ import {
 	Moon,
 	Search,
 	Settings,
+	Sparkles,
 	Sun,
 	UserCircle2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router";
 import {
 	DropdownMenu,
@@ -20,51 +22,71 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useServices } from "@/hooks/useServices";
+import { preloadRoute } from "@/routes";
+import { useAIAssistantStore } from "@/store/aiAssistantStore";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useWSStore } from "@/store/wsStore";
 import { usePageMetaValue } from "./PageMetaContext";
 
-type Crumb = { label: string; path: string };
+/* TopBar — 56px chrome that owns identity (breadcrumb + page title) and
+   global utilities (universal search trigger, health overview, notifications,
+   account menu). The MB rule applies: every element earns its slot.
 
-const ROUTE_LABELS: Record<string, string> = {
-	"/app": "Genel Bakış",
-	"/app/services": "Servisler",
-	"/app/alerts": "Uyarılar",
-	"/app/incidents": "Incidents",
-	"/app/ai-insights": "AI İçgörüler",
-	"/app/service-map": "Servis Haritası",
-	"/app/compare": "Karşılaştır",
-	"/app/logs": "Loglar",
-	"/app/slo": "SLO",
-	"/app/probes": "Probes",
-	"/app/runbooks": "Runbooks",
-	"/app/notifications": "Bildirimler",
-	"/app/status-pages": "Durum Sayfaları",
-	"/app/api-tokens": "API Tokenları",
-	"/app/ai-usage": "AI Kullanımı",
-	"/app/settings": "Ayarlar",
-	"/app/kubernetes": "Kubernetes",
-	"/app/security": "Güvenlik",
+   Shape, left → right:
+     [breadcrumb] [page title]                    [⌘K search] · [pulse · alerts]
+                                                  · [bell] [theme] [account]
+
+   No floating AI button — the assistant is reachable from ⌘K with the `?`
+   prefix or from the dedicated /app/ai-insights page. */
+
+type Crumb = { label: string; path: string };
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+/* Route → i18n key map. Keep this aligned with shell.nav.* in the locale
+   bundles. The key resolution happens at render-time so a language switch
+   reflows breadcrumbs without remounting the bar. */
+const ROUTE_LABEL_KEYS: Record<string, string> = {
+	"/app": "shell.nav.overview",
+	"/app/services": "shell.nav.services",
+	"/app/alerts": "shell.nav.alerts",
+	"/app/incidents": "shell.nav.incidents",
+	"/app/ai-insights": "shell.nav.aiInsights",
+	"/app/service-map": "shell.nav.serviceMap",
+	"/app/compare": "shell.nav.compare",
+	"/app/logs": "shell.nav.logs",
+	"/app/slo": "shell.nav.slo",
+	"/app/probes": "shell.nav.probes",
+	"/app/runbooks": "shell.nav.runbooks",
+	"/app/notifications": "shell.nav.notifications",
+	"/app/status-pages": "shell.nav.statusPages",
+	"/app/api-tokens": "shell.nav.apiTokens",
+	"/app/ai-usage": "shell.nav.aiUsage",
+	"/app/settings": "shell.nav.settings",
+	"/app/kubernetes": "shell.nav.kubernetes",
+	"/app/security": "shell.nav.security",
 };
 
 function buildBreadcrumbs(
 	pathname: string,
 	services: { id: string; name: string }[],
+	t: TFn,
 ): Crumb[] {
-	const crumbs: Crumb[] = [{ label: "Genel Bakış", path: "/app" }];
+	const crumbs: Crumb[] = [{ label: t("shell.nav.overview"), path: "/app" }];
 
 	const serviceDetailMatch = pathname.match(/^\/app\/services\/(.+)$/);
 	if (serviceDetailMatch) {
 		const serviceId = serviceDetailMatch[1];
-		const svcName = services.find((s) => s.id === serviceId)?.name ?? "Detay";
-		crumbs.push({ label: "Servisler", path: "/app/services" });
+		const svcName =
+			services.find((s) => s.id === serviceId)?.name ??
+			t("shell.breadcrumb.detail");
+		crumbs.push({ label: t("shell.nav.services"), path: "/app/services" });
 		crumbs.push({ label: svcName, path: pathname });
 		return crumbs;
 	}
 
-	if (pathname !== "/app" && ROUTE_LABELS[pathname]) {
-		crumbs.push({ label: ROUTE_LABELS[pathname], path: pathname });
+	if (pathname !== "/app" && ROUTE_LABEL_KEYS[pathname]) {
+		crumbs.push({ label: t(ROUTE_LABEL_KEYS[pathname]), path: pathname });
 	}
 	return crumbs;
 }
@@ -84,47 +106,46 @@ function HealthPulse({
 	total,
 	downCount,
 	onClick,
+	hoverLabel,
 }: {
 	upCount: number;
 	total: number;
 	downCount: number;
 	onClick: () => void;
+	hoverLabel: string;
 }) {
 	if (total === 0) return null;
-	const ratio = total === 0 ? 1 : upCount / total;
+	const ratio = upCount / total;
 	const tone =
 		downCount === 0
 			? { fg: "var(--status-up-text)", bg: "var(--status-up)" }
 			: ratio >= 0.9
-				? { fg: "var(--status-warn-text)", bg: "var(--status-warn)" }
+				? { fg: "var(--status-degraded-text)", bg: "var(--status-degraded)" }
 				: { fg: "var(--status-down-text)", bg: "var(--status-down)" };
 
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			className="hidden md:inline-flex items-center gap-2 h-9 pl-2 pr-3 rounded-full transition-all hover:bg-[var(--surface-sunken)]"
-			title={`${upCount} sağlıklı / ${total} servis`}
+			className="hidden md:inline-flex items-center gap-2 h-8 px-2.5 rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] hover:bg-[var(--surface-sunken)] transition-colors"
+			title={hoverLabel}
 		>
-			<span className="relative flex items-center justify-center w-5 h-5">
+			<span className="relative flex items-center justify-center w-4 h-4">
 				<span
 					className="absolute inset-0 rounded-full"
 					style={{
 						background: tone.bg,
 						opacity: 0.18,
-						animation: "nn-orb-breathe 2.4s ease-in-out infinite",
+						animation: "nn-orb-breathe 2.4s var(--ease-standard) infinite",
 					}}
 				/>
 				<span
-					className="relative w-2 h-2 rounded-full"
-					style={{
-						background: tone.bg,
-						boxShadow: `0 0 0 2px color-mix(in srgb, ${tone.bg} 22%, transparent)`,
-					}}
+					className="relative w-1.5 h-1.5 rounded-full"
+					style={{ background: tone.bg }}
 				/>
 			</span>
 			<span
-				className="text-[12px] font-medium tabular-nums"
+				className="text-[12px] font-semibold tnum"
 				style={{ color: tone.fg }}
 			>
 				{upCount}/{total}
@@ -133,15 +154,6 @@ function HealthPulse({
 	);
 }
 
-/**
- * Modern, minimal topbar.
- *
- * Layout (desktop):
- *
- *   [ Title block ]                 [ Search ⌘K ] · [ Health · Alerts · Live ] · [ Bell ] [ Avatar ]
- *
- * Mobile collapses to: title + search button + avatar.
- */
 export function TopBar({
 	onOpenCommandPalette,
 }: {
@@ -149,14 +161,16 @@ export function TopBar({
 }) {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { t } = useTranslation();
 	const { isConnected } = useWSStore();
 	const { services } = useServices();
 	const { title, eyebrow } = usePageMetaValue();
 	const { user } = useAuthStore();
 	const { themeMode, toggleMode } = useThemeStore();
 	const { logout } = useAuth();
+	const openAIAssistant = useAIAssistantStore((s) => s.open);
 
-	const crumbs = buildBreadcrumbs(location.pathname, services);
+	const crumbs = buildBreadcrumbs(location.pathname, services, t);
 	const downCount = services.filter(
 		(s) => s.status === "down" || s.status === "degraded",
 	).length;
@@ -171,34 +185,33 @@ export function TopBar({
 		<div
 			className="sticky top-0 z-30 w-full"
 			style={{
-				background: "color-mix(in srgb, var(--background) 78%, transparent)",
-				backdropFilter: "blur(14px) saturate(140%)",
-				WebkitBackdropFilter: "blur(14px) saturate(140%)",
+				background: "var(--surface-base)",
 				borderBottom: "1px solid var(--border-subtle)",
 			}}
 		>
-			<div className="flex items-center h-[var(--topbar-h)] gap-3 px-4 sm:px-6 lg:px-8">
-				{/* ─────────── LEFT — title block ─────────── */}
+			<div className="flex items-center h-[var(--topbar-h)] gap-3 px-4 sm:px-6">
+				{/* ── LEFT: breadcrumb + page title ────────────────────────────── */}
 				<div className="flex items-center min-w-0 flex-1 gap-2">
 					{trail.length > 0 && (
-						<nav className="hidden md:flex items-center min-w-0 shrink-0">
-							{trail.map((crumb, i) => (
-								<span
-									key={crumb.path}
-									className="flex items-center min-w-0"
-								>
+						<nav
+							aria-label="Breadcrumb"
+							className="hidden md:flex items-center min-w-0 shrink-0"
+						>
+							{trail.map((crumb) => (
+								<span key={crumb.path} className="flex items-center min-w-0">
 									<Link
 										to={crumb.path}
-										className="text-[12px] truncate transition-colors hover:text-[color:var(--text-primary)]"
-										style={{ color: "var(--text-faint)" }}
+										onMouseEnter={() => preloadRoute(crumb.path)}
+										onFocus={() => preloadRoute(crumb.path)}
+										className="text-[12px] truncate transition-colors hover:text-[var(--text-primary)] outline-none rounded focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+										style={{ color: "var(--text-tertiary)" }}
 									>
 										{crumb.label}
 									</Link>
 									<ChevronRight
-										className="w-3 h-3 shrink-0 mx-1"
+										className="w-3 h-3 shrink-0 mx-1.5"
 										style={{ color: "var(--text-faint)" }}
 									/>
-									{i === trail.length - 1 && null}
 								</span>
 							))}
 						</nav>
@@ -207,7 +220,7 @@ export function TopBar({
 					<div className="flex flex-col min-w-0">
 						{inlineEyebrow && (
 							<span
-								className="hidden sm:inline text-[10px] font-medium leading-none mb-1 truncate"
+								className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wider leading-none mb-1 truncate"
 								style={{ color: "var(--text-faint)" }}
 							>
 								{inlineEyebrow}
@@ -222,32 +235,32 @@ export function TopBar({
 					</div>
 				</div>
 
-				{/* ─────────── CENTER — universal search ─────────── */}
+				{/* ── CENTER: universal command palette trigger ────────────────── */}
 				<button
 					type="button"
 					onClick={onOpenCommandPalette}
-					className="group hidden sm:flex items-center gap-2.5 h-9 pl-3 pr-1.5 rounded-full transition-all min-w-[220px] lg:min-w-[320px] max-w-[420px] flex-1 hover:border-[color:var(--border-strong)]"
+					className="group hidden sm:flex items-center gap-2 h-8 pl-2.5 pr-1.5 rounded-[6px] transition-colors min-w-[240px] lg:min-w-[320px] max-w-[420px] flex-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
 					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--border-default)",
+						background: "var(--surface-sunken)",
+						border: "1px solid var(--border-subtle)",
 					}}
-					title="Komut paleti (⌘K)"
+					title={t("shell.topbar.searchHint")}
 				>
 					<Search
-						className="w-3.5 h-3.5 shrink-0 transition-colors group-hover:text-[color:var(--text-secondary)]"
-						style={{ color: "var(--text-faint)" }}
+						className="w-3.5 h-3.5 shrink-0"
+						style={{ color: "var(--text-tertiary)" }}
 					/>
 					<span
 						className="text-[12px] flex-1 text-left truncate"
-						style={{ color: "var(--text-muted)" }}
+						style={{ color: "var(--text-tertiary)" }}
 					>
-						Komut, servis veya log ara…
+						{t("shell.topbar.searchPlaceholder")}
 					</span>
 					<span
-						className="hidden lg:inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded-md"
+						className="hidden lg:inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded font-semibold"
 						style={{
-							color: "var(--text-faint)",
-							background: "var(--surface-sunken)",
+							color: "var(--text-tertiary)",
+							background: "var(--surface-base)",
 							border: "1px solid var(--border-subtle)",
 						}}
 					>
@@ -255,15 +268,15 @@ export function TopBar({
 					</span>
 				</button>
 
-				{/* ─────────── RIGHT — status cluster + actions ─────────── */}
+				{/* ── RIGHT: status cluster + actions ──────────────────────────── */}
 				<div className="flex items-center gap-1 shrink-0">
 					{/* Mobile-only search trigger */}
 					<button
 						type="button"
 						onClick={onOpenCommandPalette}
-						className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full transition-colors hover:bg-[var(--surface-sunken)]"
-						aria-label="Ara"
-						style={{ color: "var(--text-muted)" }}
+						className="sm:hidden flex items-center justify-center w-9 h-9 rounded-[6px] transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+						aria-label={t("shell.topbar.searchAria")}
+						style={{ color: "var(--text-secondary)" }}
 					>
 						<Search className="w-4 h-4" />
 					</button>
@@ -273,34 +286,41 @@ export function TopBar({
 						total={total}
 						downCount={downCount}
 						onClick={() => navigate("/app/services")}
+						hoverLabel={t("shell.topbar.healthHover", {
+							up: upCount,
+							total,
+						})}
 					/>
 
 					{downCount > 0 && (
 						<button
 							type="button"
 							onClick={() => navigate("/app/incidents")}
-							className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-full transition-opacity hover:opacity-90"
+							className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
 							style={{
-								background:
-									"color-mix(in srgb, var(--status-down) 12%, transparent)",
+								background: "var(--status-down-subtle)",
 								color: "var(--status-down-text)",
 							}}
-							title={`${downCount} aktif olay`}
+							title={t("shell.topbar.openIncidents", { count: downCount })}
 						>
 							<AlertTriangle className="w-3.5 h-3.5" />
-							<span className="text-[12px] font-semibold tabular-nums">
+							<span className="text-[12px] font-semibold tnum">
 								{downCount}
 							</span>
 						</button>
 					)}
 
 					{/* Live indicator */}
-					<div
-						className="hidden lg:flex items-center gap-1.5 h-9 px-3 rounded-full"
-						title={isConnected ? "WebSocket bağlı" : "WebSocket kopuk"}
+					<span
+						className="hidden lg:flex items-center gap-1.5 h-8 px-2.5"
+						title={
+							isConnected
+								? t("shell.topbar.liveTooltipOn")
+								: t("shell.topbar.liveTooltipOff")
+						}
 					>
 						<span
-							className="relative flex items-center justify-center w-2 h-2"
+							className="relative flex items-center justify-center w-1.5 h-1.5"
 							aria-hidden
 						>
 							{isConnected && (
@@ -313,7 +333,7 @@ export function TopBar({
 								/>
 							)}
 							<span
-								className="relative w-2 h-2 rounded-full"
+								className="relative w-1.5 h-1.5 rounded-full"
 								style={{
 									background: isConnected
 										? "var(--status-up)"
@@ -325,62 +345,69 @@ export function TopBar({
 							className="text-[11px] font-medium"
 							style={{
 								color: isConnected
-									? "var(--status-up-text)"
+									? "var(--text-tertiary)"
 									: "var(--text-faint)",
 							}}
 						>
-							{isConnected ? "Canlı" : "Kesik"}
+							{isConnected
+								? t("shell.topbar.liveOn")
+								: t("shell.topbar.liveOff")}
 						</span>
-					</div>
+					</span>
 
 					<span
 						className="hidden md:block w-px h-5 mx-1.5 shrink-0"
-						style={{ background: "var(--border-default)" }}
+						style={{ background: "var(--border-subtle)" }}
 					/>
 
-					{/* Notification bell — placeholder until proper inbox lands */}
+					<button
+						type="button"
+						onClick={() => openAIAssistant({ mode: "chat" })}
+						className="hidden sm:flex items-center justify-center w-9 h-9 rounded-[6px] transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+						aria-label={t("shell.topbar.aiAssistant")}
+						title={t("shell.topbar.aiAssistantHint")}
+						style={{ color: "var(--brand-primary)" }}
+					>
+						<Sparkles className="w-4 h-4" />
+					</button>
+
 					<button
 						type="button"
 						onClick={() => navigate("/app/notifications")}
-						className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full transition-colors hover:bg-[var(--surface-sunken)]"
-						aria-label="Bildirimler"
-						style={{ color: "var(--text-muted)" }}
+						className="hidden sm:flex items-center justify-center w-9 h-9 rounded-[6px] transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+						aria-label={t("shell.topbar.notifications")}
+						style={{ color: "var(--text-secondary)" }}
 					>
 						<Bell className="w-4 h-4" />
 					</button>
 
-					{/* User menu */}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<button
 								type="button"
-								className="flex items-center justify-center w-9 h-9 rounded-full text-[12px] font-semibold transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+								className="flex items-center justify-center w-8 h-8 rounded-full text-[11px] font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
 								style={{
-									background: "var(--gradient-logo)",
-									color: "white",
+									background: "var(--brand-primary)",
+									color: "var(--brand-on-primary)",
 								}}
-								aria-label="Hesap menüsü"
+								aria-label={t("shell.topbar.accountMenu")}
 							>
 								{initials}
 							</button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							align="end"
-							sideOffset={8}
-							className="w-64 rounded-xl"
-						>
+						<DropdownMenuContent align="end" sideOffset={8} className="w-60">
 							<DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
 								<span
-									className="text-[10px] font-medium"
+									className="text-[10px] font-semibold uppercase tracking-wider"
 									style={{ color: "var(--text-faint)" }}
 								>
-									Hesap
+									{t("shell.topbar.account")}
 								</span>
 								<span
 									className="text-[13px] font-semibold truncate"
 									style={{ color: "var(--text-primary)" }}
 								>
-									{user?.email ?? "Misafir"}
+									{user?.email ?? t("shell.topbar.guest")}
 								</span>
 							</DropdownMenuLabel>
 							<DropdownMenuSeparator />
@@ -389,14 +416,14 @@ export function TopBar({
 								className="gap-2 cursor-pointer"
 							>
 								<UserCircle2 className="w-4 h-4" />
-								Profil
+								{t("shell.topbar.profile")}
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onSelect={() => navigate("/app/settings")}
 								className="gap-2 cursor-pointer"
 							>
 								<Settings className="w-4 h-4" />
-								Ayarlar
+								{t("shell.nav.settings")}
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onSelect={(e) => {
@@ -408,12 +435,12 @@ export function TopBar({
 								{themeMode === "dark" ? (
 									<>
 										<Sun className="w-4 h-4" />
-										Aydınlık tema
+										{t("shell.topbar.themeLight")}
 									</>
 								) : (
 									<>
 										<Moon className="w-4 h-4" />
-										Karanlık tema
+										{t("shell.topbar.themeDark")}
 									</>
 								)}
 							</DropdownMenuItem>
@@ -424,7 +451,7 @@ export function TopBar({
 								style={{ color: "var(--status-down-text)" }}
 							>
 								<LogOut className="w-4 h-4" />
-								Çıkış yap
+								{t("shell.topbar.logout")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>

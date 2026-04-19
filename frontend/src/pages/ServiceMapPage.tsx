@@ -1,5 +1,5 @@
-import { ServiceMap } from "@/components/service-map/ServiceMap";
 import { useRegisterPageMeta } from "@/components/PageMetaContext";
+import { ServiceMap } from "@/components/service-map/ServiceMap";
 
 export function ServiceMapPage() {
 	useRegisterPageMeta({

@@ -133,7 +133,10 @@ export function AlertRulesTab({ serviceId }: AlertRulesTabProps) {
 							border: "1px solid var(--color-teal-border)",
 						}}
 					>
-						<Bell className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />
+						<Bell
+							className="w-3.5 h-3.5"
+							style={{ color: "var(--color-teal)" }}
+						/>
 					</span>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">

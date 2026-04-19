@@ -27,47 +27,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
-	EmptyState as SharedEmptyState,
 	Panel,
 	PanelBody,
 	PanelFooter,
 	PanelHeader,
+	EmptyState as SharedEmptyState,
 	SkeletonList,
 } from "@/components/ui/primitives";
 import { Switch } from "@/components/ui/switch";
 
 const CHANNEL_META: Record<
 	NotificationChannelType,
-	{ label: string; icon: typeof Bell; color: string; help: string }
+	{ label: string; icon: typeof Bell; help: string }
 > = {
 	slack: {
 		label: "Slack",
 		icon: Hash,
-		color: "#4a154b",
 		help: "Slack incoming webhook URL — Workspace Settings → Integrations.",
 	},
 	discord: {
 		label: "Discord",
 		icon: MessageSquare,
-		color: "#5865f2",
 		help: "Discord channel webhook URL — Channel Settings → Integrations → Webhooks.",
 	},
 	webhook: {
 		label: "Webhook",
 		icon: Webhook,
-		color: "#22d3ee",
 		help: "Generic JSON POST endpoint. Optional shared secret signs the body with HMAC-SHA256.",
 	},
 	email: {
 		label: "Email",
 		icon: AtSign,
-		color: "#818cf8",
 		help: "Tek bir e-posta adresine alert gönderir (SMTP yapılandırılmış olmalı).",
 	},
 	pagerduty: {
 		label: "PagerDuty",
 		icon: Zap,
-		color: "#06ac38",
 		help: "PagerDuty Events API v2 routing key.",
 	},
 };
@@ -77,6 +72,16 @@ const SEV_LIST = [
 	{ key: "warn", label: "Warn" },
 	{ key: "crit", label: "Crit" },
 ] as const;
+
+const EMPTY_DRAFT: CreateChannelInput = {
+	name: "",
+	type: "slack",
+	config: { url: "" },
+	severities: ["warn", "crit"],
+	service_ids: [],
+	cooldown_sec: 300,
+	enabled: true,
+};
 
 export function NotificationsPage() {
 	const qc = useQueryClient();
@@ -129,25 +134,10 @@ export function NotificationsPage() {
 			<PageHeader
 				eyebrow="Bildirimler"
 				title="Bildirim kanalları"
-				description="Slack, Discord, webhook, e-posta ve PagerDuty üzerinden alert dağıtımı yapılandır."
+				description="Slack, Discord, webhook, e-posta ve PagerDuty üzerinden alert dağıtımı yapılandırın."
 				actions={
-					<Button
-						size="sm"
-						onClick={() =>
-							setDraft({
-								name: "",
-								type: "slack",
-								config: { url: "" },
-								severities: ["warn", "crit"],
-								service_ids: [],
-								cooldown_sec: 300,
-								enabled: true,
-							})
-						}
-						className="h-9 px-4 text-[13px] text-white rounded-full"
-						style={{ background: "var(--gradient-btn-primary)" }}
-					>
-						<Plus className="w-4 h-4 mr-1.5" /> Kanal ekle
+					<Button size="sm" onClick={() => setDraft(EMPTY_DRAFT)}>
+						<Plus className="w-3.5 h-3.5 mr-1.5" /> Kanal ekle
 					</Button>
 				}
 			/>
@@ -162,34 +152,19 @@ export function NotificationsPage() {
 				/>
 			)}
 
-			<div className="flex flex-col gap-3 mt-4">
+			<div className="flex flex-col gap-2 mt-4">
 				{isLoading ? (
-					<SkeletonList rows={3} rowHeight={68} />
+					<SkeletonList rows={3} rowHeight={72} />
 				) : channels.length === 0 ? (
 					<SharedEmptyState
 						icon={Bell}
 						title="Henüz bildirim kanalı yok"
-						description="Slack, Discord, webhook, e-posta veya PagerDuty üzerinden alert almak için bir kanal ekle."
+						description="Slack, Discord, webhook, e-posta veya PagerDuty üzerinden alert almak için bir kanal ekleyin."
 						tone="accent"
 						size="lg"
 						action={
-							<Button
-								size="sm"
-								className="h-8 px-3 text-xs text-white"
-								style={{ background: "var(--gradient-btn-primary)" }}
-								onClick={() =>
-									setDraft({
-										name: "",
-										type: "slack",
-										config: { url: "" },
-										severities: ["warn", "crit"],
-										service_ids: [],
-										cooldown_sec: 300,
-										enabled: true,
-									})
-								}
-							>
-								<Plus className="w-3.5 h-3.5 mr-1.5" /> Kanal Ekle
+							<Button size="sm" onClick={() => setDraft(EMPTY_DRAFT)}>
+								<Plus className="w-3.5 h-3.5 mr-1.5" /> Kanal ekle
 							</Button>
 						}
 					/>
@@ -200,13 +175,9 @@ export function NotificationsPage() {
 							channel={ch}
 							onTest={() => testMut.mutate(ch.id)}
 							onDelete={() => deleteMut.mutate(ch.id)}
-							onToggle={(enabled) =>
-								toggleMut.mutate({ id: ch.id, enabled })
-							}
+							onToggle={(enabled) => toggleMut.mutate({ id: ch.id, enabled })}
 							onOpenDeliveries={() =>
-								setOpenDeliveriesFor(
-									openDeliveriesFor === ch.id ? null : ch.id,
-								)
+								setOpenDeliveriesFor(openDeliveriesFor === ch.id ? null : ch.id)
 							}
 							deliveriesOpen={openDeliveriesFor === ch.id}
 						/>
@@ -234,36 +205,58 @@ function ChannelRow({
 }) {
 	const meta = CHANNEL_META[channel.type];
 	const Icon = meta.icon;
+	const accent = channel.last_error
+		? "var(--status-down)"
+		: channel.enabled
+			? "var(--status-up)"
+			: "var(--border-strong)";
 
 	return (
-					<Panel className="overflow-hidden rounded-2xl">
-			<div className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+		<div
+			className="relative rounded-[6px] overflow-hidden"
+			style={{
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
+			}}
+		>
+			<span
+				aria-hidden
+				className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+				style={{ background: accent }}
+			/>
+			<div className="flex flex-wrap items-center gap-3 pl-4 pr-3 py-3">
 				<span
-					className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-					style={{ background: `${meta.color}1a` }}
+					className="w-9 h-9 rounded-[6px] flex items-center justify-center shrink-0"
+					style={{
+						background: "var(--surface-sunken)",
+						border: "1px solid var(--border-subtle)",
+					}}
 				>
-					<Icon className="w-4 h-4" style={{ color: meta.color }} />
+					<Icon
+						className="w-4 h-4"
+						style={{ color: "var(--text-secondary)" }}
+					/>
 				</span>
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
 						<p
-							className="text-[14px] font-semibold truncate tracking-tight"
+							className="text-[14px] font-semibold truncate"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{channel.name}
 						</p>
 						<span
-							className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0"
+							className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-[4px]"
 							style={{
-								color: meta.color,
-								background: `${meta.color}14`,
+								color: "var(--text-tertiary)",
+								background: "var(--surface-sunken)",
 							}}
 						>
 							{meta.label}
 						</span>
 						{channel.last_error && (
 							<span
-								className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0"
+								className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-[4px]"
 								style={{
 									color: "var(--status-down-text)",
 									background: "var(--status-down-subtle)",
@@ -275,11 +268,10 @@ function ChannelRow({
 						)}
 					</div>
 					<p
-						className="text-[12px] mt-1 truncate"
-						style={{ color: "var(--text-muted)" }}
+						className="text-[12px] mt-1 truncate tnum"
+						style={{ color: "var(--text-tertiary)" }}
 					>
-						{channel.severities.join(", ")} ·{" "}
-						{channel.cooldown_sec}s cooldown ·{" "}
+						{channel.severities.join(", ")} · {channel.cooldown_sec}s cooldown ·{" "}
 						{channel.service_ids.length === 0
 							? "tüm servisler"
 							: `${channel.service_ids.length} servis`}
@@ -292,29 +284,13 @@ function ChannelRow({
 					aria-label="enable"
 				/>
 
-				<Button
-					size="sm"
-					variant="outline"
-					className="h-8 px-3 text-[12px] rounded-full"
-					onClick={onTest}
-				>
+				<Button size="sm" variant="outline" onClick={onTest}>
 					<Send className="w-3 h-3 mr-1" /> Test
 				</Button>
-				<Button
-					size="sm"
-					variant="outline"
-					className="h-8 px-3 text-[12px] rounded-full"
-					onClick={onOpenDeliveries}
-				>
+				<Button size="sm" variant="outline" onClick={onOpenDeliveries}>
 					Geçmiş
 				</Button>
-				<Button
-					size="sm"
-					variant="ghost"
-					className="h-8 w-8 p-0 rounded-full"
-					onClick={onDelete}
-					aria-label="sil"
-				>
+				<Button size="icon" variant="ghost" onClick={onDelete} aria-label="sil">
 					<Trash2
 						className="w-3.5 h-3.5"
 						style={{ color: "var(--status-down)" }}
@@ -323,7 +299,7 @@ function ChannelRow({
 			</div>
 
 			{deliveriesOpen && <DeliveriesPanel channelId={channel.id} />}
-		</Panel>
+		</div>
 	);
 }
 
@@ -336,7 +312,14 @@ function DeliveriesPanel({ channelId }: { channelId: string }) {
 
 	if (isLoading) {
 		return (
-			<div className="px-4 py-3 text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
+			<div
+				className="px-4 py-3 text-[11px] font-mono"
+				style={{
+					color: "var(--text-tertiary)",
+					borderTop: "1px solid var(--border-subtle)",
+					background: "var(--surface-sunken)",
+				}}
+			>
 				Yükleniyor…
 			</div>
 		);
@@ -347,7 +330,7 @@ function DeliveriesPanel({ channelId }: { channelId: string }) {
 			<div
 				className="px-4 py-3 text-[11px] font-mono"
 				style={{
-					color: "var(--text-muted)",
+					color: "var(--text-tertiary)",
 					borderTop: "1px solid var(--border-subtle)",
 					background: "var(--surface-sunken)",
 				}}
@@ -381,7 +364,7 @@ function DeliveryRow({ d }: { d: DeliveryRecord }) {
 			? "var(--text-faint)"
 			: "var(--status-down-text)";
 	return (
-		<div className="flex items-center gap-2 text-[11px] font-mono">
+		<div className="flex items-center gap-2 text-[11px] font-mono tnum">
 			{isOK ? (
 				<CheckCircle2
 					className="w-3 h-3 shrink-0"
@@ -398,21 +381,16 @@ function DeliveryRow({ d }: { d: DeliveryRecord }) {
 					style={{ color: "var(--status-down)" }}
 				/>
 			)}
-			<span
-				className="font-semibold capitalize tracking-tight"
-				style={{ color }}
-			>
+			<span className="font-semibold capitalize" style={{ color }}>
 				{d.status}
 			</span>
 			{d.http_status != null && (
-				<span style={{ color: "var(--text-muted)" }}>
+				<span style={{ color: "var(--text-tertiary)" }}>
 					HTTP {d.http_status}
 				</span>
 			)}
 			{d.duration_ms != null && (
-				<span style={{ color: "var(--text-faint)" }}>
-					{d.duration_ms}ms
-				</span>
+				<span style={{ color: "var(--text-faint)" }}>{d.duration_ms}ms</span>
 			)}
 			<span className="ml-auto" style={{ color: "var(--text-faint)" }}>
 				{new Date(d.created_at).toLocaleString("tr-TR", {
@@ -450,159 +428,142 @@ function DraftEditor({
 	const meta = CHANNEL_META[value.type];
 
 	return (
-		<Panel className="mt-4">
-			<PanelHeader
-				dense
-				icon={<Bell className="w-3.5 h-3.5" style={{ color: "var(--color-teal)" }} />}
-				actions={
-					<button
-						type="button"
-						onClick={onCancel}
-						className="text-[11px]"
-						style={{ color: "var(--text-muted)" }}
-					>
-						İptal
-					</button>
-				}
-			>
-				Yeni Bildirim Kanalı
+		<Panel className="mt-4" padding="none">
+			<PanelHeader dense icon={<Bell className="w-3.5 h-3.5" />}>
+				Yeni bildirim kanalı
 			</PanelHeader>
 			<PanelBody scroll={false} className="flex flex-col gap-4">
-
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Ad
-					</Label>
-					<Input
-						value={value.name}
-						onChange={(e) => onChange({ ...value, name: e.target.value })}
-						placeholder="prod-alerts"
-						className="mt-1.5 h-9 text-sm"
-					/>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+					<div>
+						<FieldLabel htmlFor="ch-name">Ad</FieldLabel>
+						<Input
+							id="ch-name"
+							value={value.name}
+							onChange={(e) => onChange({ ...value, name: e.target.value })}
+							placeholder="prod-alerts"
+							className="mt-1.5 h-9 text-[13px]"
+						/>
+					</div>
+					<div>
+						<FieldLabel>Tip</FieldLabel>
+						<div className="grid grid-cols-5 gap-1 mt-1.5">
+							{(Object.keys(CHANNEL_META) as NotificationChannelType[]).map(
+								(t) => {
+									const m = CHANNEL_META[t];
+									const I = m.icon;
+									const active = value.type === t;
+									return (
+										<button
+											key={t}
+											type="button"
+											onClick={() =>
+												onChange({
+													...value,
+													type: t,
+													config: defaultConfigFor(t),
+												})
+											}
+											className="h-9 rounded-[6px] flex items-center justify-center transition-colors"
+											style={{
+												background: active
+													? "var(--surface-base)"
+													: "var(--surface-sunken)",
+												border: `1px solid ${active ? "var(--border-strong)" : "var(--border-subtle)"}`,
+												color: active
+													? "var(--text-primary)"
+													: "var(--text-tertiary)",
+											}}
+											title={m.label}
+											aria-label={m.label}
+											aria-pressed={active}
+										>
+											<I className="w-4 h-4" />
+										</button>
+									);
+								},
+							)}
+						</div>
+					</div>
 				</div>
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Tip
-					</Label>
-					<div className="grid grid-cols-5 gap-1.5 mt-2">
-						{(Object.keys(CHANNEL_META) as NotificationChannelType[]).map(
-							(t) => {
-								const m = CHANNEL_META[t];
-								const I = m.icon;
-								const active = value.type === t;
+
+				<ConfigEditor
+					type={value.type}
+					config={value.config}
+					onChange={(config) => onChange({ ...value, config })}
+				/>
+
+				<p
+					className="text-[11px] leading-relaxed"
+					style={{ color: "var(--text-tertiary)" }}
+				>
+					{meta.help}
+				</p>
+
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+					<div>
+						<FieldLabel>Şiddet filtresi</FieldLabel>
+						<div className="flex gap-1 mt-1.5">
+							{SEV_LIST.map((s) => {
+								const on = (value.severities ?? []).includes(s.key);
 								return (
 									<button
-										key={t}
+										key={s.key}
 										type="button"
-										onClick={() =>
+										aria-pressed={on}
+										className="h-8 px-3 rounded-[6px] text-[12px] font-medium transition-colors"
+										style={{
+											background: on
+												? "var(--brand-primary-subtle)"
+												: "var(--surface-sunken)",
+											color: on
+												? "var(--brand-primary)"
+												: "var(--text-tertiary)",
+											border: `1px solid ${on ? "var(--border-strong)" : "var(--border-subtle)"}`,
+										}}
+										onClick={() => {
+											const cur = new Set(value.severities ?? []);
+											if (on) cur.delete(s.key);
+											else cur.add(s.key);
 											onChange({
 												...value,
-												type: t,
-												config: defaultConfigFor(t),
-											})
-										}
-										className="h-10 rounded-xl flex items-center justify-center transition-all"
-										style={{
-											background: active
-												? `${m.color}1f`
-												: "var(--surface-sunken)",
-											border: `1px solid ${active ? m.color : "transparent"}`,
+												severities: Array.from(cur) as NonNullable<
+													typeof value.severities
+												>,
+											});
 										}}
-										title={m.label}
 									>
-										<I
-											className="w-4 h-4"
-											style={{ color: active ? m.color : "var(--text-muted)" }}
-										/>
+										{s.label}
 									</button>
 								);
-							},
-						)}
+							})}
+						</div>
+					</div>
+
+					<div>
+						<FieldLabel htmlFor="ch-cool">Cooldown (sn)</FieldLabel>
+						<Input
+							id="ch-cool"
+							type="number"
+							min={0}
+							max={86400}
+							value={value.cooldown_sec ?? 300}
+							onChange={(e) =>
+								onChange({
+									...value,
+									cooldown_sec: Number(e.target.value) || 0,
+								})
+							}
+							className="mt-1.5 h-9 text-[13px] font-mono tnum"
+						/>
 					</div>
 				</div>
-			</div>
-
-			<ConfigEditor
-				type={value.type}
-				config={value.config}
-				onChange={(config) => onChange({ ...value, config })}
-			/>
-
-			<p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-				{meta.help}
-			</p>
-
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Şiddet Filtresi
-					</Label>
-					<div className="flex gap-1.5 mt-2">
-						{SEV_LIST.map((s) => {
-							const on = (value.severities ?? []).includes(s.key);
-							return (
-								<button
-									key={s.key}
-									type="button"
-									className="h-8 px-3 rounded-full text-[12px] font-medium transition-all"
-									style={{
-										background: on
-											? "var(--color-teal-subtle)"
-											: "var(--surface-sunken)",
-										color: on
-											? "var(--color-teal)"
-											: "var(--text-muted)",
-										border: `1px solid ${on ? "var(--color-teal-border)" : "transparent"}`,
-									}}
-									onClick={() => {
-										const cur = new Set(value.severities ?? []);
-										if (on) cur.delete(s.key);
-										else cur.add(s.key);
-										onChange({ ...value, severities: Array.from(cur) as NonNullable<typeof value.severities> });
-									}}
-								>
-									{s.label}
-								</button>
-							);
-						})}
-					</div>
-				</div>
-
-				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						Cooldown (sn)
-					</Label>
-					<Input
-						type="number"
-						min={0}
-						max={86400}
-						value={value.cooldown_sec ?? 300}
-						onChange={(e) =>
-							onChange({
-								...value,
-								cooldown_sec: Number(e.target.value) || 0,
-							})
-						}
-						className="mt-1.5 h-9 text-sm font-mono tabular-nums"
-					/>
-				</div>
-			</div>
-
 			</PanelBody>
 			<PanelFooter>
-				<Button
-					variant="outline"
-					size="sm"
-					className="h-9 px-4 text-[13px] rounded-full"
-					onClick={onCancel}
-				>
+				<Button variant="outline" size="sm" onClick={onCancel}>
 					Vazgeç
 				</Button>
 				<Button
 					size="sm"
-					className="h-9 px-4 text-[13px] text-white rounded-full"
-					style={{ background: "var(--gradient-btn-primary)" }}
 					disabled={submitting || !value.name.trim()}
 					onClick={onSubmit}
 				>
@@ -630,15 +591,14 @@ function ConfigEditor({
 	if (type === "email") {
 		return (
 			<div>
-				<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-					E-posta Adresi
-				</Label>
+				<FieldLabel htmlFor="cfg-to">E-posta adresi</FieldLabel>
 				<Input
+					id="cfg-to"
 					type="email"
 					placeholder="alerts@example.com"
 					value={(config.to as string) ?? ""}
 					onChange={(e) => onChange({ ...config, to: e.target.value })}
-					className="mt-1.5 h-9 text-sm"
+					className="mt-1.5 h-9 text-[13px]"
 				/>
 			</div>
 		);
@@ -646,16 +606,13 @@ function ConfigEditor({
 	if (type === "pagerduty") {
 		return (
 			<div>
-				<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-					Routing Key
-				</Label>
+				<FieldLabel htmlFor="cfg-rk">Routing key</FieldLabel>
 				<Input
+					id="cfg-rk"
 					placeholder="R0AB1234567890ABCDEF12"
 					value={(config.routing_key as string) ?? ""}
-					onChange={(e) =>
-						onChange({ ...config, routing_key: e.target.value })
-					}
-					className="mt-1.5 h-9 text-sm font-mono"
+					onChange={(e) => onChange({ ...config, routing_key: e.target.value })}
+					className="mt-1.5 h-9 text-[13px] font-mono"
 				/>
 			</div>
 		);
@@ -663,32 +620,46 @@ function ConfigEditor({
 	return (
 		<div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
 			<div>
-				<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-					URL
-				</Label>
+				<FieldLabel htmlFor="cfg-url">URL</FieldLabel>
 				<Input
+					id="cfg-url"
 					placeholder="https://hooks.slack.com/services/..."
 					value={(config.url as string) ?? ""}
 					onChange={(e) => onChange({ ...config, url: e.target.value })}
-					className="mt-1.5 h-9 text-sm font-mono"
+					className="mt-1.5 h-9 text-[13px] font-mono"
 				/>
 			</div>
 			{type === "webhook" && (
 				<div>
-					<Label className="text-[12px] font-medium" style={{ color: "var(--text-faint)" }}>
-						HMAC Secret (opsiyonel)
-					</Label>
+					<FieldLabel htmlFor="cfg-secret">HMAC secret (ops)</FieldLabel>
 					<Input
+						id="cfg-secret"
 						placeholder="rastgele-uzun-string"
 						value={(config.secret as string) ?? ""}
-						onChange={(e) =>
-							onChange({ ...config, secret: e.target.value })
-						}
-						className="mt-1.5 h-9 text-sm font-mono"
+						onChange={(e) => onChange({ ...config, secret: e.target.value })}
+						className="mt-1.5 h-9 text-[13px] font-mono"
 					/>
 				</div>
 			)}
 		</div>
+	);
+}
+
+function FieldLabel({
+	children,
+	htmlFor,
+}: {
+	children: React.ReactNode;
+	htmlFor?: string;
+}) {
+	return (
+		<Label
+			htmlFor={htmlFor}
+			className="text-[11px] font-medium uppercase tracking-wider"
+			style={{ color: "var(--text-faint)" }}
+		>
+			{children}
+		</Label>
 	);
 }
 
@@ -702,5 +673,3 @@ function defaultConfigFor(t: NotificationChannelType): Record<string, unknown> {
 			return { url: "" };
 	}
 }
-
-

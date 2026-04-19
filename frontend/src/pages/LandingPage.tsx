@@ -1,99 +1,81 @@
 import {
 	Activity,
+	AlertTriangle,
 	ArrowRight,
+	BarChart3,
 	Bell,
 	Box,
 	Brain,
 	CheckCircle2,
-	ChevronRight,
 	Cloud,
 	Cpu,
+	FileText,
+	Flame,
 	GitBranch,
+	Globe,
+	Hash,
+	Key,
+	Languages,
+	Lock,
+	MessageSquare,
+	Network,
+	Plug,
 	Shield,
-	Sparkles,
+	Target,
 	Terminal,
+	TrendingUp,
+	Webhook,
+	Workflow,
 	Zap,
 } from "lucide-react";
-import { motion, useScroll, useTransform } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import logo from "@/assets/logo.webp";
+import { Logo } from "@/components/Logo";
 import { useServices } from "@/hooks/useServices";
 import { useAuthStore } from "@/store/authStore";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Self-contained dark palette. The landing page does not opt into the app's
-// theme system — it stays atmospheric regardless of the user's preference so
-// the brand impression is consistent.
-const INK = "#05060a";
-const INK_DEEP = "#020308";
-const INK_ELEV = "#0a0d14";
-const TEAL = "#2dd4bf";
-const VIOLET = "#a78bfa";
-const AMBER = "#fbbf24";
-const ROSE = "#fb7185";
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Self-contained dark palette. The landing page deliberately does NOT opt
+ * into the app theme — the brand impression stays consistent regardless of
+ * the user's OS theme or a remembered preference. The numbers below mirror
+ * the dark-mode tokens in theme.css (so the marketing surface and the app
+ * speak the same visual language) without coupling at runtime.
+ *
+ * Quiet Swiss rules applied here:
+ *   • One accent color (CYAN). No purple, amber, rose decorations.
+ *   • Status colors (RED / LIME) used ONLY when something is actually red
+ *     or green semantically (a critical alert, a healthy probe). Never as
+ *     decoration.
+ *   • Sharp corners (6px on cards, 4px on chips, full-pill only for
+ *     the few interactive controls in nav/CTA).
+ *   • Hairline borders, generous negative space, tabular figures, mono
+ *     for technical accents. No gradient text, no glow shadows, no
+ *     blurred aurora blobs.
+ * ───────────────────────────────────────────────────────────────────────── */
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Aurora — atmospheric blurred gradient blobs that drift slowly. Pure CSS,
-// no canvas. Sets the mood for the whole page without a video file.
+const INK = "#0a0a0a";
+const INK_DEEP = "#070707";
+const INK_RAISED = "#141414";
+const INK_HAIR = "rgba(255, 255, 255, 0.06)";
+const INK_LINE = "rgba(255, 255, 255, 0.10)";
 
-function Aurora() {
-	return (
-		<div
-			aria-hidden
-			className="pointer-events-none absolute inset-0 overflow-hidden"
-		>
-			<motion.div
-				className="absolute -top-1/4 -left-1/4 w-[60vw] h-[60vw] rounded-full blur-[120px]"
-				style={{
-					background: `radial-gradient(circle, ${TEAL}33 0%, transparent 70%)`,
-				}}
-				animate={{
-					x: [0, 60, -40, 0],
-					y: [0, -30, 50, 0],
-				}}
-				transition={{
-					duration: 22,
-					repeat: Number.POSITIVE_INFINITY,
-					ease: "easeInOut",
-				}}
-			/>
-			<motion.div
-				className="absolute -top-1/3 right-0 w-[55vw] h-[55vw] rounded-full blur-[120px]"
-				style={{
-					background: `radial-gradient(circle, ${VIOLET}33 0%, transparent 70%)`,
-				}}
-				animate={{
-					x: [0, -50, 30, 0],
-					y: [0, 40, -20, 0],
-				}}
-				transition={{
-					duration: 26,
-					repeat: Number.POSITIVE_INFINITY,
-					ease: "easeInOut",
-				}}
-			/>
-			<motion.div
-				className="absolute top-1/3 left-1/2 w-[40vw] h-[40vw] rounded-full blur-[120px]"
-				style={{
-					background: `radial-gradient(circle, ${AMBER}1f 0%, transparent 70%)`,
-				}}
-				animate={{
-					x: [0, 40, -60, 0],
-					y: [0, -40, 30, 0],
-				}}
-				transition={{
-					duration: 30,
-					repeat: Number.POSITIVE_INFINITY,
-					ease: "easeInOut",
-				}}
-			/>
-		</div>
-	);
-}
+const TXT = "#fafaf9";
+const TXT_MUTED = "rgba(250, 250, 249, 0.70)";
+const TXT_DIM = "rgba(250, 250, 249, 0.46)";
+const TXT_FAINT = "rgba(250, 250, 249, 0.30)";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Animated grid that breathes — adds tactile texture under the aurora.
+const BRAND = "#22d3ee";
+const BRAND_SUBTLE = "rgba(34, 211, 238, 0.10)";
+const BRAND_LINE = "rgba(34, 211, 238, 0.30)";
+const STATUS_UP = "#a3e635";
+const STATUS_DOWN = "#f87171";
+const STATUS_WARN = "#fbbf24";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Background — a static, hairline grid that sets a "drafting board" mood.
+ * No drifting blobs, no animation. The grid is the texture; the silence
+ * around it is the emphasis. */
 
 function GridBackdrop() {
 	return (
@@ -102,96 +84,99 @@ function GridBackdrop() {
 			className="pointer-events-none absolute inset-0"
 			style={{
 				backgroundImage:
-					"linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
-				backgroundSize: "56px 56px",
+					"linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
+				backgroundSize: "64px 64px",
 				maskImage:
-					"radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.9), transparent 75%)",
+					"radial-gradient(ellipse at 50% 0%, rgba(0,0,0,1), transparent 70%)",
 				WebkitMaskImage:
-					"radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.9), transparent 75%)",
+					"radial-gradient(ellipse at 50% 0%, rgba(0,0,0,1), transparent 70%)",
 			}}
 		/>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Nav
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Nav */
 
 function Nav({ authed }: { authed: boolean }) {
 	const [scrolled, setScrolled] = useState(false);
 
 	useEffect(() => {
-		const onScroll = () => setScrolled(window.scrollY > 16);
+		const onScroll = () => setScrolled(window.scrollY > 8);
 		onScroll();
 		window.addEventListener("scroll", onScroll, { passive: true });
 		return () => window.removeEventListener("scroll", onScroll);
 	}, []);
 
-	const scrollTo = (id: string) =>
-		document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-
 	const links: { label: string; id: string }[] = [
 		{ label: "Özellikler", id: "features" },
-		{ label: "Nasıl çalışır", id: "how" },
+		{ label: "Güvenilirlik", id: "reliability" },
 		{ label: "AI", id: "ai" },
+		{ label: "Olay & Durum", id: "incidents" },
 		{ label: "Geliştiriciler", id: "devs" },
 	];
 
+	const scrollTo = (id: string) =>
+		document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
 	return (
-		<div
-			className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
-				scrolled ? "py-2" : "py-4"
-			}`}
+		<header
+			className="fixed top-0 inset-x-0 z-50 transition-colors duration-200"
+			style={{
+				background: scrolled ? "rgba(10, 10, 10, 0.82)" : "transparent",
+				backdropFilter: scrolled ? "blur(12px) saturate(140%)" : undefined,
+				WebkitBackdropFilter: scrolled
+					? "blur(12px) saturate(140%)"
+					: undefined,
+				borderBottom: scrolled
+					? `1px solid ${INK_HAIR}`
+					: "1px solid transparent",
+			}}
 		>
-			<nav
-				className={`mx-auto flex items-center justify-between max-w-6xl px-3 sm:px-4 transition-all duration-500 ${
-					scrolled ? "h-12" : "h-14"
-				}`}
-				style={{
-					background: scrolled
-						? "rgba(5, 6, 10, 0.65)"
-						: "rgba(5, 6, 10, 0.0)",
-					backdropFilter: scrolled ? "blur(18px) saturate(160%)" : undefined,
-					WebkitBackdropFilter: scrolled
-						? "blur(18px) saturate(160%)"
-						: undefined,
-					border: scrolled
-						? "1px solid rgba(255,255,255,0.06)"
-						: "1px solid transparent",
-					borderRadius: 999,
-					boxShadow: scrolled
-						? "0 8px 32px -12px rgba(0,0,0,0.6)"
-						: undefined,
-				}}
-			>
+			<div className="max-w-[1200px] mx-auto h-14 flex items-center justify-between px-6">
 				<Link
 					to="/"
-					className="flex items-center gap-2.5 pl-3"
+					className="flex items-center gap-2.5"
+					style={{ color: TXT }}
 				>
-					<img src={logo} alt="" aria-hidden="true" className="w-6 h-6" />
-					<span className="font-semibold text-[15px] text-white tracking-tight">
+					<Logo className="w-5 h-5" />
+					<span
+						className="text-[13px] font-semibold tracking-tight"
+						style={{ color: TXT }}
+					>
 						NanoNet
 					</span>
 				</Link>
 
-				<div className="hidden md:flex items-center gap-1">
+				<nav className="hidden md:flex items-center gap-1">
 					{links.map((l) => (
 						<button
 							key={l.id}
 							type="button"
 							onClick={() => scrollTo(l.id)}
-							className="px-3 py-1.5 text-[13px] text-white/70 hover:text-white transition-colors rounded-full"
+							className="h-8 px-3 text-[12px] font-medium rounded-[4px] transition-colors"
+							style={{ color: TXT_MUTED }}
+							onMouseEnter={(e) => {
+								e.currentTarget.style.color = TXT;
+							}}
+							onMouseLeave={(e) => {
+								e.currentTarget.style.color = TXT_MUTED;
+							}}
 						>
 							{l.label}
 						</button>
 					))}
-				</div>
+				</nav>
 
-				<div className="flex items-center gap-2 pr-1">
+				<div className="flex items-center gap-2">
 					{authed ? (
 						<Link
 							to="/app"
-							className="group flex items-center gap-1.5 h-9 pl-4 pr-3 rounded-full text-[13px] font-semibold transition-all hover:scale-[1.03]"
-							style={{ background: "#ffffff", color: "#0f172a" }}
+							className="group inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[4px] text-[12px] font-medium transition-colors"
+							style={{
+								background: BRAND,
+								color: INK,
+							}}
 						>
 							Uygulamaya git
 							<ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -200,14 +185,18 @@ function Nav({ authed }: { authed: boolean }) {
 						<>
 							<Link
 								to="/login"
-								className="hidden sm:flex h-9 px-4 items-center text-[13px] font-medium text-white/80 hover:text-white transition-colors rounded-full"
+								className="hidden sm:inline-flex h-8 px-3 items-center text-[12px] font-medium rounded-[4px] transition-colors"
+								style={{ color: TXT_MUTED }}
 							>
 								Giriş
 							</Link>
 							<Link
 								to="/register"
-								className="group flex items-center gap-1.5 h-9 pl-4 pr-3 rounded-full text-[13px] font-semibold transition-all hover:scale-[1.03]"
-								style={{ background: "#ffffff", color: "#0f172a" }}
+								className="group inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[4px] text-[12px] font-semibold transition-colors"
+								style={{
+									background: BRAND,
+									color: INK,
+								}}
 							>
 								Başla
 								<ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -215,95 +204,157 @@ function Nav({ authed }: { authed: boolean }) {
 						</>
 					)}
 				</div>
-			</nav>
+			</div>
+		</header>
+	);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Eyebrow + section heading — left-aligned, generous, no decorative pills.
+ * The eyebrow is just text + a leading hairline; the title is large and
+ * monochrome. Highlight (optional) is just the title in TXT_DIM, not a
+ * gradient. */
+
+function SectionEyebrow({ children }: { children: string }) {
+	return (
+		<div className="flex items-center gap-3 mb-6">
+			<span
+				aria-hidden
+				className="block h-px w-8"
+				style={{ background: BRAND }}
+			/>
+			<span
+				className="text-[11px] font-mono uppercase tracking-[0.18em]"
+				style={{ color: BRAND }}
+			>
+				{children}
+			</span>
 		</div>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hero
+function SectionHeading({
+	eyebrow,
+	title,
+	highlight,
+	description,
+	align = "left",
+}: {
+	eyebrow: string;
+	title: string;
+	highlight?: string;
+	description?: string;
+	align?: "left" | "center";
+}) {
+	return (
+		<div
+			className={`max-w-2xl mb-16 ${align === "center" ? "mx-auto text-center" : ""}`}
+		>
+			{align === "left" ? (
+				<SectionEyebrow>{eyebrow}</SectionEyebrow>
+			) : (
+				<div className="flex justify-center mb-6">
+					<span
+						className="text-[11px] font-mono uppercase tracking-[0.18em]"
+						style={{ color: BRAND }}
+					>
+						{eyebrow}
+					</span>
+				</div>
+			)}
+			<h2
+				className="text-[34px] sm:text-[44px] font-semibold tracking-[-0.02em] leading-[1.05]"
+				style={{ color: TXT }}
+			>
+				{title}
+				{highlight && (
+					<>
+						{" "}
+						<span style={{ color: TXT_DIM }}>{highlight}</span>
+					</>
+				)}
+			</h2>
+			{description && (
+				<p
+					className="mt-5 text-[15px] leading-relaxed"
+					style={{ color: TXT_MUTED }}
+				>
+					{description}
+				</p>
+			)}
+		</div>
+	);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Hero — typography-first. Big left-aligned headline, single-color "live"
+ * status line in mono, two CTAs with a strict hierarchy (one filled brand
+ * pill, one ghost), then the product surface. No gradient text. */
 
 function Hero({ authed, liveCount }: { authed: boolean; liveCount: number }) {
-	const ref = useRef<HTMLElement | null>(null);
-	const { scrollYProgress } = useScroll({
-		target: ref,
-		offset: ["start start", "end start"],
-	});
-	const previewY = useTransform(scrollYProgress, [0, 1], [0, 60]);
-	const previewScale = useTransform(scrollYProgress, [0, 1], [1, 0.96]);
+	const reduce = useReducedMotion();
 
 	return (
 		<section
-			ref={ref}
-			className="relative pt-36 sm:pt-44 pb-24 overflow-hidden"
+			className="relative pt-32 sm:pt-36 pb-24 overflow-hidden"
 			style={{ background: INK }}
 		>
-			<Aurora />
 			<GridBackdrop />
 
-			<div className="relative max-w-6xl mx-auto px-6 text-center">
+			<div className="relative max-w-[1200px] mx-auto px-6">
 				<motion.div
-					initial={{ opacity: 0, y: -8 }}
+					initial={reduce ? false : { opacity: 0, y: -4 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5 }}
-					className="inline-flex items-center gap-2.5 h-8 pl-2 pr-3.5 rounded-full mb-10"
-					style={{
-						background:
-							"linear-gradient(135deg, rgba(45,212,191,0.12), rgba(167,139,250,0.12))",
-						border: "1px solid rgba(255,255,255,0.08)",
-						backdropFilter: "blur(8px)",
-					}}
+					transition={{ duration: 0.4 }}
+					className="inline-flex items-center gap-2 mb-8"
 				>
 					<span
-						className="relative flex w-5 h-5 items-center justify-center"
 						aria-hidden
+						className="relative flex w-2 h-2 items-center justify-center"
 					>
 						<span
 							className="absolute inset-0 rounded-full"
 							style={{
-								background: TEAL,
-								opacity: 0.25,
-								animation: "nn-orb-breathe 2.4s ease-in-out infinite",
+								background: STATUS_UP,
+								opacity: 0.35,
+								animation: reduce
+									? undefined
+									: "nn-pulse 2.4s ease-in-out infinite",
 							}}
 						/>
 						<span
 							className="relative w-1.5 h-1.5 rounded-full"
-							style={{ background: TEAL }}
+							style={{ background: STATUS_UP }}
 						/>
 					</span>
-					<span className="text-[12px] font-medium text-white/85">
+					<span
+						className="text-[11px] font-mono uppercase tracking-[0.16em]"
+						style={{ color: TXT_DIM }}
+					>
 						{authed && liveCount > 0
-							? `${liveCount} servis canlı izleniyor`
-							: "Self-hosted · AI destekli kök-neden analizi"}
+							? `${liveCount} servis · canlı`
+							: "Self-hosted · açık kaynak"}
 					</span>
 				</motion.div>
 
 				<motion.h1
-					initial={{ opacity: 0, y: 20 }}
+					initial={reduce ? false : { opacity: 0, y: 12 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-					className="text-[44px] sm:text-6xl lg:text-[88px] font-semibold tracking-[-0.04em] text-white leading-[1.02] mb-7"
+					transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+					className="max-w-4xl text-[44px] sm:text-[64px] lg:text-[80px] font-semibold tracking-[-0.035em] leading-[0.98]"
+					style={{ color: TXT }}
 				>
 					Altyapınızın
 					<br />
-					<span
-						className="inline-block"
-						style={{
-							background: `linear-gradient(120deg, #ffffff 0%, ${TEAL} 45%, ${VIOLET} 100%)`,
-							WebkitBackgroundClip: "text",
-							WebkitTextFillColor: "transparent",
-							backgroundClip: "text",
-						}}
-					>
-						sinir sistemi.
-					</span>
+					<span style={{ color: TXT_DIM }}>sinir sistemi.</span>
 				</motion.h1>
 
 				<motion.p
-					initial={{ opacity: 0, y: 12 }}
+					initial={reduce ? false : { opacity: 0, y: 8 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.15 }}
-					className="text-[16px] sm:text-[18px] text-white/55 max-w-2xl mx-auto leading-relaxed mb-12"
+					transition={{ duration: 0.5, delay: 0.1 }}
+					className="mt-7 max-w-xl text-[16px] sm:text-[17px] leading-relaxed"
+					style={{ color: TXT_MUTED }}
 				>
 					Mikroservislerinizden gelen her sinyali gerçek zamanlı yakalar,
 					anomalileri AI ile yorumlar, çözümü size yazılı olarak sunar.
@@ -311,19 +362,17 @@ function Hero({ authed, liveCount }: { authed: boolean; liveCount: number }) {
 				</motion.p>
 
 				<motion.div
-					initial={{ opacity: 0, y: 12 }}
+					initial={reduce ? false : { opacity: 0, y: 8 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.25 }}
-					className="flex items-center justify-center gap-3 flex-wrap mb-20"
+					transition={{ duration: 0.5, delay: 0.2 }}
+					className="mt-10 flex items-center gap-3 flex-wrap"
 				>
 					<Link
 						to={authed ? "/app" : "/register"}
-						className="group relative inline-flex items-center gap-2 h-12 px-7 rounded-full text-[14px] font-semibold transition-all hover:scale-[1.03]"
+						className="group inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-semibold transition-colors"
 						style={{
-							background: "#ffffff",
-							color: "#0f172a",
-							boxShadow:
-								"0 12px 40px -8px rgba(45,212,191,0.4), 0 0 0 1px rgba(255,255,255,0.1)",
+							background: BRAND,
+							color: INK,
 						}}
 					>
 						{authed ? "Uygulamaya git" : "Ücretsiz başla"}
@@ -336,31 +385,36 @@ function Hero({ authed, liveCount }: { authed: boolean; liveCount: number }) {
 								.getElementById("how")
 								?.scrollIntoView({ behavior: "smooth" })
 						}
-						className="inline-flex items-center gap-2 h-12 px-6 rounded-full text-[14px] font-medium text-white/85 hover:text-white transition-colors"
+						className="inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-medium transition-colors"
 						style={{
-							background: "rgba(255,255,255,0.04)",
-							border: "1px solid rgba(255,255,255,0.08)",
+							color: TXT,
+							border: `1px solid ${INK_LINE}`,
 						}}
 					>
 						Nasıl çalışır
-						<ChevronRight className="w-4 h-4" />
 					</button>
 				</motion.div>
 
-				<motion.div
-					initial={{ opacity: 0, y: 40 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.9, delay: 0.35 }}
-					style={{ y: previewY, scale: previewScale }}
-					className="relative"
+				<div
+					aria-hidden
+					className="mt-6 flex items-center gap-4 text-[11px] font-mono"
+					style={{ color: TXT_FAINT }}
 				>
-					<div
-						aria-hidden
-						className="absolute inset-x-12 -top-10 h-32 blur-3xl opacity-50"
-						style={{
-							background: `radial-gradient(ellipse at center, ${TEAL}40, ${VIOLET}30, transparent 70%)`,
-						}}
-					/>
+					<span className="inline-flex items-center gap-1.5">
+						<CheckCircle2 className="w-3 h-3" /> Kart gerekmiyor
+					</span>
+					<span>·</span>
+					<span>30 sn'de kurulum</span>
+					<span>·</span>
+					<span>MIT lisanslı</span>
+				</div>
+
+				<motion.div
+					initial={reduce ? false : { opacity: 0, y: 24 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.7, delay: 0.3 }}
+					className="mt-20"
+				>
 					<ProductMock />
 				</motion.div>
 			</div>
@@ -368,44 +422,53 @@ function Hero({ authed, liveCount }: { authed: boolean; liveCount: number }) {
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Product mock — full-bleed dashboard preview
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Product mock — a calm, accurate sketch of the dashboard. Sharp corners
+ * (6px), hairline borders, no glows. Status colors used semantically. */
 
 function ProductMock() {
 	return (
 		<div
-			className="relative mx-auto max-w-5xl rounded-2xl overflow-hidden"
+			className="relative mx-auto max-w-[1080px] rounded-[8px] overflow-hidden"
 			style={{
-				background: INK_ELEV,
-				border: "1px solid rgba(255,255,255,0.08)",
-				boxShadow:
-					"0 40px 80px -16px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.04)",
+				background: INK_RAISED,
+				border: `1px solid ${INK_LINE}`,
 			}}
 		>
-			<div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-white/[0.015]">
-				<div className="flex items-center gap-1.5">
-					<span className="w-2.5 h-2.5 rounded-full bg-rose-500/30" />
-					<span className="w-2.5 h-2.5 rounded-full bg-amber-500/30" />
-					<span className="w-2.5 h-2.5 rounded-full bg-emerald-500/30" />
-				</div>
-				<div className="mx-2 flex-1 h-7 rounded-full bg-white/[0.03] border border-white/5 flex items-center px-3 gap-2">
+			<div
+				className="flex items-center gap-3 px-4 h-10"
+				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
+			>
+				<div
+					className="flex-1 h-6 rounded-[4px] flex items-center px-2.5 gap-2"
+					style={{
+						background: "rgba(255,255,255,0.025)",
+						border: `1px solid ${INK_HAIR}`,
+					}}
+				>
 					<span
 						className="w-1.5 h-1.5 rounded-full"
-						style={{ background: TEAL }}
+						style={{ background: STATUS_UP }}
 					/>
-					<span className="text-[11px] font-mono text-white/40 tracking-wide">
+					<span
+						className="text-[10.5px] font-mono tracking-wide"
+						style={{ color: TXT_DIM }}
+					>
 						app.nanonet.dev / dashboard
 					</span>
 				</div>
-				<span className="text-[10px] font-mono text-white/30 hidden sm:inline">
-					Canlı önizleme
+				<span
+					className="hidden sm:inline text-[10px] font-mono uppercase tracking-[0.16em]"
+					style={{ color: TXT_FAINT }}
+				>
+					Önizleme
 				</span>
 			</div>
 
-			<div className="grid grid-cols-12 min-h-[420px]">
-				<div
-					className="col-span-2 hidden md:flex flex-col gap-1 p-3 border-r border-white/5"
-					style={{ background: "rgba(255,255,255,0.015)" }}
+			<div className="grid grid-cols-12 min-h-[440px]">
+				<aside
+					className="col-span-2 hidden md:flex flex-col gap-0.5 py-3 px-2"
+					style={{ borderRight: `1px solid ${INK_HAIR}` }}
 				>
 					{[
 						{ label: "Genel", active: true },
@@ -417,52 +480,75 @@ function ProductMock() {
 					].map((nav) => (
 						<div
 							key={nav.label}
-							className="h-7 px-2.5 rounded-md flex items-center text-[11px] font-medium"
+							className="h-8 px-3 rounded-[4px] flex items-center text-[11.5px] font-medium relative"
 							style={{
+								color: nav.active ? TXT : TXT_DIM,
 								background: nav.active
-									? "rgba(45,212,191,0.1)"
+									? "rgba(255,255,255,0.04)"
 									: "transparent",
-								color: nav.active ? TEAL : "rgba(255,255,255,0.5)",
 							}}
 						>
+							{nav.active && (
+								<span
+									aria-hidden
+									className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full"
+									style={{ background: BRAND }}
+								/>
+							)}
 							{nav.label}
 						</div>
 					))}
-				</div>
+				</aside>
 
 				<div className="col-span-12 md:col-span-10 p-5 space-y-4">
 					<div className="grid grid-cols-3 gap-3">
-						<MockTile label="Servisler" value="28" sub="↑ 2 bu hafta" accent={TEAL} />
-						<MockTile label="Latency p95" value="42" unit="ms" sub="-12% · 24h" accent={VIOLET} />
-						<MockTile label="Aktif uyarı" value="2" sub="1 kritik · 1 uyarı" accent={ROSE} />
+						<MockTile label="Servisler" value="28" sub="↑ 2 bu hafta" />
+						<MockTile
+							label="Latency p95"
+							value="42"
+							unit="ms"
+							sub="−12 % · 24 sa"
+						/>
+						<MockTile
+							label="Aktif uyarı"
+							value="2"
+							sub="1 kritik · 1 uyarı"
+							tone="warn"
+						/>
 					</div>
 
 					<div
-						className="rounded-xl p-4"
+						className="rounded-[6px] p-4"
 						style={{
-							background: "rgba(255,255,255,0.025)",
-							border: "1px solid rgba(255,255,255,0.05)",
+							background: "rgba(255,255,255,0.02)",
+							border: `1px solid ${INK_HAIR}`,
 						}}
 					>
 						<div className="flex items-center justify-between mb-3">
-							<div>
-								<span className="text-[12px] font-semibold text-white/85">
+							<div className="flex items-baseline gap-2">
+								<span
+									className="text-[12px] font-semibold"
+									style={{ color: TXT }}
+								>
 									Latency p95
 								</span>
-								<span className="ml-2 text-[10px] font-mono text-white/30">
+								<span
+									className="text-[10px] font-mono uppercase tracking-[0.16em]"
+									style={{ color: TXT_FAINT }}
+								>
 									24 saat
 								</span>
 							</div>
 							<div
-								className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium"
+								className="inline-flex items-center gap-1.5 h-5 px-2 rounded-[4px] text-[10px] font-mono uppercase tracking-[0.14em]"
 								style={{
-									background: "rgba(45,212,191,0.1)",
-									color: TEAL,
+									color: BRAND,
+									background: BRAND_SUBTLE,
 								}}
 							>
 								<span
-									className="w-1.5 h-1.5 rounded-full"
-									style={{ background: TEAL }}
+									className="w-1 h-1 rounded-full"
+									style={{ background: BRAND }}
 								/>
 								canlı
 							</div>
@@ -478,38 +564,30 @@ function ProductMock() {
 						].map((svc) => (
 							<div
 								key={svc.name}
-								className="rounded-xl px-3 py-2.5 flex items-center gap-2"
+								className="relative rounded-[6px] px-3 py-2.5 flex items-center gap-2"
 								style={{
-									background: "rgba(255,255,255,0.025)",
-									border: "1px solid rgba(255,255,255,0.05)",
+									background: "rgba(255,255,255,0.02)",
+									border: `1px solid ${INK_HAIR}`,
 								}}
 							>
 								<span
-									className="relative flex items-center justify-center w-3 h-3"
 									aria-hidden
+									className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full"
+									style={{
+										background: svc.status === "up" ? STATUS_UP : STATUS_WARN,
+									}}
+								/>
+								<span
+									className="text-[11.5px] font-mono flex-1 truncate pl-1.5"
+									style={{ color: TXT }}
 								>
-									<span
-										className="absolute inset-0 rounded-full"
-										style={{
-											background:
-												svc.status === "up" ? "#34d399" : "#fbbf24",
-											opacity: 0.25,
-											animation: "nn-orb-breathe 2.4s ease-in-out infinite",
-										}}
-									/>
-									<span
-										className="relative w-1.5 h-1.5 rounded-full"
-										style={{
-											background:
-												svc.status === "up" ? "#34d399" : "#fbbf24",
-										}}
-									/>
-								</span>
-								<span className="text-[11px] font-mono text-white/80 flex-1 truncate">
 									{svc.name}
 								</span>
-								<span className="text-[10px] font-mono text-white/40 tabular-nums">
-									{svc.latency}ms
+								<span
+									className="text-[10.5px] font-mono tnum tabular-nums"
+									style={{ color: TXT_DIM }}
+								>
+									{svc.latency} ms
 								</span>
 							</div>
 						))}
@@ -525,41 +603,44 @@ function MockTile({
 	value,
 	unit,
 	sub,
-	accent,
+	tone,
 }: {
 	label: string;
 	value: string;
 	unit?: string;
 	sub: string;
-	accent: string;
+	tone?: "warn";
 }) {
 	return (
 		<div
-			className="rounded-xl p-4 relative overflow-hidden"
+			className="rounded-[6px] px-4 py-3.5"
 			style={{
-				background: "rgba(255,255,255,0.025)",
-				border: "1px solid rgba(255,255,255,0.05)",
+				background: "rgba(255,255,255,0.02)",
+				border: `1px solid ${INK_HAIR}`,
 			}}
 		>
-			<div
-				aria-hidden
-				className="absolute -top-12 -right-8 w-24 h-24 rounded-full blur-2xl"
-				style={{ background: `${accent}30` }}
-			/>
-			<p className="text-[11px] font-medium text-white/45 mb-2 relative">
+			<p
+				className="text-[10px] font-mono uppercase tracking-[0.16em] mb-2"
+				style={{ color: TXT_FAINT }}
+			>
 				{label}
 			</p>
-			<div className="flex items-baseline gap-1 relative">
-				<p className="text-[28px] font-semibold tabular-nums text-white leading-none tracking-tight">
+			<div className="flex items-baseline gap-1">
+				<p
+					className="text-[26px] font-semibold tabular-nums leading-none tracking-[-0.015em]"
+					style={{ color: TXT }}
+				>
 					{value}
 				</p>
 				{unit && (
-					<span className="text-[12px] text-white/40 font-medium">{unit}</span>
+					<span className="text-[12px] font-medium" style={{ color: TXT_DIM }}>
+						{unit}
+					</span>
 				)}
 			</div>
 			<p
-				className="text-[10px] font-mono mt-2 relative"
-				style={{ color: accent }}
+				className="mt-2.5 text-[10.5px] font-mono tabular-nums"
+				style={{ color: tone === "warn" ? STATUS_WARN : TXT_DIM }}
 			>
 				{sub}
 			</p>
@@ -572,6 +653,14 @@ function MockSparkGraph() {
 	const max = Math.max(...values);
 	const min = Math.min(...values);
 	const range = max - min || 1;
+	const pts = values
+		.map(
+			(v, i) =>
+				`${(i / (values.length - 1)) * 240},${
+					60 - ((v - min) / range) * 50 - 5
+				}`,
+		)
+		.join(" ");
 	return (
 		<svg
 			viewBox="0 0 240 60"
@@ -582,236 +671,229 @@ function MockSparkGraph() {
 		>
 			<defs>
 				<linearGradient id="mock-area" x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor={TEAL} stopOpacity="0.35" />
-					<stop offset="100%" stopColor={TEAL} stopOpacity="0" />
+					<stop offset="0%" stopColor={BRAND} stopOpacity="0.18" />
+					<stop offset="100%" stopColor={BRAND} stopOpacity="0" />
 				</linearGradient>
 			</defs>
-			<polygon
-				fill="url(#mock-area)"
-				points={`0,60 ${values
-					.map(
-						(v, i) =>
-							`${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`,
-					)
-					.join(" ")} 240,60`}
-			/>
+			<polygon fill="url(#mock-area)" points={`0,60 ${pts} 240,60`} />
 			<polyline
 				fill="none"
-				stroke={TEAL}
-				strokeWidth="1.5"
+				stroke={BRAND}
+				strokeWidth="1.25"
 				strokeLinecap="round"
 				strokeLinejoin="round"
-				points={values
-					.map(
-						(v, i) =>
-							`${(i / (values.length - 1)) * 240},${60 - ((v - min) / range) * 50 - 5}`,
-					)
-					.join(" ")}
+				points={pts}
 			/>
 		</svg>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stats strip
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Stats strip — pure typography on a hairline-bounded row. */
 
 function StatsStrip() {
 	const stats = [
-		{ icon: Cpu, label: "Agent overhead", value: "<1%", unit: "CPU" },
-		{ icon: Shield, label: "Veri aktarımı", value: "TLS", unit: "+ mTLS" },
-		{ icon: Activity, label: "Poll", value: "5s", unit: "→ 5dk" },
-		{ icon: Zap, label: "Alert SLA", value: "<10s", unit: "" },
+		{ icon: Cpu, label: "Agent overhead", value: "<1", unit: "%" },
+		{ icon: Shield, label: "Aktarım", value: "TLS", unit: "+ mTLS" },
+		{ icon: Activity, label: "Poll", value: "5", unit: "s" },
+		{ icon: Zap, label: "Alert SLA", value: "<10", unit: "s" },
 	];
 	return (
-		<section
-			className="relative py-16 px-6"
-			style={{ background: INK_DEEP }}
-		>
+		<section className="relative" style={{ background: INK_DEEP }}>
 			<div
-				aria-hidden
-				className="absolute top-0 inset-x-0 h-px"
-				style={{
-					background: `linear-gradient(90deg, transparent, ${TEAL}40, ${VIOLET}40, transparent)`,
-				}}
-			/>
-			<div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+				className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-4"
+				style={{ borderTop: `1px solid ${INK_HAIR}` }}
+			>
 				{stats.map((s, i) => (
-					<motion.div
+					<div
 						key={s.label}
-						initial={{ opacity: 0, y: 16 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						viewport={{ once: true, margin: "-50px" }}
-						transition={{ duration: 0.4, delay: i * 0.05 }}
-						className="flex items-center gap-3"
+						className="px-6 py-7 flex items-center gap-3.5"
+						style={{
+							borderRight:
+								i < stats.length - 1 ? `1px solid ${INK_HAIR}` : undefined,
+							borderBottom: i < 2 ? `1px solid ${INK_HAIR}` : undefined,
+						}}
 					>
-						<div
-							className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-							style={{
-								background: "rgba(45,212,191,0.08)",
-								border: "1px solid rgba(45,212,191,0.18)",
-							}}
-						>
-							<s.icon className="w-4 h-4" style={{ color: TEAL }} />
-						</div>
-						<div>
-							<p className="text-[11px] font-medium text-white/45">{s.label}</p>
-							<div className="flex items-baseline gap-1 mt-0.5">
-								<p className="text-[20px] font-semibold text-white tabular-nums tracking-tight">
+						<s.icon className="w-4 h-4" style={{ color: BRAND }} />
+						<div className="min-w-0">
+							<p
+								className="text-[10px] font-mono uppercase tracking-[0.16em]"
+								style={{ color: TXT_FAINT }}
+							>
+								{s.label}
+							</p>
+							<div className="flex items-baseline gap-1 mt-1">
+								<p
+									className="text-[20px] font-semibold tabular-nums tracking-tight leading-none"
+									style={{ color: TXT }}
+								>
 									{s.value}
 								</p>
 								{s.unit && (
-									<span className="text-[11px] text-white/40">{s.unit}</span>
+									<span
+										className="text-[11px] font-medium"
+										style={{ color: TXT_DIM }}
+									>
+										{s.unit}
+									</span>
 								)}
 							</div>
 						</div>
-					</motion.div>
+					</div>
 				))}
 			</div>
+			<div aria-hidden className="border-t" style={{ borderColor: INK_HAIR }} />
 		</section>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Section heading helper
-
-function SectionHeading({
-	eyebrow,
-	title,
-	highlight,
-	accent = TEAL,
-}: {
-	eyebrow: string;
-	title: string;
-	highlight?: string;
-	accent?: string;
-}) {
-	return (
-		<div className="max-w-3xl mb-16">
-			<motion.div
-				initial={{ opacity: 0, y: 12 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true, margin: "-100px" }}
-				transition={{ duration: 0.5 }}
-				className="inline-flex items-center gap-2 h-7 px-3 rounded-full text-[11px] font-medium mb-5"
-				style={{
-					background: `${accent}14`,
-					color: accent,
-					border: `1px solid ${accent}33`,
-				}}
-			>
-				<Sparkles className="w-3 h-3" />
-				{eyebrow}
-			</motion.div>
-			<motion.h2
-				initial={{ opacity: 0, y: 16 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true, margin: "-100px" }}
-				transition={{ duration: 0.5, delay: 0.1 }}
-				className="text-3xl md:text-5xl font-semibold tracking-tight text-white leading-[1.05]"
-			>
-				{title}
-				{highlight && <span className="text-white/35"> {highlight}</span>}
-			</motion.h2>
-		</div>
-	);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Features
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Features — a 3-column grid of cards. All icons monochrome (cyan brand),
+ * all cards identical apart from copy. The eye reads the LIST, not the
+ * decorations. */
 
 const FEATURES: {
 	icon: typeof Activity;
 	title: string;
 	desc: string;
-	color: string;
 }[] = [
 	{
 		icon: Activity,
 		title: "Gerçek zamanlı sağlık",
 		desc: "Her servisin CPU, bellek, latency ve hata oranı saniyeler içinde paneline akar.",
-		color: TEAL,
 	},
 	{
 		icon: Brain,
 		title: "AI kök-neden analizi",
 		desc: "Uyarı tetiklendiğinde olası nedeni, etkilenen bileşenleri ve çözümü tek tıkla al.",
-		color: VIOLET,
 	},
 	{
 		icon: GitBranch,
 		title: "Bağımlılık haritası",
 		desc: "Servisler arası ilişkileri görselleştir, nokta arızanın domino etkisini önceden gör.",
-		color: AMBER,
 	},
 	{
 		icon: Cloud,
 		title: "Kubernetes",
 		desc: "Pod metrikleri, deployment durumu ve event stream aynı panelde — kubectl'e veda.",
-		color: "#60a5fa",
+	},
+	{
+		icon: Target,
+		title: "SLO & hata bütçesi",
+		desc: "Availability, latency ve hata oranı hedefleri tanımla; bütçe yanma hızını canlı izle.",
+	},
+	{
+		icon: Plug,
+		title: "Synthetic probe'lar",
+		desc: "Sunucudan yürütülen HTTP / TCP sağlık denetimleri ve uyumluluk kanıtı.",
+	},
+	{
+		icon: Workflow,
+		title: "Otomasyon runbook'ları",
+		desc: "Alert tetiklendiğinde restart, exec, scale veya webhook — cooldown ve rate limit dahil.",
+	},
+	{
+		icon: AlertTriangle,
+		title: "Olay yönetimi",
+		desc: "Incident timeline, etkilenen bileşenler, postmortem notları ve süreç metrikleri.",
+	},
+	{
+		icon: Globe,
+		title: "Public status page",
+		desc: "Müşterilerinize özel marka ile sunulan, slug bazlı, real-time uptime sayfaları.",
 	},
 	{
 		icon: Bell,
 		title: "Akıllı uyarılar",
-		desc: "Flapping kontrolü, snooze, Slack ve webhook entegrasyonu. Sinyal var, gürültü yok.",
-		color: ROSE,
+		desc: "Flapping kontrolü, snooze, deduplication. Slack, Teams, Discord, e-posta ve webhook.",
 	},
 	{
 		icon: Terminal,
 		title: "Yapılandırılmış loglar",
 		desc: "Tüm servislerden log toplama, severity filtresi, tam metin arama, AI özet.",
-		color: "#34d399",
+	},
+	{
+		icon: Shield,
+		title: "Güvenlik & denetim",
+		desc: "Auth olayları, port taramaları, anormal trafik ve denetim kayıtları tek panelde.",
 	},
 ];
 
 function Features() {
 	return (
-		<section id="features" className="py-32 px-6" style={{ background: INK }}>
-			<div className="max-w-6xl mx-auto">
+		<section id="features" className="py-28 px-6" style={{ background: INK }}>
+			<div className="max-w-[1200px] mx-auto">
 				<SectionHeading
-					eyebrow="Her şey dahil"
+					eyebrow="Yetkinlikler"
 					title="Tek platform,"
-					highlight="altı kritik yetenek."
+					highlight="on iki kritik yetenek."
+					description="İzlemeden hata bütçesine, otomasyondan public status sayfasına kadar bir SRE'nin günlük araç çantasındaki her şey."
 				/>
 
-				<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{FEATURES.map((f, i) => (
-						<motion.div
+				<div
+					className="grid md:grid-cols-2 lg:grid-cols-3"
+					style={{
+						borderTop: `1px solid ${INK_HAIR}`,
+						borderLeft: `1px solid ${INK_HAIR}`,
+					}}
+				>
+					{FEATURES.map((f) => (
+						<article
 							key={f.title}
-							initial={{ opacity: 0, y: 24 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true, margin: "-50px" }}
-							transition={{ duration: 0.45, delay: i * 0.05 }}
-							className="group relative rounded-2xl p-7 transition-all hover:-translate-y-1"
+							className="relative p-7 transition-colors"
 							style={{
-								background: "rgba(255,255,255,0.02)",
-								border: "1px solid rgba(255,255,255,0.06)",
+								borderRight: `1px solid ${INK_HAIR}`,
+								borderBottom: `1px solid ${INK_HAIR}`,
 							}}
 						>
-							<div
-								aria-hidden
-								className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"
-								style={{
-									background: `radial-gradient(400px circle at 50% 0%, ${f.color}10, transparent 70%)`,
-								}}
-							/>
-							<div className="relative">
-								<div
-									className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-all group-hover:scale-110"
-									style={{
-										background: `${f.color}14`,
-										border: `1px solid ${f.color}33`,
-									}}
-								>
-									<f.icon className="w-5 h-5" style={{ color: f.color }} />
-								</div>
-								<h3 className="text-[16px] font-semibold text-white mb-2 tracking-tight">
-									{f.title}
-								</h3>
-								<p className="text-[13px] text-white/55 leading-relaxed">
-									{f.desc}
-								</p>
-							</div>
-						</motion.div>
+							<f.icon className="w-4 h-4 mb-5" style={{ color: BRAND }} />
+							<h3
+								className="text-[15px] font-semibold mb-2 tracking-tight"
+								style={{ color: TXT }}
+							>
+								{f.title}
+							</h3>
+							<p
+								className="text-[13px] leading-relaxed"
+								style={{ color: TXT_MUTED }}
+							>
+								{f.desc}
+							</p>
+						</article>
+					))}
+				</div>
+
+				{/* Capability chip strip — quick scan of "the rest" without
+				    spending another card-grid section on each. Lists the
+				    things we DO ship that aren't worth a full card but should
+				    be visible so the page doesn't feel under-spec'd. */}
+				<div className="mt-8 flex flex-wrap gap-1.5">
+					{[
+						{ icon: BarChart3, label: "Servis karşılaştırma" },
+						{ icon: TrendingUp, label: "Forecast & anomali" },
+						{ icon: Network, label: "Yük dağılımı görünümü" },
+						{ icon: Flame, label: "Burn rate uyarıları" },
+						{ icon: FileText, label: "Audit log" },
+						{ icon: Key, label: "API token yönetimi" },
+						{ icon: MessageSquare, label: "Slack / Teams" },
+						{ icon: Webhook, label: "Webhook & PagerDuty" },
+						{ icon: Languages, label: "TR / EN" },
+						{ icon: Lock, label: "RBAC & SSO" },
+						{ icon: Hash, label: "Tag & filtre" },
+						{ icon: Cpu, label: "Otomatik servis keşfi" },
+					].map((c) => (
+						<span
+							key={c.label}
+							className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[4px] text-[11.5px] font-medium"
+							style={{
+								background: "rgba(255,255,255,0.025)",
+								border: `1px solid ${INK_HAIR}`,
+								color: TXT_MUTED,
+							}}
+						>
+							<c.icon className="w-3 h-3" style={{ color: TXT_DIM }} />
+							{c.label}
+						</span>
 					))}
 				</div>
 			</div>
@@ -819,8 +901,555 @@ function Features() {
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// How it works — vertical timeline
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Reliability section — the SLO + Probes + Runbooks story. This is the
+ * page's heaviest "we do more than monitoring" claim, so it gets its own
+ * section with a faithful mock of the SLO card the user actually sees in
+ * /app/slo. Three feature columns sit under the mock for breadth. */
+
+function ReliabilitySection() {
+	return (
+		<section
+			id="reliability"
+			className="relative py-28 px-6"
+			style={{ background: INK }}
+		>
+			<div
+				aria-hidden
+				className="absolute inset-x-0 top-0 h-px"
+				style={{ background: INK_HAIR }}
+			/>
+			<div className="max-w-[1200px] mx-auto">
+				<SectionHeading
+					eyebrow="Güvenilirlik"
+					title="Sadece izlemiyoruz —"
+					highlight="hedefliyor, ölçüyor, müdahale ediyoruz."
+					description="SLO + hata bütçesi + synthetic probe + otomasyon runbook'ları — tek üründe Google SRE pratiği."
+				/>
+
+				<div className="grid lg:grid-cols-[1.1fr_1fr] gap-12 lg:gap-16 items-start">
+					<div className="order-2 lg:order-1 space-y-10">
+						<ReliabilityRow
+							icon={Target}
+							title="SLO & hata bütçesi"
+							desc="Availability, latency veya hata oranı için yüzde hedefi tanımla, pencere seç (7 / 30 / 90 g). Bütçe tüketimi anlık olarak yanma hızı çarpanıyla beraber gösterilir."
+							meta="3 SLI tipi · burn rate · forecast"
+						/>
+						<ReliabilityRow
+							icon={Plug}
+							title="HTTP / TCP probe'ları"
+							desc="Sunucudan yürütülen synthetic kontroller; status, body içeriği ve TCP açıklığı doğrulanır. Sonuçlar SLO'larla aynı zaman serisine düşer."
+							meta="60 sn'lik default · son hata mesajı · uptime sicili"
+						/>
+						<ReliabilityRow
+							icon={Workflow}
+							title="Otomasyon runbook'ları"
+							desc="Alert tetiklendiğinde restart, stop, scale, exec veya webhook çalıştır. Cooldown ve saatlik üst sınır ile flapping korumalı."
+							meta="6 aksiyon · severity filtresi · denetim kaydı"
+						/>
+					</div>
+					<div className="order-1 lg:order-2 lg:sticky lg:top-24">
+						<SLOMockCard />
+					</div>
+				</div>
+			</div>
+		</section>
+	);
+}
+
+function ReliabilityRow({
+	icon: Icon,
+	title,
+	desc,
+	meta,
+}: {
+	icon: typeof Target;
+	title: string;
+	desc: string;
+	meta: string;
+}) {
+	return (
+		<div className="flex gap-5">
+			<div
+				className="shrink-0 w-9 h-9 rounded-[6px] flex items-center justify-center"
+				style={{
+					background: BRAND_SUBTLE,
+					border: `1px solid ${BRAND_LINE}`,
+				}}
+			>
+				<Icon className="w-4 h-4" style={{ color: BRAND }} />
+			</div>
+			<div className="min-w-0">
+				<h3
+					className="text-[16px] font-semibold tracking-tight"
+					style={{ color: TXT }}
+				>
+					{title}
+				</h3>
+				<p
+					className="mt-1.5 text-[13.5px] leading-relaxed"
+					style={{ color: TXT_MUTED }}
+				>
+					{desc}
+				</p>
+				<p
+					className="mt-2.5 text-[10.5px] font-mono uppercase tracking-[0.16em]"
+					style={{ color: TXT_FAINT }}
+				>
+					{meta}
+				</p>
+			</div>
+		</div>
+	);
+}
+
+function SLOMockCard() {
+	return (
+		<div
+			className="relative rounded-[8px] overflow-hidden"
+			style={{
+				background: INK_RAISED,
+				border: `1px solid ${INK_LINE}`,
+			}}
+		>
+			<span
+				aria-hidden
+				className="absolute left-0 top-4 bottom-4 w-[2px] rounded-r-full"
+				style={{ background: STATUS_UP }}
+			/>
+			<div
+				className="px-5 py-4 flex items-start gap-3"
+				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
+			>
+				<div
+					className="w-9 h-9 rounded-[6px] flex items-center justify-center shrink-0"
+					style={{ background: "rgba(163, 230, 53, 0.10)" }}
+				>
+					<CheckCircle2 className="w-4 h-4" style={{ color: STATUS_UP }} />
+				</div>
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2 flex-wrap">
+						<p
+							className="text-[14px] font-semibold tracking-tight"
+							style={{ color: TXT }}
+						>
+							api availability 30 g
+						</p>
+						<span
+							className="text-[10px] font-semibold uppercase tracking-[0.14em] px-1.5 py-0.5 rounded-[4px]"
+							style={{ color: BRAND, background: BRAND_SUBTLE }}
+						>
+							Availability
+						</span>
+					</div>
+					<p className="mt-1 text-[12px]" style={{ color: TXT_DIM }}>
+						payments-api · hedef{" "}
+						<span
+							className="tabular-nums font-semibold"
+							style={{ color: TXT }}
+						>
+							99.9 %
+						</span>{" "}
+						· 30 g pencere
+					</p>
+				</div>
+			</div>
+
+			<div className="grid grid-cols-3 gap-2 p-3">
+				<MiniMetric label="SLI" value="99.94" unit="%" icon={Target} />
+				<MiniMetric label="Bütçe" value="42" unit="%" icon={Activity} />
+				<MiniMetric label="Yanma" value="0.6" unit="×" icon={Flame} />
+			</div>
+
+			<div className="px-3 pb-4">
+				<MockBurndown />
+			</div>
+		</div>
+	);
+}
+
+function MiniMetric({
+	label,
+	value,
+	unit,
+	icon: Icon,
+}: {
+	label: string;
+	value: string;
+	unit: string;
+	icon: typeof Target;
+}) {
+	return (
+		<div
+			className="rounded-[6px] px-3 py-2.5 flex flex-col gap-1.5"
+			style={{
+				background: "rgba(255,255,255,0.025)",
+				border: `1px solid ${INK_HAIR}`,
+			}}
+		>
+			<div
+				className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.14em]"
+				style={{ color: TXT_FAINT }}
+			>
+				<Icon className="w-3 h-3" style={{ color: TXT_FAINT }} />
+				{label}
+			</div>
+			<p
+				className="flex items-baseline gap-0.5 leading-none"
+				style={{ color: TXT }}
+			>
+				<span className="text-[18px] font-semibold tabular-nums tracking-tight">
+					{value}
+				</span>
+				<span
+					className="text-[11px] font-medium"
+					style={{ color: TXT_FAINT }}
+				>
+					{unit}
+				</span>
+			</p>
+		</div>
+	);
+}
+
+function MockBurndown() {
+	const values = [100, 96, 91, 87, 80, 76, 70, 66, 60, 56, 50, 47, 44, 42];
+	const pts = values
+		.map(
+			(v, i) =>
+				`${(i / (values.length - 1)) * 240},${60 - (v / 100) * 50 - 5}`,
+		)
+		.join(" ");
+	return (
+		<div
+			className="rounded-[6px] p-3"
+			style={{
+				background: "rgba(255,255,255,0.02)",
+				border: `1px solid ${INK_HAIR}`,
+			}}
+		>
+			<div
+				className="text-[10px] font-mono uppercase tracking-[0.14em] mb-1"
+				style={{ color: TXT_FAINT }}
+			>
+				Bütçe yanma · 30 g
+			</div>
+			<svg
+				viewBox="0 0 240 60"
+				className="w-full h-16"
+				preserveAspectRatio="none"
+				role="img"
+				aria-label="Burn-down — mock"
+			>
+				<defs>
+					<linearGradient id="bd-grad" x1="0" y1="0" x2="0" y2="1">
+						<stop offset="0%" stopColor={BRAND} stopOpacity="0.18" />
+						<stop offset="100%" stopColor={BRAND} stopOpacity="0" />
+					</linearGradient>
+				</defs>
+				<polygon fill="url(#bd-grad)" points={`0,60 ${pts} 240,60`} />
+				<polyline
+					fill="none"
+					stroke={BRAND}
+					strokeWidth="1.25"
+					points={pts}
+				/>
+			</svg>
+		</div>
+	);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Incident & Status section — proves the platform handles the WHOLE
+ * incident lifecycle. Mock incident timeline on the left, public status
+ * page sketch on the right. */
+
+function IncidentStatusSection() {
+	return (
+		<section
+			id="incidents"
+			className="relative py-28 px-6"
+			style={{ background: INK_DEEP }}
+		>
+			<div className="max-w-[1200px] mx-auto">
+				<SectionHeading
+					eyebrow="Olay & Durum"
+					title="Olaydan iletişime,"
+					highlight="aynı pencerede."
+					description="Incident timeline ile ekibinize, public status page ile müşterinize aynı doğruluğu, aynı anda."
+				/>
+
+				<div className="grid lg:grid-cols-2 gap-6">
+					<IncidentTimelineMock />
+					<StatusPageMock />
+				</div>
+			</div>
+		</section>
+	);
+}
+
+function IncidentTimelineMock() {
+	const events: { time: string; title: string; tone?: "down" | "warn" }[] = [
+		{ time: "12:44", title: "p95 latency 1.2 s'ye yükseldi", tone: "down" },
+		{ time: "12:45", title: "AI: payments_by_user index eksik" },
+		{ time: "12:47", title: "Runbook: payments-api restart denendi" },
+		{ time: "12:51", title: "Ekibe Slack üzerinden bildirildi" },
+		{ time: "13:02", title: "İndeks oluşturuldu, latency normalleşti" },
+	];
+	return (
+		<div
+			className="rounded-[8px] overflow-hidden"
+			style={{
+				background: INK_RAISED,
+				border: `1px solid ${INK_LINE}`,
+			}}
+		>
+			<div
+				className="px-5 h-11 flex items-center gap-2"
+				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
+			>
+				<AlertTriangle
+					className="w-3.5 h-3.5"
+					style={{ color: STATUS_DOWN }}
+				/>
+				<span
+					className="text-[12px] font-semibold"
+					style={{ color: TXT }}
+				>
+					INC-104 · Payments degraded
+				</span>
+				<span
+					className="ml-auto text-[10px] font-mono uppercase tracking-[0.14em]"
+					style={{ color: TXT_FAINT }}
+				>
+					18 dk · Çözüldü
+				</span>
+			</div>
+			<div className="px-5 py-5">
+				<ol className="relative space-y-4">
+					<span
+						aria-hidden
+						className="absolute left-[3px] top-2 bottom-2 w-px"
+						style={{ background: INK_LINE }}
+					/>
+					{events.map((e) => {
+						const dot =
+							e.tone === "down"
+								? STATUS_DOWN
+								: e.tone === "warn"
+									? STATUS_WARN
+									: BRAND;
+						return (
+							<li
+								key={e.time}
+								className="relative pl-6 flex items-baseline gap-3"
+							>
+								<span
+									aria-hidden
+									className="absolute left-0 top-1.5 w-[7px] h-[7px] rounded-full"
+									style={{ background: dot }}
+								/>
+								<span
+									className="text-[10.5px] font-mono w-10 shrink-0 tabular-nums"
+									style={{ color: TXT_FAINT }}
+								>
+									{e.time}
+								</span>
+								<span
+									className="text-[13px]"
+									style={{ color: TXT_MUTED }}
+								>
+									{e.title}
+								</span>
+							</li>
+						);
+					})}
+				</ol>
+			</div>
+			<div
+				className="px-5 py-3 grid grid-cols-3 gap-4 text-[10.5px] font-mono uppercase tracking-[0.14em]"
+				style={{
+					borderTop: `1px solid ${INK_HAIR}`,
+					color: TXT_FAINT,
+				}}
+			>
+				<div>
+					MTTA <span style={{ color: TXT }}>2 dk</span>
+				</div>
+				<div>
+					MTTR <span style={{ color: TXT }}>18 dk</span>
+				</div>
+				<div>
+					Etkilenen <span style={{ color: TXT }}>1 servis</span>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function StatusPageMock() {
+	const services: { name: string; status: "up" | "warn" }[] = [
+		{ name: "API Gateway", status: "up" },
+		{ name: "Payments", status: "warn" },
+		{ name: "Auth", status: "up" },
+		{ name: "Webhook delivery", status: "up" },
+	];
+	const days = Array.from({ length: 60 }, (_, i) => {
+		const r = (i * 9301 + 49297) % 100;
+		return r > 96 ? "down" : r > 92 ? "warn" : "up";
+	});
+	return (
+		<div
+			className="rounded-[8px] overflow-hidden"
+			style={{
+				background: INK_RAISED,
+				border: `1px solid ${INK_LINE}`,
+			}}
+		>
+			<div
+				className="px-5 h-11 flex items-center gap-2"
+				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
+			>
+				<Globe className="w-3.5 h-3.5" style={{ color: BRAND }} />
+				<span
+					className="text-[12px] font-semibold"
+					style={{ color: TXT }}
+				>
+					status.acme.dev
+				</span>
+				<span
+					className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.14em]"
+					style={{ color: STATUS_UP }}
+				>
+					<span
+						className="w-1.5 h-1.5 rounded-full"
+						style={{ background: STATUS_UP }}
+					/>
+					Operational
+				</span>
+			</div>
+			<div className="px-5 py-5 space-y-4">
+				{services.map((s) => (
+					<div key={s.name}>
+						<div className="flex items-center justify-between mb-1.5">
+							<span
+								className="text-[13px] font-medium"
+								style={{ color: TXT }}
+							>
+								{s.name}
+							</span>
+							<span
+								className="text-[10.5px] font-mono uppercase tracking-[0.14em]"
+								style={{
+									color: s.status === "up" ? STATUS_UP : STATUS_WARN,
+								}}
+							>
+								{s.status === "up" ? "Operational" : "Degraded"}
+							</span>
+						</div>
+						<div className="flex gap-[2px] h-3">
+							{days.map((d, i) => (
+								<span
+									key={`${s.name}-${i}`}
+									aria-hidden
+									className="flex-1 rounded-[1px]"
+									style={{
+										background:
+											d === "up"
+												? "rgba(163, 230, 53, 0.55)"
+												: d === "warn"
+													? "rgba(251, 191, 36, 0.65)"
+													: "rgba(248, 113, 113, 0.65)",
+									}}
+								/>
+							))}
+						</div>
+					</div>
+				))}
+			</div>
+			<div
+				className="px-5 py-3 flex items-center justify-between text-[10.5px] font-mono uppercase tracking-[0.14em]"
+				style={{
+					borderTop: `1px solid ${INK_HAIR}`,
+					color: TXT_FAINT,
+				}}
+			>
+				<span>
+					Uptime <span style={{ color: TXT }}>99.97 %</span>
+				</span>
+				<span>Son 60 gün</span>
+			</div>
+		</div>
+	);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * IntegrationsStrip — quiet horizontal band that names the channels and
+ * platforms NanoNet talks to. Avoids brand-logo soup; the typography is
+ * the proof. Sits between HowItWorks and DevSection so the page acquires
+ * a "we plug into your stack" beat without another large mock. */
+
+function IntegrationsStrip() {
+	const groups: { label: string; items: string[] }[] = [
+		{
+			label: "Bildirim",
+			items: ["Slack", "Teams", "Discord", "E-posta", "Webhook", "PagerDuty"],
+		},
+		{
+			label: "Altyapı",
+			items: ["Kubernetes", "Docker", "systemd", "HTTP / TCP", "Linux", "Windows"],
+		},
+		{
+			label: "Erişim",
+			items: ["REST API", "OAuth tokens", "RBAC", "Audit log", "TR / EN"],
+		},
+	];
+	return (
+		<section
+			className="py-20 px-6"
+			style={{
+				background: INK,
+				borderTop: `1px solid ${INK_HAIR}`,
+				borderBottom: `1px solid ${INK_HAIR}`,
+			}}
+		>
+			<div className="max-w-[1200px] mx-auto">
+				<div className="grid md:grid-cols-3 gap-10">
+					{groups.map((g) => (
+						<div key={g.label}>
+							<p
+								className="text-[10.5px] font-mono uppercase tracking-[0.18em] mb-4"
+								style={{ color: BRAND }}
+							>
+								{g.label}
+							</p>
+							<ul className="space-y-2">
+								{g.items.map((item) => (
+									<li
+										key={item}
+										className="text-[14px] flex items-center gap-2"
+										style={{ color: TXT_MUTED }}
+									>
+										<span
+											aria-hidden
+											className="inline-block w-1 h-1 rounded-full"
+											style={{ background: TXT_FAINT }}
+										/>
+										{item}
+									</li>
+								))}
+							</ul>
+						</div>
+					))}
+				</div>
+			</div>
+		</section>
+	);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * How it works — three steps as a horizontal storyboard. Step number is
+ * the scale device, not color. */
 
 function HowItWorks() {
 	const steps = [
@@ -829,85 +1458,74 @@ function HowItWorks() {
 			icon: Box,
 			title: "Servisi kaydedin",
 			desc: "Dashboard'dan host, port ve health endpoint'ini girin. Otuz saniyede tamam.",
-			color: TEAL,
 		},
 		{
 			n: "02",
 			icon: Terminal,
 			title: "Agent'ı kurun",
 			desc: "Tek satırlık setup script'i ile sunucuya dağıtın. Binary küçük, daemon hafif.",
-			color: VIOLET,
 		},
 		{
 			n: "03",
 			icon: Zap,
 			title: "İzlemeye başlayın",
 			desc: "Metrikler canlı akmaya başlar. AI uyarıların nedenini, harita bağımlılıkları gösterir.",
-			color: AMBER,
 		},
 	];
 
 	return (
-		<section id="how" className="relative py-32 px-6" style={{ background: INK_DEEP }}>
-			<div
-				aria-hidden
-				className="absolute inset-x-0 top-0 h-px"
-				style={{
-					background: `linear-gradient(90deg, transparent, ${TEAL}30, transparent)`,
-				}}
-			/>
-			<div className="max-w-6xl mx-auto">
+		<section
+			id="how"
+			className="relative py-28 px-6"
+			style={{ background: INK_DEEP }}
+		>
+			<div className="max-w-[1200px] mx-auto">
 				<SectionHeading
-					eyebrow="Nasıl çalışır"
+					eyebrow="Akış"
 					title="Üç adımda canlı."
 					highlight="Karmaşa yok."
-					accent={VIOLET}
 				/>
 
-				<div className="grid md:grid-cols-3 gap-6 relative">
-					<div
-						aria-hidden
-						className="hidden md:block absolute top-12 left-[14%] right-[14%] h-px"
-						style={{
-							background: `linear-gradient(90deg, ${TEAL}, ${VIOLET}, ${AMBER})`,
-							opacity: 0.4,
-						}}
-					/>
-
+				<div
+					className="grid md:grid-cols-3 relative"
+					style={{ borderTop: `1px solid ${INK_HAIR}` }}
+				>
 					{steps.map((s, i) => (
-						<motion.div
+						<div
 							key={s.n}
-							initial={{ opacity: 0, y: 24 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true, margin: "-50px" }}
-							transition={{ duration: 0.5, delay: i * 0.1 }}
-							className="relative"
+							className="p-8"
+							style={{
+								borderRight:
+									i < steps.length - 1 ? `1px solid ${INK_HAIR}` : undefined,
+							}}
 						>
-							<div
-								className="relative w-12 h-12 rounded-2xl flex items-center justify-center mb-5 z-10"
-								style={{
-									background: INK_DEEP,
-									border: `1px solid ${s.color}55`,
-									boxShadow: `0 0 0 4px ${s.color}10, 0 0 24px -4px ${s.color}40`,
-								}}
-							>
-								<s.icon className="w-5 h-5" style={{ color: s.color }} />
-							</div>
-							<div className="flex items-baseline gap-2 mb-2">
+							<div className="flex items-baseline gap-3 mb-6">
 								<span
-									className="text-[11px] font-mono font-semibold tracking-[0.16em]"
-									style={{ color: s.color }}
+									className="text-[11px] font-mono uppercase tracking-[0.18em]"
+									style={{ color: BRAND }}
 								>
 									{s.n}
 								</span>
-								<h3 className="text-[18px] font-semibold text-white tracking-tight">
-									{s.title}
-								</h3>
+								<span
+									aria-hidden
+									className="block flex-1 h-px"
+									style={{ background: INK_HAIR }}
+								/>
 							</div>
-							<p className="text-[14px] text-white/55 leading-relaxed">
+							<s.icon className="w-5 h-5 mb-4" style={{ color: TXT }} />
+							<h3
+								className="text-[18px] font-semibold tracking-tight mb-2"
+								style={{ color: TXT }}
+							>
+								{s.title}
+							</h3>
+							<p
+								className="text-[13.5px] leading-relaxed"
+								style={{ color: TXT_MUTED }}
+							>
 								{s.desc}
 							</p>
-						</motion.div>
+						</div>
 					))}
 				</div>
 			</div>
@@ -915,60 +1533,58 @@ function HowItWorks() {
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AI section
+/* ─────────────────────────────────────────────────────────────────────────────
+ * AI section — a side-by-side: copy on the left, a faithful sketch of the
+ * in-app AI Insight card on the right. The card uses the SAME design rules
+ * as the actual app component (status accent bar, semantic colors, plain
+ * code chips). */
 
 function AISection() {
 	return (
-		<section id="ai" className="relative py-32 px-6" style={{ background: INK }}>
-			<div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-				<motion.div
-					initial={{ opacity: 0, x: -16 }}
-					whileInView={{ opacity: 1, x: 0 }}
-					viewport={{ once: true, margin: "-100px" }}
-					transition={{ duration: 0.6 }}
-				>
-					<SectionHeading
-						eyebrow="AI kök-neden"
-						title="Sadece 'down' demiyoruz —"
-						highlight="ne, neden, nasıl?"
-						accent={VIOLET}
-					/>
-					<p className="text-[16px] text-white/55 leading-relaxed mb-8 max-w-xl">
-						Claude destekli analiz motoru; metrik, log ve alert geçmişini birleştirip
-						olası kök-nedeni, etkilenen bileşenleri ve uygulanabilir çözümü çıkarır.
+		<section
+			id="ai"
+			className="relative py-28 px-6"
+			style={{ background: INK }}
+		>
+			<div className="max-w-[1200px] mx-auto grid lg:grid-cols-[1.1fr_1fr] gap-12 lg:gap-16 items-start">
+				<div>
+					<SectionEyebrow>AI kök-neden</SectionEyebrow>
+					<h2
+						className="text-[34px] sm:text-[44px] font-semibold tracking-[-0.02em] leading-[1.05]"
+						style={{ color: TXT }}
+					>
+						Sadece "down" demiyoruz —{" "}
+						<span style={{ color: TXT_DIM }}>ne, neden, nasıl?</span>
+					</h2>
+					<p
+						className="mt-5 text-[15px] leading-relaxed max-w-lg"
+						style={{ color: TXT_MUTED }}
+					>
+						Claude destekli analiz motoru; metrik, log ve alert geçmişini
+						birleştirip olası kök-nedeni, etkilenen bileşenleri ve uygulanabilir
+						çözümü çıkarır.
 					</p>
-					<ul className="space-y-3.5">
+					<ul className="mt-8 space-y-3.5">
 						{[
 							"Metrik anomalisi + log pattern korelasyonu",
 							"Etkilenen servis ağı görselleştirmesi",
 							"Deployment penceresi ile olay eşleştirme",
-							"Slack/Teams'e tek mesaj olarak özet",
+							"Slack / Teams'e tek mesaj olarak özet",
 						].map((item) => (
 							<li key={item} className="flex items-start gap-3">
-								<div
-									className="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-									style={{
-										background: `${TEAL}14`,
-										border: `1px solid ${TEAL}33`,
-									}}
-								>
-									<CheckCircle2 className="w-3 h-3" style={{ color: TEAL }} />
-								</div>
-								<span className="text-[14px] text-white/75">{item}</span>
+								<CheckCircle2
+									className="w-4 h-4 mt-0.5 shrink-0"
+									style={{ color: BRAND }}
+								/>
+								<span className="text-[14px]" style={{ color: TXT_MUTED }}>
+									{item}
+								</span>
 							</li>
 						))}
 					</ul>
-				</motion.div>
+				</div>
 
-				<motion.div
-					initial={{ opacity: 0, scale: 0.96, y: 16 }}
-					whileInView={{ opacity: 1, scale: 1, y: 0 }}
-					viewport={{ once: true, margin: "-100px" }}
-					transition={{ duration: 0.7 }}
-				>
-					<AIExampleCard />
-				</motion.div>
+				<AIExampleCard />
 			</div>
 		</section>
 	);
@@ -976,116 +1592,124 @@ function AISection() {
 
 function AIExampleCard() {
 	return (
-		<div className="relative">
-			<div
+		<div
+			className="relative rounded-[8px] overflow-hidden"
+			style={{
+				background: INK_RAISED,
+				border: `1px solid ${INK_LINE}`,
+			}}
+		>
+			<span
 				aria-hidden
-				className="absolute inset-x-8 -top-6 h-20 blur-3xl opacity-50"
-				style={{
-					background: `radial-gradient(ellipse, ${VIOLET}50, transparent 70%)`,
-				}}
+				className="absolute left-0 top-4 bottom-4 w-[2px] rounded-r-full"
+				style={{ background: STATUS_DOWN }}
 			/>
+
 			<div
-				className="relative rounded-2xl overflow-hidden"
-				style={{
-					background: INK_ELEV,
-					border: "1px solid rgba(255,255,255,0.08)",
-					boxShadow:
-						"0 30px 60px -16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)",
-				}}
+				className="flex items-center gap-2.5 px-5 h-11"
+				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
 			>
-				<div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-white/5">
-					<div
-						className="w-7 h-7 rounded-lg flex items-center justify-center"
+				<Brain className="w-3.5 h-3.5" style={{ color: BRAND }} />
+				<span className="text-[12px] font-semibold" style={{ color: TXT }}>
+					AI analizi
+				</span>
+				<span
+					className="ml-auto text-[10px] font-mono uppercase tracking-[0.14em]"
+					style={{ color: TXT_FAINT }}
+				>
+					2 sn önce
+				</span>
+			</div>
+
+			<div
+				className="px-5 py-4"
+				style={{ borderBottom: `1px solid ${INK_HAIR}` }}
+			>
+				<div className="flex items-center gap-2 mb-2.5">
+					<span
+						className="inline-flex items-center gap-1.5 h-5 px-1.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-[0.14em]"
 						style={{
-							background: `${VIOLET}14`,
-							border: `1px solid ${VIOLET}33`,
+							color: STATUS_DOWN,
+							background: "rgba(248, 113, 113, 0.10)",
 						}}
 					>
-						<Brain className="w-3.5 h-3.5" style={{ color: VIOLET }} />
-					</div>
-					<span className="text-[13px] font-semibold text-white/85">
-						AI analizi
-					</span>
-					<div className="flex-1" />
-					<span className="text-[10px] font-mono text-white/30">2sn önce</span>
-				</div>
-
-				<div className="px-5 py-4 border-b border-white/5">
-					<div className="flex items-center gap-2 mb-2">
-						<span className="relative flex w-3 h-3 items-center justify-center">
-							<span
-								className="absolute inset-0 rounded-full"
-								style={{
-									background: ROSE,
-									opacity: 0.3,
-									animation: "nn-orb-breathe 2s ease-in-out infinite",
-								}}
-							/>
-							<span
-								className="relative w-1.5 h-1.5 rounded-full"
-								style={{ background: ROSE }}
-							/>
-						</span>
 						<span
-							className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+							className="w-1 h-1 rounded-full"
+							style={{ background: STATUS_DOWN }}
+						/>
+						Kritik
+					</span>
+					<span
+						className="ml-auto text-[10.5px] font-mono"
+						style={{ color: TXT_FAINT }}
+					>
+						payments-api · 12:44
+					</span>
+				</div>
+				<p
+					className="text-[14px] font-medium leading-snug tabular-nums"
+					style={{ color: TXT }}
+				>
+					p95 latency 1.2 s'ye yükseldi · hata oranı %8
+				</p>
+			</div>
+
+			<div className="px-5 py-5 space-y-5">
+				<div>
+					<p
+						className="text-[10px] font-mono uppercase tracking-[0.16em] mb-2"
+						style={{ color: TXT_FAINT }}
+					>
+						Olası kök-neden
+					</p>
+					<p
+						className="text-[13px] leading-relaxed"
+						style={{ color: TXT_MUTED }}
+					>
+						Son deployment'ta değişen SQL sorgusu yeni bir index kullanıyor gibi
+						görünüyor.{" "}
+						<code
+							className="text-[12px] px-1.5 py-0.5 rounded-[4px] font-mono"
 							style={{
-								color: ROSE,
-								background: `${ROSE}14`,
+								color: BRAND,
+								background: BRAND_SUBTLE,
+								border: `1px solid ${BRAND_LINE}`,
 							}}
 						>
-							Kritik
-						</span>
-						<span className="text-[11px] font-mono text-white/35 ml-auto">
-							payments-api · 12:44
-						</span>
-					</div>
-					<p className="text-[14px] text-white font-medium">
-						p95 latency 1.2s'ye yükseldi, hata oranı %8
+							payments_by_user
+						</code>{" "}
+						index'i RDS'te yok.
 					</p>
 				</div>
-
-				<div className="px-5 py-4 space-y-4">
-					<div>
-						<p className="text-[11px] font-medium text-white/40 mb-1.5">
-							Olası kök-neden
-						</p>
-						<p className="text-[13px] text-white/80 leading-relaxed">
-							Son deployment'ta değişen SQL sorgusu yeni bir index kullanıyor
-							gibi görünüyor.{" "}
-							<code
-								className="text-[12px] px-1.5 py-0.5 rounded-md font-mono"
-								style={{
-									color: TEAL,
-									background: `${TEAL}10`,
-									border: `1px solid ${TEAL}22`,
-								}}
-							>
-								payments_by_user
-							</code>{" "}
-							index'i RDS'te yok.
-						</p>
-					</div>
-					<div>
-						<p className="text-[11px] font-medium text-white/40 mb-1.5">
-							Önerilen aksiyon
-						</p>
-						<div
-							className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
-							style={{
-								background: `${TEAL}08`,
-								border: `1px solid ${TEAL}22`,
-							}}
-						>
-							<ArrowRight
-								className="w-3.5 h-3.5 shrink-0 mt-0.5"
-								style={{ color: TEAL }}
-							/>
-							<code className="text-[12px] text-white/85 font-mono flex-1 leading-relaxed">
-								CREATE INDEX CONCURRENTLY payments_by_user
-								<br />
-								&nbsp;&nbsp;ON payments(user_id);
-							</code>
-						</div>
+				<div>
+					<p
+						className="text-[10px] font-mono uppercase tracking-[0.16em] mb-2"
+						style={{ color: TXT_FAINT }}
+					>
+						Önerilen aksiyon
+					</p>
+					{/* The global typography stylesheet ships a default light
+					    surface-sunken background for both <pre> and <code> tags.
+					    The landing page never opts into the dark theme, so those
+					    defaults paint a bright bar over our content. We render
+					    the SQL block as a plain <div> + <span> stack with our own
+					    chrome to sidestep both rules entirely — no surprises from
+					    cascade priority. */}
+					<div
+						className="rounded-[6px] px-3.5 py-3 text-[12px] font-mono leading-[1.75] overflow-x-auto whitespace-pre"
+						style={{
+							background: "rgba(255, 255, 255, 0.025)",
+							border: `1px solid ${INK_HAIR}`,
+							color: TXT,
+						}}
+					>
+						<span style={{ color: BRAND }}>CREATE INDEX</span>{" "}
+						<span style={{ color: TXT_DIM }}>CONCURRENTLY</span>{" "}
+						payments_by_user{"\n"}
+						{"  "}
+						<span style={{ color: TXT_DIM }}>ON</span> payments
+						<span style={{ color: TXT_DIM }}>(</span>user_id
+						<span style={{ color: TXT_DIM }}>);</span>
 					</div>
 				</div>
 			</div>
@@ -1093,34 +1717,40 @@ function AIExampleCard() {
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Developer section
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Developer section — terminal sketch on the right, copy + a 3-stat row
+ * on the left. */
 
 function DevSection() {
 	return (
 		<section
 			id="devs"
-			className="relative py-32 px-6"
+			className="relative py-28 px-6"
 			style={{ background: INK_DEEP }}
 		>
-			<div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-start">
-				<motion.div
-					initial={{ opacity: 0, x: -16 }}
-					whileInView={{ opacity: 1, x: 0 }}
-					viewport={{ once: true, margin: "-100px" }}
-					transition={{ duration: 0.6 }}
-				>
-					<SectionHeading
-						eyebrow="Geliştiriciler için"
-						title="Tek script,"
-						highlight="sıfır sürpriz."
-						accent={TEAL}
-					/>
-					<p className="text-[16px] text-white/55 leading-relaxed mb-8">
+			<div className="max-w-[1200px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+				<div>
+					<SectionEyebrow>Geliştiriciler için</SectionEyebrow>
+					<h2
+						className="text-[34px] sm:text-[44px] font-semibold tracking-[-0.02em] leading-[1.05]"
+						style={{ color: TXT }}
+					>
+						Tek script, <span style={{ color: TXT_DIM }}>sıfır sürpriz.</span>
+					</h2>
+					<p
+						className="mt-5 text-[15px] leading-relaxed max-w-lg"
+						style={{ color: TXT_MUTED }}
+					>
 						Tek binary agent. Docker değil, daemon değil — küçük, hafif,
 						denetlenebilir. Alt yapınıza girmeden önce kaynak kodunu okuyun.
 					</p>
-					<div className="grid grid-cols-3 gap-3">
+					<div
+						className="mt-8 grid grid-cols-3"
+						style={{
+							borderTop: `1px solid ${INK_HAIR}`,
+							borderLeft: `1px solid ${INK_HAIR}`,
+						}}
+					>
 						{[
 							{ label: "Binary", value: "6", unit: "MB" },
 							{ label: "RAM avg", value: "18", unit: "MB" },
@@ -1128,140 +1758,127 @@ function DevSection() {
 						].map((m) => (
 							<div
 								key={m.label}
-								className="p-4 rounded-xl"
+								className="px-5 py-5"
 								style={{
-									background: "rgba(255,255,255,0.02)",
-									border: "1px solid rgba(255,255,255,0.06)",
+									borderRight: `1px solid ${INK_HAIR}`,
+									borderBottom: `1px solid ${INK_HAIR}`,
 								}}
 							>
-								<p className="text-[11px] font-medium text-white/40">
+								<p
+									className="text-[10px] font-mono uppercase tracking-[0.16em]"
+									style={{ color: TXT_FAINT }}
+								>
 									{m.label}
 								</p>
-								<div className="flex items-baseline gap-1 mt-1">
-									<p className="text-2xl font-semibold text-white tabular-nums tracking-tight">
+								<div className="flex items-baseline gap-1 mt-1.5">
+									<p
+										className="text-[24px] font-semibold tabular-nums tracking-[-0.015em] leading-none"
+										style={{ color: TXT }}
+									>
 										{m.value}
 									</p>
-									<span className="text-[11px] text-white/40">{m.unit}</span>
+									<span
+										className="text-[11px] font-medium"
+										style={{ color: TXT_DIM }}
+									>
+										{m.unit}
+									</span>
 								</div>
 							</div>
 						))}
 					</div>
-				</motion.div>
+				</div>
 
-				<motion.div
-					initial={{ opacity: 0, y: 24 }}
-					whileInView={{ opacity: 1, y: 0 }}
-					viewport={{ once: true, margin: "-100px" }}
-					transition={{ duration: 0.7 }}
-					className="relative"
+				<div
+					className="relative rounded-[8px] overflow-hidden"
+					style={{
+						background: "#08080a",
+						border: `1px solid ${INK_LINE}`,
+					}}
 				>
 					<div
-						aria-hidden
-						className="absolute inset-x-8 -top-6 h-20 blur-3xl opacity-40"
-						style={{
-							background: `radial-gradient(ellipse, ${TEAL}50, transparent 70%)`,
-						}}
-					/>
-					<div
-						className="relative rounded-2xl overflow-hidden"
-						style={{
-							background: "#02040a",
-							border: "1px solid rgba(255,255,255,0.08)",
-							boxShadow:
-								"0 30px 60px -16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)",
-						}}
+						className="flex items-center gap-2 px-4 h-9"
+						style={{ borderBottom: `1px solid ${INK_HAIR}` }}
 					>
-						<div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/5">
-							<div className="w-2.5 h-2.5 rounded-full bg-rose-500/30" />
-							<div className="w-2.5 h-2.5 rounded-full bg-amber-500/30" />
-							<div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30" />
-							<span className="ml-auto text-[10px] font-mono text-white/25 tracking-wide">
-								~ / nanonet-agent
-							</span>
-						</div>
-						<pre className="p-5 font-mono text-[12px] leading-[1.7] text-white/75 overflow-x-auto">
-							<code>
-								<span className="text-white/30"># Agent kurulumu</span>
-								{"\n"}
-								<span style={{ color: TEAL }}>$</span> ./agent-setup.sh{" "}
-								<span className="text-white/40">\</span>
-								{"\n   "}
-								<span className="text-white/45">--backend</span>{" "}
-								<span className="text-white/85">https://api.nanonet.dev</span>{" "}
-								<span className="text-white/40">\</span>
-								{"\n   "}
-								<span className="text-white/45">--token</span>{" "}
-								<span className="text-white/85">$NANONET_TOKEN</span>
-								{"\n\n"}
-								<span className="text-white/40">→ Servis eşleniyor...</span>
-								{"\n"}
-								<span className="text-white/40">
-									→ Binary doğrulanıyor (6.2 MB)
-								</span>
-								{"\n"}
-								<span className="text-white/40">→ systemd unit kuruldu</span>
-								{"\n"}
-								<span style={{ color: "#34d399" }}>
-									✓ nanonet-agent aktif · PID 12847
-								</span>
-							</code>
-						</pre>
+						<span
+							className="text-[10px] font-mono uppercase tracking-[0.16em]"
+							style={{ color: TXT_FAINT }}
+						>
+							~ / nanonet-agent
+						</span>
 					</div>
-				</motion.div>
+					{/* See AIExampleCard above — we use <div> + whitespace-pre
+					    instead of <pre>/<code> to avoid the global typography
+					    stylesheet painting a light surface-sunken background
+					    over the content. */}
+					<div
+						className="p-5 font-mono text-[12px] leading-[1.8] overflow-x-auto whitespace-pre"
+						style={{ color: TXT_MUTED, background: "transparent" }}
+					>
+						<span style={{ color: TXT_FAINT }}># Agent kurulumu</span>
+						{"\n"}
+						<span style={{ color: BRAND }}>$</span> ./agent-setup.sh{" "}
+						<span style={{ color: TXT_FAINT }}>\</span>
+						{"\n   "}
+						<span style={{ color: TXT_DIM }}>--backend</span>{" "}
+						<span style={{ color: TXT }}>https://api.nanonet.dev</span>{" "}
+						<span style={{ color: TXT_FAINT }}>\</span>
+						{"\n   "}
+						<span style={{ color: TXT_DIM }}>--token</span>{" "}
+						<span style={{ color: TXT }}>$NANONET_TOKEN</span>
+						{"\n\n"}
+						<span style={{ color: TXT_DIM }}>→ Servis eşleniyor…</span>
+						{"\n"}
+						<span style={{ color: TXT_DIM }}>
+							→ Binary doğrulanıyor (6.2 MB)
+						</span>
+						{"\n"}
+						<span style={{ color: TXT_DIM }}>→ systemd unit kuruldu</span>
+						{"\n"}
+						<span style={{ color: STATUS_UP }}>
+							✓ nanonet-agent aktif · PID 12847
+						</span>
+					</div>
+				</div>
 			</div>
 		</section>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CTA
+/* ─────────────────────────────────────────────────────────────────────────────
+ * CTA — quiet end-cap. No gradient text. Just a centered headline, a
+ * single sentence, and the same two-button hierarchy as the hero. */
 
 function CTA({ authed }: { authed: boolean }) {
 	return (
 		<section
-			className="relative py-40 px-6 overflow-hidden"
+			className="relative py-32 px-6 overflow-hidden"
 			style={{ background: INK }}
 		>
-			<div
-				aria-hidden
-				className="absolute inset-0 pointer-events-none"
-				style={{
-					background: `radial-gradient(ellipse 80% 60% at center, ${TEAL}12, ${VIOLET}10, transparent 70%)`,
-				}}
-			/>
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.7 }}
-				className="relative max-w-3xl mx-auto text-center"
-			>
-				<h2 className="text-4xl md:text-6xl font-semibold tracking-[-0.03em] text-white leading-[1.05] mb-6">
+			<GridBackdrop />
+			<div className="relative max-w-3xl mx-auto text-center">
+				<h2
+					className="text-[34px] sm:text-[52px] font-semibold tracking-[-0.025em] leading-[1.05]"
+					style={{ color: TXT }}
+				>
 					Bugün kurun,
 					<br />
-					<span
-						style={{
-							background: `linear-gradient(120deg, #ffffff 0%, ${VIOLET} 50%, ${TEAL} 100%)`,
-							WebkitBackgroundClip: "text",
-							WebkitTextFillColor: "transparent",
-						}}
-					>
-						yarın huzur içinde olun.
-					</span>
+					<span style={{ color: TXT_DIM }}>yarın huzur içinde olun.</span>
 				</h2>
-				<p className="text-[16px] text-white/55 mb-10 max-w-xl mx-auto leading-relaxed">
+				<p
+					className="mt-6 text-[15px] max-w-lg mx-auto leading-relaxed"
+					style={{ color: TXT_MUTED }}
+				>
 					Self-hosted, açık kaynak. İlk servisi dakikalar içinde bağlayın —
 					hiçbir şeyi bulutumuza göndermeden.
 				</p>
-				<div className="flex items-center justify-center gap-3 flex-wrap">
+				<div className="mt-10 flex items-center justify-center gap-3 flex-wrap">
 					<Link
 						to={authed ? "/app" : "/register"}
-						className="group inline-flex items-center gap-2 h-12 px-7 rounded-full text-[14px] font-semibold transition-all hover:scale-[1.03]"
+						className="group inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-semibold transition-colors"
 						style={{
-							background: "#ffffff",
-							color: "#0f172a",
-							boxShadow:
-								"0 12px 40px -8px rgba(45,212,191,0.4), 0 0 0 1px rgba(255,255,255,0.1)",
+							background: BRAND,
+							color: INK,
 						}}
 					>
 						{authed ? "Dashboard'a git" : "Ücretsiz başla"}
@@ -1270,59 +1887,75 @@ function CTA({ authed }: { authed: boolean }) {
 					{!authed && (
 						<Link
 							to="/login"
-							className="inline-flex items-center gap-2 h-12 px-6 rounded-full text-[14px] font-medium text-white/80 hover:text-white transition-colors"
+							className="inline-flex items-center gap-2 h-11 px-5 rounded-[6px] text-[13px] font-medium transition-colors"
 							style={{
-								background: "rgba(255,255,255,0.04)",
-								border: "1px solid rgba(255,255,255,0.08)",
+								color: TXT,
+								border: `1px solid ${INK_LINE}`,
 							}}
 						>
 							Giriş yap
 						</Link>
 					)}
 				</div>
-			</motion.div>
+			</div>
 		</section>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Footer
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Footer */
 
 function Footer() {
 	return (
 		<footer
-			className="border-t border-white/5 py-12 px-6"
-			style={{ background: INK_DEEP }}
+			className="py-10 px-6"
+			style={{
+				background: INK_DEEP,
+				borderTop: `1px solid ${INK_HAIR}`,
+			}}
 		>
-			<div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-				<div className="flex items-center gap-2.5">
-					<img
-						src={logo}
-						alt=""
-						aria-hidden="true"
-						className="w-5 h-5 opacity-80"
-					/>
-					<span className="text-[14px] font-semibold text-white/80">
+			<div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+				<div
+					className="flex items-center gap-2.5"
+					style={{ color: TXT_MUTED }}
+				>
+					<Logo className="w-4 h-4" />
+					<span className="text-[12.5px] font-semibold" style={{ color: TXT }}>
 						NanoNet
 					</span>
-					<span className="text-[11px] text-white/30 font-mono">v2.0</span>
+					<span
+						className="text-[10px] font-mono uppercase tracking-[0.16em]"
+						style={{ color: TXT_FAINT }}
+					>
+						v2.0
+					</span>
 				</div>
-				<div className="flex items-center gap-6">
+				<div className="flex items-center gap-x-5 gap-y-2 flex-wrap justify-center">
 					{[
 						{ label: "Dashboard", to: "/app" },
 						{ label: "Servisler", to: "/app/services" },
+						{ label: "SLO", to: "/app/slo" },
+						{ label: "Olaylar", to: "/app/incidents" },
 						{ label: "Uyarılar", to: "/app/alerts" },
+						{ label: "API tokens", to: "/app/api-tokens" },
 					].map((l) => (
 						<Link
 							key={l.to}
 							to={l.to}
-							className="text-[12px] text-white/45 hover:text-white/85 transition-colors"
+							className="text-[12px] transition-colors"
+							style={{ color: TXT_DIM }}
+							onMouseEnter={(e) => {
+								e.currentTarget.style.color = TXT;
+							}}
+							onMouseLeave={(e) => {
+								e.currentTarget.style.color = TXT_DIM;
+							}}
 						>
 							{l.label}
 						</Link>
 					))}
 				</div>
-				<p className="text-[11px] text-white/30 font-mono">
+				<p className="text-[10.5px] font-mono" style={{ color: TXT_FAINT }}>
 					© 2026 NanoNet · Sinyalin gürültüye karşı zaferi
 				</p>
 			</div>
@@ -1330,8 +1963,8 @@ function Footer() {
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Page
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Page */
 
 export function LandingPage() {
 	const authed = useAuthStore((s) => s.isAuthenticated);
@@ -1339,11 +1972,11 @@ export function LandingPage() {
 	const liveCount = services.filter((s) => s.status === "up").length;
 
 	return (
-		<div className="antialiased" style={{ background: INK, color: "#fff" }}>
+		<div className="antialiased" style={{ background: INK, color: TXT }}>
 			<style>{`
-				@keyframes nn-orb-breathe {
-					0%, 100% { transform: scale(0.85); opacity: 0.25; }
-					50% { transform: scale(1.35); opacity: 0.5; }
+				@keyframes nn-pulse {
+					0%, 100% { transform: scale(0.85); opacity: 0.30; }
+					50%      { transform: scale(1.55); opacity: 0.55; }
 				}
 			`}</style>
 			<Nav authed={authed} />
@@ -1351,8 +1984,11 @@ export function LandingPage() {
 				<Hero authed={authed} liveCount={liveCount} />
 				<StatsStrip />
 				<Features />
-				<HowItWorks />
+				<ReliabilitySection />
 				<AISection />
+				<IncidentStatusSection />
+				<HowItWorks />
+				<IntegrationsStrip />
 				<DevSection />
 				<CTA authed={authed} />
 			</main>

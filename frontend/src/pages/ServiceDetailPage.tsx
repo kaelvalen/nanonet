@@ -35,11 +35,11 @@ import { type AnalysisResult, metricsApi } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { AgentSetupWizard } from "@/components/AgentSetupWizard";
 import { LogViewer } from "@/components/LogViewer";
+import { useRegisterPageMeta } from "@/components/PageMetaContext";
 import { AlertRulesTab } from "@/components/service-detail/AlertRulesTab";
 import { CommandHistoryTab } from "@/components/service-detail/CommandHistoryTab";
 import { LoadBalancingTab } from "@/components/service-detail/LoadBalancingTab";
 import { MaintenanceTab } from "@/components/service-detail/MaintenanceTab";
-import { useRegisterPageMeta } from "@/components/PageMetaContext";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -64,8 +64,8 @@ import type { Service } from "@/types/service";
 const runAgentCommand = servicesApi["exec" as "exec"];
 
 import { DependenciesPanel } from "@/components/service-detail/DependenciesPanel";
-import { SharingPanel } from "@/components/service-detail/SharingPanel";
 import { ForecastPanel } from "@/components/service-detail/ForecastPanel";
+import { SharingPanel } from "@/components/service-detail/SharingPanel";
 
 const ServiceMetricsCharts = lazy(() =>
 	import("@/components/service-detail/ServiceMetricsCharts").then((m) => ({
@@ -142,11 +142,11 @@ function metricTone(
 
 function toneColor(tone: Tone): string {
 	return tone === "crit"
-		? "var(--status-down-text)"
+		? "var(--status-down)"
 		: tone === "warn"
-			? "var(--status-warn-text)"
+			? "var(--status-degraded)"
 			: tone === "ok"
-				? "var(--status-up-text)"
+				? "var(--status-up)"
 				: "var(--text-faint)";
 }
 
@@ -161,12 +161,12 @@ function toneLabel(tone: Tone): string {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ATOM — Status Orb (pulsing concentric rings when live)
+// ATOM — Status Orb (pulsing ring when live)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function StatusOrb({
 	status,
-	size = 10,
+	size = 8,
 }: {
 	status: Service["status"];
 	size?: number;
@@ -175,30 +175,19 @@ function StatusOrb({
 		status === "up"
 			? "var(--status-up)"
 			: status === "degraded"
-				? "var(--status-warn)"
+				? "var(--status-degraded)"
 				: status === "down"
 					? "var(--status-down)"
 					: "var(--status-unknown)";
 
 	const alive = status === "up";
-	const orbit = size + 6;
 
 	return (
 		<span
 			className="relative inline-flex items-center justify-center shrink-0"
-			style={{ width: orbit, height: orbit }}
+			style={{ width: size + 6, height: size + 6 }}
 			aria-hidden
 		>
-			{alive && (
-				<span
-					className="absolute inset-0 rounded-full"
-					style={{
-						background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
-						opacity: 0.35,
-						animation: "nn-orb-breathe 2.4s ease-in-out infinite",
-					}}
-				/>
-			)}
 			<span
 				className="relative rounded-full"
 				style={{
@@ -206,7 +195,7 @@ function StatusOrb({
 					height: size,
 					background: color,
 					boxShadow: alive
-						? `0 0 0 2px color-mix(in srgb, ${color} 18%, transparent)`
+						? `0 0 0 3px color-mix(in srgb, ${color} 22%, transparent)`
 						: undefined,
 				}}
 			/>
@@ -220,8 +209,8 @@ function StatusOrb({
 
 function UptimeGauge({
 	percent,
-	size = 88,
-	strokeWidth = 4,
+	size = 80,
+	strokeWidth = 3,
 }: {
 	percent: number;
 	size?: number;
@@ -235,28 +224,30 @@ function UptimeGauge({
 		clamped >= 99
 			? "var(--status-up)"
 			: clamped >= 95
-				? "var(--status-warn)"
+				? "var(--status-degraded)"
 				: "var(--status-down)";
 
 	return (
 		<div
+			role="img"
 			className="relative shrink-0"
 			style={{ width: size, height: size }}
-			aria-label={`Uptime ${clamped.toFixed(1)}%`}
+			aria-label={`Uptime ${clamped.toFixed(1)} yüzde`}
 		>
 			<svg
 				width={size}
 				height={size}
 				viewBox={`0 0 ${size} ${size}`}
 				className="-rotate-90"
-				aria-hidden
+				aria-hidden="true"
 			>
+				<title>Uptime {clamped.toFixed(1)}%</title>
 				<circle
 					cx={size / 2}
 					cy={size / 2}
 					r={radius}
 					fill="none"
-					stroke="var(--border-track)"
+					stroke="var(--border-subtle)"
 					strokeWidth={strokeWidth}
 				/>
 				<circle
@@ -270,29 +261,28 @@ function UptimeGauge({
 					strokeDasharray={circumference}
 					strokeDashoffset={offset}
 					style={{
-						transition:
-							"stroke-dashoffset 900ms cubic-bezier(0.25,0.8,0.25,1)",
+						transition: "stroke-dashoffset 700ms cubic-bezier(0.2, 0, 0, 1)",
 					}}
 				/>
 			</svg>
 			<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
 				<span
-					className="tabular-nums font-semibold leading-none tracking-tight"
+					className="tnum font-semibold leading-none"
 					style={{
 						color: "var(--text-primary)",
-						fontSize: size * 0.26,
+						fontSize: size * 0.24,
 					}}
 				>
 					{clamped.toFixed(clamped >= 99.95 ? 2 : 1)}
 					<span
-						className="text-[10px] font-medium ml-0.5"
+						className="text-[9px] font-normal ml-0.5"
 						style={{ color: "var(--text-faint)" }}
 					>
 						%
 					</span>
 				</span>
 				<span
-					className="text-[10px] font-medium mt-1.5"
+					className="text-[9px] uppercase tracking-wider font-semibold mt-1"
 					style={{ color: "var(--text-faint)" }}
 				>
 					24 saat
@@ -322,13 +312,10 @@ function Sparkline({
 			<div
 				style={{ width, height }}
 				className="flex items-end justify-end opacity-40"
-				aria-hidden
+				aria-hidden="true"
 			>
-				<svg
-					viewBox={`0 0 ${width} ${height}`}
-					width={width}
-					height={height}
-				>
+				<svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+					<title>Sparkline (veri yok)</title>
 					<line
 						x1="0"
 						y1={height - 1}
@@ -363,8 +350,9 @@ function Sparkline({
 			height={height}
 			viewBox={`0 0 ${width} ${height}`}
 			className="shrink-0"
-			aria-hidden
+			aria-hidden="true"
 		>
+			<title>Sparkline</title>
 			<polyline points={areaPoints} fill={color} opacity="0.12" />
 			<polyline
 				points={points}
@@ -376,11 +364,7 @@ function Sparkline({
 			/>
 			<circle
 				cx={width}
-				cy={
-					height -
-					2 -
-					((data[data.length - 1] - min) / range) * (height - 4)
-				}
+				cy={height - 2 - ((data[data.length - 1] - min) / range) * (height - 4)}
 				r="2"
 				fill={color}
 			/>
@@ -398,66 +382,63 @@ function MetricChip({
 	unit,
 	tone,
 	sparkData,
-	sparkColor,
-	index,
 }: {
 	label: string;
 	value: string;
 	unit: string;
 	tone: Tone;
 	sparkData: number[];
-	sparkColor: string;
-	index: number;
 }) {
+	const sparkColor = toneColor(tone);
 	return (
-		<motion.div
-			initial={{ opacity: 0, y: 8 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.35, delay: 0.15 + index * 0.06 }}
-			className="group relative flex flex-col justify-between p-4 rounded-xl overflow-hidden min-w-0 transition-colors hover:border-[color:var(--border-strong)]"
+		<div
+			className="group relative flex flex-col justify-between p-3.5 rounded-[6px] overflow-hidden min-w-0"
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
 			<div className="flex items-center justify-between gap-2">
 				<span
-					className="text-[11px] font-medium tracking-tight"
-					style={{ color: "var(--text-muted)" }}
+					className="text-[10px] font-semibold uppercase tracking-wider"
+					style={{ color: "var(--text-faint)" }}
 				>
 					{label}
 				</span>
 				<span
 					className="w-1.5 h-1.5 rounded-full shrink-0"
-					style={{
-						background: toneColor(tone),
-						boxShadow: `0 0 0 3px color-mix(in srgb, ${toneColor(tone)} 14%, transparent)`,
-					}}
+					style={{ background: toneColor(tone) }}
 					title={toneLabel(tone)}
+					aria-hidden
 				/>
 			</div>
-			<div className="flex items-end justify-between gap-2 mt-2.5">
-				<div className="flex items-baseline gap-1 shrink-0 whitespace-nowrap">
+			<div className="flex items-end justify-between gap-2 mt-3">
+				<div className="flex items-baseline gap-0.5 shrink-0 whitespace-nowrap">
 					<span
-						className="text-[18px] font-semibold tabular-nums leading-none tracking-tight"
+						className="text-[22px] font-semibold tnum leading-none"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{value}
 					</span>
 					{unit && (
 						<span
-							className="text-[10px] font-medium leading-none"
+							className="text-[11px] font-medium leading-none ml-0.5"
 							style={{ color: "var(--text-faint)" }}
 						>
 							{unit}
 						</span>
 					)}
 				</div>
-				<div className="flex-1 min-w-0 flex justify-end opacity-80 group-hover:opacity-100 transition-opacity">
-					<Sparkline data={sparkData} color={sparkColor} width={56} />
+				<div className="flex-1 min-w-0 flex justify-end">
+					<Sparkline
+						data={sparkData}
+						color={sparkColor}
+						width={56}
+						height={22}
+					/>
 				</div>
 			</div>
-		</motion.div>
+		</div>
 	);
 }
 
@@ -490,80 +471,68 @@ function VitalSignsBand({
 
 	const healthColor =
 		uptimePercent == null
-			? "var(--text-muted)"
+			? "var(--text-tertiary)"
 			: uptimePercent >= 99
 				? "var(--status-up-text)"
 				: uptimePercent >= 95
-					? "var(--status-warn-text)"
+					? "var(--status-degraded-text)"
 					: "var(--status-down-text)";
 
 	return (
-		<div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,260px)_repeat(4,minmax(0,1fr))]">
-			<motion.div
-				initial={{ opacity: 0, y: 8 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4, delay: 0.1 }}
-				className="relative col-span-2 lg:col-span-1 flex items-center gap-4 p-4 rounded-xl overflow-hidden"
+		<div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,240px)_repeat(4,minmax(0,1fr))]">
+			<div
+				className="relative col-span-2 lg:col-span-1 flex items-center gap-3 p-3.5 rounded-[6px]"
 				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
+					background: "var(--surface-base)",
+					border: "1px solid var(--border-subtle)",
 				}}
 			>
 				<UptimeGauge percent={uptimePercent ?? 0} />
-				<div className="flex flex-col gap-1.5 min-w-0 flex-1">
+				<div className="flex flex-col gap-1 min-w-0 flex-1">
 					<span
-						className="text-[11px] font-medium tracking-tight"
-						style={{ color: "var(--text-muted)" }}
+						className="text-[10px] uppercase tracking-wider font-semibold"
+						style={{ color: "var(--text-faint)" }}
 					>
 						Sistem Sağlığı
 					</span>
 					<p
-						className="text-[15px] font-semibold leading-none tracking-tight"
+						className="text-[15px] font-semibold leading-none"
 						style={{ color: healthColor }}
 					>
 						{healthLabel}
 					</p>
 					<p
 						className="text-[11px] leading-snug"
-						style={{ color: "var(--text-faint)" }}
+						style={{ color: "var(--text-tertiary)" }}
 					>
 						{STATUS_LABEL[service.status]} ·{" "}
-						<span className="tabular-nums">
-							{service.poll_interval_sec}s poll
-						</span>
+						<span className="tnum">{service.poll_interval_sec}s poll</span>
 					</p>
 				</div>
-			</motion.div>
+			</div>
 
 			<MetricChip
-				index={0}
 				label="CPU"
 				value={fmtNumber(latest?.cpu_percent, 1)}
 				unit="%"
 				tone={metricTone(latest?.cpu_percent, 60, 80)}
 				sparkData={spark("cpu_percent")}
-				sparkColor="#2dd4bf"
 			/>
 			<MetricChip
-				index={1}
 				label="Bellek"
 				value={memVal}
 				unit={memUnit}
 				tone="mute"
 				sparkData={spark("memory_used_mb")}
-				sparkColor="#22d3ee"
 			/>
 			<MetricChip
-				index={2}
 				label="Gecikme"
 				value={latVal}
 				unit={latUnit}
 				tone={metricTone(latest?.latency_ms, 200, 500)}
 				sparkData={spark("latency_ms")}
-				sparkColor="#818cf8"
 			/>
 			<MetricChip
-				index={3}
 				label="Hata"
 				value={fmtNumber(
 					latest?.error_rate,
@@ -572,7 +541,6 @@ function VitalSignsBand({
 				unit="%"
 				tone={metricTone(latest?.error_rate, 1, 5)}
 				sparkData={spark("error_rate")}
-				sparkColor="#fb7185"
 			/>
 		</div>
 	);
@@ -582,79 +550,56 @@ function VitalSignsBand({
 // IDENTITY RAIL
 // ═══════════════════════════════════════════════════════════════════════════
 
-type ActionVariant = "up" | "teal" | "warn" | "blue" | "danger";
-
-const ACTION_TONES: Record<
-	ActionVariant,
-	{ color: string; border: string; bg: string }
-> = {
-	up: {
-		color: "var(--status-up-text)",
-		border: "var(--status-up-border)",
-		bg: "var(--status-up-subtle)",
-	},
-	teal: {
-		color: "var(--color-teal)",
-		border: "var(--color-teal-border)",
-		bg: "var(--color-teal-subtle)",
-	},
-	warn: {
-		color: "var(--status-warn-text)",
-		border: "var(--status-warn-border)",
-		bg: "var(--status-warn-subtle)",
-	},
-	blue: {
-		color: "var(--color-blue)",
-		border: "var(--color-blue-border)",
-		bg: "var(--color-blue-subtle)",
-	},
-	danger: {
-		color: "var(--status-down-text)",
-		border: "var(--status-down-border)",
-		bg: "var(--status-down-subtle)",
-	},
-};
+type ActionVariant = "default" | "primary" | "warn" | "danger";
 
 function ActionButton({
 	onClick,
 	icon: Icon,
 	label,
-	variant,
+	variant = "default",
 	loading = false,
 	disabled = false,
 }: {
 	onClick: () => void;
 	icon: React.ElementType;
 	label: string;
-	variant: ActionVariant;
+	variant?: ActionVariant;
 	loading?: boolean;
 	disabled?: boolean;
 }) {
-	const t = ACTION_TONES[variant];
+	const accent =
+		variant === "primary"
+			? "var(--brand-primary)"
+			: variant === "warn"
+				? "var(--status-degraded-text)"
+				: variant === "danger"
+					? "var(--status-down-text)"
+					: "var(--text-secondary)";
+
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			disabled={loading || disabled}
-			className="nn-cockpit-action group flex items-center gap-2.5 px-3 h-8 rounded-lg text-[12px] font-medium text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-			style={
-				{
-					border: "1px solid var(--border-default)",
-					color: "var(--text-secondary)",
-					background: "transparent",
-					"--nn-act-border": t.border,
-					"--nn-act-bg": t.bg,
-					"--nn-act-color": t.color,
-				} as React.CSSProperties
-			}
+			className="group flex items-center gap-2 px-2.5 h-8 rounded-[6px] text-[12px] font-medium text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] hover:bg-[var(--surface-sunken)]"
+			style={{
+				color: "var(--text-secondary)",
+				background: "transparent",
+			}}
 		>
 			{loading ? (
-				<Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+				<Loader2
+					className="w-3.5 h-3.5 animate-spin shrink-0"
+					style={{ color: accent }}
+				/>
 			) : (
-				<Icon className="w-3.5 h-3.5 shrink-0" />
+				<Icon className="w-3.5 h-3.5 shrink-0" style={{ color: accent }} />
 			)}
 			<span className="flex-1">{label}</span>
-			<ChevronRight className="w-3 h-3 shrink-0 opacity-0 -translate-x-1 transition-all group-hover:opacity-60 group-hover:translate-x-0" />
+			<ChevronRight
+				className="w-3 h-3 shrink-0 opacity-0 -translate-x-0.5 transition-all group-hover:opacity-50 group-hover:translate-x-0"
+				style={{ color: "var(--text-faint)" }}
+			/>
 		</button>
 	);
 }
@@ -689,44 +634,58 @@ function IdentityRail({
 		}
 	};
 
+	const agentStatusTone =
+		service.agent_status === "healthy"
+			? {
+					text: "var(--status-up-text)",
+					bg: "var(--status-up-subtle)",
+				}
+			: service.agent_status === "stale"
+				? {
+						text: "var(--status-degraded-text)",
+						bg: "var(--status-degraded-subtle)",
+					}
+				: {
+						text: "var(--status-down-text)",
+						bg: "var(--status-down-subtle)",
+					};
+
 	return (
-		<motion.aside
-			initial={{ opacity: 0, x: -8 }}
-			animate={{ opacity: 1, x: 0 }}
-			transition={{ duration: 0.35 }}
-			className="flex flex-col lg:w-[260px] lg:shrink-0 lg:self-start"
-		>
+		<aside className="flex flex-col lg:w-[240px] lg:shrink-0 lg:self-start">
 			<button
 				type="button"
 				onClick={onBack}
-				className="group self-start flex items-center gap-1.5 text-[12px] font-medium mb-3 px-1.5 py-1 rounded-lg transition-colors hover:text-[color:var(--text-primary)]"
-				style={{ color: "var(--text-muted)" }}
+				className="group self-start flex items-center gap-1.5 text-[12px] font-medium mb-3 px-1.5 py-1 -ml-1.5 rounded-[4px] transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+				style={{ color: "var(--text-tertiary)" }}
 			>
 				<ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
 				Tüm Servisler
 			</button>
 
-			<div className="flex flex-col gap-2 pb-3 mb-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-				<div className="flex items-center gap-2.5">
-					<StatusOrb status={service.status} size={9} />
+			<div
+				className="flex flex-col gap-2 pb-4 mb-4"
+				style={{ borderBottom: "1px solid var(--border-subtle)" }}
+			>
+				<div className="flex items-center gap-2">
+					<StatusOrb status={service.status} size={8} />
 					<p
-						className="text-[11px] font-medium leading-none"
+						className="text-[10px] font-semibold uppercase tracking-wider leading-none"
 						style={{
 							color:
 								service.status === "up"
 									? "var(--status-up-text)"
 									: service.status === "degraded"
-										? "var(--status-warn-text)"
+										? "var(--status-degraded-text)"
 										: service.status === "down"
 											? "var(--status-down-text)"
-											: "var(--text-faint)",
+											: "var(--text-tertiary)",
 						}}
 					>
 						{STATUS_LABEL[service.status]}
 					</p>
 				</div>
 				<h1
-					className="text-[17px] font-semibold leading-tight tracking-tight truncate"
+					className="text-[18px] font-semibold leading-tight tracking-tight truncate"
 					style={{ color: "var(--text-primary)" }}
 					title={service.name}
 				>
@@ -736,7 +695,7 @@ function IdentityRail({
 				<button
 					type="button"
 					onClick={copy}
-					className="group flex items-center gap-2 px-2 py-1 -mx-1 rounded-lg transition-colors hover:bg-[var(--surface-sunken)]"
+					className="group flex items-center gap-2 px-1.5 py-1 -mx-1.5 rounded-[4px] transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
 					aria-label="Adresi kopyala"
 				>
 					<span
@@ -762,34 +721,34 @@ function IdentityRail({
 			</div>
 
 			<dl
-				className="grid grid-cols-2 gap-3 pb-3 mb-3"
+				className="flex flex-col gap-2.5 pb-4 mb-4"
 				style={{ borderBottom: "1px solid var(--border-subtle)" }}
 			>
-				<div className="min-w-0">
+				<div className="flex items-baseline justify-between gap-2 min-w-0">
 					<dt
-						className="text-[11px] font-medium mb-1"
-						style={{ color: "var(--text-muted)" }}
+						className="text-[10px] uppercase tracking-wider font-semibold shrink-0"
+						style={{ color: "var(--text-faint)" }}
 					>
 						Endpoint
 					</dt>
 					<dd
-						className="text-[12px] font-mono truncate"
-						style={{ color: "var(--text-primary)" }}
+						className="text-[12px] font-mono truncate text-right"
+						style={{ color: "var(--text-secondary)" }}
 						title={service.health_endpoint}
 					>
 						{service.health_endpoint}
 					</dd>
 				</div>
-				<div>
+				<div className="flex items-baseline justify-between gap-2">
 					<dt
-						className="text-[11px] font-medium mb-1"
-						style={{ color: "var(--text-muted)" }}
+						className="text-[10px] uppercase tracking-wider font-semibold"
+						style={{ color: "var(--text-faint)" }}
 					>
 						Poll
 					</dt>
 					<dd
-						className="text-[12px] font-mono tabular-nums"
-						style={{ color: "var(--text-primary)" }}
+						className="text-[12px] font-mono tnum"
+						style={{ color: "var(--text-secondary)" }}
 					>
 						{service.poll_interval_sec}s
 					</dd>
@@ -797,44 +756,36 @@ function IdentityRail({
 			</dl>
 
 			<div
-				className="flex items-center gap-2.5 px-3 py-2.5 mb-3 rounded-xl"
+				className="flex items-center gap-2.5 px-2.5 py-2 mb-4 rounded-[6px]"
 				style={{
-					background: service.agent_connected
-						? "var(--status-up-subtle)"
-						: "var(--surface-sunken)",
-					border: `1px solid ${
-						service.agent_connected
-							? "var(--status-up-border)"
-							: "var(--border-default)"
-					}`,
+					background: "var(--surface-sunken)",
+					border: "1px solid var(--border-subtle)",
 				}}
 			>
 				<span
-					className={`w-2 h-2 rounded-full shrink-0 ${
-						service.agent_connected ? "animate-pulse" : ""
-					}`}
+					className="w-1.5 h-1.5 rounded-full shrink-0"
 					style={{
 						background: service.agent_connected
 							? "var(--status-up)"
 							: "var(--text-faint)",
 						boxShadow: service.agent_connected
-							? "0 0 0 3px color-mix(in srgb, var(--status-up) 18%, transparent)"
+							? "0 0 0 3px color-mix(in srgb, var(--status-up) 22%, transparent)"
 							: undefined,
 					}}
 				/>
 				<div className="flex-1 min-w-0">
 					<p
-						className="text-[12px] font-semibold leading-none truncate"
+						className="text-[11px] font-semibold leading-none truncate"
 						style={{
 							color: service.agent_connected
-								? "var(--status-up-text)"
-								: "var(--text-muted)",
+								? "var(--text-primary)"
+								: "var(--text-tertiary)",
 						}}
 					>
 						{service.agent_connected ? "Agent canlı" : "Agent yok"}
 					</p>
 					<p
-						className="text-[11px] mt-0.5 truncate"
+						className="text-[10px] mt-1 truncate"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{service.agent_connected
@@ -846,20 +797,10 @@ function IdentityRail({
 				</div>
 				{service.agent_status && service.agent_status !== "unknown" && (
 					<span
-						className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
+						className="text-[10px] font-medium px-1.5 py-0.5 rounded-[4px] shrink-0"
 						style={{
-							color:
-								service.agent_status === "healthy"
-									? "var(--status-up-text)"
-									: service.agent_status === "stale"
-										? "var(--status-degraded-text)"
-										: "var(--status-down-text)",
-							background:
-								service.agent_status === "healthy"
-									? "color-mix(in srgb, var(--status-up) 14%, transparent)"
-									: service.agent_status === "stale"
-										? "color-mix(in srgb, var(--status-warn) 14%, transparent)"
-										: "color-mix(in srgb, var(--status-down) 14%, transparent)",
+							color: agentStatusTone.text,
+							background: agentStatusTone.bg,
 						}}
 					>
 						{service.agent_status}
@@ -867,10 +808,10 @@ function IdentityRail({
 				)}
 			</div>
 
-			<div className="flex flex-col gap-1">
+			<div className="flex flex-col gap-0.5">
 				<p
-					className="text-[11px] font-medium px-1 mb-0.5"
-					style={{ color: "var(--text-muted)" }}
+					className="text-[10px] uppercase tracking-wider font-semibold px-2 mb-1"
+					style={{ color: "var(--text-faint)" }}
 				>
 					Komutlar
 				</p>
@@ -878,14 +819,14 @@ function IdentityRail({
 					onClick={onStart}
 					icon={Play}
 					label="Başlat"
-					variant="up"
+					variant="primary"
 					loading={startLoading}
 				/>
 				<ActionButton
 					onClick={onRestart}
 					icon={RefreshCw}
 					label="Yeniden Başlat"
-					variant="teal"
+					variant="primary"
 				/>
 				<ActionButton
 					onClick={onStop}
@@ -894,14 +835,13 @@ function IdentityRail({
 					variant="warn"
 				/>
 				<div
-					className="h-px my-1"
+					className="h-px my-1.5 mx-2"
 					style={{ background: "var(--border-subtle)" }}
 				/>
 				<ActionButton
 					onClick={onAgentSetup}
 					icon={Zap}
 					label="Agent Kurulumu"
-					variant="blue"
 				/>
 				<ActionButton
 					onClick={onDelete}
@@ -910,7 +850,7 @@ function IdentityRail({
 					variant="danger"
 				/>
 			</div>
-		</motion.aside>
+		</aside>
 	);
 }
 
@@ -946,59 +886,58 @@ function SectionNav({
 }) {
 	return (
 		<div
-			className="rounded-xl p-1.5"
+			role="tablist"
+			aria-label="Servis bölümleri"
+			className="flex items-center gap-1 overflow-x-auto"
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				scrollbarWidth: "none",
+				borderBottom: "1px solid var(--border-subtle)",
 			}}
 		>
-			<nav
-				className="flex items-center gap-1 overflow-x-auto"
-				style={{ scrollbarWidth: "none" }}
-			>
-				{SECTIONS.map((s) => {
-					const isActive = active === s.id;
-					const Icon = s.icon;
-					const showBadge = s.id === "alerts" && alertCount > 0;
-					return (
-						<button
-							key={s.id}
-							type="button"
-							onClick={() => onChange(s.id)}
-							className="relative flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-medium whitespace-nowrap transition-all shrink-0"
-							style={
-								isActive
-									? {
-											color: "var(--text-primary)",
-											background: "var(--surface-sunken)",
-										}
-									: { color: "var(--text-muted)" }
-							}
-						>
-							<Icon
-								className="w-3.5 h-3.5 shrink-0"
+			{SECTIONS.map((s) => {
+				const isActive = active === s.id;
+				const Icon = s.icon;
+				const showBadge = s.id === "alerts" && alertCount > 0;
+				return (
+					<button
+						key={s.id}
+						type="button"
+						role="tab"
+						aria-selected={isActive}
+						onClick={() => onChange(s.id)}
+						className="relative flex items-center gap-1.5 px-3 h-9 text-[13px] font-medium whitespace-nowrap transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] rounded-[4px]"
+						style={{
+							color: isActive ? "var(--text-primary)" : "var(--text-tertiary)",
+						}}
+					>
+						<Icon
+							className="w-3.5 h-3.5 shrink-0"
+							style={{
+								color: isActive ? "var(--brand-primary)" : "currentColor",
+							}}
+						/>
+						<span>{s.label}</span>
+						{showBadge && (
+							<span
+								className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-[4px] text-[10px] font-semibold flex items-center justify-center tnum"
 								style={{
-									color: isActive
-										? "var(--color-teal)"
-										: "currentColor",
+									background: "var(--status-down-subtle)",
+									color: "var(--status-down-text)",
 								}}
+							>
+								{alertCount}
+							</span>
+						)}
+						{isActive && (
+							<span
+								aria-hidden
+								className="absolute left-2 right-2 -bottom-px h-[2px] rounded-t-full"
+								style={{ background: "var(--brand-primary)" }}
 							/>
-							<span>{s.label}</span>
-							{showBadge && (
-								<span
-									className="min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold flex items-center justify-center tabular-nums"
-									style={{
-										background: "var(--status-down)",
-										color: "white",
-									}}
-								>
-									{alertCount}
-								</span>
-							)}
-						</button>
-					);
-				})}
-			</nav>
+						)}
+					</button>
+				);
+			})}
 		</div>
 	);
 }
@@ -1012,28 +951,37 @@ function DurationControl({
 }) {
 	return (
 		<div
-			className="flex items-center gap-0.5 p-0.5 rounded-lg"
-			style={{ background: "var(--surface-sunken)" }}
+			role="radiogroup"
+			aria-label="Zaman aralığı"
+			className="inline-flex items-center h-8 rounded-[6px] p-0.5"
+			style={{
+				background: "var(--surface-sunken)",
+				border: "1px solid var(--border-subtle)",
+			}}
 		>
-			{["15m", "1h", "6h", "24h"].map((d) => (
-				<button
-					key={d}
-					type="button"
-					onClick={() => onChange(d)}
-					className="px-2.5 h-7 rounded-md text-[11px] font-medium tabular-nums transition-all"
-					style={
-						value === d
-							? {
-									background: "var(--surface-card)",
-									color: "var(--text-primary)",
-									boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-								}
-							: { color: "var(--text-muted)" }
-					}
-				>
-					{d}
-				</button>
-			))}
+			{["15m", "1h", "6h", "24h"].map((d) => {
+				const active = value === d;
+				return (
+					// biome-ignore lint/a11y/useSemanticElements: visual segmented control inside an explicit radiogroup
+					<button
+						key={d}
+						type="button"
+						role="radio"
+						aria-checked={active}
+						onClick={() => onChange(d)}
+						className="px-2.5 h-7 rounded-[4px] text-[11px] font-medium tnum transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+						style={{
+							background: active ? "var(--surface-base)" : "transparent",
+							color: active ? "var(--text-primary)" : "var(--text-tertiary)",
+							border: active
+								? "1px solid var(--border-subtle)"
+								: "1px solid transparent",
+						}}
+					>
+						{d}
+					</button>
+				);
+			})}
 		</div>
 	);
 }
@@ -1068,39 +1016,40 @@ function OverviewSection({
 }) {
 	const toolbar = (
 		<div className="flex items-center justify-between gap-3 flex-wrap">
-			<p
-				className="text-[12px] font-medium"
-				style={{ color: "var(--text-muted)" }}
-			>
+			<p className="text-[12px]" style={{ color: "var(--text-tertiary)" }}>
 				Son {DURATION_LABELS[duration] ?? duration} ölçümleri
 			</p>
 			<DurationControl value={duration} onChange={onDurationChange} />
 		</div>
 	);
 
+	const skeletonGrid = (
+		<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+			{[0, 1, 2, 3].map((i) => (
+				<div
+					key={i}
+					className="h-[220px] rounded-[6px] animate-pulse"
+					style={{
+						background: "var(--surface-base)",
+						border: "1px solid var(--border-subtle)",
+					}}
+				/>
+			))}
+		</div>
+	);
+
 	if (loading) {
 		return (
-			<div className="flex flex-col gap-3">
+			<div className="flex flex-col gap-4">
 				{toolbar}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-					{[0, 1, 2, 3].map((i) => (
-						<div
-							key={i}
-							className="h-[220px] rounded-lg animate-pulse"
-							style={{
-								background: "var(--surface-card)",
-								border: "1px solid var(--border-default)",
-							}}
-						/>
-					))}
-				</div>
+				{skeletonGrid}
 			</div>
 		);
 	}
 
 	if (empty) {
 		return (
-			<div className="flex flex-col gap-3">
+			<div className="flex flex-col gap-4">
 				{toolbar}
 				<EmptyPanel
 					icon={Activity}
@@ -1112,23 +1061,8 @@ function OverviewSection({
 	}
 
 	return (
-		<Suspense
-			fallback={
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-					{[0, 1, 2, 3].map((i) => (
-						<div
-							key={i}
-							className="h-[220px] rounded-lg animate-pulse"
-							style={{
-								background: "var(--surface-card)",
-								border: "1px solid var(--border-default)",
-							}}
-						/>
-					))}
-				</div>
-			}
-		>
-			<div className="flex flex-col gap-3">
+		<Suspense fallback={skeletonGrid}>
+			<div className="flex flex-col gap-4">
 				{toolbar}
 				<ForecastPanel serviceId={serviceId} />
 				<ServiceMetricsCharts chartData={chartData} />
@@ -1167,109 +1101,109 @@ function AlertsSection({
 		);
 	}
 
+	const sevAccent = (sev: string) =>
+		sev === "crit"
+			? "var(--status-down)"
+			: sev === "warn"
+				? "var(--status-degraded)"
+				: "var(--brand-primary)";
+
+	const sevBg = (sev: string) =>
+		sev === "crit"
+			? "var(--status-down-subtle)"
+			: sev === "warn"
+				? "var(--status-degraded-subtle)"
+				: "var(--brand-primary-subtle)";
+
+	const sevText = (sev: string) =>
+		sev === "crit"
+			? "var(--status-down-text)"
+			: sev === "warn"
+				? "var(--status-degraded-text)"
+				: "var(--brand-primary)";
+
 	return (
 		<div className="flex flex-col gap-2">
 			<p
-				className="text-[10px] uppercase tracking-[0.2em] font-bold px-1"
+				className="text-[10px] uppercase tracking-wider font-semibold px-1"
 				style={{ color: "var(--text-faint)" }}
 			>
-				{alerts.length} Aktif Uyarı
+				{alerts.length} aktif uyarı
 			</p>
-			{alerts.map((alert, i) => {
-				const severityColor =
-					alert.severity === "crit"
-						? "var(--status-down-text)"
-						: alert.severity === "warn"
-							? "var(--status-warn-text)"
-							: "var(--color-blue)";
-				const severityBg =
-					alert.severity === "crit"
-						? "var(--status-down-subtle)"
-						: alert.severity === "warn"
-							? "var(--status-warn-subtle)"
-							: "var(--color-blue-subtle)";
-				const severityBorder =
-					alert.severity === "crit"
-						? "var(--status-down-border)"
-						: alert.severity === "warn"
-							? "var(--status-warn-border)"
-							: "var(--color-blue-border)";
-				return (
-					<motion.div
-						key={alert.id}
-						initial={{ opacity: 0, y: 4 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.25, delay: i * 0.04 }}
-						className="group flex items-start gap-3 p-4 rounded-lg"
-						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--border-default)",
-						}}
-					>
-						<span
-							className="mt-1 w-2 h-2 rounded-full shrink-0"
-							style={{
-								background: severityColor,
-								boxShadow:
-									alert.severity === "crit"
-										? `0 0 8px ${severityColor}`
-										: undefined,
+			<AnimatePresence initial={false}>
+				{alerts.map((alert, i) => {
+					const accent = sevAccent(alert.severity);
+					const bg = sevBg(alert.severity);
+					const text = sevText(alert.severity);
+					return (
+						<motion.article
+							key={alert.id}
+							layout
+							initial={{ opacity: 0, y: 4 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, height: 0 }}
+							transition={{
+								duration: 0.18,
+								delay: Math.min(i, 5) * 0.02,
 							}}
-						/>
-						<div className="flex-1 min-w-0">
-							<div className="flex items-center gap-2 flex-wrap mb-1">
-								<span
-									className="text-[10px] font-mono font-bold uppercase tracking-[0.14em] px-1.5 py-0.5 rounded"
-									style={{
-										color: severityColor,
-										background: severityBg,
-										border: `1px solid ${severityBorder}`,
-									}}
-								>
-									{alert.severity}
-								</span>
-								<span
-									className="text-[10px] font-mono uppercase tracking-wider"
-									style={{ color: "var(--text-faint)" }}
-								>
-									{alert.type}
-								</span>
-								<span className="flex-1" />
-								<span
-									className="text-[10px] font-mono tabular-nums"
-									style={{ color: "var(--text-faint)" }}
-								>
-									{new Date(alert.triggered_at).toLocaleString("tr-TR", {
-										day: "2-digit",
-										month: "short",
-										hour: "2-digit",
-										minute: "2-digit",
-									})}
-								</span>
-							</div>
-							<p
-								className="text-[13px] leading-snug"
-								style={{ color: "var(--text-primary)" }}
-							>
-								{alert.message}
-							</p>
-						</div>
-						<button
-							type="button"
-							onClick={() => onResolve(alert.id)}
-							className="shrink-0 flex items-center gap-1 px-2.5 h-7 rounded text-[10px] font-bold uppercase tracking-wider transition-all hover:bg-[var(--status-up-subtle)]"
+							className="relative flex items-start gap-3 px-4 py-3 rounded-[6px]"
 							style={{
-								border: "1px solid var(--status-up-border)",
-								color: "var(--status-up-text)",
-								background: "transparent",
+								background: "var(--surface-base)",
+								border: "1px solid var(--border-subtle)",
 							}}
 						>
-							<Check className="w-3 h-3" />
-							Çöz
-						</button>
-					</motion.div>
-				);
-			})}
+							<span
+								aria-hidden
+								className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+								style={{ background: accent }}
+							/>
+							<div className="flex-1 min-w-0 pl-2">
+								<header className="flex items-center gap-2 flex-wrap mb-1">
+									<span
+										className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-[4px]"
+										style={{ color: text, background: bg }}
+									>
+										{alert.severity}
+									</span>
+									<span
+										className="text-[10px] uppercase tracking-wider font-medium"
+										style={{ color: "var(--text-faint)" }}
+									>
+										{alert.type}
+									</span>
+									<span className="flex-1" />
+									<span
+										className="text-[10px] tnum"
+										style={{ color: "var(--text-faint)" }}
+									>
+										{new Date(alert.triggered_at).toLocaleString("tr-TR", {
+											day: "2-digit",
+											month: "short",
+											hour: "2-digit",
+											minute: "2-digit",
+										})}
+									</span>
+								</header>
+								<p
+									className="text-[13px] leading-snug"
+									style={{ color: "var(--text-primary)" }}
+								>
+									{alert.message}
+								</p>
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => onResolve(alert.id)}
+								className="shrink-0"
+							>
+								<Check className="w-3 h-3 mr-1" />
+								Çöz
+							</Button>
+						</motion.article>
+					);
+				})}
+			</AnimatePresence>
 		</div>
 	);
 }
@@ -1321,8 +1255,7 @@ function TerminalSection({
 							Agent bağlı değil
 						</p>
 						<p style={{ color: "var(--text-muted)" }}>
-							Terminal komutları NanoNet Agent üzerinden iletilir. Sol
-							paneldeki
+							Terminal komutları NanoNet Agent üzerinden iletilir. Sol paneldeki
 							<strong style={{ color: "var(--text-secondary)" }}>
 								{" "}
 								Agent Kurulumu{" "}
@@ -1575,232 +1508,244 @@ function AIAnalysisSection({
 	deep: boolean;
 	setDeep: (v: boolean) => void;
 }) {
+	const priorityTokens = (p: string) => {
+		if (p === "high") {
+			return {
+				text: "var(--status-down-text)",
+				bg: "var(--status-down-subtle)",
+			};
+		}
+		if (p === "medium") {
+			return {
+				text: "var(--status-degraded-text)",
+				bg: "var(--status-degraded-subtle)",
+			};
+		}
+		return {
+			text: "var(--status-up-text)",
+			bg: "var(--status-up-subtle)",
+		};
+	};
+
 	return (
-		<div className="flex flex-col gap-4">
+		<div className="flex flex-col gap-3">
+			{/* Toolbar */}
 			<div
-				className="flex flex-wrap items-center gap-3 p-3 rounded-lg"
+				className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-[6px]"
 				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--color-lavender-border)",
+					background: "var(--surface-base)",
+					border: "1px solid var(--border-subtle)",
 				}}
 			>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2.5 min-w-0">
 					<span
-						className="w-7 h-7 rounded flex items-center justify-center"
+						className="w-8 h-8 rounded-[6px] flex items-center justify-center shrink-0"
 						style={{
-							background: "var(--color-lavender-subtle)",
-							border: "1px solid var(--color-lavender-border)",
+							background: "var(--surface-sunken)",
+							border: "1px solid var(--border-subtle)",
 						}}
 					>
 						<Sparkles
-							className="w-3.5 h-3.5"
-							style={{ color: "var(--color-lavender)" }}
+							className="w-4 h-4"
+							style={{ color: "var(--brand-primary)" }}
 						/>
 					</span>
-					<div>
+					<div className="min-w-0">
 						<p
-							className="text-xs font-bold leading-tight"
+							className="text-[13px] font-semibold leading-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
-							Claude AI Analiz
+							Claude AI analiz
 						</p>
 						<p
-							className="text-[10px] leading-tight"
-							style={{ color: "var(--text-muted)" }}
+							className="text-[11px] leading-tight mt-1"
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							Son 30 dakikalık metriklerden kök-neden tahmini
 						</p>
 					</div>
 				</div>
 
-				<div className="flex items-center gap-2 ml-auto">
+				<div className="flex items-center gap-2 shrink-0">
 					<div
-						className="flex rounded overflow-hidden"
-						style={{ border: "1px solid var(--color-lavender-border)" }}
-					>
-						<button
-							type="button"
-							onClick={() => setDeep(false)}
-							className="px-3 h-8 text-[10px] font-bold uppercase tracking-wider transition-all"
-							style={
-								!deep
-									? {
-											background: "var(--color-lavender-subtle)",
-											color: "var(--color-lavender)",
-										}
-									: { color: "var(--text-muted)" }
-							}
-						>
-							Hızlı
-						</button>
-						<button
-							type="button"
-							onClick={() => setDeep(true)}
-							className="px-3 h-8 text-[10px] font-bold uppercase tracking-wider transition-all"
-							style={
-								deep
-									? {
-											background: "var(--color-lavender-subtle)",
-											color: "var(--color-lavender)",
-										}
-									: { color: "var(--text-muted)" }
-							}
-						>
-							Derin
-						</button>
-					</div>
-					<button
-						type="button"
-						onClick={onAnalyze}
-						disabled={loading}
-						className="flex items-center gap-1.5 px-3.5 h-8 rounded text-[11px] font-bold uppercase tracking-wider text-white transition-all disabled:opacity-60"
+						role="radiogroup"
+						aria-label="Analiz derinliği"
+						className="inline-flex items-center h-8 rounded-[6px] p-0.5"
 						style={{
-							background: "var(--gradient-btn-primary)",
-							boxShadow: "var(--btn-shadow)",
+							background: "var(--surface-sunken)",
+							border: "1px solid var(--border-subtle)",
 						}}
 					>
+						{[
+							{ label: "Hızlı", val: false },
+							{ label: "Derin", val: true },
+						].map(({ label, val }) => {
+							const active = deep === val;
+							return (
+								// biome-ignore lint/a11y/useSemanticElements: visual segmented control inside an explicit radiogroup
+								<button
+									key={label}
+									type="button"
+									role="radio"
+									aria-checked={active}
+									onClick={() => setDeep(val)}
+									className="px-2.5 h-7 rounded-[4px] text-[11px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+									style={{
+										background: active ? "var(--surface-base)" : "transparent",
+										color: active
+											? "var(--text-primary)"
+											: "var(--text-tertiary)",
+										border: active
+											? "1px solid var(--border-subtle)"
+											: "1px solid transparent",
+									}}
+								>
+									{label}
+								</button>
+							);
+						})}
+					</div>
+					<Button size="sm" onClick={onAnalyze} disabled={loading}>
 						{loading ? (
 							<>
-								<Loader2 className="w-3 h-3 animate-spin" /> Analiz...
+								<Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+								Analiz…
 							</>
 						) : (
 							<>
-								<Sparkles className="w-3 h-3" /> Analiz Başlat
+								<Sparkles className="w-3.5 h-3.5 mr-1.5" />
+								Analiz başlat
 							</>
 						)}
-					</button>
+					</Button>
 				</div>
 			</div>
 
 			{loading && !result ? (
 				<div
-					className="flex flex-col items-center justify-center p-12 rounded-lg gap-3"
+					className="flex flex-col items-center justify-center px-6 py-12 gap-3 rounded-[6px]"
 					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--color-lavender-border)",
+						background: "var(--surface-base)",
+						border: "1px dashed var(--border-default)",
 					}}
 				>
 					<Sparkles
-						className="w-10 h-10 animate-pulse"
-						style={{ color: "var(--color-lavender)" }}
+						className="w-8 h-8 animate-pulse"
+						style={{ color: "var(--brand-primary)" }}
 					/>
-					<p
-						className="text-xs font-mono"
-						style={{ color: "var(--text-muted)" }}
-					>
-						Claude metrikleri inceliyor...
+					<p className="text-[12px]" style={{ color: "var(--text-tertiary)" }}>
+						Claude metrikleri inceliyor…
 					</p>
 				</div>
 			) : result ? (
 				<div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-					<div
-						className="lg:col-span-3 p-4 rounded-lg"
+					{/* Summary */}
+					<section
+						className="lg:col-span-3 px-4 py-3 rounded-[6px]"
 						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--border-default)",
+							background: "var(--surface-base)",
+							border: "1px solid var(--border-subtle)",
 						}}
 					>
-						<div className="flex items-center justify-between mb-2">
+						<header className="flex items-center justify-between mb-2">
 							<span
-								className="text-[10px] uppercase tracking-[0.2em] font-bold"
+								className="text-[10px] uppercase tracking-wider font-semibold"
 								style={{ color: "var(--text-faint)" }}
 							>
 								Özet
 							</span>
 							{result.confidence !== undefined && (
 								<span
-									className="text-[10px] font-mono tabular-nums px-2 py-0.5 rounded"
+									className="text-[10px] tnum font-medium px-1.5 py-0.5 rounded-[4px]"
 									style={{
-										color: "var(--color-lavender)",
-										background: "var(--color-lavender-subtle)",
+										color: "var(--brand-primary)",
+										background: "var(--brand-primary-subtle)",
 									}}
 								>
 									{(result.confidence * 100).toFixed(0)}% güven
 								</span>
 							)}
-						</div>
+						</header>
 						<p
-							className="text-sm leading-relaxed"
+							className="text-[13px] leading-relaxed"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{result.summary}
 						</p>
-					</div>
+					</section>
 
+					{/* Root cause */}
 					{result.root_cause && (
-						<div
-							className="lg:col-span-2 p-4 rounded-lg"
+						<section
+							className="lg:col-span-2 px-4 py-3 rounded-[6px] relative"
 							style={{
 								background: "var(--status-down-subtle)",
-								border: "1px solid var(--status-down-border)",
+								border: "1px solid var(--border-subtle)",
 							}}
 						>
-							<div className="flex items-center gap-1.5 mb-2">
+							<span
+								aria-hidden
+								className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+								style={{ background: "var(--status-down)" }}
+							/>
+							<header className="flex items-center gap-1.5 mb-2 pl-2">
 								<AlertTriangle
 									className="w-3 h-3"
 									style={{ color: "var(--status-down)" }}
 								/>
-								<span
-									className="text-[10px] uppercase tracking-[0.2em] font-bold"
+								<h3
+									className="text-[10px] uppercase tracking-wider font-semibold"
 									style={{ color: "var(--status-down-text)" }}
 								>
-									Kök Neden
-								</span>
-							</div>
+									Kök neden
+								</h3>
+							</header>
 							<p
-								className="text-[13px] leading-relaxed"
+								className="text-[13px] leading-relaxed pl-2"
 								style={{ color: "var(--text-primary)" }}
 							>
 								{result.root_cause}
 							</p>
-						</div>
+						</section>
 					)}
 
+					{/* Recommendations */}
 					{result.recommendations && result.recommendations.length > 0 && (
-						<div
-							className="lg:col-span-5 p-4 rounded-lg"
+						<section
+							className="lg:col-span-5 px-4 py-3 rounded-[6px] relative"
 							style={{
-								background: "var(--color-teal-subtle)",
-								border: "1px solid var(--color-teal-border)",
+								background: "var(--brand-primary-subtle)",
+								border: "1px solid var(--border-subtle)",
 							}}
 						>
-							<div className="flex items-center gap-1.5 mb-3">
+							<span
+								aria-hidden
+								className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+								style={{ background: "var(--brand-primary)" }}
+							/>
+							<header className="flex items-center gap-1.5 mb-2.5 pl-2">
 								<CheckCircle2
 									className="w-3 h-3"
-									style={{ color: "var(--color-teal)" }}
+									style={{ color: "var(--brand-primary)" }}
 								/>
-								<span
-									className="text-[10px] uppercase tracking-[0.2em] font-bold"
-									style={{ color: "var(--color-teal)" }}
+								<h3
+									className="text-[10px] uppercase tracking-wider font-semibold"
+									style={{ color: "var(--brand-primary)" }}
 								>
 									Öneriler
-								</span>
-							</div>
-							<ul className="space-y-2">
+								</h3>
+							</header>
+							<ul className="space-y-2 pl-2">
 								{result.recommendations.map((rec) => {
-									const priorityColor =
-										rec.priority === "high"
-											? "var(--status-down-text)"
-											: rec.priority === "medium"
-												? "var(--status-warn-text)"
-												: "var(--color-teal)";
-									const priorityBg =
-										rec.priority === "high"
-											? "var(--status-down-subtle)"
-											: rec.priority === "medium"
-												? "var(--status-warn-subtle)"
-												: "var(--color-teal-subtle)";
+									const t = priorityTokens(rec.priority);
 									return (
 										<li
 											key={rec.action}
-											className="flex items-start gap-3 text-[13px]"
+											className="flex items-start gap-2.5 text-[13px]"
 										>
 											<span
-												className="shrink-0 text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5"
-												style={{
-													color: priorityColor,
-													background: priorityBg,
-												}}
+												className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[4px] mt-0.5"
+												style={{ color: t.text, background: t.bg }}
 											>
 												{rec.priority}
 											</span>
@@ -1814,15 +1759,15 @@ function AIAnalysisSection({
 									);
 								})}
 							</ul>
-						</div>
+						</section>
 					)}
 				</div>
 			) : (
 				<EmptyPanel
 					icon={Sparkles}
-					iconColor="var(--color-lavender)"
+					iconColor="var(--brand-primary)"
 					title="Henüz analiz yok"
-					description="Son metriklerde anomali tespit etmek için Analiz Başlat'a tıklayın. Derin analiz daha detaylı çıktı üretir."
+					description="Son metriklerde anomali tespit etmek için Analiz başlat'a tıklayın. Derin analiz daha detaylı çıktı üretir."
 				/>
 			)}
 		</div>
@@ -1846,33 +1791,33 @@ function EmptyPanel({
 }) {
 	return (
 		<div
-			className="flex flex-col items-center justify-center p-12 rounded-lg text-center"
+			className="flex flex-col items-center justify-center py-12 px-6 rounded-[6px] text-center"
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px dashed var(--border-default)",
 			}}
 		>
 			<span
-				className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
+				className="w-10 h-10 rounded-[6px] flex items-center justify-center mb-3"
 				style={{
 					background: "var(--surface-sunken)",
-					border: "1px solid var(--border-default)",
+					border: "1px solid var(--border-subtle)",
 				}}
 			>
 				<Icon
 					className="w-4 h-4"
-					style={{ color: iconColor ?? "var(--text-faint)" }}
+					style={{ color: iconColor ?? "var(--text-tertiary)" }}
 				/>
 			</span>
 			<p
-				className="text-sm font-semibold mb-1"
+				className="text-[14px] font-semibold mb-1"
 				style={{ color: "var(--text-primary)" }}
 			>
 				{title}
 			</p>
 			<p
-				className="text-xs leading-relaxed max-w-md"
-				style={{ color: "var(--text-muted)" }}
+				className="text-[12px] leading-relaxed max-w-md"
+				style={{ color: "var(--text-tertiary)" }}
 			>
 				{description}
 			</p>
@@ -2130,17 +2075,13 @@ export function ServiceDetailPage() {
 					size="lg"
 					className="flex-1"
 					action={
-						<button
-							type="button"
+						<Button
 							onClick={() => navigate("/app/services")}
-							className="flex items-center gap-1.5 px-4 h-9 rounded text-[12px] font-semibold text-white"
-							style={{
-								background: "var(--gradient-btn-primary)",
-								boxShadow: "var(--btn-shadow)",
-							}}
+							variant="default"
+							size="sm"
 						>
-							<ArrowLeft className="w-3.5 h-3.5" /> Servislere Dön
-						</button>
+							<ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Servislere Dön
+						</Button>
 					}
 				/>
 			</PageShell>
@@ -2150,36 +2091,6 @@ export function ServiceDetailPage() {
 	// ────────────────────────────────────────────────────────────────── MAIN
 	return (
 		<PageShell width="wide" fill>
-			<style>{`
-				.nn-cockpit-action:not(:disabled):hover {
-					border-color: var(--nn-act-border) !important;
-					background: var(--nn-act-bg) !important;
-					color: var(--nn-act-color) !important;
-				}
-				.nn-vital-stripe::before {
-					content: "";
-					position: absolute;
-					inset: 0;
-					background-image: repeating-linear-gradient(-45deg, currentColor 0, currentColor 1px, transparent 1px, transparent 10px);
-					opacity: 0.03;
-					pointer-events: none;
-				}
-				.nn-scan-flow {
-					background: linear-gradient(to right, transparent 0%, var(--color-teal) 50%, transparent 100%);
-					background-size: 60% 100%;
-					background-repeat: no-repeat;
-					animation: nn-scan-flow 3.2s ease-in-out infinite;
-				}
-				@keyframes nn-scan-flow {
-					0% { background-position: -60% 0; }
-					100% { background-position: 160% 0; }
-				}
-				@keyframes nn-orb-breathe {
-					0%, 100% { transform: scale(0.85); opacity: 0.25; }
-					50% { transform: scale(1.35); opacity: 0.5; }
-				}
-			`}</style>
-
 			<div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 py-1">
 				<IdentityRail
 					service={service}
@@ -2318,60 +2229,38 @@ export function ServiceDetailPage() {
 
 			{/* ─── Dialogs ─── */}
 			<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-				<DialogContent
-					className="rounded"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--status-down-border)",
-						boxShadow: "var(--panel-shadow)",
-					}}
-				>
+				<DialogContent>
 					<DialogHeader>
-						<DialogTitle style={{ color: "var(--status-down-text)" }}>
-							Servisi Sil
-						</DialogTitle>
-						<DialogDescription style={{ color: "var(--text-muted)" }}>
-							<strong style={{ color: "var(--text-secondary)" }}>
+						<DialogTitle>Servisi Sil</DialogTitle>
+						<DialogDescription>
+							<strong style={{ color: "var(--text-primary)" }}>
 								{service.name}
 							</strong>{" "}
-							servisini silmek istediğinize emin misiniz? Bu işlem geri
-							alınamaz ve tüm metrik geçmişi kaybolacak.
+							servisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz
+							ve tüm metrik geçmişi kaybolacak.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
 						<Button
 							variant="outline"
+							size="sm"
 							onClick={() => setDeleteDialogOpen(false)}
-							className="rounded"
 						>
 							İptal
 						</Button>
-						<Button
-							onClick={handleDelete}
-							className="text-white rounded"
-							style={{ background: "var(--status-down-text)" }}
-						>
-							<Trash2 className="w-3 h-3 mr-1" /> Kalıcı Olarak Sil
+						<Button onClick={handleDelete} variant="destructive" size="sm">
+							<Trash2 className="w-3.5 h-3.5 mr-1.5" /> Kalıcı Olarak Sil
 						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 
 			<Dialog open={restartConfirmOpen} onOpenChange={setRestartConfirmOpen}>
-				<DialogContent
-					className="rounded max-w-sm"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--color-teal-border)",
-						boxShadow: "var(--panel-shadow)",
-					}}
-				>
+				<DialogContent className="max-w-sm">
 					<DialogHeader>
-						<DialogTitle style={{ color: "var(--color-teal)" }}>
-							Yeniden Başlat
-						</DialogTitle>
-						<DialogDescription style={{ color: "var(--text-muted)" }}>
-							<strong style={{ color: "var(--text-secondary)" }}>
+						<DialogTitle>Yeniden Başlat</DialogTitle>
+						<DialogDescription>
+							<strong style={{ color: "var(--text-primary)" }}>
 								{service.name}
 							</strong>{" "}
 							yeniden başlatılacak. Aktif bağlantılar kesilecektir.
@@ -2380,37 +2269,24 @@ export function ServiceDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="outline"
+							size="sm"
 							onClick={() => setRestartConfirmOpen(false)}
-							className="rounded text-xs"
 						>
 							İptal
 						</Button>
-						<Button
-							onClick={handleRestart}
-							className="rounded text-xs text-white"
-							style={{ background: "var(--color-teal)" }}
-						>
-							<RefreshCw className="w-3 h-3 mr-1" /> Yeniden Başlat
+						<Button onClick={handleRestart} size="sm">
+							<RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Yeniden Başlat
 						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 
 			<Dialog open={stopConfirmOpen} onOpenChange={setStopConfirmOpen}>
-				<DialogContent
-					className="rounded max-w-sm"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--status-warn-border)",
-						boxShadow: "var(--panel-shadow)",
-					}}
-				>
+				<DialogContent className="max-w-sm">
 					<DialogHeader>
-						<DialogTitle style={{ color: "var(--status-warn-text)" }}>
-							Servisi Durdur
-						</DialogTitle>
-						<DialogDescription style={{ color: "var(--text-muted)" }}>
-							<strong style={{ color: "var(--text-secondary)" }}>
+						<DialogTitle>Servisi Durdur</DialogTitle>
+						<DialogDescription>
+							<strong style={{ color: "var(--text-primary)" }}>
 								{service.name}
 							</strong>{" "}
 							durdurulacak. Servis yanıt vermez hale gelecektir.
@@ -2419,17 +2295,13 @@ export function ServiceDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="outline"
+							size="sm"
 							onClick={() => setStopConfirmOpen(false)}
-							className="rounded text-xs"
 						>
 							İptal
 						</Button>
-						<Button
-							onClick={handleStop}
-							className="rounded text-xs text-white"
-							style={{ background: "var(--status-warn)" }}
-						>
-							<Power className="w-3 h-3 mr-1" /> Durdur
+						<Button onClick={handleStop} variant="destructive" size="sm">
+							<Power className="w-3.5 h-3.5 mr-1.5" /> Durdur
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -2444,26 +2316,17 @@ export function ServiceDetailPage() {
 					}
 				}}
 			>
-				<DialogContent
-					className="rounded max-w-sm"
-					style={{
-						background: "var(--surface-card)",
-						border: "1px solid var(--status-warn-border)",
-						boxShadow: "var(--panel-shadow)",
-					}}
-				>
+				<DialogContent className="max-w-sm">
 					<DialogHeader>
-						<DialogTitle style={{ color: "var(--status-warn-text)" }}>
-							Terminal Erişimi
-						</DialogTitle>
+						<DialogTitle>Terminal Erişimi</DialogTitle>
 						<DialogDescription asChild>
 							<div
-								className="space-y-3 text-xs"
-								style={{ color: "var(--text-muted)" }}
+								className="space-y-3 text-[12px]"
+								style={{ color: "var(--text-tertiary)" }}
 							>
 								<p>
 									Bu terminal{" "}
-									<strong style={{ color: "var(--text-secondary)" }}>
+									<strong style={{ color: "var(--text-primary)" }}>
 										{service.name}
 									</strong>{" "}
 									sunucusunda doğrudan komut çalıştırır.
@@ -2471,35 +2334,35 @@ export function ServiceDetailPage() {
 								<ul
 									className="space-y-1 pl-3"
 									style={{
-										borderLeft: "1px solid var(--status-warn-border)",
+										borderLeft: "2px solid var(--status-degraded-border)",
 									}}
 								>
 									<li>
 										Yalnızca{" "}
 										<code
 											className="font-mono"
-											style={{ color: "var(--color-teal)" }}
+											style={{ color: "var(--brand-primary)" }}
 										>
 											status
 										</code>
 										,{" "}
 										<code
 											className="font-mono"
-											style={{ color: "var(--color-teal)" }}
+											style={{ color: "var(--brand-primary)" }}
 										>
 											mem
 										</code>
 										,{" "}
 										<code
 											className="font-mono"
-											style={{ color: "var(--color-teal)" }}
+											style={{ color: "var(--brand-primary)" }}
 										>
 											cpu
 										</code>
 										,{" "}
 										<code
 											className="font-mono"
-											style={{ color: "var(--color-teal)" }}
+											style={{ color: "var(--brand-primary)" }}
 										>
 											ps
 										</code>{" "}
@@ -2526,15 +2389,16 @@ export function ServiceDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="outline"
+							size="sm"
 							onClick={() => {
 								setExecConfirmOpen(false);
 								setPendingCommand("");
 							}}
-							className="rounded text-xs"
 						>
 							İptal
 						</Button>
 						<Button
+							size="sm"
 							onClick={() => {
 								sessionStorage.setItem("exec_session_confirmed", "1");
 								setExecSessionConfirmed(true);
@@ -2542,10 +2406,8 @@ export function ServiceDetailPage() {
 								void handleExecDirect(pendingCommand);
 								setPendingCommand("");
 							}}
-							className="rounded text-xs text-white"
-							style={{ background: "var(--status-warn)" }}
 						>
-							<Terminal className="w-3 h-3 mr-1" /> Anladım, Devam Et
+							<Terminal className="w-3.5 h-3.5 mr-1.5" /> Anladım, Devam Et
 						</Button>
 					</DialogFooter>
 				</DialogContent>

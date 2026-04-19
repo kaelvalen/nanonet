@@ -26,14 +26,14 @@ export function LoginPage() {
 			footer={
 				<>
 					<span
-						className="text-sm font-medium"
-						style={{ color: "var(--text-muted)" }}
+						className="text-[13px]"
+						style={{ color: "var(--text-tertiary)" }}
 					>
 						{t("auth.noAccount")}
 					</span>
 					<Link
 						to="/register"
-						className="text-sm font-black transition-colors"
+						className="text-[13px] font-medium transition-colors hover:underline"
 						style={{ color: "var(--brand-primary)" }}
 					>
 						{t("auth.register")} →
@@ -41,12 +41,12 @@ export function LoginPage() {
 				</>
 			}
 		>
-			<form onSubmit={handleSubmit} className="space-y-5">
+			<form onSubmit={handleSubmit} className="space-y-4">
 				<div className="space-y-1.5">
 					<Label
 						htmlFor="email"
 						className="text-[12px] font-medium"
-						style={{ color: "var(--text-faint)" }}
+						style={{ color: "var(--text-tertiary)" }}
 					>
 						{t("auth.email")}
 					</Label>
@@ -57,7 +57,7 @@ export function LoginPage() {
 						placeholder="you@company.com"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className="h-11 rounded-lg text-sm font-medium"
+						className="h-10"
 						required
 						disabled={isLoggingIn}
 					/>
@@ -73,7 +73,7 @@ export function LoginPage() {
 					rightSlot={
 						<Link
 							to="/forgot-password"
-							className="text-[11px] font-semibold transition-colors"
+							className="text-[11px] font-medium transition-colors hover:underline"
 							style={{ color: "var(--brand-primary)" }}
 						>
 							{t("auth.forgotPassword")}

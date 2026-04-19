@@ -1,4 +1,3 @@
-import type { Edge } from "@xyflow/react";
 import type { Service } from "@/types/service";
 
 export interface NodeExtra {

@@ -16,12 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { type AnalysisResult, metricsApi } from "@/api/metrics";
 import type { Service } from "@/types/service";
-import {
-	STATUS_BG,
-	STATUS_BORDER,
-	STATUS_COLOR,
-	STATUS_LABEL,
-} from "./constants";
+import { STATUS_COLOR, STATUS_LABEL } from "./constants";
 import { StatusIcon } from "./StatusIcon";
 
 interface RightPanelProps {
@@ -369,25 +364,20 @@ export function RightPanel({ service, onClose }: RightPanelProps) {
 										{analysisResult.summary}
 									</p>
 								</div>
-								{analysisResult.recommendations
-									?.slice(0, 3)
-									.map((rec) => (
-										<div
-											key={rec.action}
-											className="flex items-start gap-2"
+								{analysisResult.recommendations?.slice(0, 3).map((rec) => (
+									<div key={rec.action} className="flex items-start gap-2">
+										<TrendingUp
+											className="w-3.5 h-3.5 mt-0.5 shrink-0"
+											style={{ color: "var(--color-lavender)" }}
+										/>
+										<p
+											className="text-[12px] leading-relaxed"
+											style={{ color: "var(--text-secondary)" }}
 										>
-											<TrendingUp
-												className="w-3.5 h-3.5 mt-0.5 shrink-0"
-												style={{ color: "var(--color-lavender)" }}
-											/>
-											<p
-												className="text-[12px] leading-relaxed"
-												style={{ color: "var(--text-secondary)" }}
-											>
-												{rec.action}
-											</p>
-										</div>
-									))}
+											{rec.action}
+										</p>
+									</div>
+								))}
 							</motion.div>
 						)}
 					</AnimatePresence>

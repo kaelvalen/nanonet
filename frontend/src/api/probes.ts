@@ -55,7 +55,10 @@ export const probesApi = {
 		const r = await apiClient.post("/probes", input);
 		return r.data?.data?.probe;
 	},
-	update: async (id: string, input: Partial<CreateProbeInput>): Promise<Probe> => {
+	update: async (
+		id: string,
+		input: Partial<CreateProbeInput>,
+	): Promise<Probe> => {
 		const r = await apiClient.put(`/probes/${id}`, input);
 		return r.data?.data?.probe;
 	},

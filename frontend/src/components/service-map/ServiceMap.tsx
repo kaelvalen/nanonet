@@ -17,11 +17,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef } from "react";
-import {
-	STATUS_BG,
-	STATUS_COLOR,
-	STATUS_LABEL,
-} from "./constants";
+import { STATUS_BG, STATUS_COLOR, STATUS_LABEL } from "./constants";
 import { RightPanel } from "./RightPanel";
 import { ServiceNode } from "./ServiceNode";
 import { StatusEdge } from "./StatusEdge";
@@ -59,7 +55,10 @@ function ServiceMapInner() {
 	useEffect(() => {
 		if (!addMode) return;
 		const onClick = (e: MouseEvent) => {
-			if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+			if (
+				addMenuRef.current &&
+				!addMenuRef.current.contains(e.target as Node)
+			) {
 				setAddMode(false);
 			}
 		};
@@ -130,8 +129,7 @@ function ServiceMapInner() {
 											style={{
 												background: STATUS_COLOR[status],
 												opacity: 0.3,
-												animation:
-													"nn-orb-breathe 2.4s ease-in-out infinite",
+												animation: "nn-orb-breathe 2.4s ease-in-out infinite",
 											}}
 										/>
 									)}
@@ -207,9 +205,7 @@ function ServiceMapInner() {
 									background: addMode
 										? "color-mix(in srgb, var(--color-teal) 18%, transparent)"
 										: "var(--surface-card)",
-									color: addMode
-										? "var(--color-teal)"
-										: "var(--text-faint)",
+									color: addMode ? "var(--color-teal)" : "var(--text-faint)",
 								}}
 							>
 								{addableServices.length}

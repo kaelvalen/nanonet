@@ -32,30 +32,22 @@ export function SkeletonLine({
 	height?: number;
 	className?: string;
 }) {
-	return (
-		<Bone
-			className={className}
-			style={{ width, height }}
-		/>
-	);
+	return <Bone className={className} style={{ width, height }} />;
 }
 
 /** Card-shaped block. */
 export function SkeletonCard({ className }: BaseProps) {
 	return (
 		<div
-			className={cn(
-				"rounded-[var(--radius)] p-4 space-y-3 animate-pulse",
-				className,
-			)}
+			className={cn("rounded-[6px] p-4 space-y-3 animate-pulse", className)}
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
 			<div className="flex items-center gap-3">
 				<div
-					className="w-8 h-8 rounded-md"
+					className="w-8 h-8 rounded-[6px]"
 					style={{ background: "var(--surface-sunken)" }}
 				/>
 				<SkeletonLine width="40%" />
@@ -70,13 +62,10 @@ export function SkeletonCard({ className }: BaseProps) {
 export function SkeletonStat({ className }: BaseProps) {
 	return (
 		<div
-			className={cn(
-				"rounded-[var(--radius)] p-4 animate-pulse",
-				className,
-			)}
+			className={cn("rounded-[6px] px-3.5 py-3 animate-pulse", className)}
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
 			<SkeletonLine width="50%" height={9} />
@@ -101,11 +90,12 @@ export function SkeletonList({
 		<div className={cn("flex flex-col gap-1.5", className)}>
 			{Array.from({ length: rows }).map((_, i) => (
 				<div
+					// biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders are static
 					key={i}
-					className="rounded-md flex items-center gap-3 px-3 animate-pulse"
+					className="rounded-[6px] flex items-center gap-3 px-3 animate-pulse"
 					style={{
 						height: rowHeight,
-						background: "var(--surface-card)",
+						background: "var(--surface-base)",
 						border: "1px solid var(--border-subtle)",
 					}}
 				>
@@ -132,19 +122,20 @@ export function SkeletonChart({
 	return (
 		<div
 			className={cn(
-				"rounded-[var(--radius)] flex items-end gap-2 p-4 animate-pulse",
+				"rounded-[6px] flex items-end gap-2 p-4 animate-pulse",
 				className,
 			)}
 			style={{
-				background: "var(--surface-card)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 				height,
 			}}
 		>
 			{[0.4, 0.7, 0.3, 0.9, 0.55, 0.8, 0.65, 0.5].map((h, i) => (
 				<div
+					// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton bars
 					key={i}
-					className="flex-1 rounded-sm"
+					className="flex-1 rounded-[3px]"
 					style={{
 						height: `${h * 100}%`,
 						background: "var(--surface-sunken)",
@@ -174,7 +165,10 @@ export function SkeletonGrid({
 	return (
 		<div className={cn("grid gap-3", colsCls, className)}>
 			{Array.from({ length: cells }).map((_, i) => (
-				<SkeletonStat key={i} />
+				<SkeletonStat
+					// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholders
+					key={i}
+				/>
 			))}
 		</div>
 	);

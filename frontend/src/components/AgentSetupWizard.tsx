@@ -37,22 +37,22 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 	};
 	return (
 		<div
-			className="rounded p-3 font-mono text-xs relative group"
+			className="rounded-[6px] p-3 font-mono text-[12px] relative group"
 			style={{
 				background: "var(--surface-sunken)",
-				border: "1px solid var(--border-default)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
 			{label && (
 				<p
-					className="text-[10px] mb-1 font-sans font-semibold"
-					style={{ color: "var(--text-muted)" }}
+					className="text-[10px] mb-1.5 font-sans font-medium uppercase tracking-wider"
+					style={{ color: "var(--text-faint)" }}
 				>
 					{label}
 				</p>
 			)}
 			<pre
-				className="whitespace-pre-wrap break-all pr-8"
+				className="whitespace-pre-wrap break-all pr-8 leading-relaxed"
 				style={{ color: "var(--text-secondary)" }}
 			>
 				{value}
@@ -60,15 +60,14 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 			<button
 				type="button"
 				onClick={copy}
-				className="absolute top-2 right-2 p-1.5 rounded transition-all"
+				aria-label="Kopyala"
+				className="absolute top-2 right-2 p-1.5 rounded-[4px] transition-colors"
 				style={{
 					background: copied
 						? "var(--status-up-subtle)"
-						: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-					color: copied ? "var(--status-up-text)" : "var(--text-muted)",
+						: "var(--surface-base)",
+					color: copied ? "var(--status-up-text)" : "var(--text-tertiary)",
 				}}
-				title="Kopya"
 			>
 				{copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
 			</button>
@@ -77,9 +76,9 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 }
 
 const STEPS = [
-	{ id: 1, label: "Agent Token Al", icon: Key },
-	{ id: 2, label: "Binary İndir", icon: Download },
-	{ id: 3, label: "Başlat & Doğrula", icon: Terminal },
+	{ id: 1, label: "Agent token al", icon: Key },
+	{ id: 2, label: "Binary indir", icon: Download },
+	{ id: 3, label: "Başlat & doğrula", icon: Terminal },
 ];
 
 export function AgentSetupWizard({
@@ -131,25 +130,21 @@ export function AgentSetupWizard({
 
 	return (
 		<Dialog open={open} onOpenChange={handleClose}>
-			<DialogContent
-				className="max-w-lg rounded"
-				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-					boxShadow: "var(--panel-shadow)",
-				}}
-			>
+			<DialogContent className="max-w-lg">
 				<DialogHeader>
 					<DialogTitle
-						className="flex items-center gap-2 text-sm font-bold"
+						className="flex items-center gap-2 text-[14px] font-semibold"
 						style={{ color: "var(--text-primary)" }}
 					>
-						<Server className="w-4 h-4" style={{ color: "var(--primary)" }} />
-						Agent Kurulum Rehberi
+						<Server
+							className="w-4 h-4"
+							style={{ color: "var(--brand-primary)" }}
+						/>
+						Agent kurulum rehberi
 						{serviceName && (
 							<span
-								className="ml-1 text-xs font-normal"
-								style={{ color: "var(--text-muted)" }}
+								className="ml-1 text-[12px] font-normal"
+								style={{ color: "var(--text-tertiary)" }}
 							>
 								— {serviceName}
 							</span>
@@ -165,18 +160,17 @@ export function AgentSetupWizard({
 						return (
 							<div key={s.id} className="flex items-center gap-1 flex-1">
 								<div
-									className="flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold flex-1"
+									className="flex items-center gap-1.5 px-2 h-7 rounded-[4px] text-[10px] font-medium uppercase tracking-wider flex-1"
 									style={{
 										background: done
 											? "var(--status-up-subtle)"
 											: active
-												? "var(--color-teal-subtle)"
+												? "var(--brand-primary-subtle)"
 												: "var(--surface-sunken)",
-										border: `1px solid ${done ? "var(--status-up-border)" : active ? "var(--color-teal-border)" : "var(--border-subtle)"}`,
 										color: done
 											? "var(--status-up-text)"
 											: active
-												? "var(--color-teal)"
+												? "var(--brand-primary)"
 												: "var(--text-faint)",
 									}}
 								>
@@ -186,7 +180,7 @@ export function AgentSetupWizard({
 										<s.icon className="w-3 h-3" />
 									)}
 									<span className="hidden sm:inline truncate">{s.label}</span>
-									<span className="sm:hidden">{s.id}</span>
+									<span className="sm:hidden tnum">{s.id}</span>
 								</div>
 								{i < STEPS.length - 1 && (
 									<ChevronRight
@@ -202,40 +196,42 @@ export function AgentSetupWizard({
 				{/* Step 1: Token */}
 				{step === 1 && (
 					<div className="space-y-4">
-						<p className="text-xs" style={{ color: "var(--text-muted)" }}>
+						<p
+							className="text-[13px] leading-relaxed"
+							style={{ color: "var(--text-tertiary)" }}
+						>
 							Agent'ın backend'e bağlanabilmesi için bir kimlik doğrulama
 							token'ı gerekir. Bu token yalnızca bu servis için geçerlidir.
 						</p>
 						<div
-							className="p-3 rounded text-xs"
+							className="relative rounded-[6px] p-3 pl-4 text-[12px] leading-relaxed"
 							style={{
-								background: "var(--color-lavender-subtle)",
-								border: "1px solid var(--color-lavender-border)",
-								color: "var(--text-secondary)",
+								background: "var(--status-degraded-subtle)",
+								color: "var(--status-degraded-text)",
 							}}
 						>
-							<strong>Önemli:</strong> Token yalnızca bir kez gösterilir.
-							Güvenli bir yere kaydedin.
+							<span
+								aria-hidden
+								className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+								style={{ background: "var(--status-degraded)" }}
+							/>
+							<strong className="font-semibold">Önemli:</strong> Token yalnızca
+							bir kez gösterilir. Güvenli bir yere kaydedin.
 						</div>
 						<Button
 							onClick={() => generateToken.mutate()}
 							disabled={generateToken.isPending}
-							className="w-full rounded"
-							style={{
-								background: "var(--primary)",
-								color: "var(--primary-foreground)",
-								border: "1px solid var(--border-default)",
-								boxShadow: "var(--btn-shadow)",
-							}}
+							className="w-full"
 						>
 							{generateToken.isPending ? (
 								<>
-									<Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />{" "}
-									Oluşturuluyor...
+									<Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+									Oluşturuluyor…
 								</>
 							) : (
 								<>
-									<Key className="w-3.5 h-3.5 mr-2" /> Agent Token Oluştur
+									<Key className="w-3.5 h-3.5 mr-2" />
+									Agent token oluştur
 								</>
 							)}
 						</Button>
@@ -245,52 +241,32 @@ export function AgentSetupWizard({
 				{/* Step 2: Binary + Token */}
 				{step === 2 && agentToken && (
 					<div className="space-y-3">
-						<p className="text-xs" style={{ color: "var(--text-muted)" }}>
+						<p
+							className="text-[13px] leading-relaxed"
+							style={{ color: "var(--text-tertiary)" }}
+						>
 							Token oluşturuldu. Binary'yi indirip aşağıdaki komutla başlatın.
 						</p>
 						<CopyBox
 							value={agentToken}
-							label="Agent Token (güvenli yere kaydedin)"
+							label="Agent token (güvenli yere kaydedin)"
 						/>
 
 						<div className="flex gap-2">
-							<a
-								href={`${apiBaseUrl}/downloads/nanonet-agent-linux-amd64`}
-								className="flex-1 flex items-center justify-center gap-2 py-2 rounded text-xs font-semibold"
-								style={{
-									background: "var(--surface-sunken)",
-									border: "1px solid var(--border-default)",
-									color: "var(--text-secondary)",
-									boxShadow: "var(--btn-shadow)",
-								}}
-							>
-								<Download className="w-3.5 h-3.5" /> Linux x64
-							</a>
-							<a
-								href={`${apiBaseUrl}/downloads/nanonet-agent-linux-arm64`}
-								className="flex-1 flex items-center justify-center gap-2 py-2 rounded text-xs font-semibold"
-								style={{
-									background: "var(--surface-sunken)",
-									border: "1px solid var(--border-default)",
-									color: "var(--text-secondary)",
-									boxShadow: "var(--btn-shadow)",
-								}}
-							>
-								<Download className="w-3.5 h-3.5" /> Linux ARM64
-							</a>
+							<Button asChild variant="outline" className="flex-1">
+								<a href={`${apiBaseUrl}/downloads/nanonet-agent-linux-amd64`}>
+									<Download className="w-3.5 h-3.5 mr-1.5" /> Linux x64
+								</a>
+							</Button>
+							<Button asChild variant="outline" className="flex-1">
+								<a href={`${apiBaseUrl}/downloads/nanonet-agent-linux-arm64`}>
+									<Download className="w-3.5 h-3.5 mr-1.5" /> Linux ARM64
+								</a>
+							</Button>
 						</div>
 
-						<Button
-							onClick={() => setStep(3)}
-							className="w-full rounded"
-							style={{
-								background: "var(--primary)",
-								color: "var(--primary-foreground)",
-								border: "1px solid var(--border-default)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							Devam Et <ChevronRight className="w-3.5 h-3.5 ml-1" />
+						<Button onClick={() => setStep(3)} className="w-full">
+							Devam et <ChevronRight className="w-3.5 h-3.5 ml-1" />
 						</Button>
 					</div>
 				)}
@@ -298,7 +274,10 @@ export function AgentSetupWizard({
 				{/* Step 3: Start command */}
 				{step === 3 && agentToken && (
 					<div className="space-y-3">
-						<p className="text-xs" style={{ color: "var(--text-muted)" }}>
+						<p
+							className="text-[13px] leading-relaxed"
+							style={{ color: "var(--text-tertiary)" }}
+						>
 							Binary'yi çalıştırılabilir yapıp başlatın:
 						</p>
 
@@ -307,7 +286,7 @@ export function AgentSetupWizard({
 							value={`chmod +x nanonet-agent\n${linuxCmd}`}
 						/>
 
-						<div className="relative">
+						<div className="relative py-1">
 							<div className="absolute inset-0 flex items-center">
 								<div
 									className="w-full"
@@ -316,9 +295,9 @@ export function AgentSetupWizard({
 							</div>
 							<div className="relative flex justify-center">
 								<span
-									className="px-2 text-[10px]"
+									className="px-2 text-[10px] uppercase tracking-wider"
 									style={{
-										background: "var(--surface-card)",
+										background: "var(--surface-overlay)",
 										color: "var(--text-faint)",
 									}}
 								>
@@ -330,28 +309,25 @@ export function AgentSetupWizard({
 						<CopyBox label="Docker" value={dockerCmd} />
 
 						<div
-							className="p-3 rounded text-xs"
+							className="relative rounded-[6px] p-3 pl-4 text-[12px] leading-relaxed"
 							style={{
 								background: "var(--status-up-subtle)",
-								border: "1px solid var(--status-up-border)",
 								color: "var(--status-up-text)",
 							}}
 						>
+							<span
+								aria-hidden
+								className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+								style={{ background: "var(--status-up)" }}
+							/>
 							Agent başarıyla bağlandığında bu servisin durumu{" "}
-							<strong>AKTİF</strong> olarak güncellenecektir.
+							<strong className="font-semibold">AKTİF</strong> olarak
+							güncellenecektir.
 						</div>
 
-						<Button
-							onClick={handleClose}
-							className="w-full rounded"
-							style={{
-								background: "var(--primary)",
-								color: "var(--primary-foreground)",
-								border: "1px solid var(--border-default)",
-								boxShadow: "var(--btn-shadow)",
-							}}
-						>
-							<CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Tamamlandı
+						<Button onClick={handleClose} className="w-full">
+							<CheckCircle2 className="w-3.5 h-3.5 mr-2" />
+							Tamamlandı
 						</Button>
 					</div>
 				)}

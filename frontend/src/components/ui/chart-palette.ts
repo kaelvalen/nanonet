@@ -20,7 +20,9 @@ export const SERIES_COLORS = [
 
 /** Picks a series color by index, wrapping around. */
 export function seriesColor(index: number): string {
-	const i = ((index % SERIES_COLORS.length) + SERIES_COLORS.length) % SERIES_COLORS.length;
+	const i =
+		((index % SERIES_COLORS.length) + SERIES_COLORS.length) %
+		SERIES_COLORS.length;
 	return SERIES_COLORS[i];
 }
 

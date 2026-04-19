@@ -11,16 +11,26 @@ import { cn } from "./utils";
  *   - size: sm (inline) / md (default) / lg (centered, hero)
  */
 
-type Tone = "accent" | "success" | "warn" | "danger" | "muted" | "info" | "violet";
+type Tone =
+	| "accent"
+	| "success"
+	| "warn"
+	| "danger"
+	| "muted"
+	| "info"
+	| "violet";
 
-const TONES: Record<Tone, { bg: string; border: string; color: string }> = {
-	accent: { bg: "var(--color-teal-subtle)", border: "var(--color-teal-border)", color: "var(--color-teal)" },
-	success: { bg: "var(--status-up-subtle)", border: "var(--status-up-border)", color: "var(--status-up)" },
-	warn: { bg: "var(--status-warn-subtle)", border: "var(--status-warn-border)", color: "var(--status-warn)" },
-	danger: { bg: "var(--status-down-subtle)", border: "var(--status-down-border)", color: "var(--status-down)" },
-	muted: { bg: "var(--surface-sunken)", border: "var(--border-default)", color: "var(--text-muted)" },
-	info: { bg: "var(--color-blue-subtle)", border: "var(--color-blue-border)", color: "var(--color-blue)" },
-	violet: { bg: "var(--color-violet-subtle)", border: "var(--color-violet-border)", color: "var(--color-violet)" },
+const TONES: Record<Tone, { bg: string; color: string }> = {
+	accent: { bg: "var(--brand-primary-subtle)", color: "var(--brand-primary)" },
+	success: { bg: "var(--status-up-subtle)", color: "var(--status-up)" },
+	warn: {
+		bg: "var(--status-degraded-subtle)",
+		color: "var(--status-degraded)",
+	},
+	danger: { bg: "var(--status-down-subtle)", color: "var(--status-down)" },
+	muted: { bg: "var(--surface-sunken)", color: "var(--text-tertiary)" },
+	info: { bg: "var(--brand-primary-subtle)", color: "var(--brand-primary)" },
+	violet: { bg: "var(--surface-sunken)", color: "var(--text-secondary)" },
 };
 
 interface EmptyStateProps {
@@ -44,11 +54,15 @@ export function EmptyState({
 }: EmptyStateProps) {
 	const t = TONES[tone];
 	const iconBoxSize =
-		size === "lg" ? "w-14 h-14" : size === "sm" ? "w-9 h-9" : "w-11 h-11";
+		size === "lg" ? "w-12 h-12" : size === "sm" ? "w-8 h-8" : "w-10 h-10";
 	const iconSize =
-		size === "lg" ? "w-7 h-7" : size === "sm" ? "w-4 h-4" : "w-5 h-5";
+		size === "lg" ? "w-6 h-6" : size === "sm" ? "w-4 h-4" : "w-5 h-5";
 	const titleSize =
-		size === "lg" ? "text-lg" : size === "sm" ? "text-sm" : "text-base";
+		size === "lg"
+			? "text-[16px]"
+			: size === "sm"
+				? "text-[13px]"
+				: "text-[14px]";
 	const py = size === "lg" ? "py-12" : size === "sm" ? "py-6" : "py-10";
 
 	return (
@@ -60,32 +74,26 @@ export function EmptyState({
 			)}
 		>
 			{Icon && (
-				<div className="relative mb-4">
-					<div
-						className="absolute inset-0 rounded-2xl blur-xl opacity-50"
-						style={{ background: t.color }}
-					/>
-					<div
-						className={cn(
-							"relative rounded-2xl flex items-center justify-center",
-							iconBoxSize,
-						)}
-						style={{ background: t.bg, border: `1px solid ${t.border}` }}
-					>
-						<Icon className={iconSize} style={{ color: t.color }} />
-					</div>
+				<div
+					className={cn(
+						"mb-3 rounded-[6px] flex items-center justify-center",
+						iconBoxSize,
+					)}
+					style={{ background: t.bg }}
+				>
+					<Icon className={iconSize} style={{ color: t.color }} />
 				</div>
 			)}
 			<p
-				className={cn("font-semibold tracking-tight", titleSize)}
+				className={cn("font-semibold", titleSize)}
 				style={{ color: "var(--text-primary)" }}
 			>
 				{title}
 			</p>
 			{description && (
 				<p
-					className="text-[13px] mt-1.5 max-w-[360px] leading-relaxed"
-					style={{ color: "var(--text-muted)" }}
+					className="text-[12px] mt-1.5 max-w-[360px] leading-relaxed"
+					style={{ color: "var(--text-tertiary)" }}
 				>
 					{description}
 				</p>

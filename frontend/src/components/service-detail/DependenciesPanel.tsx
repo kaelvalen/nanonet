@@ -16,7 +16,9 @@ export function DependenciesPanel({ serviceId }: { serviceId: string }) {
 		mutationFn: ({ id, promoted }: { id: string; promoted: boolean }) =>
 			dependenciesApi.promote(serviceId, id, promoted),
 		onSuccess: (_d, vars) => {
-			toast.success(vars.promoted ? "Servis haritasına eklendi" : "Haritadan kaldırıldı");
+			toast.success(
+				vars.promoted ? "Servis haritasına eklendi" : "Haritadan kaldırıldı",
+			);
 			qc.invalidateQueries({ queryKey: ["service-dependencies", serviceId] });
 		},
 		onError: () => toast.error("İşlem başarısız"),
@@ -39,7 +41,9 @@ export function DependenciesPanel({ serviceId }: { serviceId: string }) {
 				<div className="flex items-center gap-2">
 					<GitBranch className="h-4 w-4 text-white/60" />
 					<div>
-						<div className="text-[13px] font-semibold text-white">Otomatik Bağımlılıklar</div>
+						<div className="text-[13px] font-semibold text-white">
+							Otomatik Bağımlılıklar
+						</div>
 						<div className="text-[11px] text-white/50">
 							Agent'ın gözlemlediği outbound TCP hedefleri (her 60s)
 						</div>
@@ -78,7 +82,9 @@ export function DependenciesPanel({ serviceId }: { serviceId: string }) {
 											(promote.isPending && promote.variables?.id === d.id) ||
 											(remove.isPending && remove.variables === d.id)
 										}
-										onPromote={(promoted) => promote.mutate({ id: d.id, promoted })}
+										onPromote={(promoted) =>
+											promote.mutate({ id: d.id, promoted })
+										}
 										onDelete={() => remove.mutate(d.id)}
 									/>
 								))}
@@ -106,9 +112,7 @@ function Row({
 		<tr className="border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02]">
 			<td className="px-3 py-2">
 				<div className="flex items-center gap-2">
-					{dep.promoted && (
-						<Pin className="h-3 w-3 text-emerald-400" />
-					)}
+					{dep.promoted && <Pin className="h-3 w-3 text-emerald-400" />}
 					<span className="font-mono text-white/90">{dep.target_host}</span>
 				</div>
 				{dep.process_name && (
@@ -117,8 +121,12 @@ function Row({
 					</div>
 				)}
 			</td>
-			<td className="px-3 py-2 font-mono text-white/70 tabular-nums">{dep.target_port}/{dep.protocol}</td>
-			<td className="px-3 py-2 font-mono text-white/60 tabular-nums">{dep.sample_count}</td>
+			<td className="px-3 py-2 font-mono text-white/70 tabular-nums">
+				{dep.target_port}/{dep.protocol}
+			</td>
+			<td className="px-3 py-2 font-mono text-white/60 tabular-nums">
+				{dep.sample_count}
+			</td>
 			<td className="px-3 py-2 text-white/60">{relative(dep.last_seen_at)}</td>
 			<td className="px-3 py-2">
 				<div className="flex items-center justify-end gap-1.5">
@@ -129,7 +137,11 @@ function Row({
 						className="inline-flex items-center gap-1 rounded-md border border-white/[0.08] px-2 py-1 text-[11px] text-white/80 hover:border-white/20 disabled:opacity-50"
 						title={dep.promoted ? "Haritadan kaldır" : "Servis haritasına ekle"}
 					>
-						{dep.promoted ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+						{dep.promoted ? (
+							<PinOff className="h-3 w-3" />
+						) : (
+							<Pin className="h-3 w-3" />
+						)}
 						{dep.promoted ? "Kaldır" : "Ekle"}
 					</button>
 					<button

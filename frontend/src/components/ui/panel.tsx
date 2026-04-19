@@ -25,20 +25,26 @@ export type PanelTone =
 	| "accent";
 
 const TONES: Record<PanelTone, { bg: string; border: string }> = {
-	default: { bg: "var(--surface-card)", border: "var(--border-default)" },
-	raised: { bg: "var(--surface-raised)", border: "var(--border-default)" },
+	default: { bg: "var(--surface-base)", border: "var(--border-subtle)" },
+	raised: { bg: "var(--surface-overlay)", border: "var(--border-subtle)" },
 	sunken: { bg: "var(--surface-sunken)", border: "var(--border-subtle)" },
-	muted: { bg: "var(--surface-sunken)", border: "var(--border-default)" },
-	success: { bg: "var(--status-up-subtle)", border: "var(--status-up-border)" },
-	warn: { bg: "var(--status-warn-subtle)", border: "var(--status-warn-border)" },
+	muted: { bg: "var(--surface-sunken)", border: "var(--border-subtle)" },
+	success: { bg: "var(--status-up-subtle)", border: "var(--border-subtle)" },
+	warn: {
+		bg: "var(--status-degraded-subtle)",
+		border: "var(--border-subtle)",
+	},
 	danger: {
 		bg: "var(--status-down-subtle)",
-		border: "var(--status-down-border)",
+		border: "var(--border-subtle)",
 	},
-	info: { bg: "var(--color-blue-subtle)", border: "var(--color-blue-border)" },
+	info: {
+		bg: "var(--brand-primary-subtle)",
+		border: "var(--border-subtle)",
+	},
 	accent: {
-		bg: "var(--color-teal-subtle)",
-		border: "var(--color-teal-border)",
+		bg: "var(--brand-primary-subtle)",
+		border: "var(--border-subtle)",
 	},
 };
 
@@ -78,11 +84,13 @@ export function Panel({
 					? "p-3"
 					: "";
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: optional onClick for container; consumers add explicit role/keyboard handler when needed
+		// biome-ignore lint/a11y/useKeyWithClickEvents: container is non-interactive by default; interactive variants are not the common case
 		<div
 			role={role}
 			onClick={onClick}
 			className={cn(
-				"rounded-xl",
+				"rounded-[6px]",
 				fill && "flex flex-col min-h-0 overflow-hidden",
 				pad,
 				className,
@@ -127,8 +135,7 @@ export function PanelHeader({
 			)}
 			style={{
 				borderBottom: "1px solid var(--border-subtle)",
-				background:
-					tone === "sunken" ? "var(--surface-sunken)" : "transparent",
+				background: tone === "sunken" ? "var(--surface-sunken)" : "transparent",
 			}}
 		>
 			<div className="flex items-center gap-2.5 min-w-0">
@@ -136,7 +143,7 @@ export function PanelHeader({
 				<div className="min-w-0">
 					<h3
 						className={cn(
-							"font-semibold leading-tight truncate tracking-tight",
+							"font-semibold leading-tight truncate",
 							dense ? "text-[13px]" : "text-[14px]",
 						)}
 						style={{ color: "var(--text-primary)" }}
@@ -146,7 +153,7 @@ export function PanelHeader({
 					{subtitle && (
 						<p
 							className="text-[11px] mt-0.5 truncate"
-							style={{ color: "var(--text-muted)" }}
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							{subtitle}
 						</p>
@@ -182,11 +189,7 @@ export function PanelBody({
 					: "";
 	return (
 		<div
-			className={cn(
-				scroll && "flex-1 min-h-0 overflow-y-auto",
-				pad,
-				className,
-			)}
+			className={cn(scroll && "flex-1 min-h-0 overflow-y-auto", pad, className)}
 		>
 			{children}
 		</div>
@@ -223,17 +226,23 @@ export function PanelIcon({
 	tone?: "accent" | "info" | "success" | "warn" | "danger" | "violet";
 }) {
 	const colors = {
-		accent: { bg: "var(--color-teal-subtle)", border: "var(--color-teal-border)", color: "var(--color-teal)" },
-		info: { bg: "var(--color-blue-subtle)", border: "var(--color-blue-border)", color: "var(--color-blue)" },
-		success: { bg: "var(--status-up-subtle)", border: "var(--status-up-border)", color: "var(--status-up)" },
-		warn: { bg: "var(--status-warn-subtle)", border: "var(--status-warn-border)", color: "var(--status-warn)" },
-		danger: { bg: "var(--status-down-subtle)", border: "var(--status-down-border)", color: "var(--status-down)" },
-		violet: { bg: "var(--color-violet-subtle)", border: "var(--color-violet-border)", color: "var(--color-violet)" },
+		accent: {
+			bg: "var(--brand-primary-subtle)",
+			color: "var(--brand-primary)",
+		},
+		info: { bg: "var(--brand-primary-subtle)", color: "var(--brand-primary)" },
+		success: { bg: "var(--status-up-subtle)", color: "var(--status-up)" },
+		warn: {
+			bg: "var(--status-degraded-subtle)",
+			color: "var(--status-degraded)",
+		},
+		danger: { bg: "var(--status-down-subtle)", color: "var(--status-down)" },
+		violet: { bg: "var(--surface-sunken)", color: "var(--text-secondary)" },
 	} as const;
 	const c = colors[tone];
 	return (
 		<div
-			className="w-8 h-8 rounded-xl flex items-center justify-center"
+			className="w-8 h-8 rounded-[6px] flex items-center justify-center"
 			style={{ background: c.bg, color: c.color }}
 		>
 			{children}

@@ -25,13 +25,12 @@ import {
 	type ServiceScanSummary,
 	securityApi,
 } from "@/api/security";
+import { Button } from "@/components/ui/button";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
-
-// ── Yardımcılar ────────────────────────────────────────────────────────────
 
 function scoreColor(score: number) {
 	if (score >= 80) return "var(--status-up)";
-	if (score >= 60) return "var(--status-warn)";
+	if (score >= 60) return "var(--status-degraded)";
 	return "var(--status-down)";
 }
 
@@ -47,76 +46,78 @@ function severityStyle(severity: SecurityFinding["severity"]) {
 			return {
 				bg: "var(--status-down-subtle)",
 				color: "var(--status-down-text)",
-				border: "var(--status-down-border)",
 				label: "Kritik",
 			};
 		case "high":
 			return {
-				bg: "var(--status-warn-subtle)",
-				color: "var(--status-warn-text)",
-				border: "var(--status-warn-border)",
+				bg: "var(--status-down-subtle)",
+				color: "var(--status-down-text)",
 				label: "Yüksek",
 			};
 		case "medium":
 			return {
-				bg: "var(--status-warn-subtle)",
-				color: "var(--status-warn-text)",
-				border: "var(--status-warn-border)",
+				bg: "var(--status-degraded-subtle)",
+				color: "var(--status-degraded-text)",
 				label: "Orta",
 			};
 		default:
 			return {
 				bg: "var(--surface-sunken)",
-				color: "var(--text-faint)",
-				border: "var(--border-subtle)",
+				color: "var(--text-tertiary)",
 				label: "Düşük",
 			};
 	}
 }
 
-// ── Stat kartı ─────────────────────────────────────────────────────────────
-
-function StatCard({
+function StatTile({
 	label,
 	value,
 	sub,
 	icon: Icon,
-	color,
+	accent,
 }: {
 	label: string;
 	value: string | number;
 	sub?: string;
 	icon: React.ElementType;
-	color?: string;
+	accent?: string;
 }) {
 	return (
 		<div
-			className="p-4 rounded-xl space-y-2"
+			className="relative rounded-[6px] p-4"
 			style={{
-				background: "var(--surface-raised)",
-				border: "1px solid var(--border-default)",
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
 			}}
 		>
-			<div className="flex items-center gap-2">
+			<span
+				aria-hidden
+				className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+				style={{ background: accent ?? "var(--border-strong)" }}
+			/>
+			<div className="flex items-center gap-1.5 pl-2">
 				<Icon
 					className="w-3.5 h-3.5"
-					style={{ color: color ?? "var(--text-faint)" }}
+					style={{ color: "var(--text-tertiary)" }}
 				/>
 				<span
-					className="text-[12px] font-medium"
+					className="text-[11px] font-medium uppercase tracking-wider"
 					style={{ color: "var(--text-faint)" }}
 				>
 					{label}
 				</span>
 			</div>
 			<p
-				className="text-2xl font-bold tabular-nums leading-none"
-				style={{ color: color ?? "var(--text-primary)" }}
+				className="mt-2 pl-2 text-[24px] font-semibold leading-none tnum"
+				style={{ color: accent ?? "var(--text-primary)" }}
 			>
 				{value}
 			</p>
 			{sub && (
-				<p className="text-[11px]" style={{ color: "var(--text-faint)" }}>
+				<p
+					className="mt-1.5 pl-2 text-[11px]"
+					style={{ color: "var(--text-faint)" }}
+				>
 					{sub}
 				</p>
 			)}
@@ -124,20 +125,18 @@ function StatCard({
 	);
 }
 
-// ── TLS göstergesi ─────────────────────────────────────────────────────────
-
 function TLSBadge({ scan }: { scan?: SecurityScan }) {
 	if (!scan)
 		return (
-			<span className="text-xs" style={{ color: "var(--text-faint)" }}>
+			<span className="text-[11px]" style={{ color: "var(--text-faint)" }}>
 				—
 			</span>
 		);
 	if (!scan.tls_enabled)
 		return (
 			<span
-				className="inline-flex items-center gap-1 text-xs"
-				style={{ color: "var(--text-faint)" }}
+				className="inline-flex items-center gap-1 text-[11px]"
+				style={{ color: "var(--text-tertiary)" }}
 			>
 				<ShieldOff className="w-3 h-3" /> HTTP
 			</span>
@@ -145,7 +144,7 @@ function TLSBadge({ scan }: { scan?: SecurityScan }) {
 	if (!scan.tls_valid)
 		return (
 			<span
-				className="inline-flex items-center gap-1 text-xs font-medium"
+				className="inline-flex items-center gap-1 text-[11px] font-medium"
 				style={{ color: "var(--status-down-text)" }}
 			>
 				<XCircle className="w-3 h-3" /> Geçersiz
@@ -155,7 +154,7 @@ function TLSBadge({ scan }: { scan?: SecurityScan }) {
 	if (days < 7)
 		return (
 			<span
-				className="inline-flex items-center gap-1 text-xs font-medium"
+				className="inline-flex items-center gap-1 text-[11px] font-medium tnum"
 				style={{ color: "var(--status-down-text)" }}
 			>
 				<AlertCircle className="w-3 h-3" /> {days}g
@@ -164,23 +163,21 @@ function TLSBadge({ scan }: { scan?: SecurityScan }) {
 	if (days < 30)
 		return (
 			<span
-				className="inline-flex items-center gap-1 text-xs font-medium"
-				style={{ color: "var(--status-warn-text)" }}
+				className="inline-flex items-center gap-1 text-[11px] font-medium tnum"
+				style={{ color: "var(--status-degraded-text)" }}
 			>
 				<AlertTriangle className="w-3 h-3" /> {days}g
 			</span>
 		);
 	return (
 		<span
-			className="inline-flex items-center gap-1 text-xs"
+			className="inline-flex items-center gap-1 text-[11px]"
 			style={{ color: "var(--status-up-text)" }}
 		>
 			<ShieldCheck className="w-3 h-3" /> {scan.tls_version || "TLS"}
 		</span>
 	);
 }
-
-// ── Servis satırı ──────────────────────────────────────────────────────────
 
 function ServiceRow({
 	summary,
@@ -198,85 +195,80 @@ function ServiceRow({
 
 	return (
 		<div style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-			{/* Satır */}
 			<div
-				className="grid items-center gap-2 px-4 py-3 text-sm"
-				style={{
-					gridTemplateColumns: "1fr 90px 60px 56px 36px",
-				}}
+				className="grid items-center gap-2 px-4 py-3"
+				style={{ gridTemplateColumns: "1fr 90px 60px 60px 64px" }}
 			>
-				{/* Ad / host */}
 				<button
 					type="button"
-					className="min-w-0 text-left"
+					className="min-w-0 text-left disabled:cursor-default"
 					onClick={() => findings.length > 0 && setOpen((v) => !v)}
 					disabled={findings.length === 0}
 				>
 					<p
-						className="font-medium truncate text-xs"
+						className="font-medium truncate text-[13px]"
 						style={{ color: "var(--text-primary)" }}
 					>
 						{summary.service_name}
 					</p>
 					<p
-						className="text-[10px] truncate font-mono"
+						className="text-[11px] truncate font-mono tnum"
 						style={{ color: "var(--text-faint)" }}
 					>
 						{summary.service_host}:{summary.service_port}
 					</p>
 				</button>
 
-				{/* TLS */}
-				<div>
-					<TLSBadge scan={scan} />
-				</div>
+				<TLSBadge scan={scan} />
 
-				{/* Eksik başlık */}
 				<div className="text-center">
 					{scan ? (
 						<span
-							className="text-xs font-semibold tabular-nums"
+							className="text-[12px] font-semibold tnum"
 							style={{
 								color:
 									(scan.missing_headers?.length ?? 0) > 0
-										? "var(--status-warn-text)"
+										? "var(--status-degraded-text)"
 										: "var(--status-up-text)",
 							}}
 						>
 							{scan.missing_headers?.length ?? 0}
 						</span>
 					) : (
-						<span style={{ color: "var(--text-faint)", fontSize: 11 }}>—</span>
+						<span
+							className="text-[11px]"
+							style={{ color: "var(--text-faint)" }}
+						>
+							—
+						</span>
 					)}
 				</div>
 
-				{/* Skor */}
 				<div className="text-center">
 					{score !== null ? (
 						<span
-							className="text-sm font-bold tabular-nums"
+							className="text-[14px] font-semibold tnum"
 							style={{ color: scoreColor(score) }}
 						>
 							{Math.round(score)}
 						</span>
 					) : (
 						<span
-							className="text-[10px]"
+							className="text-[11px]"
 							style={{ color: "var(--text-faint)" }}
 						>
-							Yok
+							—
 						</span>
 					)}
 				</div>
 
-				{/* Tarama + aç */}
 				<div className="flex items-center gap-0.5 justify-end">
-					<button
-						type="button"
+					<Button
+						variant="ghost"
+						size="icon"
 						onClick={onScan}
 						disabled={scanning}
-						className="w-7 h-7 flex items-center justify-center rounded-md transition-colors"
-						style={{ color: "var(--text-faint)" }}
+						aria-label="Tara"
 						title="Tara"
 					>
 						{scanning ? (
@@ -284,24 +276,23 @@ function ServiceRow({
 						) : (
 							<ScanLine className="w-3.5 h-3.5" />
 						)}
-					</button>
+					</Button>
 					{findings.length > 0 && (
-						<button
-							type="button"
+						<Button
+							variant="ghost"
+							size="icon"
 							onClick={() => setOpen((v) => !v)}
-							className="w-7 h-7 flex items-center justify-center rounded-md transition-colors"
-							style={{ color: "var(--text-faint)" }}
+							aria-label="Bulguları aç"
 						>
 							<ChevronDown
 								className="w-3.5 h-3.5 transition-transform"
 								style={{ transform: open ? "rotate(180deg)" : "none" }}
 							/>
-						</button>
+						</Button>
 					)}
 				</div>
 			</div>
 
-			{/* Bulgular */}
 			<AnimatePresence>
 				{open && findings.length > 0 && (
 					<motion.div
@@ -309,23 +300,22 @@ function ServiceRow({
 						animate={{ height: "auto", opacity: 1 }}
 						exit={{ height: 0, opacity: 0 }}
 						transition={{ duration: 0.18 }}
-						style={{ overflow: "hidden", background: "var(--surface-sunken)" }}
+						style={{
+							overflow: "hidden",
+							background: "var(--surface-sunken)",
+						}}
 					>
-						<div className="px-4 py-2.5 space-y-1.5">
+						<div className="px-4 py-3 flex flex-col gap-1.5">
 							{findings.map((f) => {
 								const st = severityStyle(f.severity);
 								return (
 									<div
 										key={`${f.type}-${f.description}`}
-										className="flex items-start gap-2 text-xs"
+										className="flex items-start gap-2 text-[12px]"
 									>
 										<span
-											className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
-											style={{
-												background: st.bg,
-												color: st.color,
-												border: `1px solid ${st.border}`,
-											}}
+											className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider"
+											style={{ background: st.bg, color: st.color }}
 										>
 											{st.label}
 										</span>
@@ -345,7 +335,7 @@ function ServiceRow({
 							)}
 							{scan?.scanned_at && (
 								<p
-									className="flex items-center gap-1 text-[10px] pt-0.5"
+									className="flex items-center gap-1 text-[10px] tnum"
 									style={{ color: "var(--text-faint)" }}
 								>
 									<Clock className="w-2.5 h-2.5" />
@@ -359,8 +349,6 @@ function ServiceRow({
 		</div>
 	);
 }
-
-// ── Audit olayları ─────────────────────────────────────────────────────────
 
 interface AuditLog {
 	ID?: string;
@@ -385,7 +373,7 @@ function AuditRow({ log }: { log: AuditLog }) {
 		status === "blocked"
 			? "var(--status-down)"
 			: status === "failure"
-				? "var(--status-warn)"
+				? "var(--status-degraded)"
 				: "var(--status-up)";
 
 	const statusLabel =
@@ -401,14 +389,14 @@ function AuditRow({ log }: { log: AuditLog }) {
 				style={{ background: dot }}
 			/>
 			<span
-				className="flex-1 text-xs font-mono truncate"
+				className="flex-1 text-[12px] font-mono truncate"
 				style={{ color: "var(--text-secondary)" }}
 			>
 				{action}
 			</span>
 			{ip && (
 				<span
-					className="text-[10px] hidden sm:block"
+					className="text-[10px] hidden sm:block tnum"
 					style={{ color: "var(--text-faint)" }}
 				>
 					{ip}
@@ -419,7 +407,7 @@ function AuditRow({ log }: { log: AuditLog }) {
 			</span>
 			{ts && (
 				<span
-					className="text-[10px] shrink-0 hidden md:block tabular-nums"
+					className="text-[10px] shrink-0 hidden md:block tnum"
 					style={{ color: "var(--text-faint)" }}
 				>
 					{new Date(ts).toLocaleTimeString("tr-TR", {
@@ -431,8 +419,6 @@ function AuditRow({ log }: { log: AuditLog }) {
 		</div>
 	);
 }
-
-// ── Ana sayfa ──────────────────────────────────────────────────────────────
 
 export function SecurityPage() {
 	const queryClient = useQueryClient();
@@ -514,24 +500,24 @@ export function SecurityPage() {
 		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="Güvenlik"
-				title="Güvenlik Taraması"
-				description="TLS durumu, açık port'lar, header'lar ve risk skoru"
+				title="Güvenlik taraması"
+				description="TLS durumu, açık portlar, header'lar ve risk skoru."
 				meta={
 					services.length > 0 ? (
 						<span
-							className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-semibold"
+							className="inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-[4px] font-medium uppercase tracking-wider"
 							style={{
 								background:
 									score >= 80
 										? "var(--status-up-subtle)"
 										: score >= 60
-											? "var(--status-warn-subtle)"
+											? "var(--status-degraded-subtle)"
 											: "var(--status-down-subtle)",
 								color:
 									score >= 80
 										? "var(--status-up-text)"
 										: score >= 60
-											? "var(--status-warn-text)"
+											? "var(--status-degraded-text)"
 											: "var(--status-down-text)",
 							}}
 						>
@@ -542,130 +528,104 @@ export function SecurityPage() {
 				}
 				actions={
 					<>
-						<button
-							type="button"
-							onClick={() => refetch()}
-							className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium transition-colors"
-							style={{
-								background: "var(--surface-raised)",
-								color: "var(--text-muted)",
-								border: "1px solid var(--border-default)",
-							}}
-						>
-							<RefreshCw className="w-3 h-3" />
+						<Button variant="outline" size="sm" onClick={() => refetch()}>
+							<RefreshCw className="w-3 h-3 mr-1.5" />
 							Yenile
-						</button>
-						<button
-							type="button"
+						</Button>
+						<Button
+							size="sm"
 							onClick={() => aiMutation.mutate()}
 							disabled={aiMutation.isPending}
-							className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium transition-colors"
-							style={{
-								background: "var(--color-ai-subtle)",
-								color: "var(--color-ai)",
-								border: "1px solid var(--color-ai-border)",
-							}}
 						>
 							{aiMutation.isPending ? (
-								<Loader2 className="w-3 h-3 animate-spin" />
+								<Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
 							) : (
-								<Sparkles className="w-3 h-3" />
+								<Sparkles className="w-3 h-3 mr-1.5" />
 							)}
-							AI Analizi
-						</button>
+							AI analizi
+						</Button>
 					</>
 				}
 			/>
 
-			{/* ── Stat kartları ────────────────────────────────────────── */}
-			<motion.div
-				className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 shrink-0"
-				initial={{ opacity: 0, y: 8 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.3, delay: 0.05 }}
-			>
-				<StatCard
-					label="Güvenlik Skoru"
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 shrink-0">
+				<StatTile
+					label="Güvenlik skoru"
 					value={services.length > 0 ? Math.round(score) : "—"}
 					sub={services.length > 0 ? scoreLabel(score) : "Henüz taranmadı"}
 					icon={ShieldAlert}
-					color={services.length > 0 ? scoreColor(score) : undefined}
+					accent={services.length > 0 ? scoreColor(score) : undefined}
 				/>
-				<StatCard
-					label="TLS Uyarısı"
+				<StatTile
+					label="TLS uyarısı"
 					value={overview?.tls_warnings ?? 0}
 					sub="sertifika sorunu"
 					icon={Shield}
-					color={
+					accent={
 						(overview?.tls_warnings ?? 0) > 0
 							? "var(--status-down)"
 							: "var(--status-up)"
 					}
 				/>
-				<StatCard
-					label="Başlık Sorunu"
+				<StatTile
+					label="Başlık sorunu"
 					value={overview?.header_issues ?? 0}
 					sub="eksik güvenlik başlığı"
 					icon={ShieldOff}
-					color={
+					accent={
 						(overview?.header_issues ?? 0) > 0
-							? "var(--status-warn)"
+							? "var(--status-degraded)"
 							: "var(--status-up)"
 					}
 				/>
-				<StatCard
+				<StatTile
 					label="Engellenen"
 					value={blockedCount}
 					sub={`${failedCount} başarısız · son 50 olay`}
 					icon={XCircle}
-					color={blockedCount > 0 ? "var(--status-down)" : "var(--text-faint)"}
+					accent={
+						blockedCount > 0 ? "var(--status-down)" : "var(--border-strong)"
+					}
 				/>
-			</motion.div>
+			</div>
 
-			{/* Scrollable body */}
-			<div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 -mx-2 px-2 pb-4">
-				{/* ── Servis tablosu ───────────────────────────────────────── */}
-				<motion.div
-					initial={{ opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.3, delay: 0.1 }}
-					className="rounded-xl overflow-hidden"
+			<div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 -mx-2 px-2 pb-4">
+				<div
+					className="rounded-[6px] overflow-hidden"
 					style={{
-						background: "var(--surface-raised)",
-						border: "1px solid var(--border-default)",
+						background: "var(--surface-base)",
+						border: "1px solid var(--border-subtle)",
 					}}
 				>
-					{/* Tablo başlığı */}
 					<div
-						className="flex items-center gap-2 px-4 py-3"
-						style={{ borderBottom: "1px solid var(--border-default)" }}
+						className="flex items-center gap-2 px-4 py-2.5"
+						style={{ borderBottom: "1px solid var(--border-subtle)" }}
 					>
 						<ShieldCheck
 							className="w-3.5 h-3.5"
-							style={{ color: "var(--text-faint)" }}
+							style={{ color: "var(--text-tertiary)" }}
 						/>
 						<span
-							className="text-xs font-semibold"
+							className="text-[12px] font-semibold"
 							style={{ color: "var(--text-primary)" }}
 						>
-							Servis Güvenlik Durumu
+							Servis güvenlik durumu
 						</span>
 						<span
-							className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
+							className="ml-auto text-[10px] px-1.5 py-0.5 rounded-[4px] tnum"
 							style={{
 								background: "var(--surface-sunken)",
-								color: "var(--text-faint)",
+								color: "var(--text-tertiary)",
 							}}
 						>
 							{services.length} servis
 						</span>
 					</div>
 
-					{/* Kolon başlıkları */}
 					<div
-						className="grid items-center gap-2 px-4 py-2 text-[11px] font-semibold"
+						className="grid items-center gap-2 px-4 py-2 text-[10px] font-medium uppercase tracking-wider"
 						style={{
-							gridTemplateColumns: "1fr 90px 60px 56px 36px",
+							gridTemplateColumns: "1fr 90px 60px 60px 64px",
 							color: "var(--text-faint)",
 							borderBottom: "1px solid var(--border-subtle)",
 						}}
@@ -680,11 +640,11 @@ export function SecurityPage() {
 					{services.length === 0 ? (
 						<div
 							className="flex flex-col items-center justify-center py-10 gap-2"
-							style={{ color: "var(--text-faint)" }}
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							<Shield className="w-7 h-7" />
-							<p className="text-xs">Henüz taranmış servis yok</p>
-							<p className="text-[11px]">
+							<p className="text-[12px]">Henüz taranmış servis yok</p>
+							<p className="text-[11px]" style={{ color: "var(--text-faint)" }}>
 								Tarama 6 saatte bir otomatik çalışır
 							</p>
 						</div>
@@ -698,51 +658,58 @@ export function SecurityPage() {
 							/>
 						))
 					)}
-				</motion.div>
+				</div>
 
-				{/* ── AI sonucu ────────────────────────────────────────────── */}
 				<AnimatePresence>
 					{aiMutation.data && (
 						<motion.div
 							initial={{ opacity: 0, y: 6 }}
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0 }}
-							className="rounded-xl p-4 space-y-1.5"
+							className="relative rounded-[6px] p-4"
 							style={{
-								background: "var(--color-ai-subtle)",
-								border: "1px solid var(--color-ai-border)",
+								background: "var(--brand-primary-subtle)",
+								border: "1px solid var(--border-subtle)",
 							}}
 						>
-							<div className="flex items-center gap-2">
+							<span
+								aria-hidden
+								className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+								style={{ background: "var(--brand-primary)" }}
+							/>
+							<div className="flex items-center gap-2 pl-2">
 								<Sparkles
 									className="w-3.5 h-3.5"
-									style={{ color: "var(--color-ai)" }}
+									style={{ color: "var(--brand-primary)" }}
 								/>
 								<span
-									className="text-xs font-semibold"
-									style={{ color: "var(--color-ai)" }}
+									className="text-[12px] font-semibold"
+									style={{ color: "var(--brand-primary)" }}
 								>
-									AI Güvenlik İçgörüsü
+									AI güvenlik içgörüsü
 								</span>
 								{aiMutation.data.system_score && (
 									<span
-										className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
+										className="ml-auto text-[10px] px-1.5 py-0.5 rounded-[4px] tnum"
 										style={{
 											background: "var(--surface-sunken)",
-											color: "var(--text-faint)",
+											color: "var(--text-tertiary)",
 										}}
 									>
 										{aiMutation.data.system_score}
 									</span>
 								)}
 							</div>
-							<p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+							<p
+								className="mt-2 pl-2 text-[13px]"
+								style={{ color: "var(--text-secondary)" }}
+							>
 								{aiMutation.data.headline}
 							</p>
 							{aiMutation.data.risk_forecast && (
 								<p
-									className="text-[11px]"
-									style={{ color: "var(--text-faint)" }}
+									className="mt-1 pl-2 text-[11px]"
+									style={{ color: "var(--text-tertiary)" }}
 								>
 									{aiMutation.data.risk_forecast}
 								</p>
@@ -751,39 +718,34 @@ export function SecurityPage() {
 					)}
 				</AnimatePresence>
 
-				{/* ── Auth olayları ─────────────────────────────────────────── */}
 				{authLogs.length > 0 && (
-					<motion.div
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.3, delay: 0.15 }}
-						className="rounded-xl overflow-hidden"
+					<div
+						className="rounded-[6px] overflow-hidden"
 						style={{
-							background: "var(--surface-raised)",
-							border: "1px solid var(--border-default)",
+							background: "var(--surface-base)",
+							border: "1px solid var(--border-subtle)",
 						}}
 					>
 						<div
-							className="flex items-center gap-2 px-4 py-3"
-							style={{ borderBottom: "1px solid var(--border-default)" }}
+							className="flex items-center gap-2 px-4 py-2.5"
+							style={{ borderBottom: "1px solid var(--border-subtle)" }}
 						>
 							<CheckCircle2
 								className="w-3.5 h-3.5"
-								style={{ color: "var(--text-faint)" }}
+								style={{ color: "var(--text-tertiary)" }}
 							/>
 							<span
-								className="text-xs font-semibold"
+								className="text-[12px] font-semibold"
 								style={{ color: "var(--text-primary)" }}
 							>
-								Son Auth Olayları
+								Son auth olayları
 							</span>
 							{(blockedCount > 0 || failedCount > 0) && (
 								<span
-									className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
+									className="ml-auto text-[10px] px-1.5 py-0.5 rounded-[4px] tnum"
 									style={{
 										background: "var(--status-down-subtle)",
 										color: "var(--status-down-text)",
-										border: "1px solid var(--status-down-border)",
 									}}
 								>
 									{blockedCount} engel · {failedCount} hata
@@ -791,9 +753,9 @@ export function SecurityPage() {
 							)}
 						</div>
 						{authLogs.map((log, i) => (
-							<AuditRow key={log.ID ?? log.id ?? i} log={log} />
+							<AuditRow key={log.ID ?? log.id ?? `log-${i}`} log={log} />
 						))}
-					</motion.div>
+					</div>
 				)}
 			</div>
 		</PageShell>

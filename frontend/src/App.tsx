@@ -1,12 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Component, type ReactNode, Suspense, useEffect } from "react";
 import { RouterProvider } from "react-router";
-import { DotMatrix } from "@/components/DotMatrix";
 import { FullScreenSpinner } from "@/components/FullScreenSpinner";
 import { Toaster } from "@/components/ui/sonner";
 import { authApi } from "./api/auth";
 import { LiveRegionProvider } from "./context/LiveRegionContext";
-import { router } from "./routes";
+import { preloadDashboardRoutes, router } from "./routes";
 import { useA11yStore } from "./store/a11yStore";
 import { useAuthStore } from "./store/authStore";
 import { useThemeStore } from "./store/themeStore";
@@ -32,30 +31,68 @@ class ErrorBoundary extends Component<
 	render() {
 		if (this.state.hasError) {
 			return (
-				<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-8">
-					<div className="text-center max-w-md">
-						<h1 className="text-2xl font-bold text-red-500 mb-2">
-							Beklenmedik Hata
+				<div
+					className="min-h-screen flex items-center justify-center p-8"
+					style={{
+						background: "var(--surface-canvas)",
+						color: "var(--text-primary)",
+					}}
+				>
+					<div
+						className="relative w-full max-w-md rounded-[6px] p-6 pl-7"
+						style={{
+							background: "var(--surface-base)",
+							border: "1px solid var(--border-subtle)",
+						}}
+					>
+						<span
+							aria-hidden="true"
+							className="absolute left-0 top-0 bottom-0 w-[2px]"
+							style={{ background: "var(--status-down)" }}
+						/>
+						<p
+							className="text-[10px] font-medium uppercase tracking-wider mb-2"
+							style={{ color: "var(--status-down-text)" }}
+						>
+							Hata
+						</p>
+						<h1
+							className="text-[18px] font-semibold mb-2"
+							style={{ color: "var(--text-primary)" }}
+						>
+							Beklenmedik bir hata oluştu
 						</h1>
-						<p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+						<p
+							className="text-[13px] leading-relaxed mb-5"
+							style={{ color: "var(--text-tertiary)" }}
+						>
 							{this.state.error?.message ?? "Bilinmeyen hata"}
 						</p>
-						<div className="flex gap-3 justify-center">
+						<div className="flex gap-2">
 							<button
 								type="button"
-								className="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+								className="h-9 px-3 rounded-[6px] text-[13px] font-medium"
+								style={{
+									background: "var(--brand-primary)",
+									color: "var(--brand-on-primary)",
+								}}
 								onClick={() => window.location.reload()}
 							>
-								Sayfayı Yenile
+								Sayfayı yenile
 							</button>
 							<button
 								type="button"
-								className="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+								className="h-9 px-3 rounded-[6px] text-[13px] font-medium"
+								style={{
+									background: "transparent",
+									color: "var(--text-secondary)",
+									border: "1px solid var(--border-default)",
+								}}
 								onClick={() => {
 									window.location.href = "/";
 								}}
 							>
-								Ana Sayfaya Dön
+								Ana sayfaya dön
 							</button>
 						</div>
 					</div>
@@ -154,6 +191,37 @@ function A11yInit() {
 	return null;
 }
 
+/* RoutePrefetch — once the user is signed in, warm every dashboard chunk in
+   the background so navigation never waits on a network round-trip. We defer
+   this work to requestIdleCallback so the initial render and first-paint
+   network requests aren't starved; the setTimeout fallback covers Safari
+   which still lacks rIC. We only kick this off once per session — repeat
+   calls to preload are no-ops thanks to dynamic import deduping, but there's
+   no point burning the cycles. */
+function RoutePrefetch() {
+	const isAuthed = useAuthStore((state) => Boolean(state.accessToken));
+	useEffect(() => {
+		if (!isAuthed) return;
+		type IdleHandle = number;
+		type IdleCallback = (deadline: { didTimeout: boolean }) => void;
+		const win = window as typeof window & {
+			requestIdleCallback?: (
+				cb: IdleCallback,
+				opts?: { timeout: number },
+			) => IdleHandle;
+			cancelIdleCallback?: (h: IdleHandle) => void;
+		};
+		const schedule =
+			win.requestIdleCallback ??
+			((cb: IdleCallback) =>
+				window.setTimeout(() => cb({ didTimeout: false }), 1500));
+		const cancel = win.cancelIdleCallback ?? window.clearTimeout;
+		const handle = schedule(() => preloadDashboardRoutes(), { timeout: 4000 });
+		return () => cancel(handle);
+	}, [isAuthed]);
+	return null;
+}
+
 export default function App() {
 	return (
 		<ErrorBoundary>
@@ -162,7 +230,7 @@ export default function App() {
 					<ThemeInit />
 					<A11yInit />
 					<AppInit />
-					<DotMatrix />
+					<RoutePrefetch />
 					<Suspense fallback={<FullScreenSpinner />}>
 						<RouterProvider router={router} />
 					</Suspense>
@@ -175,7 +243,7 @@ export default function App() {
 								background: "var(--toast-bg)",
 								backdropFilter: "blur(8px)",
 								fontSize: "12px",
-								fontFamily: "var(--font-quicksand)",
+								fontFamily: "var(--font-sans)",
 								color: "var(--text-primary)",
 							},
 						}}

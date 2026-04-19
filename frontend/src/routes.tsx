@@ -1,102 +1,158 @@
-import { lazy } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AuthGuard, GuestGuard, ServicesRedirect } from "@/components/guards";
+import { lazyWithPreload } from "@/lib/lazyWithPreload";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
-const LandingPage = lazy(() =>
+/* Each lazy route is created via lazyWithPreload so the chunk fetch can be
+   triggered ahead of click time — see prefetch wiring in SideRail / MobileNav
+   (link hover/focus) and the idle prefetch in App.tsx. */
+
+const LandingPage = lazyWithPreload(() =>
 	import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })),
 );
-const LoginPage = lazy(() =>
+const LoginPage = lazyWithPreload(() =>
 	import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })),
 );
-const RegisterPage = lazy(() =>
+const RegisterPage = lazyWithPreload(() =>
 	import("@/pages/RegisterPage").then((m) => ({ default: m.RegisterPage })),
 );
-const ForgotPasswordPage = lazy(() =>
+const ForgotPasswordPage = lazyWithPreload(() =>
 	import("@/pages/ForgotPasswordPage").then((m) => ({
 		default: m.ForgotPasswordPage,
 	})),
 );
-const ResetPasswordPage = lazy(() =>
+const ResetPasswordPage = lazyWithPreload(() =>
 	import("@/pages/ResetPasswordPage").then((m) => ({
 		default: m.ResetPasswordPage,
 	})),
 );
 
-const DashboardPage = lazy(() =>
+const DashboardPage = lazyWithPreload(() =>
 	import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
-const ServicesPage = lazy(() =>
+const ServicesPage = lazyWithPreload(() =>
 	import("@/pages/ServicesPage").then((m) => ({ default: m.ServicesPage })),
 );
-const ServiceDetailPage = lazy(() =>
+const ServiceDetailPage = lazyWithPreload(() =>
 	import("@/pages/ServiceDetailPage").then((m) => ({
 		default: m.ServiceDetailPage,
 	})),
 );
-const AlertsPage = lazy(() =>
+const AlertsPage = lazyWithPreload(() =>
 	import("@/pages/AlertsPage").then((m) => ({ default: m.AlertsPage })),
 );
-const AIInsightsPage = lazy(() =>
+const AIInsightsPage = lazyWithPreload(() =>
 	import("@/pages/AIInsightsPage").then((m) => ({ default: m.AIInsightsPage })),
 );
-const ServiceMapPage = lazy(() =>
+const ServiceMapPage = lazyWithPreload(() =>
 	import("@/pages/ServiceMapPage").then((m) => ({
 		default: m.ServiceMapPage,
 	})),
 );
-const SettingsPage = lazy(() =>
+const SettingsPage = lazyWithPreload(() =>
 	import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
-const KubernetesPage = lazy(() =>
+const KubernetesPage = lazyWithPreload(() =>
 	import("@/pages/KubernetesPage").then((m) => ({
 		default: m.KubernetesPage,
 	})),
 );
-const LogsPage = lazy(() =>
+const LogsPage = lazyWithPreload(() =>
 	import("@/pages/LogsPage").then((m) => ({ default: m.LogsPage })),
 );
-const SecurityPage = lazy(() =>
+const SecurityPage = lazyWithPreload(() =>
 	import("@/pages/SecurityPage").then((m) => ({ default: m.SecurityPage })),
 );
-const NotificationsPage = lazy(() =>
+const NotificationsPage = lazyWithPreload(() =>
 	import("@/pages/NotificationsPage").then((m) => ({
 		default: m.NotificationsPage,
 	})),
 );
-const SLOPage = lazy(() =>
+const SLOPage = lazyWithPreload(() =>
 	import("@/pages/SLOPage").then((m) => ({ default: m.SLOPage })),
 );
-const StatusPagesAdmin = lazy(() =>
+const StatusPagesAdmin = lazyWithPreload(() =>
 	import("@/pages/StatusPagesAdmin").then((m) => ({
 		default: m.StatusPagesAdmin,
 	})),
 );
-const PublicStatusPage = lazy(() =>
+const PublicStatusPage = lazyWithPreload(() =>
 	import("@/pages/PublicStatusPage").then((m) => ({
 		default: m.PublicStatusPage,
 	})),
 );
-const IncidentsPage = lazy(() =>
+const IncidentsPage = lazyWithPreload(() =>
 	import("@/pages/IncidentsPage").then((m) => ({ default: m.IncidentsPage })),
 );
-const ProbesPage = lazy(() =>
+const ProbesPage = lazyWithPreload(() =>
 	import("@/pages/ProbesPage").then((m) => ({ default: m.ProbesPage })),
 );
-const RunbooksPage = lazy(() =>
+const RunbooksPage = lazyWithPreload(() =>
 	import("@/pages/RunbooksPage").then((m) => ({ default: m.RunbooksPage })),
 );
-const AIUsagePage = lazy(() =>
+const AIUsagePage = lazyWithPreload(() =>
 	import("@/pages/AIUsagePage").then((m) => ({ default: m.AIUsagePage })),
 );
-const ApiTokensPage = lazy(() =>
+const ApiTokensPage = lazyWithPreload(() =>
 	import("@/pages/ApiTokensPage").then((m) => ({ default: m.ApiTokensPage })),
 );
-const ComparePage = lazy(() =>
+const ComparePage = lazyWithPreload(() =>
 	import("@/pages/ComparePage").then((m) => ({ default: m.ComparePage })),
 );
+
+/* ROUTE_PRELOAD — central map from URL pathname to its preload function so
+   nav components (SideRail, MobileNav, CommandPalette, breadcrumbs) can warm
+   the chunk on hover/focus without importing each page module directly. The
+   key matches the literal `to` prop used in NavLinks. Routes with dynamic
+   segments use a function-style key (see `preloadRoute` resolver below). */
+const ROUTE_PRELOAD: Record<string, () => Promise<unknown>> = {
+	"/app": DashboardPage.preload,
+	"/app/services": ServicesPage.preload,
+	"/app/alerts": AlertsPage.preload,
+	"/app/ai-insights": AIInsightsPage.preload,
+	"/app/service-map": ServiceMapPage.preload,
+	"/app/settings": SettingsPage.preload,
+	"/app/kubernetes": KubernetesPage.preload,
+	"/app/logs": LogsPage.preload,
+	"/app/security": SecurityPage.preload,
+	"/app/notifications": NotificationsPage.preload,
+	"/app/slo": SLOPage.preload,
+	"/app/status-pages": StatusPagesAdmin.preload,
+	"/app/incidents": IncidentsPage.preload,
+	"/app/probes": ProbesPage.preload,
+	"/app/runbooks": RunbooksPage.preload,
+	"/app/ai-usage": AIUsagePage.preload,
+	"/app/api-tokens": ApiTokensPage.preload,
+	"/app/compare": ComparePage.preload,
+};
+
+/** preloadRoute(path) — start fetching the chunk for a route. Safe to call
+ *  repeatedly (dynamic import dedupes). Matches dynamic segments by prefix:
+ *  e.g. `/app/services/abc-123` resolves to ServiceDetailPage. */
+export function preloadRoute(pathname: string): void {
+	const direct = ROUTE_PRELOAD[pathname];
+	if (direct) {
+		direct();
+		return;
+	}
+	if (pathname.startsWith("/app/services/")) {
+		ServiceDetailPage.preload();
+		return;
+	}
+	if (pathname.startsWith("/status/")) {
+		PublicStatusPage.preload();
+	}
+}
+
+/** preloadDashboardRoutes — called from App.tsx on idle to warm every chunk
+ *  the authenticated user is likely to hit. Triggered via requestIdleCallback
+ *  so it never competes with the initial render or above-the-fold network. */
+export function preloadDashboardRoutes(): void {
+	for (const preload of Object.values(ROUTE_PRELOAD)) preload();
+	ServiceDetailPage.preload();
+}
 
 export const router = createBrowserRouter([
 	{

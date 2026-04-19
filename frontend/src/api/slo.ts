@@ -56,7 +56,10 @@ export const sloApi = {
 		const r = await apiClient.post("/slos", input);
 		return r.data.data;
 	},
-	update: async (id: string, patch: Partial<CreateSLOInput> & { enabled?: boolean }): Promise<SLO> => {
+	update: async (
+		id: string,
+		patch: Partial<CreateSLOInput> & { enabled?: boolean },
+	): Promise<SLO> => {
 		const r = await apiClient.put(`/slos/${id}`, patch);
 		return r.data.data;
 	},

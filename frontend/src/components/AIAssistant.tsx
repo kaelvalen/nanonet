@@ -2,14 +2,11 @@ import {
 	AlertTriangle,
 	Bot,
 	CheckCircle2,
-	ChevronRight,
 	Clock,
 	Download,
 	Eye,
 	FileText,
-	Maximize2,
 	MessageSquare,
-	Minimize2,
 	Send,
 	Sparkles,
 	TrendingUp,
@@ -30,14 +27,29 @@ import {
 	TIME_RANGE_LABELS,
 	type TimeRange,
 } from "@/api/metrics";
+import {
+	type AIAssistantMode,
+	useAIAssistantStore,
+} from "@/store/aiAssistantStore";
 import { useServiceStore } from "@/store/serviceStore";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
-type PanelMode = "chat" | "report";
+/* AIAssistant — global slide-in panel.
+
+   Mounted once at the layout level. Open/close is driven by useAIAssistantStore:
+   - CommandPalette `?` mode opens with seed query in chat mode.
+   - TopBar sparkle button toggles open in chat mode.
+   - The `seed` value (if any) is consumed once and submitted automatically.
+
+   Two modes: `chat` (free-form Q&A) and `report` (period-scoped synthesis with
+   PDF export). Both share the same chrome — header, mode tabs, body, footer.
+
+   Layout: 420px wide on desktop, full-screen overlay below md. Right-aligned. */
 
 const TIME_RANGES: TimeRange[] = ["1h", "24h", "7d", "30d"];
 
-const CATEGORY_CONFIG: Record<
+const CATEGORY_TOKENS: Record<
 	ReportEvent["category"],
 	{ label: string; color: string; icon: React.ReactNode }
 > = {
@@ -53,51 +65,67 @@ const CATEGORY_CONFIG: Record<
 	},
 	izleniyor: {
 		label: "İzleniyor",
-		color: "var(--status-warn-text)",
+		color: "var(--status-degraded-text)",
 		icon: <Eye className="w-3 h-3" />,
 	},
 	trend: {
 		label: "Trend",
-		color: "var(--color-teal)",
+		color: "var(--brand-primary)",
 		icon: <TrendingUp className="w-3 h-3" />,
 	},
 };
 
-const SCORE_CONFIG: Record<
+const SCORE_TOKENS: Record<
 	ReportResult["system_score"],
-	{ bg: string; text: string; border: string }
+	{ accent: string; bg: string; text: string }
 > = {
 	SAĞLIKLI: {
+		accent: "var(--status-up)",
 		bg: "var(--status-up-subtle)",
 		text: "var(--status-up-text)",
-		border: "var(--status-up-border)",
 	},
 	DİKKAT: {
-		bg: "var(--status-warn-subtle)",
-		text: "var(--status-warn-text)",
-		border: "var(--status-warn-border)",
+		accent: "var(--status-degraded)",
+		bg: "var(--status-degraded-subtle)",
+		text: "var(--status-degraded-text)",
 	},
 	KRİTİK: {
+		accent: "var(--status-down)",
 		bg: "var(--status-down-subtle)",
 		text: "var(--status-down-text)",
-		border: "var(--status-down-border)",
 	},
 };
 
-const PRIORITY_COLOR: Record<string, string> = {
+const PRIORITY_TEXT: Record<string, string> = {
 	high: "var(--status-down-text)",
-	medium: "var(--status-warn-text)",
+	medium: "var(--status-degraded-text)",
 	low: "var(--status-up-text)",
 };
 
+interface ChatBubble {
+	id: string;
+	role: "ai" | "user";
+	text: string;
+	time: string;
+}
+
+const SUGGESTIONS = [
+	{ icon: Sparkles, label: "Sistem durumu nedir?" },
+	{ icon: AlertTriangle, label: "Son anomalileri analiz et" },
+	{ icon: Zap, label: "Performans önerileri ver" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Report view
+
 function ReportView({
 	report,
-	onClose,
+	onReset,
 }: {
 	report: ReportResult;
-	onClose: () => void;
+	onReset: () => void;
 }) {
-	const scoreConfig = SCORE_CONFIG[report.system_score] ?? SCORE_CONFIG.DİKKAT;
+	const tokens = SCORE_TOKENS[report.system_score] ?? SCORE_TOKENS.DİKKAT;
 	const [isExporting, setIsExporting] = useState(false);
 
 	const handleExport = async () => {
@@ -116,289 +144,287 @@ function ReportView({
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex-1 overflow-y-auto">
-				<div>
-					{/* Period + score banner */}
-					<div
-						className="mx-3 mt-3 rounded-xl px-3.5 py-3 shrink-0"
-						style={{
-							background: scoreConfig.bg,
-							border: `1px solid ${scoreConfig.border}`,
-						}}
+				{/* Score banner */}
+				<div
+					className="mx-3 mt-3 rounded-[6px] px-3.5 py-3 relative overflow-hidden"
+					style={{
+						background: tokens.bg,
+						border: `1px solid var(--border-subtle)`,
+					}}
+				>
+					<span
+						aria-hidden
+						className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+						style={{ background: tokens.accent }}
+					/>
+					<div className="flex items-center justify-between mb-1 pl-2">
+						<span
+							className="text-[10px] font-bold uppercase tracking-wider tnum"
+							style={{ color: tokens.text }}
+						>
+							{report.system_score}
+						</span>
+						<span
+							className="text-[10px] tnum"
+							style={{ color: "var(--text-faint)" }}
+						>
+							{report.period_label}
+						</span>
+					</div>
+					<p
+						className="text-[13px] font-semibold leading-snug pl-2"
+						style={{ color: "var(--text-primary)" }}
 					>
-						<div className="flex items-center justify-between mb-1">
-							<span
-								className="text-[10px] font-bold tracking-widest uppercase"
-								style={{ color: scoreConfig.text }}
-							>
-								{report.system_score}
-							</span>
-							<span
-								className="text-[10px] font-medium"
+						{report.headline}
+					</p>
+					<div className="flex items-center gap-3 mt-2 pl-2">
+						<span
+							className="text-[11px] inline-flex items-center gap-1 tnum"
+							style={{ color: "var(--status-down-text)" }}
+						>
+							<AlertTriangle className="w-3 h-3" />
+							{report.critical_events} kritik
+						</span>
+						<span
+							className="text-[11px] inline-flex items-center gap-1 tnum"
+							style={{ color: "var(--status-up-text)" }}
+						>
+							<CheckCircle2 className="w-3 h-3" />
+							{report.resolved_events} çözüldü
+						</span>
+					</div>
+				</div>
+
+				<div className="px-3 py-3 space-y-3">
+					{/* Events */}
+					{report.events.length > 0 && (
+						<div>
+							<p
+								className="text-[10px] uppercase tracking-wider font-semibold px-0.5 mb-2"
 								style={{ color: "var(--text-faint)" }}
 							>
-								{report.period_label}
-							</span>
-						</div>
-						<p
-							className="text-sm font-semibold leading-snug"
-							style={{ color: "var(--text-primary)" }}
-						>
-							{report.headline}
-						</p>
-						<div className="flex items-center gap-3 mt-2">
-							<span
-								className="text-[11px] flex items-center gap-1"
-								style={{ color: "var(--status-down-text)" }}
-							>
-								<AlertTriangle className="w-3 h-3" />
-								{report.critical_events} kritik
-							</span>
-							<span
-								className="text-[11px] flex items-center gap-1"
-								style={{ color: "var(--status-up-text)" }}
-							>
-								<CheckCircle2 className="w-3 h-3" />
-								{report.resolved_events} çözüldü
-							</span>
-						</div>
-					</div>
-
-					<div className="px-3 py-2.5 space-y-2">
-						{/* Events */}
-						{report.events.length > 0 && (
-							<div>
-								<p
-									className="text-[10px] font-bold tracking-widest uppercase px-0.5 mb-1.5"
-									style={{ color: "var(--text-faint)" }}
-								>
-									Tespit Edilen Olaylar
-								</p>
-								<div className="space-y-2">
-									{report.events.map((event, _i) => {
-										const cat =
-											CATEGORY_CONFIG[event.category] ??
-											CATEGORY_CONFIG.izleniyor;
-										return (
-											<div
-												key={`${event.service}-${event.time}`}
-												className="rounded-xl px-3 py-2.5"
-												style={{
-													background: "var(--surface-sunken)",
-													border: "1px solid var(--border-subtle)",
-												}}
-											>
-												<div className="flex items-start justify-between gap-2 mb-1.5">
-													<div className="flex items-center gap-1.5 min-w-0">
-														<span
-															className="font-semibold text-xs truncate"
-															style={{ color: "var(--text-primary)" }}
-														>
-															{event.service}
-														</span>
-														<span
-															className="text-[10px]"
-															style={{ color: "var(--text-faint)" }}
-														>
-															{event.time}
-														</span>
-													</div>
-													<span
-														className="flex items-center gap-1 text-[10px] font-semibold shrink-0 px-1.5 py-0.5 rounded-full"
-														style={{
-															color: cat.color,
-															background: "var(--surface-raised)",
-															border: "1px solid var(--border-subtle)",
-														}}
-													>
-														{cat.icon}
-														{cat.label}
-													</span>
-												</div>
-												<p
-													className="text-xs leading-relaxed mb-1"
-													style={{ color: "var(--text-secondary)" }}
-												>
-													{event.observation}
-												</p>
-												<div
-													className="text-[11px] space-y-0.5 pt-1.5"
-													style={{
-														borderTop: "1px solid var(--border-subtle)",
-														color: "var(--text-faint)",
-													}}
-												>
-													<p>
-														<span
-															className="font-medium"
-															style={{ color: "var(--text-secondary)" }}
-														>
-															Kök neden:
-														</span>{" "}
-														{event.root_cause}
-													</p>
-													<p>
-														<span
-															className="font-medium"
-															style={{ color: "var(--text-secondary)" }}
-														>
-															Müdahale:
-														</span>{" "}
-														{event.action}
-													</p>
-													{event.outcome && (
-														<p>
-															<span
-																className="font-medium"
-																style={{ color: "var(--status-up-text)" }}
-															>
-																Sonuç:
-															</span>{" "}
-															{event.outcome}
-														</p>
-													)}
-												</div>
-											</div>
-										);
-									})}
-								</div>
-							</div>
-						)}
-
-						{/* Actions */}
-						{report.actions.length > 0 && (
-							<div>
-								<p
-									className="text-[10px] font-bold tracking-widest uppercase px-0.5 mb-1.5"
-									style={{ color: "var(--text-faint)" }}
-								>
-									Önerilen Aksiyonlar
-								</p>
-								<div className="space-y-1.5">
-									{report.actions.map((action) => (
+								Tespit edilen olaylar
+							</p>
+							<div className="space-y-2">
+								{report.events.map((event) => {
+									const cat =
+										CATEGORY_TOKENS[event.category] ??
+										CATEGORY_TOKENS.izleniyor;
+									return (
 										<div
-											key={`${action.action}-${action.priority}`}
-											className="flex items-start gap-2.5 rounded-lg px-3 py-2"
+											key={`${event.service}-${event.time}`}
+											className="rounded-[6px] px-3 py-2.5"
 											style={{
-												background: "var(--surface-sunken)",
+												background: "var(--surface-base)",
 												border: "1px solid var(--border-subtle)",
 											}}
 										>
-											<span
-												className="text-[10px] font-bold uppercase mt-0.5 shrink-0 px-1.5 py-0.5 rounded"
-												style={{
-													color:
-														PRIORITY_COLOR[action.priority] ??
-														"var(--text-faint)",
-													background: "var(--surface-raised)",
-													border: "1px solid var(--border-subtle)",
-												}}
-											>
-												{action.priority}
-											</span>
-											<div className="min-w-0">
-												<p
-													className="text-xs font-medium"
-													style={{ color: "var(--text-primary)" }}
-												>
-													{action.action}
-												</p>
-												{action.estimated_impact && (
-													<p
-														className="text-[11px] mt-0.5"
+											<div className="flex items-start justify-between gap-2 mb-1.5">
+												<div className="flex items-center gap-2 min-w-0">
+													<span
+														className="text-[12px] font-medium truncate"
+														style={{ color: "var(--text-primary)" }}
+													>
+														{event.service}
+													</span>
+													<span
+														className="text-[10px] tnum shrink-0"
 														style={{ color: "var(--text-faint)" }}
 													>
-														{action.estimated_impact}
-													</p>
-												)}
+														{event.time}
+													</span>
+												</div>
+												<span
+													className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold shrink-0 px-1.5 py-0.5 rounded-[4px]"
+													style={{
+														color: cat.color,
+														background: "var(--surface-sunken)",
+														border: "1px solid var(--border-subtle)",
+													}}
+												>
+													{cat.icon}
+													{cat.label}
+												</span>
 											</div>
+											<p
+												className="text-[12px] leading-relaxed mb-2"
+												style={{ color: "var(--text-secondary)" }}
+											>
+												{event.observation}
+											</p>
+											<dl
+												className="text-[11px] space-y-1 pt-2"
+												style={{
+													borderTop: "1px solid var(--border-subtle)",
+													color: "var(--text-tertiary)",
+												}}
+											>
+												<div>
+													<dt
+														className="inline font-medium"
+														style={{ color: "var(--text-secondary)" }}
+													>
+														Kök neden:
+													</dt>{" "}
+													<dd className="inline">{event.root_cause}</dd>
+												</div>
+												<div>
+													<dt
+														className="inline font-medium"
+														style={{ color: "var(--text-secondary)" }}
+													>
+														Müdahale:
+													</dt>{" "}
+													<dd className="inline">{event.action}</dd>
+												</div>
+												{event.outcome && (
+													<div>
+														<dt
+															className="inline font-medium"
+															style={{ color: "var(--status-up-text)" }}
+														>
+															Sonuç:
+														</dt>{" "}
+														<dd className="inline">{event.outcome}</dd>
+													</div>
+												)}
+											</dl>
 										</div>
-									))}
-								</div>
+									);
+								})}
 							</div>
-						)}
+						</div>
+					)}
 
-						{/* Risk forecast */}
-						{report.risk_forecast && (
-							<div
-								className="rounded-xl px-3 py-2.5"
-								style={{
-									background: "var(--color-teal-subtle)",
-									border: "1px solid var(--color-teal-border)",
-								}}
+					{/* Actions */}
+					{report.actions.length > 0 && (
+						<div>
+							<p
+								className="text-[10px] uppercase tracking-wider font-semibold px-0.5 mb-2"
+								style={{ color: "var(--text-faint)" }}
 							>
-								<p
-									className="text-[10px] font-bold tracking-widest uppercase mb-1"
-									style={{ color: "var(--color-teal)" }}
-								>
-									Önümüzdeki 7 Gün Riski
-								</p>
-								<p
-									className="text-xs leading-relaxed"
-									style={{ color: "var(--text-secondary)" }}
-								>
-									{report.risk_forecast}
-								</p>
+								Önerilen aksiyonlar
+							</p>
+							<div className="space-y-1.5">
+								{report.actions.map((action) => (
+									<div
+										key={`${action.action}-${action.priority}`}
+										className="flex items-start gap-2.5 rounded-[6px] px-3 py-2"
+										style={{
+											background: "var(--surface-base)",
+											border: "1px solid var(--border-subtle)",
+										}}
+									>
+										<span
+											className="text-[10px] font-semibold uppercase tracking-wider mt-0.5 shrink-0 px-1.5 py-0.5 rounded-[4px]"
+											style={{
+												color:
+													PRIORITY_TEXT[action.priority] ??
+													"var(--text-tertiary)",
+												background: "var(--surface-sunken)",
+											}}
+										>
+											{action.priority}
+										</span>
+										<div className="min-w-0">
+											<p
+												className="text-[12px] font-medium"
+												style={{ color: "var(--text-primary)" }}
+											>
+												{action.action}
+											</p>
+											{action.estimated_impact && (
+												<p
+													className="text-[11px] mt-0.5"
+													style={{ color: "var(--text-tertiary)" }}
+												>
+													{action.estimated_impact}
+												</p>
+											)}
+										</div>
+									</div>
+								))}
 							</div>
-						)}
-					</div>
+						</div>
+					)}
+
+					{/* Risk forecast */}
+					{report.risk_forecast && (
+						<div
+							className="rounded-[6px] px-3 py-2.5 relative"
+							style={{
+								background: "var(--brand-primary-subtle)",
+								border: "1px solid var(--border-subtle)",
+							}}
+						>
+							<span
+								aria-hidden
+								className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+								style={{ background: "var(--brand-primary)" }}
+							/>
+							<p
+								className="text-[10px] uppercase tracking-wider font-semibold mb-1 pl-2"
+								style={{ color: "var(--brand-primary)" }}
+							>
+								Önümüzdeki 7 gün riski
+							</p>
+							<p
+								className="text-[12px] leading-relaxed pl-2"
+								style={{ color: "var(--text-secondary)" }}
+							>
+								{report.risk_forecast}
+							</p>
+						</div>
+					)}
 				</div>
 			</div>
 
-			<div className="px-3 pb-3 pt-1 shrink-0 flex gap-2">
-				<button
-					type="button"
-					onClick={onClose}
-					className="flex-1 py-2 rounded-xl text-xs font-semibold transition-opacity hover:opacity-80"
-					style={{
-						background: "var(--surface-sunken)",
-						color: "var(--text-secondary)",
-						border: "1px solid var(--border-default)",
-					}}
+			<footer
+				className="px-3 py-3 shrink-0 flex gap-2"
+				style={{ borderTop: "1px solid var(--border-subtle)" }}
+			>
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={onReset}
+					className="flex-1"
 				>
 					Yeni rapor
-				</button>
-				<motion.button
-					type="button"
+				</Button>
+				<Button
+					size="sm"
 					onClick={handleExport}
 					disabled={isExporting}
-					className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
-					style={{
-						background: "var(--gradient-btn-primary)",
-						color: "#fff",
-						boxShadow: "0 3px 8px rgba(13,148,136,0.25)",
-					}}
-					whileHover={{ scale: isExporting ? 1 : 1.02 }}
-					whileTap={{ scale: 0.97 }}
+					className="flex-1"
 				>
 					{isExporting ? (
 						<>
-							<span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-							Hazırlanıyor...
+							<span className="w-3 h-3 border-2 border-current/40 border-t-current rounded-full animate-spin mr-1.5" />
+							Hazırlanıyor…
 						</>
 					) : (
 						<>
-							<Download className="w-3.5 h-3.5" />
-							PDF İndir
+							<Download className="w-3.5 h-3.5 mr-1.5" />
+							PDF indir
 						</>
 					)}
-				</motion.button>
-			</div>
+				</Button>
+			</footer>
 		</div>
 	);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Main panel
+
 export function AIAssistant() {
-	const [isOpen, setIsOpen] = useState(false);
-	const [isMinimized, setIsMinimized] = useState(false);
-	const [mode, setMode] = useState<PanelMode>("chat");
+	const { isOpen, mode, setMode, close, consumeSeed } = useAIAssistantStore();
 	const [message, setMessage] = useState("");
-	const [chatMessages, setChatMessages] = useState<
-		{ id: string; role: "ai" | "user"; text: string; time: string }[]
-	>([
+	const [chatMessages, setChatMessages] = useState<ChatBubble[]>([
 		{
 			id: "init",
 			role: "ai",
-			text: "Zaten baktım. Bir şeyler var — rapor oluşturmamı ister misin yoksa soru mu sormak istiyorsun?",
+			text: "Selam — neye bakmamı istiyorsun? Sistem durumu, son anomaliler veya bir servis hakkında soru sorabilirsin.",
 			time: "Şimdi",
 		},
 	]);
@@ -406,10 +432,12 @@ export function AIAssistant() {
 	const [selectedRange, setSelectedRange] = useState<TimeRange>("24h");
 	const [report, setReport] = useState<ReportResult | null>(null);
 	const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
 	const { services } = useServiceStore();
 	const { id: urlServiceId } = useParams<{ id: string }>();
 	const { pathname } = useLocation();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
 
 	const contextServiceId = useMemo(() => {
 		if (urlServiceId) return urlServiceId;
@@ -422,26 +450,19 @@ export function AIAssistant() {
 		[services, contextServiceId],
 	);
 
-	useEffect(() => {
-		if (isOpen && !isMinimized && mode === "chat") {
-			messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-		}
-	}, [isOpen, isMinimized, mode]);
-
 	const now = () =>
 		new Date().toLocaleTimeString("tr-TR", {
 			hour: "2-digit",
 			minute: "2-digit",
 		});
 
-	const handleSend = async () => {
-		if (!message.trim() || isAnalyzing) return;
-		const userMsg = message;
-		setMessage("");
+	const sendMessage = async (text: string) => {
+		if (!text.trim() || isAnalyzing) return;
 		setChatMessages((prev) => [
 			...prev,
-			{ id: `user-${Date.now()}`, role: "user", text: userMsg, time: now() },
+			{ id: `user-${Date.now()}`, role: "user", text, time: now() },
 		]);
+		setMessage("");
 		setIsAnalyzing(true);
 		try {
 			const history: ChatMessage[] = chatMessages.slice(-10).map((m) => ({
@@ -449,7 +470,7 @@ export function AIAssistant() {
 				content: m.text,
 			}));
 			const result = await aiChatApi.chat(
-				userMsg,
+				text,
 				history,
 				contextServiceId ?? "global",
 			);
@@ -472,6 +493,39 @@ export function AIAssistant() {
 		}
 	};
 
+	// Consume seed from store on open and auto-submit. We intentionally only
+	// re-run when the panel opens or the mode changes; sendMessage closes over
+	// fresh state via setChatMessages updater functions.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: sendMessage is a stable closure within a single open
+	useEffect(() => {
+		if (!isOpen) return;
+		const seed = consumeSeed();
+		if (seed?.trim()) {
+			void sendMessage(seed);
+		}
+		if (mode === "chat") {
+			requestAnimationFrame(() => inputRef.current?.focus());
+		}
+	}, [isOpen, consumeSeed, mode]);
+
+	// Auto-scroll on new messages or while analyzing.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: chatMessages/isAnalyzing are intentional triggers
+	useEffect(() => {
+		if (isOpen && mode === "chat") {
+			messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+		}
+	}, [chatMessages, isAnalyzing, isOpen, mode]);
+
+	// Close on Escape
+	useEffect(() => {
+		if (!isOpen) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") close();
+		};
+		document.addEventListener("keydown", onKey);
+		return () => document.removeEventListener("keydown", onKey);
+	}, [isOpen, close]);
+
 	const handleGenerateReport = async () => {
 		setIsGeneratingReport(true);
 		setReport(null);
@@ -482,6 +536,7 @@ export function AIAssistant() {
 			);
 			setReport(result);
 		} catch {
+			setMode("chat");
 			setChatMessages((prev) => [
 				...prev,
 				{
@@ -491,7 +546,6 @@ export function AIAssistant() {
 					time: now(),
 				},
 			]);
-			setMode("chat");
 		} finally {
 			setIsGeneratingReport(false);
 		}
@@ -500,538 +554,479 @@ export function AIAssistant() {
 	const onlineServices = services.filter((s) => s.status === "up").length;
 	const isBusy = isAnalyzing || isGeneratingReport;
 
-	const SUGGESTION_ITEMS = [
-		{
-			icon: <Sparkles className="w-3.5 h-3.5" />,
-			label: "Sistem durumu nedir?",
-		},
-		{
-			icon: <AlertTriangle className="w-3.5 h-3.5" />,
-			label: "Son anomalileri analiz et",
-		},
-		{
-			icon: <Zap className="w-3.5 h-3.5" />,
-			label: "Performans önerileri ver",
-		},
+	const tabs: {
+		id: AIAssistantMode;
+		label: string;
+		icon: React.ElementType;
+	}[] = [
+		{ id: "chat", label: "Sohbet", icon: MessageSquare },
+		{ id: "report", label: "Rapor", icon: FileText },
 	];
 
 	return (
-		<>
-			{/* Trigger button */}
-			<AnimatePresence>
-				{!isOpen && (
-					<motion.button
-						type="button"
-						initial={{ scale: 0, opacity: 0 }}
-						animate={{ scale: 1, opacity: 1 }}
-						exit={{ scale: 0, opacity: 0 }}
-						onClick={() => setIsOpen(true)}
-						className="fixed bottom-20 right-4 md:bottom-8 md:right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
-						style={{
-							background: "var(--gradient-logo)",
-							boxShadow: "0 4px 20px rgba(13,148,136,0.35)",
-						}}
-					>
-						<Sparkles className="w-4 h-4 text-white" />
-						<span className="text-white text-xs font-bold tracking-wide">
-							AI
-						</span>
-					</motion.button>
-				)}
-			</AnimatePresence>
-
-			{/* Chat / Report panel */}
-			<AnimatePresence>
-				{isOpen && (
+		<AnimatePresence>
+			{isOpen && (
+				<>
+					{/* Scrim */}
 					<motion.div
-						initial={{ opacity: 0, y: 24, scale: 0.94 }}
-						animate={{ opacity: 1, y: 0, scale: 1 }}
-						exit={{ opacity: 0, y: 20, scale: 0.94 }}
-						transition={{ type: "spring", stiffness: 400, damping: 32 }}
-						className={`fixed z-50 flex flex-col rounded-2xl overflow-hidden
-						bottom-20 right-4 left-4
-						md:bottom-8 md:right-6 md:left-auto md:w-96
-						${isMinimized ? "h-14" : "h-[78vh] max-h-175"}`}
+						key="ai-scrim"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.16 }}
+						className="fixed inset-0 z-40"
+						style={{ background: "rgba(0,0,0,0.35)" }}
+						onClick={close}
+						aria-hidden
+					/>
+
+					{/* Panel */}
+					<motion.aside
+						key="ai-panel"
+						role="dialog"
+						aria-label="AI Asistan"
+						aria-modal
+						initial={{ x: "100%" }}
+						animate={{ x: 0 }}
+						exit={{ x: "100%" }}
+						transition={{
+							duration: 0.24,
+							ease: [0.2, 0, 0, 1],
+						}}
+						className="fixed top-0 right-0 bottom-0 z-50 flex flex-col w-full sm:w-[420px]"
 						style={{
-							background: "var(--surface-card)",
-							border: "1px solid var(--border-default)",
-							boxShadow:
-								"0 24px 64px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)",
+							background: "var(--surface-overlay)",
+							borderLeft: "1px solid var(--border-subtle)",
+							boxShadow: "var(--shadow-lg)",
 						}}
 					>
 						{/* Header */}
-						<div
+						<header
 							className="flex items-center justify-between px-4 py-3 shrink-0"
-							style={{
-								background: "var(--surface-raised)",
-								borderBottom: "1px solid var(--border-default)",
-							}}
+							style={{ borderBottom: "1px solid var(--border-subtle)" }}
 						>
-							<div className="flex items-center gap-2.5">
-								<div className="relative shrink-0">
-									<div
-										className="w-8 h-8 rounded-full flex items-center justify-center"
-										style={{
-											background: "var(--color-teal-subtle)",
-											border: "1px solid var(--color-teal-border)",
-										}}
-									>
-										<Bot
-											className="w-4 h-4"
-											style={{ color: "var(--color-teal)" }}
-										/>
-									</div>
+							<div className="flex items-center gap-2.5 min-w-0">
+								<div
+									className="relative w-8 h-8 rounded-[6px] flex items-center justify-center shrink-0"
+									style={{
+										background: "var(--surface-sunken)",
+										border: "1px solid var(--border-subtle)",
+									}}
+								>
+									<Bot
+										className="w-4 h-4"
+										style={{ color: "var(--brand-primary)" }}
+									/>
 									<span
-										className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
+										className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full"
 										style={{
 											background: isBusy
-												? "var(--status-warn)"
+												? "var(--status-degraded)"
 												: "var(--status-up)",
-											borderColor: "var(--surface-raised)",
+											border: "2px solid var(--surface-overlay)",
 										}}
 									/>
 								</div>
-								<div>
+								<div className="min-w-0">
 									<p
-										className="text-sm font-bold leading-none"
+										className="text-[13px] font-semibold leading-none truncate"
 										style={{ color: "var(--text-primary)" }}
 									>
 										NanoNet SRE Agent
 									</p>
 									<p
-										className="text-[10px] font-semibold tracking-wider uppercase mt-0.5"
+										className="text-[10px] uppercase tracking-wider font-semibold mt-1.5 truncate"
 										style={{
 											color: isBusy
-												? "var(--status-warn-text)"
-												: "var(--status-up-text)",
+												? "var(--status-degraded-text)"
+												: "var(--text-tertiary)",
 										}}
 									>
 										{isBusy
 											? mode === "report"
-												? "Rapor hazırlanıyor..."
-												: "Analiz ediliyor..."
+												? "Rapor hazırlanıyor…"
+												: "Analiz ediyor…"
 											: contextServiceName
-												? contextServiceName
+												? `Bağlam · ${contextServiceName}`
 												: "Aktif izleniyor"}
 									</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-1">
-								<button
-									type="button"
-									onClick={() => setIsMinimized(!isMinimized)}
-									className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70"
-									style={{ color: "var(--text-faint)" }}
-								>
-									{isMinimized ? (
-										<Maximize2 className="w-3.5 h-3.5" />
-									) : (
-										<Minimize2 className="w-3.5 h-3.5" />
-									)}
-								</button>
-								<button
-									type="button"
-									onClick={() => setIsOpen(false)}
-									className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70"
-									style={{ color: "var(--text-faint)" }}
-								>
-									<X className="w-3.5 h-3.5" />
-								</button>
-							</div>
+							<button
+								type="button"
+								onClick={close}
+								className="w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+								aria-label="Kapat"
+								style={{ color: "var(--text-tertiary)" }}
+							>
+								<X className="w-4 h-4" />
+							</button>
+						</header>
+
+						{/* Mode tabs */}
+						<div
+							role="tablist"
+							aria-label="Asistan modu"
+							className="flex items-center gap-1 px-3 shrink-0"
+							style={{ borderBottom: "1px solid var(--border-subtle)" }}
+						>
+							{tabs.map((t) => {
+								const isActive = mode === t.id;
+								const Icon = t.icon;
+								return (
+									<button
+										key={t.id}
+										type="button"
+										role="tab"
+										aria-selected={isActive}
+										onClick={() => setMode(t.id)}
+										className="relative inline-flex items-center gap-1.5 px-2.5 h-10 text-[12px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] rounded-[4px]"
+										style={{
+											color: isActive
+												? "var(--text-primary)"
+												: "var(--text-tertiary)",
+										}}
+									>
+										<Icon
+											className="w-3.5 h-3.5"
+											style={{
+												color: isActive
+													? "var(--brand-primary)"
+													: "currentColor",
+											}}
+										/>
+										{t.label}
+										{isActive && (
+											<span
+												aria-hidden
+												className="absolute left-2 right-2 -bottom-px h-[2px] rounded-t-full"
+												style={{ background: "var(--brand-primary)" }}
+											/>
+										)}
+									</button>
+								);
+							})}
 						</div>
 
-						{!isMinimized && (
+						{/* Body */}
+						{mode === "chat" ? (
 							<>
-								{/* Mode tabs */}
-								<div
-									className="flex shrink-0 px-3 pt-2.5 pb-0 gap-1"
-									style={{ borderBottom: "1px solid var(--border-subtle)" }}
-								>
-									{(["chat", "report"] as PanelMode[]).map((m) => (
-										<button
-											key={m}
-											type="button"
-											onClick={() => setMode(m)}
-											className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-t-lg transition-all"
-											style={
-												mode === m
-													? {
-															color: "var(--color-teal)",
-															borderBottom: "2px solid var(--color-teal)",
-															background: "var(--surface-card)",
-														}
-													: {
-															color: "var(--text-faint)",
-															borderBottom: "2px solid transparent",
-														}
-											}
+								<div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
+									{chatMessages.map((msg) => (
+										<div
+											key={msg.id}
+											className={`flex ${
+												msg.role === "user" ? "justify-end" : "justify-start"
+											}`}
 										>
-											{m === "chat" ? (
-												<MessageSquare className="w-3.5 h-3.5" />
-											) : (
-												<FileText className="w-3.5 h-3.5" />
-											)}
-											{m === "chat" ? "Sohbet" : "Rapor"}
-										</button>
-									))}
-								</div>
-
-								{/* Chat mode */}
-								{mode === "chat" && (
-									<>
-										<div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-											{chatMessages.map((msg) => (
-												<div
-													key={msg.id}
-													className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-												>
-													<div
-														className={
-															msg.role === "user"
-																? "max-w-[80%]"
-																: "max-w-[90%]"
-														}
-													>
-														<div
-															className="px-3.5 py-2.5 text-sm leading-relaxed"
-															style={
-																msg.role === "ai"
-																	? {
-																			background: "var(--surface-sunken)",
-																			color: "var(--text-secondary)",
-																			borderRadius: "0 1.25rem 1.25rem 1.25rem",
-																		}
-																	: {
-																			background: "var(--gradient-btn-primary)",
-																			color: "#fff",
-																			borderRadius: "1.25rem 1.25rem 0 1.25rem",
-																		}
-															}
-														>
-															<div className="prose prose-sm max-w-none prose-p:my-0 prose-p:leading-relaxed prose-headings:font-semibold">
-																<ReactMarkdown remarkPlugins={[remarkGfm]}>
-																	{msg.text}
-																</ReactMarkdown>
-															</div>
-														</div>
-														<p
-															className={`text-[10px] mt-1.5 px-1 ${msg.role === "user" ? "text-right" : ""}`}
-															style={{ color: "var(--text-faint)" }}
-														>
-															{msg.time}
-														</p>
-													</div>
-												</div>
-											))}
-
-											{isAnalyzing && (
-												<div className="flex justify-start">
-													<div
-														className="px-4 py-2.5 flex items-center gap-1.5"
-														style={{
-															background: "var(--surface-sunken)",
-															borderRadius: "0 1.25rem 1.25rem 1.25rem",
-														}}
-													>
-														{[0, 0.15, 0.3].map((d) => (
-															<span
-																key={d}
-																className="w-2 h-2 rounded-full animate-bounce"
-																style={{
-																	background: "var(--text-faint)",
-																	animationDelay: `${d}s`,
-																}}
-															/>
-														))}
-													</div>
-												</div>
-											)}
-
-											{/* Suggestions + health card */}
-											{chatMessages.length <= 1 && !isAnalyzing && (
-												<div className="space-y-2.5">
-													<div className="space-y-1.5">
-														<p
-															className="text-[10px] font-bold tracking-widest uppercase px-1"
-															style={{ color: "var(--text-faint)" }}
-														>
-															Hızlı Sorgular
-														</p>
-														{SUGGESTION_ITEMS.map(({ icon, label }) => (
-															<button
-																key={label}
-																type="button"
-																onClick={() => setMessage(label)}
-																className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all group"
-																style={{
-																	background: "var(--surface-sunken)",
-																	border: "1px solid var(--border-subtle)",
-																}}
-															>
-																<div className="flex items-center gap-2.5">
-																	<div
-																		className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-																		style={{
-																			background: "var(--surface-raised)",
-																			color: "var(--color-teal)",
-																			border: "1px solid var(--border-default)",
-																		}}
-																	>
-																		<span className="w-3 h-3 [&>svg]:w-3 [&>svg]:h-3">
-																			{icon}
-																		</span>
-																	</div>
-																	<span
-																		className="text-xs"
-																		style={{ color: "var(--text-secondary)" }}
-																	>
-																		{label}
-																	</span>
-																</div>
-																<ChevronRight
-																	className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"
-																	style={{ color: "var(--color-teal)" }}
-																/>
-															</button>
-														))}
-													</div>
-
-													{services.length > 0 && (
-														<div
-															className="rounded-xl px-3 py-2.5 flex items-center justify-between"
-															style={{
-																background: "var(--color-teal-subtle)",
-																border: "1px solid var(--color-teal-border)",
-															}}
-														>
-															<div>
-																<p
-																	className="text-[10px] font-bold uppercase tracking-wider"
-																	style={{ color: "var(--color-teal)" }}
-																>
-																	Sistem Sağlığı
-																</p>
-																<p
-																	className="text-xs font-medium mt-0.5"
-																	style={{ color: "var(--text-faint)" }}
-																>
-																	{contextServiceName ?? "Tüm servisler"}
-																</p>
-															</div>
-															<p
-																className="text-base font-bold tabular-nums"
-																style={{ color: "var(--text-primary)" }}
-															>
-																{onlineServices}/{services.length}
-															</p>
-														</div>
-													)}
-												</div>
-											)}
-
-											<div ref={messagesEndRef} />
-										</div>
-
-										<div className="px-3 pb-3 pt-2 shrink-0">
 											<div
-												className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+												className={
+													msg.role === "user" ? "max-w-[80%]" : "max-w-[92%]"
+												}
+											>
+												<div
+													className="px-3 py-2 text-[13px] leading-relaxed rounded-[6px]"
+													style={
+														msg.role === "ai"
+															? {
+																	background: "var(--surface-base)",
+																	color: "var(--text-secondary)",
+																	border: "1px solid var(--border-subtle)",
+																}
+															: {
+																	background: "var(--brand-primary)",
+																	color: "var(--brand-on-primary)",
+																}
+													}
+												>
+													<div className="prose prose-sm max-w-none prose-p:my-0 prose-p:leading-relaxed prose-headings:font-semibold prose-code:text-[12px]">
+														<ReactMarkdown remarkPlugins={[remarkGfm]}>
+															{msg.text}
+														</ReactMarkdown>
+													</div>
+												</div>
+												<p
+													className={`text-[10px] tnum mt-1 px-1 ${
+														msg.role === "user" ? "text-right" : ""
+													}`}
+													style={{ color: "var(--text-faint)" }}
+												>
+													{msg.time}
+												</p>
+											</div>
+										</div>
+									))}
+
+									{isAnalyzing && (
+										<div className="flex justify-start">
+											<div
+												className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[6px]"
 												style={{
-													background: "var(--surface-sunken)",
-													border: "1px solid var(--border-default)",
+													background: "var(--surface-base)",
+													border: "1px solid var(--border-subtle)",
 												}}
 											>
-												<Input
-													placeholder="Bir şey sorun..."
-													value={message}
-													onChange={(e) => setMessage(e.target.value)}
-													onKeyDown={(e) =>
-														e.key === "Enter" && !e.shiftKey && handleSend()
-													}
-													disabled={isAnalyzing}
-													className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-8 text-sm"
-													style={{ color: "var(--text-primary)" }}
-												/>
-												<motion.button
-													type="button"
-													onClick={handleSend}
-													disabled={isAnalyzing || !message.trim()}
-													className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 disabled:opacity-40"
-													style={{
-														background: "var(--gradient-btn-primary)",
-														boxShadow: "0 3px 8px rgba(13,148,136,0.28)",
-													}}
-													whileHover={{ scale: 1.06 }}
-													whileTap={{ scale: 0.92 }}
-												>
-													<Send className="w-3.5 h-3.5 text-white" />
-												</motion.button>
+												{[0, 0.15, 0.3].map((d) => (
+													<span
+														key={d}
+														className="w-1.5 h-1.5 rounded-full animate-bounce"
+														style={{
+															background: "var(--text-tertiary)",
+															animationDelay: `${d}s`,
+														}}
+													/>
+												))}
 											</div>
 										</div>
-									</>
-								)}
+									)}
 
-								{/* Report mode */}
-								{mode === "report" && (
-									<>
-										{/* If no report yet — range picker */}
-										{!report && !isGeneratingReport && (
-											<div className="flex-1 flex flex-col justify-center px-4 py-6 gap-4">
-												<div className="text-center">
-													<div
-														className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-														style={{
-															background: "var(--color-teal-subtle)",
-															border: "1px solid var(--color-teal-border)",
-														}}
-													>
-														<FileText
-															className="w-6 h-6"
-															style={{ color: "var(--color-teal)" }}
-														/>
+									{/* Suggestions — only on first turn */}
+									{chatMessages.length <= 1 && !isAnalyzing && (
+										<div className="space-y-2 pt-1">
+											<p
+												className="text-[10px] uppercase tracking-wider font-semibold px-1"
+												style={{ color: "var(--text-faint)" }}
+											>
+												Hızlı sorgular
+											</p>
+											{SUGGESTIONS.map(({ icon: Icon, label }) => (
+												<button
+													key={label}
+													type="button"
+													onClick={() => sendMessage(label)}
+													className="w-full flex items-center gap-2 px-3 py-2 rounded-[6px] text-[12px] transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+													style={{
+														background: "var(--surface-base)",
+														border: "1px solid var(--border-subtle)",
+														color: "var(--text-secondary)",
+													}}
+												>
+													<Icon
+														className="w-3.5 h-3.5 shrink-0"
+														style={{ color: "var(--brand-primary)" }}
+													/>
+													<span className="truncate">{label}</span>
+												</button>
+											))}
+
+											{services.length > 0 && (
+												<div
+													className="rounded-[6px] px-3 py-2.5 flex items-center justify-between mt-3"
+													style={{
+														background: "var(--surface-base)",
+														border: "1px solid var(--border-subtle)",
+													}}
+												>
+													<div>
+														<p
+															className="text-[10px] uppercase tracking-wider font-semibold"
+															style={{ color: "var(--text-faint)" }}
+														>
+															Sistem sağlığı
+														</p>
+														<p
+															className="text-[11px] mt-0.5"
+															style={{ color: "var(--text-tertiary)" }}
+														>
+															{contextServiceName ?? "Tüm servisler"}
+														</p>
 													</div>
 													<p
-														className="text-sm font-bold"
+														className="text-[15px] font-semibold tnum"
 														style={{ color: "var(--text-primary)" }}
 													>
-														Dönemsel Rapor
-													</p>
-													<p
-														className="text-xs mt-1"
-														style={{ color: "var(--text-faint)" }}
-													>
-														{contextServiceName
-															? `${contextServiceName} servisi için`
-															: "Tüm servisler için"}{" "}
-														bir aralık seç
+														{onlineServices}
+														<span style={{ color: "var(--text-faint)" }}>
+															/{services.length}
+														</span>
 													</p>
 												</div>
+											)}
+										</div>
+									)}
 
-												{/* Time range buttons */}
-												<div className="grid grid-cols-2 gap-2">
-													{TIME_RANGES.map((range) => (
-														<button
-															key={range}
-															type="button"
-															onClick={() => setSelectedRange(range)}
-															className="flex flex-col items-center py-3 rounded-xl transition-all"
-															style={
-																selectedRange === range
-																	? {
-																			background: "var(--color-teal-subtle)",
-																			border: "1.5px solid var(--color-teal)",
-																			color: "var(--color-teal)",
-																		}
-																	: {
-																			background: "var(--surface-sunken)",
-																			border: "1px solid var(--border-subtle)",
-																			color: "var(--text-secondary)",
-																		}
-															}
-														>
-															<Clock
-																className="w-4 h-4 mb-1"
-																style={{
-																	color:
-																		selectedRange === range
-																			? "var(--color-teal)"
-																			: "var(--text-faint)",
-																}}
-															/>
-															<span className="text-xs font-semibold">
-																{TIME_RANGE_LABELS[range]}
-															</span>
-														</button>
-													))}
-												</div>
+									<div ref={messagesEndRef} />
+								</div>
 
-												<motion.button
-													type="button"
-													onClick={handleGenerateReport}
-													className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
-													style={{
-														background: "var(--gradient-btn-primary)",
-														color: "#fff",
-														boxShadow: "0 4px 12px rgba(13,148,136,0.3)",
-													}}
-													whileHover={{ scale: 1.02 }}
-													whileTap={{ scale: 0.97 }}
-												>
-													<Sparkles className="w-4 h-4" />
-													Rapor Oluştur
-												</motion.button>
-											</div>
-										)}
-
-										{/* Generating spinner */}
-										{isGeneratingReport && (
-											<div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-												<div
-													className="w-14 h-14 rounded-2xl flex items-center justify-center"
-													style={{
-														background: "var(--color-teal-subtle)",
-														border: "1px solid var(--color-teal-border)",
-													}}
-												>
-													<motion.div
-														animate={{ rotate: 360 }}
-														transition={{
-															duration: 1.5,
-															repeat: Infinity,
-															ease: "linear",
-														}}
-													>
-														<Sparkles
-															className="w-6 h-6"
-															style={{ color: "var(--color-teal)" }}
-														/>
-													</motion.div>
-												</div>
-												<div className="text-center">
-													<p
-														className="text-sm font-bold"
-														style={{ color: "var(--text-primary)" }}
-													>
-														Sistemi tarıyorum...
-													</p>
-													<p
-														className="text-xs mt-1"
-														style={{ color: "var(--text-faint)" }}
-													>
-														{TIME_RANGE_LABELS[selectedRange]} verisi analiz
-														ediliyor
-													</p>
-												</div>
-												<div className="flex gap-1">
-													{[0, 0.2, 0.4].map((d) => (
-														<span
-															key={d}
-															className="w-2 h-2 rounded-full animate-bounce"
-															style={{
-																background: "var(--color-teal)",
-																animationDelay: `${d}s`,
-															}}
-														/>
-													))}
-												</div>
-											</div>
-										)}
-
-										{/* Report view */}
-										{report && !isGeneratingReport && (
-											<div className="flex-1 overflow-hidden">
-												<ReportView
-													report={report}
-													onClose={() => setReport(null)}
+								{/* Composer */}
+								<div
+									className="px-3 py-3 shrink-0"
+									style={{ borderTop: "1px solid var(--border-subtle)" }}
+								>
+									<div
+										className="flex items-center gap-2 pr-1.5 pl-3 rounded-[6px]"
+										style={{
+											background: "var(--surface-base)",
+											border: "1px solid var(--border-subtle)",
+										}}
+									>
+										<Input
+											ref={inputRef}
+											placeholder="Bir şey sor…"
+											value={message}
+											onChange={(e) => setMessage(e.target.value)}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" && !e.shiftKey) {
+													e.preventDefault();
+													sendMessage(message);
+												}
+											}}
+											disabled={isAnalyzing}
+											className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-9 text-[13px]"
+										/>
+										<button
+											type="button"
+											onClick={() => sendMessage(message)}
+											disabled={isAnalyzing || !message.trim()}
+											className="w-7 h-7 rounded-[4px] flex items-center justify-center shrink-0 transition-colors disabled:opacity-40 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+											style={{
+												background: "var(--brand-primary)",
+												color: "var(--brand-on-primary)",
+											}}
+											aria-label="Gönder"
+										>
+											<Send className="w-3.5 h-3.5" />
+										</button>
+									</div>
+								</div>
+							</>
+						) : (
+							<>
+								{/* Report mode */}
+								{!report && !isGeneratingReport && (
+									<div className="flex-1 flex flex-col justify-center px-4 py-6 gap-5">
+										<div className="text-center">
+											<div
+												className="w-12 h-12 rounded-[6px] flex items-center justify-center mx-auto mb-3"
+												style={{
+													background: "var(--surface-sunken)",
+													border: "1px solid var(--border-subtle)",
+												}}
+											>
+												<FileText
+													className="w-5 h-5"
+													style={{ color: "var(--brand-primary)" }}
 												/>
 											</div>
-										)}
-									</>
+											<p
+												className="text-[14px] font-semibold"
+												style={{ color: "var(--text-primary)" }}
+											>
+												Dönemsel rapor
+											</p>
+											<p
+												className="text-[12px] mt-1 leading-relaxed"
+												style={{ color: "var(--text-tertiary)" }}
+											>
+												{contextServiceName
+													? `${contextServiceName} servisi için`
+													: "Tüm servisler için"}{" "}
+												bir aralık seç ve rapor oluştur.
+											</p>
+										</div>
+
+										<div
+											role="radiogroup"
+											aria-label="Zaman aralığı"
+											className="grid grid-cols-2 gap-2"
+										>
+											{TIME_RANGES.map((range) => {
+												const active = selectedRange === range;
+												return (
+													// biome-ignore lint/a11y/useSemanticElements: visual segmented control inside an explicit radiogroup
+													<button
+														key={range}
+														type="button"
+														role="radio"
+														aria-checked={active}
+														onClick={() => setSelectedRange(range)}
+														className="flex flex-col items-center justify-center py-3 rounded-[6px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+														style={{
+															background: active
+																? "var(--brand-primary-subtle)"
+																: "var(--surface-base)",
+															border: `1px solid ${
+																active
+																	? "var(--brand-primary)"
+																	: "var(--border-subtle)"
+															}`,
+															color: active
+																? "var(--brand-primary)"
+																: "var(--text-secondary)",
+														}}
+													>
+														<Clock className="w-4 h-4 mb-1" />
+														<span className="text-[12px] font-semibold">
+															{TIME_RANGE_LABELS[range]}
+														</span>
+													</button>
+												);
+											})}
+										</div>
+
+										<Button
+											size="default"
+											onClick={handleGenerateReport}
+											className="w-full"
+										>
+											<Sparkles className="w-4 h-4 mr-1.5" />
+											Rapor oluştur
+										</Button>
+									</div>
+								)}
+
+								{isGeneratingReport && (
+									<div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+										<div
+											className="w-12 h-12 rounded-[6px] flex items-center justify-center"
+											style={{
+												background: "var(--surface-sunken)",
+												border: "1px solid var(--border-subtle)",
+											}}
+										>
+											<Sparkles
+												className="w-5 h-5 animate-pulse"
+												style={{ color: "var(--brand-primary)" }}
+											/>
+										</div>
+										<div className="text-center">
+											<p
+												className="text-[13px] font-semibold"
+												style={{ color: "var(--text-primary)" }}
+											>
+												Sistemi tarıyorum…
+											</p>
+											<p
+												className="text-[11px] mt-1"
+												style={{ color: "var(--text-tertiary)" }}
+											>
+												{TIME_RANGE_LABELS[selectedRange]} verisi analiz
+												ediliyor
+											</p>
+										</div>
+										<div className="flex gap-1">
+											{[0, 0.2, 0.4].map((d) => (
+												<span
+													key={d}
+													className="w-1.5 h-1.5 rounded-full animate-bounce"
+													style={{
+														background: "var(--brand-primary)",
+														animationDelay: `${d}s`,
+													}}
+												/>
+											))}
+										</div>
+									</div>
+								)}
+
+								{report && !isGeneratingReport && (
+									<ReportView report={report} onReset={() => setReport(null)} />
 								)}
 							</>
 						)}
-					</motion.div>
-				)}
-			</AnimatePresence>
-		</>
+					</motion.aside>
+				</>
+			)}
+		</AnimatePresence>
 	);
 }

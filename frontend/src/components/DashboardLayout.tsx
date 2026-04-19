@@ -1,12 +1,13 @@
-import { useCallback } from "react";
+import { Suspense, useCallback } from "react";
 import { Outlet, useLocation } from "react-router";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { AIAssistant } from "./AIAssistant";
+import { AIAssistantHost } from "./AIAssistantHost";
 import { CommandPalette } from "./CommandPalette";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { HybridDock } from "./HybridDock";
+import { RouteFallback } from "./FullScreenSpinner";
 import { MobileNav } from "./MobileNav";
 import { PageMetaProvider } from "./PageMetaContext";
+import { SideRail } from "./SideRail";
 import { TopBar } from "./TopBar";
 
 /**
@@ -40,10 +41,10 @@ export function DashboardLayout() {
 					color: "var(--text-primary)",
 				}}
 			>
-				{/* Floating dock — desktop only */}
-				<HybridDock />
+				{/* Side rail — desktop only */}
+				<SideRail />
 
-				<div className="flex flex-col flex-1 min-h-0 md:pl-20">
+				<div className="flex flex-col flex-1 min-h-0 md:pl-[var(--dock-w)]">
 					<TopBar onOpenCommandPalette={handleOpenCommandPalette} />
 
 					<main
@@ -53,15 +54,24 @@ export function DashboardLayout() {
 								: "flex-1 flex flex-col min-h-0 pt-3 sm:pt-4 pb-[calc(var(--mobilenav-h)+env(safe-area-inset-bottom,0px)+8px)] md:pb-4 px-3 sm:px-6 lg:px-8 overflow-y-auto"
 						}
 					>
+						{/* Inner Suspense — without this, lazy() route transitions bubble
+						    all the way up to App.tsx's Suspense, which suspends the entire
+						    RouterProvider. React 18 transitions then keep showing the
+						    PREVIOUS route's content while the URL updates, requiring a
+						    hard refresh to recover. Scoping the boundary to <Outlet /> lets
+						    the layout (rail, topbar, etc.) stay live while only the page
+						    area falls back. */}
 						<ErrorBoundary key={pathname}>
-							<Outlet />
+							<Suspense fallback={<RouteFallback />}>
+								<Outlet />
+							</Suspense>
 						</ErrorBoundary>
 					</main>
 				</div>
 
 				<CommandPalette />
 				<MobileNav />
-				<AIAssistant />
+				<AIAssistantHost />
 			</div>
 		</PageMetaProvider>
 	);

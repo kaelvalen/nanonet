@@ -131,6 +131,51 @@ function drawText(
 	page.drawText(text, { x, y, font, size, color });
 }
 
+/* drawLogo — render the NanoNet 3x3 dot-grid mark as native pdf-lib
+ * vectors (no PNG asset). Positions match the inline SVG <Logo /> on a
+ * 24-unit canonical grid, scaled into a `size`-pt square at (x, y). The
+ * one filled dot is brand cyan; the rest are hairline outlines in the
+ * caller-supplied stroke color. Keeps the asset surface zero and the
+ * mark identical to the on-screen logo. */
+function drawLogo(
+	page: ReturnType<PDFDocument["addPage"]>,
+	x: number,
+	y: number,
+	size: number,
+	strokeColor: ReturnType<typeof rgb>,
+	cyan = rgb(34 / 255, 211 / 255, 238 / 255),
+) {
+	const u = size / 24; // 1 unit on the 24-canvas
+	const r = 2.75 * u;
+	const positions: [number, number][] = [
+		[5, 5],
+		[12, 5],
+		[19, 5],
+		[5, 12],
+		[12, 12],
+		[5, 19],
+		[12, 19],
+		[19, 19],
+	];
+	for (const [cx, cy] of positions) {
+		page.drawCircle({
+			x: x + cx * u,
+			// pdf-lib's Y axis grows upward; SVG grows downward. Flip cy.
+			y: y + (24 - cy) * u,
+			size: r,
+			borderColor: strokeColor,
+			borderWidth: 1.25 * u,
+			borderOpacity: 0.55,
+		});
+	}
+	page.drawCircle({
+		x: x + 19 * u,
+		y: y + (24 - 12) * u,
+		size: r,
+		color: cyan,
+	});
+}
+
 function measureText(
 	text: string,
 	font: import("pdf-lib").PDFFont,
@@ -225,24 +270,10 @@ export async function downloadReportPDF(report: ReportResult): Promise<void> {
 	const HEADER_H = 52;
 	drawRect(page, 0, PH - HEADER_H, PW, HEADER_H, C.dark);
 
-	// Logo
+	// Logo — drawn as native pdf-lib vectors (matches on-screen <Logo />).
 	const logoX = ML;
 	const logoSize = 28;
-	try {
-		const logoRes = await fetch("/logo.png");
-		const logoBuf = await logoRes.arrayBuffer();
-		const logoImg = await pdfDoc.embedPng(logoBuf);
-		page.drawImage(logoImg, {
-			x: logoX,
-			y: PH - HEADER_H + 12,
-			width: logoSize,
-			height: logoSize,
-		});
-	} catch {
-		// Logo yüklenemezse teal kare
-		drawRect(page, logoX, PH - HEADER_H + 12, logoSize, logoSize, C.teal);
-		drawText(page, "N", logoX + 8, PH - HEADER_H + 22, fontBold, 12, C.white);
-	}
+	drawLogo(page, logoX, PH - HEADER_H + 12, logoSize, C.white);
 
 	// Brand
 	drawText(

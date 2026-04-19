@@ -1,89 +1,95 @@
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
-import { motion } from "motion/react";
 import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router";
+import { DotMatrix } from "@/components/DotMatrix";
 import { Button } from "@/components/ui/button";
 
 export function ErrorPage() {
 	const error = useRouteError();
 	const navigate = useNavigate();
 
-	let title = "Unexpected Error";
-	let message = "Something went wrong. Please try again.";
+	let title = "Beklenmeyen hata";
+	let message = "Bir şeyler yanlış gitti. Lütfen tekrar deneyin.";
+	let code = "500";
 
 	if (isRouteErrorResponse(error)) {
-		title = `${error.status} — ${error.statusText}`;
+		title = error.statusText || title;
 		message = error.data?.message ?? message;
+		code = String(error.status);
 	} else if (error instanceof Error) {
 		message = error.message;
 	}
 
 	return (
 		<div
-			className="min-h-screen flex items-center justify-center p-6"
-			style={{ background: "var(--gradient-bg)" }}
+			className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden"
+			style={{ background: "var(--surface-canvas)" }}
 		>
-			<motion.div
-				initial={{ opacity: 0, y: 24 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4 }}
-				className="rounded p-10 max-w-md w-full text-center"
+			<div className="absolute inset-0 pointer-events-none opacity-[0.35]">
+				<DotMatrix />
+			</div>
+
+			<div
+				className="relative z-10 w-full max-w-md text-center"
 				style={{
-					background: "var(--surface-card)",
-					border: "1px solid var(--border-default)",
-					boxShadow: "var(--card-shadow)",
+					background: "var(--surface-base)",
+					border: "1px solid var(--border-subtle)",
+					borderRadius: "8px",
+					padding: "40px 32px",
 				}}
 			>
 				<div className="flex justify-center mb-6">
 					<div
-						className="w-14 h-14 rounded-full flex items-center justify-center"
-						style={{ backgroundColor: "var(--status-down-subtle)" }}
+						className="w-12 h-12 rounded-[6px] flex items-center justify-center relative"
+						style={{
+							background: "var(--status-down-subtle)",
+						}}
 					>
+						<span
+							aria-hidden
+							className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+							style={{ background: "var(--status-down)" }}
+						/>
 						<AlertTriangle
-							className="w-7 h-7"
-							style={{ color: "var(--status-down-text)" }}
+							className="w-6 h-6"
+							style={{ color: "var(--status-down)" }}
 						/>
 					</div>
 				</div>
 
+				<p
+					className="text-[10px] font-mono uppercase tracking-wider mb-2"
+					style={{ color: "var(--text-faint)" }}
+				>
+					Error {code}
+				</p>
 				<h1
-					className="text-lg font-bold mb-2"
-					style={{ color: "var(--text-secondary)" }}
+					className="text-[18px] font-semibold mb-2"
+					style={{ color: "var(--text-primary)" }}
 				>
 					{title}
 				</h1>
 				<p
-					className="text-sm mb-8 leading-relaxed"
-					style={{ color: "var(--text-muted)" }}
+					className="text-[13px] leading-relaxed mb-8 break-words"
+					style={{ color: "var(--text-tertiary)" }}
 				>
 					{message}
 				</p>
 
-				<div className="flex gap-3 justify-center">
+				<div className="flex gap-2 justify-center">
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => navigate(-1)}
-						className="rounded text-xs h-8"
-						style={{
-							borderColor: "var(--border-default)",
-							color: "var(--text-muted)",
-						}}
+						onClick={() => window.location.reload()}
 					>
-						<RefreshCw className="w-3 h-3 mr-1.5" /> Geri Dön
+						<RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+						Yenile
 					</Button>
-					<Button
-						size="sm"
-						onClick={() => navigate("/", { replace: true })}
-						className="text-white rounded text-xs h-8 border-0 hover:opacity-90"
-						style={{
-							background: "var(--gradient-btn-primary)",
-							boxShadow: "var(--btn-shadow)",
-						}}
-					>
-						<Home className="w-3 h-3 mr-1.5" /> Ana Sayfa
+					<Button size="sm" onClick={() => navigate("/", { replace: true })}>
+						<Home className="w-3.5 h-3.5 mr-1.5" />
+						Ana sayfa
 					</Button>
 				</div>
-			</motion.div>
+			</div>
 		</div>
 	);
 }

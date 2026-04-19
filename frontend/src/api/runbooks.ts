@@ -58,7 +58,10 @@ export const runbooksApi = {
 		const r = await apiClient.post("/runbooks", input);
 		return r.data?.data?.runbook;
 	},
-	update: async (id: string, patch: Partial<CreateRunbookInput>): Promise<Runbook> => {
+	update: async (
+		id: string,
+		patch: Partial<CreateRunbookInput>,
+	): Promise<Runbook> => {
 		const r = await apiClient.put(`/runbooks/${id}`, patch);
 		return r.data?.data?.runbook;
 	},
@@ -66,7 +69,9 @@ export const runbooksApi = {
 		await apiClient.delete(`/runbooks/${id}`);
 	},
 	fires: async (id: string, limit = 50): Promise<RunbookFire[]> => {
-		const r = await apiClient.get(`/runbooks/${id}/fires`, { params: { limit } });
+		const r = await apiClient.get(`/runbooks/${id}/fires`, {
+			params: { limit },
+		});
 		return r.data?.data?.fires ?? [];
 	},
 };

@@ -39,16 +39,12 @@ export function Toolbar({
 				bordered && "border-b pb-3",
 				className,
 			)}
-			style={
-				bordered ? { borderColor: "var(--border-subtle)" } : undefined
-			}
+			style={bordered ? { borderColor: "var(--border-subtle)" } : undefined}
 		>
 			<div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
 				{children}
 			</div>
-			{right && (
-				<div className="flex items-center gap-2 shrink-0">{right}</div>
-			)}
+			{right && <div className="flex items-center gap-2 shrink-0">{right}</div>}
 		</div>
 	);
 }
@@ -91,12 +87,36 @@ export function FilterChip({
 	tone?: "default" | "danger" | "warn" | "success" | "info" | "accent";
 }) {
 	const tones = {
-		default: { bgActive: "var(--surface-card)", borderActive: "var(--border-strong)", color: "var(--text-primary)" },
-		danger: { bgActive: "var(--status-down-subtle)", borderActive: "var(--status-down-border)", color: "var(--status-down-text)" },
-		warn: { bgActive: "var(--status-warn-subtle)", borderActive: "var(--status-warn-border)", color: "var(--status-warn-text)" },
-		success: { bgActive: "var(--status-up-subtle)", borderActive: "var(--status-up-border)", color: "var(--status-up-text)" },
-		info: { bgActive: "var(--color-blue-subtle)", borderActive: "var(--color-blue-border)", color: "var(--color-blue-text)" },
-		accent: { bgActive: "var(--color-teal-subtle)", borderActive: "var(--color-teal-border)", color: "var(--color-teal)" },
+		default: {
+			bgActive: "var(--surface-base)",
+			borderActive: "var(--border-strong)",
+			color: "var(--text-primary)",
+		},
+		danger: {
+			bgActive: "var(--status-down-subtle)",
+			borderActive: "var(--border-subtle)",
+			color: "var(--status-down-text)",
+		},
+		warn: {
+			bgActive: "var(--status-degraded-subtle)",
+			borderActive: "var(--border-subtle)",
+			color: "var(--status-degraded-text)",
+		},
+		success: {
+			bgActive: "var(--status-up-subtle)",
+			borderActive: "var(--border-subtle)",
+			color: "var(--status-up-text)",
+		},
+		info: {
+			bgActive: "var(--brand-primary-subtle)",
+			borderActive: "var(--border-subtle)",
+			color: "var(--brand-primary)",
+		},
+		accent: {
+			bgActive: "var(--brand-primary-subtle)",
+			borderActive: "var(--border-subtle)",
+			color: "var(--brand-primary)",
+		},
 	} as const;
 	const t = tones[tone];
 	return (
@@ -104,22 +124,21 @@ export function FilterChip({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] font-medium transition-all",
-				active
-					? ""
-					: "hover:bg-[var(--surface-sunken)] hover:text-[color:var(--text-primary)]",
+				"shrink-0 inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] text-[12px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]",
+				!active &&
+					"hover:bg-[var(--surface-sunken)] hover:text-[color:var(--text-primary)]",
 			)}
 			style={{
 				background: active ? t.bgActive : "transparent",
 				border: `1px solid ${active ? t.borderActive : "transparent"}`,
-				color: active ? t.color : "var(--text-muted)",
+				color: active ? t.color : "var(--text-tertiary)",
 			}}
 		>
 			{icon}
 			<span>{children}</span>
 			{count != null && (
 				<span
-					className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full font-semibold"
+					className="text-[10px] tnum px-1.5 py-0.5 rounded-[4px] font-semibold"
 					style={{
 						background: active
 							? "color-mix(in srgb, currentColor 14%, transparent)"

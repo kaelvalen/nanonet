@@ -13,11 +13,45 @@ import {
 } from "recharts";
 import { type ForecastMetric, metricsApi } from "@/api/metrics";
 
-const METRICS: { key: ForecastMetric; label: string; icon: typeof Cpu; color: string; unit: string; threshold?: number }[] = [
-	{ key: "cpu", label: "CPU", icon: Cpu, color: "#2dd4bf", unit: "%", threshold: 80 },
-	{ key: "memory", label: "Bellek", icon: HardDrive, color: "#22d3ee", unit: "MB" },
-	{ key: "latency", label: "Gecikme", icon: Clock, color: "#818cf8", unit: "ms", threshold: 500 },
-	{ key: "error_rate", label: "Hata", icon: AlertTriangle, color: "#fb7185", unit: "%", threshold: 5 },
+const METRICS: {
+	key: ForecastMetric;
+	label: string;
+	icon: typeof Cpu;
+	color: string;
+	unit: string;
+	threshold?: number;
+}[] = [
+	{
+		key: "cpu",
+		label: "CPU",
+		icon: Cpu,
+		color: "#2dd4bf",
+		unit: "%",
+		threshold: 80,
+	},
+	{
+		key: "memory",
+		label: "Bellek",
+		icon: HardDrive,
+		color: "#22d3ee",
+		unit: "MB",
+	},
+	{
+		key: "latency",
+		label: "Gecikme",
+		icon: Clock,
+		color: "#818cf8",
+		unit: "ms",
+		threshold: 500,
+	},
+	{
+		key: "error_rate",
+		label: "Hata",
+		icon: AlertTriangle,
+		color: "#fb7185",
+		unit: "%",
+		threshold: 5,
+	},
 ];
 
 export function ForecastPanel({ serviceId }: { serviceId: string }) {
@@ -49,7 +83,7 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 		? new Date(data.forecast.next_alert_at)
 		: null;
 
-	const Icon = meta.icon;
+	const _Icon = meta.icon;
 
 	return (
 		<div
@@ -162,9 +196,7 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 								className="h-7 w-7 rounded-md flex items-center justify-center transition-all"
 								style={{
 									background: active ? "var(--surface-card)" : "transparent",
-									boxShadow: active
-										? "0 1px 2px rgba(0,0,0,0.06)"
-										: "none",
+									boxShadow: active ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
 								}}
 								title={m.label}
 								aria-label={m.label}
@@ -201,23 +233,9 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 							margin={{ top: 6, right: 12, left: 0, bottom: 0 }}
 						>
 							<defs>
-								<linearGradient
-									id={`fc-${metric}`}
-									x1="0"
-									y1="0"
-									x2="0"
-									y2="1"
-								>
-									<stop
-										offset="0%"
-										stopColor={meta.color}
-										stopOpacity={0.25}
-									/>
-									<stop
-										offset="95%"
-										stopColor={meta.color}
-										stopOpacity={0}
-									/>
+								<linearGradient id={`fc-${metric}`} x1="0" y1="0" x2="0" y2="1">
+									<stop offset="0%" stopColor={meta.color} stopOpacity={0.25} />
+									<stop offset="95%" stopColor={meta.color} stopOpacity={0} />
 								</linearGradient>
 							</defs>
 							<CartesianGrid

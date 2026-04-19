@@ -4,6 +4,10 @@ import { cn } from "./utils";
 export type Status = "up" | "down" | "degraded" | "unknown";
 export type Severity = "crit" | "warn" | "info";
 
+/* Status grammar — every up/down/degraded surface in the app should ultimately
+   resolve through these tokens (instead of importing colors directly). The
+   four statuses are hue-disjoint from the brand and are the ONLY palette
+   allowed for representing service health. */
 const STATUS_TOKENS: Record<
 	Status,
 	{ dot: string; bg: string; text: string; border: string; label: string }
@@ -16,23 +20,23 @@ const STATUS_TOKENS: Record<
 		label: "Aktif",
 	},
 	degraded: {
-		dot: "var(--status-warn)",
-		bg: "var(--status-warn-subtle)",
-		text: "var(--status-warn-text)",
-		border: "var(--status-warn-border)",
-		label: "Bozuk",
+		dot: "var(--status-degraded)",
+		bg: "var(--status-degraded-subtle)",
+		text: "var(--status-degraded-text)",
+		border: "var(--status-degraded-border)",
+		label: "Bozulmuş",
 	},
 	down: {
 		dot: "var(--status-down)",
 		bg: "var(--status-down-subtle)",
 		text: "var(--status-down-text)",
 		border: "var(--status-down-border)",
-		label: "Offline",
+		label: "Çevrimdışı",
 	},
 	unknown: {
 		dot: "var(--status-unknown)",
 		bg: "var(--surface-sunken)",
-		text: "var(--text-muted)",
+		text: "var(--text-tertiary)",
 		border: "var(--border-default)",
 		label: "Bilinmiyor",
 	},
@@ -50,16 +54,16 @@ const SEVERITY_TOKENS: Record<
 		label: "Kritik",
 	},
 	warn: {
-		dot: "var(--status-warn)",
-		bg: "var(--status-warn-subtle)",
-		text: "var(--status-warn-text)",
-		border: "var(--status-warn-border)",
+		dot: "var(--status-degraded)",
+		bg: "var(--status-degraded-subtle)",
+		text: "var(--status-degraded-text)",
+		border: "var(--status-degraded-border)",
 		label: "Uyarı",
 	},
 	info: {
-		dot: "var(--color-teal)",
-		bg: "var(--color-teal-subtle)",
-		text: "var(--color-teal)",
+		dot: "var(--brand-primary)",
+		bg: "var(--brand-primary-subtle)",
+		text: "var(--brand-primary)",
 		border: "var(--color-teal-border)",
 		label: "Bilgi",
 	},
@@ -89,7 +93,10 @@ export function StatusDot({
 				background: s.dot,
 				width: size,
 				height: size,
-				boxShadow: status === "up" && pulse ? `0 0 6px ${s.dot}` : undefined,
+				boxShadow:
+					status === "up" && pulse
+						? `0 0 0 3px color-mix(in srgb, ${s.dot} 22%, transparent)`
+						: undefined,
 			}}
 		/>
 	);
@@ -106,7 +113,7 @@ export function StatusBadge({
 	const s = STATUS_TOKENS[status];
 	return (
 		<span
-			className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full whitespace-nowrap"
+			className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full whitespace-nowrap tnum"
 			style={{ background: s.bg, color: s.text }}
 		>
 			<span
@@ -148,8 +155,8 @@ export function KbdHint({ children }: { children: ReactNode }) {
 			className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-mono font-semibold rounded"
 			style={{
 				background: "var(--surface-sunken)",
-				border: "1px solid var(--border-default)",
-				color: "var(--text-faint)",
+				border: "1px solid var(--border-subtle)",
+				color: "var(--text-tertiary)",
 				boxShadow: "none",
 			}}
 		>

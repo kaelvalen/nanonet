@@ -10,6 +10,74 @@
 		"platform": "Platform",
 		"skipToContent": "Ana içeriğe atla"
 	},
+	"shell": {
+		"sections": {
+			"monitor": "İzleme",
+			"intelligence": "Analiz",
+			"reliability": "Güvenilirlik",
+			"infra": "Altyapı",
+			"platform": "Platform"
+		},
+		"nav": {
+			"overview": "Genel Bakış",
+			"services": "Servisler",
+			"alerts": "Uyarılar",
+			"incidents": "Olaylar",
+			"logs": "Loglar",
+			"aiInsights": "AI İçgörüler",
+			"serviceMap": "Servis Haritası",
+			"compare": "Karşılaştır",
+			"slo": "SLO",
+			"probes": "Probes",
+			"runbooks": "Runbook'lar",
+			"notifications": "Bildirimler",
+			"kubernetes": "Kubernetes",
+			"statusPages": "Durum Sayfaları",
+			"security": "Güvenlik",
+			"apiTokens": "API Tokenları",
+			"aiUsage": "AI Kullanımı",
+			"settings": "Ayarlar"
+		},
+		"topbar": {
+			"searchPlaceholder": "Ara, git, sor, çalıştır…",
+			"searchHint": "Komut paleti (⌘K)",
+			"healthHover": "{{up}} sağlıklı / {{total}} servis",
+			"openIncidents": "{{count}} aktif olay",
+			"liveOn": "Canlı",
+			"liveOff": "Kesik",
+			"liveTooltipOn": "WebSocket bağlı",
+			"liveTooltipOff": "WebSocket kopuk",
+			"aiAssistant": "AI asistan",
+			"aiAssistantHint": "AI asistan (⌘K + ?)",
+			"notifications": "Bildirimler",
+			"accountMenu": "Hesap menüsü",
+			"account": "Hesap",
+			"profile": "Profil",
+			"themeLight": "Aydınlık tema",
+			"themeDark": "Karanlık tema",
+			"logout": "Çıkış yap",
+			"guest": "Misafir",
+			"searchAria": "Ara"
+		},
+		"rail": {
+			"primary": "Ana navigasyon",
+			"expand": "Genişlet",
+			"collapse": "Daralt",
+			"expandHint": "Genişlet  (⌘\\)",
+			"collapseHint": "Daralt  (⌘\\)",
+			"logout": "Çıkış yap"
+		},
+		"mobile": {
+			"home": "Ana Sayfa",
+			"services": "Servisler",
+			"alerts": "Uyarılar",
+			"ai": "AI",
+			"settings": "Ayarlar"
+		},
+		"breadcrumb": {
+			"detail": "Detay"
+		}
+	},
 	"auth": {
 		"login": "Giriş Yap",
 		"register": "Kayıt Ol",

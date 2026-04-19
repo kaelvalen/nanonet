@@ -34,26 +34,31 @@ export function ForgotPasswordPage() {
 			>
 				<div className="space-y-5">
 					<div
-						className="flex items-start gap-3 p-4 rounded-lg"
+						className="relative flex items-start gap-3 px-4 py-3 rounded-[6px]"
 						style={{
 							background: "var(--status-up-subtle)",
-							border: "1px solid var(--status-up-border)",
+							border: "1px solid var(--border-subtle)",
 						}}
 					>
+						<span
+							aria-hidden
+							className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+							style={{ background: "var(--status-up)" }}
+						/>
 						<CheckCircle
-							className="w-5 h-5 shrink-0 mt-0.5"
-							style={{ color: "var(--status-up-text)" }}
+							className="w-4 h-4 shrink-0 mt-0.5 ml-1"
+							style={{ color: "var(--status-up)" }}
 						/>
 						<div className="min-w-0">
 							<p
-								className="text-sm font-semibold"
+								className="text-[13px] font-medium"
 								style={{ color: "var(--text-primary)" }}
 							>
 								Bağlantı gönderildi
 							</p>
 							<p
-								className="text-xs mt-1 leading-relaxed break-all"
-								style={{ color: "var(--text-muted)" }}
+								className="text-[12px] mt-1 leading-relaxed break-all"
+								style={{ color: "var(--text-tertiary)" }}
 							>
 								{email} adresini kontrol edin. Bağlantı 1 saat geçerlidir.
 							</p>
@@ -61,7 +66,7 @@ export function ForgotPasswordPage() {
 					</div>
 					<Link
 						to="/login"
-						className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+						className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:underline"
 						style={{ color: "var(--brand-primary)" }}
 					>
 						<ArrowLeft className="w-4 h-4" />
@@ -79,20 +84,20 @@ export function ForgotPasswordPage() {
 			footer={
 				<Link
 					to="/login"
-					className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
-					style={{ color: "var(--text-muted)" }}
+					className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:underline"
+					style={{ color: "var(--text-tertiary)" }}
 				>
 					<ArrowLeft className="w-4 h-4" />
 					Girişe dön
 				</Link>
 			}
 		>
-			<form onSubmit={handleSubmit} className="space-y-5">
+			<form onSubmit={handleSubmit} className="space-y-4">
 				<div className="space-y-1.5">
 					<Label
 						htmlFor="email"
 						className="text-[12px] font-medium"
-						style={{ color: "var(--text-faint)" }}
+						style={{ color: "var(--text-tertiary)" }}
 					>
 						E-posta
 					</Label>
@@ -103,7 +108,7 @@ export function ForgotPasswordPage() {
 						placeholder="ornek@nanonet.dev"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className="h-11 rounded-lg text-sm font-medium"
+						className="h-10"
 						required
 						disabled={loading}
 					/>

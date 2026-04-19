@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { type CreateApiTokenInput, apiTokensApi } from "@/api/apiTokens";
+import { apiTokensApi, type CreateApiTokenInput } from "@/api/apiTokens";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,12 @@ const SCOPE_HELP: Record<string, string> = {
 	"incidents:write": "Incident oluştur ve güncelle",
 	"ai:read": "AI içgörülerini ve raporlarını oku",
 	"slo:read": "SLO ve error budget verilerini oku",
+};
+
+const EMPTY_DRAFT: CreateApiTokenInput = {
+	name: "",
+	scopes: ["services:read"],
+	expires_in_days: 0,
 };
 
 export function ApiTokensPage() {
@@ -78,22 +84,11 @@ export function ApiTokensPage() {
 		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="Integrations"
-				title="API Tokens"
-				description="Programatik erişim için kişisel token'lar oluştur ve yönet"
+				title="API tokens"
+				description="Programatik erişim için kişisel token'lar oluşturun ve yönetin."
 				actions={
-					<Button
-						onClick={() =>
-							setDraft({
-								name: "",
-								scopes: ["services:read"],
-								expires_in_days: 0,
-							})
-						}
-						className="gap-2 h-9 px-4 text-[13px] text-white rounded-full"
-						size="sm"
-						style={{ background: "var(--gradient-btn-primary)" }}
-					>
-						<Plus className="size-3.5" /> Yeni Token
+					<Button size="sm" onClick={() => setDraft(EMPTY_DRAFT)}>
+						<Plus className="w-3.5 h-3.5 mr-1.5" /> Yeni token
 					</Button>
 				}
 			/>
@@ -124,12 +119,12 @@ export function ApiTokensPage() {
 					<EmptyState
 						icon={Key}
 						title="Henüz API token oluşturulmadı"
-						description='Yukarıdaki "Yeni Token" düğmesiyle ilkini oluştur.'
+						description='Yukarıdaki "Yeni token" düğmesiyle ilkini oluşturun.'
 						tone="accent"
 						size="lg"
 					/>
 				) : (
-					<div className="space-y-2">
+					<div className="flex flex-col gap-2">
 						{tokens.map((tok) => (
 							<TokenRow
 								key={tok.id}
@@ -162,37 +157,43 @@ function RevealedBanner({
 	onDismiss: () => void;
 }) {
 	return (
-		<Panel tone="warn" className="mb-4 rounded-2xl">
-			<div className="flex items-start gap-3 p-4">
-				<span
-					className="mt-0.5 w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-					style={{ background: "var(--status-warn-subtle)" }}
-				>
-					<AlertTriangle
-						className="size-4"
-						style={{ color: "var(--status-warn)" }}
-					/>
-				</span>
+		<div
+			className="relative rounded-[6px] mb-4 overflow-hidden"
+			style={{
+				background: "var(--status-degraded-subtle)",
+				border: "1px solid var(--status-degraded-border)",
+			}}
+		>
+			<span
+				aria-hidden
+				className="absolute left-0 top-0 bottom-0 w-[2px]"
+				style={{ background: "var(--status-degraded)" }}
+			/>
+			<div className="flex items-start gap-3 p-4 pl-5">
+				<AlertTriangle
+					className="mt-0.5 w-4 h-4 shrink-0"
+					style={{ color: "var(--status-degraded)" }}
+				/>
 				<div className="flex-1 min-w-0">
 					<div
-						className="text-[14px] font-semibold tracking-tight"
-						style={{ color: "var(--status-warn-text)" }}
+						className="text-[13px] font-semibold"
+						style={{ color: "var(--status-degraded-text)" }}
 					>
-						Token "{name}" oluşturuldu — şimdi kopyala
+						Token "{name}" oluşturuldu — şimdi kopyalayın
 					</div>
 					<div
 						className="mt-1 text-[12px]"
 						style={{ color: "var(--text-secondary)" }}
 					>
-						Bu secret değer bir daha gösterilmeyecek. Güvenli bir yere kaydet.
+						Bu secret değer bir daha gösterilmeyecek. Güvenli bir yere kaydedin.
 					</div>
 					<div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
 						<code
-							className="flex-1 min-w-0 rounded-lg px-3 py-2 text-[12px] font-mono break-all"
+							className="flex-1 min-w-0 rounded-[6px] px-3 py-2 text-[12px] font-mono break-all"
 							style={{
-								background: "var(--input-bg)",
+								background: "var(--surface-base)",
 								color: "var(--text-primary)",
-								border: "1px solid var(--border-default)",
+								border: "1px solid var(--border-subtle)",
 							}}
 						>
 							{secret}
@@ -201,27 +202,21 @@ function RevealedBanner({
 							<Button
 								variant="outline"
 								size="sm"
-								className="gap-1 h-9 px-4 text-[13px] rounded-full"
 								onClick={() => {
 									navigator.clipboard.writeText(secret);
 									toast.success("Token panoya kopyalandı");
 								}}
 							>
-								<Copy className="size-3.5" /> Kopyala
+								<Copy className="w-3.5 h-3.5 mr-1.5" /> Kopyala
 							</Button>
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-9 px-4 text-[13px] rounded-full"
-								onClick={onDismiss}
-							>
+							<Button variant="ghost" size="sm" onClick={onDismiss}>
 								Tamam
 							</Button>
 						</div>
 					</div>
 				</div>
 			</div>
-		</Panel>
+		</div>
 	);
 }
 
@@ -250,23 +245,25 @@ function DraftEditor({
 		});
 	};
 	return (
-		<Panel className="mb-4 rounded-2xl">
-			<PanelHeader dense>Yeni API Token</PanelHeader>
+		<Panel className="mb-4" padding="none">
+			<PanelHeader dense>Yeni API token</PanelHeader>
 			<PanelBody scroll={false}>
 				<div className="grid gap-3 sm:grid-cols-2">
 					<div>
-						<Label className="text-[12px] font-medium">İsim</Label>
+						<FieldLabel htmlFor="tok-name">İsim</FieldLabel>
 						<Input
-							className="mt-1.5 h-9 text-[13px] rounded-lg"
+							id="tok-name"
+							className="mt-1.5 h-9 text-[13px]"
 							placeholder="örn. CI deploy bot"
 							value={draft.name}
 							onChange={(e) => onChange({ ...draft, name: e.target.value })}
 						/>
 					</div>
 					<div>
-						<Label className="text-[12px] font-medium">Süre (gün)</Label>
+						<FieldLabel htmlFor="tok-exp">Süre (gün)</FieldLabel>
 						<Input
-							className="mt-1.5 h-9 w-32 text-[13px] rounded-lg"
+							id="tok-exp"
+							className="mt-1.5 h-9 w-32 text-[13px] tnum"
 							type="number"
 							min={0}
 							max={3650}
@@ -288,8 +285,8 @@ function DraftEditor({
 				</div>
 
 				<div className="mt-4">
-					<Label className="text-[12px] font-medium">Scope'lar</Label>
-					<div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+					<FieldLabel>Scope'lar</FieldLabel>
+					<div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
 						{availableScopes.map((scope) => {
 							const checked = draft.scopes.includes(scope);
 							return (
@@ -297,31 +294,34 @@ function DraftEditor({
 									key={scope}
 									type="button"
 									onClick={() => toggleScope(scope)}
-									className="flex items-start gap-2 rounded-xl border px-3 py-2.5 text-left transition-all"
+									aria-pressed={checked}
+									className="flex items-start gap-2 rounded-[6px] px-3 py-2.5 text-left transition-colors"
 									style={{
 										background: checked
-											? "var(--color-violet-subtle)"
+											? "var(--brand-primary-subtle)"
 											: "var(--surface-sunken)",
-										borderColor: checked
-											? "var(--color-violet-border)"
-											: "transparent",
+										border: `1px solid ${checked ? "var(--border-strong)" : "var(--border-subtle)"}`,
 									}}
 								>
 									{checked ? (
 										<CheckCircle2
-											className="mt-0.5 size-3.5 shrink-0"
-											style={{ color: "var(--color-violet)" }}
+											className="mt-0.5 w-3.5 h-3.5 shrink-0"
+											style={{ color: "var(--brand-primary)" }}
 										/>
 									) : (
 										<div
-											className="mt-0.5 size-3.5 rounded-full border shrink-0"
-											style={{ borderColor: "var(--text-faint)" }}
+											className="mt-0.5 w-3.5 h-3.5 rounded-full shrink-0"
+											style={{ border: "1px solid var(--border-default)" }}
 										/>
 									)}
 									<div className="flex-1 min-w-0">
 										<div
 											className="text-[12px] font-mono font-semibold truncate"
-											style={{ color: "var(--text-primary)" }}
+											style={{
+												color: checked
+													? "var(--text-primary)"
+													: "var(--text-secondary)",
+											}}
 										>
 											{scope}
 										</div>
@@ -339,22 +339,15 @@ function DraftEditor({
 				</div>
 			</PanelBody>
 			<PanelFooter>
-				<Button
-					variant="ghost"
-					size="sm"
-					className="h-9 px-4 text-[13px] rounded-full"
-					onClick={onCancel}
-				>
+				<Button variant="ghost" size="sm" onClick={onCancel}>
 					İptal
 				</Button>
 				<Button
 					size="sm"
 					disabled={saving || !draft.name.trim() || draft.scopes.length === 0}
 					onClick={onSave}
-					className="text-white h-9 px-4 text-[13px] rounded-full"
-					style={{ background: "var(--gradient-btn-primary)" }}
 				>
-					{saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+					{saving && <Loader2 className="mr-1.5 w-3.5 h-3.5 animate-spin" />}
 					Oluştur
 				</Button>
 			</PanelFooter>
@@ -384,35 +377,52 @@ function TokenRow({
 	const expired = !!token.expires_at && new Date(token.expires_at) < new Date();
 	const revoked = !!token.revoked_at;
 	const dead = expired || revoked;
+	const accent = revoked
+		? "var(--status-down)"
+		: expired
+			? "var(--status-degraded)"
+			: "var(--status-up)";
 
 	return (
-		<Panel padding="md" className="rounded-2xl" style={{ opacity: dead ? 0.55 : 1 }}>
-			<div className="flex items-center justify-between gap-4">
+		<div
+			className="relative rounded-[6px] px-4 py-3.5"
+			style={{
+				background: "var(--surface-base)",
+				border: "1px solid var(--border-subtle)",
+				opacity: dead ? 0.6 : 1,
+			}}
+		>
+			<span
+				aria-hidden
+				className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r-full"
+				style={{ background: accent }}
+			/>
+			<div className="flex items-center justify-between gap-4 pl-2">
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2 flex-wrap">
 						<span
-							className="text-[14px] font-semibold truncate tracking-tight"
+							className="text-[14px] font-semibold truncate"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{token.name}
 						</span>
 						{revoked && (
 							<span
-								className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+								className="inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
 								style={{
 									background: "var(--status-down-subtle)",
 									color: "var(--status-down-text)",
 								}}
 							>
-								<XCircle className="size-3" /> İptal
+								<XCircle className="w-3 h-3" /> İptal
 							</span>
 						)}
 						{!revoked && expired && (
 							<span
-								className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+								className="inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
 								style={{
-									background: "var(--status-warn-subtle)",
-									color: "var(--status-warn-text)",
+									background: "var(--status-degraded-subtle)",
+									color: "var(--status-degraded-text)",
 								}}
 							>
 								Süresi dolmuş
@@ -421,11 +431,14 @@ function TokenRow({
 					</div>
 					<div
 						className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]"
-						style={{ color: "var(--text-faint)" }}
+						style={{ color: "var(--text-tertiary)" }}
 					>
 						<code
-							className="rounded-md px-2 py-0.5 font-mono"
-							style={{ background: "var(--surface-sunken)" }}
+							className="rounded-[4px] px-1.5 py-0.5 font-mono"
+							style={{
+								background: "var(--surface-sunken)",
+								color: "var(--text-secondary)",
+							}}
 						>
 							{token.prefix}…
 						</code>
@@ -436,14 +449,14 @@ function TokenRow({
 							</span>
 						)}
 					</div>
-					<div className="mt-2.5 flex flex-wrap gap-1.5">
+					<div className="mt-2 flex flex-wrap gap-1">
 						{token.scopes.map((s) => (
 							<span
 								key={s}
-								className="rounded-full px-2 py-0.5 text-[11px] font-mono"
+								className="rounded-[4px] px-1.5 py-0.5 text-[10px] font-mono"
 								style={{
 									background: "var(--surface-sunken)",
-									color: "var(--text-secondary)",
+									color: "var(--text-tertiary)",
 								}}
 							>
 								{s}
@@ -454,15 +467,35 @@ function TokenRow({
 				{!revoked && (
 					<Button
 						variant="ghost"
-						size="sm"
-						className="shrink-0 h-9 w-9 p-0 rounded-full"
-						style={{ color: "var(--status-down)" }}
+						size="icon"
 						onClick={onRevoke}
+						aria-label="İptal et"
 					>
-						<Trash2 className="size-4" />
+						<Trash2
+							className="w-3.5 h-3.5"
+							style={{ color: "var(--status-down)" }}
+						/>
 					</Button>
 				)}
 			</div>
-		</Panel>
+		</div>
+	);
+}
+
+function FieldLabel({
+	children,
+	htmlFor,
+}: {
+	children: React.ReactNode;
+	htmlFor?: string;
+}) {
+	return (
+		<Label
+			htmlFor={htmlFor}
+			className="text-[11px] font-medium uppercase tracking-wider"
+			style={{ color: "var(--text-faint)" }}
+		>
+			{children}
+		</Label>
 	);
 }

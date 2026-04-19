@@ -33,7 +33,9 @@ export const apiTokensApi = {
 		const res = await apiClient.get("/api-tokens");
 		return res.data.data;
 	},
-	create: async (input: CreateApiTokenInput): Promise<CreateApiTokenResponse> => {
+	create: async (
+		input: CreateApiTokenInput,
+	): Promise<CreateApiTokenResponse> => {
 		const res = await apiClient.post("/api-tokens", input);
 		return res.data.data;
 	},

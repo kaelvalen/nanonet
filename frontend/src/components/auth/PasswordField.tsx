@@ -35,9 +35,9 @@ export function PasswordField({
 	const [show, setShow] = useState(false);
 
 	const borderColor = error
-		? "var(--status-down-border)"
+		? "var(--status-down)"
 		: success
-			? "var(--status-up-border)"
+			? "var(--status-up)"
 			: undefined;
 
 	return (
@@ -45,8 +45,8 @@ export function PasswordField({
 			<div className="flex items-center justify-between">
 				<Label
 					htmlFor={id}
-					className="text-[11px] font-black uppercase tracking-[0.15em]"
-					style={{ color: "var(--text-faint)" }}
+					className="text-[12px] font-medium"
+					style={{ color: "var(--text-tertiary)" }}
 				>
 					{label}
 				</Label>
@@ -62,13 +62,13 @@ export function PasswordField({
 					onChange={(e) => onChange(e.target.value)}
 					required={required}
 					disabled={disabled}
-					className={`h-11 rounded-lg text-sm font-medium pr-11 ${className ?? ""}`}
+					className={`h-10 pr-10 ${className ?? ""}`}
 					style={borderColor ? { borderColor } : undefined}
 				/>
 				<button
 					type="button"
 					onClick={() => setShow((v) => !v)}
-					className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors"
+					className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] rounded-[4px]"
 					style={{ color: "var(--text-faint)" }}
 					tabIndex={-1}
 					aria-label={show ? "Şifreyi gizle" : "Şifreyi göster"}
@@ -78,7 +78,7 @@ export function PasswordField({
 			</div>
 			{error && (
 				<p
-					className="text-[10px] font-medium mt-0.5"
+					className="text-[11px] mt-0.5"
 					style={{ color: "var(--status-down-text)" }}
 				>
 					{error}

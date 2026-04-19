@@ -1,4 +1,3 @@
-import { motion } from "motion/react";
 import type { ReactNode } from "react";
 
 interface PageHeaderProps {
@@ -12,45 +11,39 @@ interface PageHeaderProps {
 	badge?: ReactNode;
 }
 
+/* PageHeader (legacy compat) — preserved API for unrewritten Faz 2-6 pages.
+   The new convention is `PageHeader` from `ui/page-shell.tsx`, which routes
+   the title up into the global TopBar. This wrapper keeps existing imports
+   working while flattening the visual to match the new design language:
+   no neumorphic icon halo, no shadow, single-line type. */
 export function PageHeader({
 	title,
 	subtitle,
 	icon: Icon,
-	iconColor = "var(--color-teal)",
-	iconBg = "var(--color-teal-subtle)",
-	iconBorder = "var(--color-teal-border)",
+	iconColor = "var(--brand-primary)",
+	iconBg = "var(--brand-primary-subtle)",
+	iconBorder = "var(--border-subtle)",
 	actions,
 	badge,
 }: PageHeaderProps) {
 	return (
-		<motion.div
-			className="flex items-start justify-between gap-4 mb-6 flex-col sm:flex-row sm:items-center"
-			initial={{ opacity: 0, y: -6 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.25 }}
-		>
+		<div className="flex items-start justify-between gap-3 mb-5 flex-col sm:flex-row sm:items-center">
 			<div className="flex items-center gap-3 min-w-0 flex-1">
 				{Icon && (
-					<div className="relative shrink-0">
-						<div
-							className="absolute inset-0 rounded-2xl blur-md opacity-60"
-							style={{ background: iconColor }}
-						/>
-						<div
-							className="relative w-10 h-10 rounded-2xl flex items-center justify-center"
-							style={{
-								background: iconBg,
-								border: `1px solid ${iconBorder}`,
-							}}
-						>
-							<Icon className="w-4.5 h-4.5" style={{ color: iconColor }} />
-						</div>
+					<div
+						className="shrink-0 w-9 h-9 rounded-[6px] flex items-center justify-center"
+						style={{
+							background: iconBg,
+							border: `1px solid ${iconBorder}`,
+						}}
+					>
+						<Icon className="w-4 h-4" style={{ color: iconColor }} />
 					</div>
 				)}
 				<div className="min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
 						<h1
-							className="text-[20px] font-semibold leading-none tracking-tight"
+							className="text-[18px] font-semibold leading-tight tracking-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
 							{title}
@@ -59,8 +52,8 @@ export function PageHeader({
 					</div>
 					{subtitle && (
 						<p
-							className="text-[13px] mt-1.5 leading-relaxed"
-							style={{ color: "var(--text-muted)" }}
+							className="text-[13px] mt-1 leading-relaxed"
+							style={{ color: "var(--text-tertiary)" }}
 						>
 							{subtitle}
 						</p>
@@ -72,6 +65,6 @@ export function PageHeader({
 					{actions}
 				</div>
 			)}
-		</motion.div>
+		</div>
 	);
 }

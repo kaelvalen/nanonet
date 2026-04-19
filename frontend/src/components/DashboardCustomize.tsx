@@ -1,5 +1,9 @@
 import { Eye, EyeOff, RotateCcw, Settings2 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	DASHBOARD_WIDGETS,
 	type DashboardWidgetSpec,
@@ -15,7 +19,9 @@ export function DashboardCustomize() {
 
 	const grouped = DASHBOARD_WIDGETS.reduce(
 		(acc, w) => {
-			(acc[w.group] = acc[w.group] ?? []).push(w);
+			const bucket = acc[w.group] ?? [];
+			bucket.push(w);
+			acc[w.group] = bucket;
 			return acc;
 		},
 		{} as Record<string, DashboardWidgetSpec[]>,
@@ -67,10 +73,7 @@ export function DashboardCustomize() {
 						>
 							Panel düzeni
 						</p>
-						<p
-							className="text-[10px]"
-							style={{ color: "var(--text-faint)" }}
-						>
+						<p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
 							Görmek istediklerini seç
 						</p>
 					</div>
@@ -115,8 +118,7 @@ export function DashboardCustomize() {
 										config.density === d
 											? "var(--brand-primary)"
 											: "transparent",
-									color:
-										config.density === d ? "#ffffff" : "var(--text-muted)",
+									color: config.density === d ? "#ffffff" : "var(--text-muted)",
 								}}
 							>
 								{d === "compact" ? "Sıkı" : "Rahat"}

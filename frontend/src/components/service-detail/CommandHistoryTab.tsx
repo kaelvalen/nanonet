@@ -106,10 +106,7 @@ export function CommandHistoryTab({ serviceId }: { serviceId: string }) {
 						border: "1px solid var(--border-default)",
 					}}
 				>
-					<History
-						className="w-4 h-4"
-						style={{ color: "var(--text-faint)" }}
-					/>
+					<History className="w-4 h-4" style={{ color: "var(--text-faint)" }} />
 				</span>
 				<p
 					className="text-sm font-semibold mb-1"

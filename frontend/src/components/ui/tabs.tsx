@@ -3,6 +3,11 @@ import type * as React from "react";
 
 import { cn } from "./utils";
 
+/* Tabs — underline style by default (MB-quiet, no pill background).
+   The list is a flat row with a 1px hairline at the bottom; the active
+   trigger draws a 2px brand underline. This works well at the top of a
+   Card or page section without competing with surrounding chrome. */
+
 function Tabs({
 	className,
 	...props
@@ -10,7 +15,7 @@ function Tabs({
 	return (
 		<TabsPrimitive.Root
 			data-slot="tabs"
-			className={cn("flex flex-col gap-2", className)}
+			className={cn("flex flex-col gap-3", className)}
 			{...props}
 		/>
 	);
@@ -24,7 +29,9 @@ function TabsList({
 		<TabsPrimitive.List
 			data-slot="tabs-list"
 			className={cn(
-				"bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-xl p-[3px] flex",
+				"inline-flex h-10 w-full items-end justify-start gap-1",
+				"border-b border-[var(--border-subtle)]",
+				"text-[var(--text-tertiary)]",
 				className,
 			)}
 			{...props}
@@ -40,7 +47,16 @@ function TabsTrigger({
 		<TabsPrimitive.Trigger
 			data-slot="tabs-trigger"
 			className={cn(
-				"data-[state=active]:bg-card dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+				"relative inline-flex h-10 items-center justify-center gap-1.5 px-3",
+				"text-[13px] font-medium leading-none whitespace-nowrap",
+				"text-[var(--text-tertiary)]",
+				"transition-colors duration-[120ms] ease-[cubic-bezier(0.2,0,0,1)]",
+				"hover:text-[var(--text-primary)]",
+				"data-[state=active]:text-[var(--text-primary)]",
+				"data-[state=active]:after:absolute data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:-bottom-px data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[var(--brand-primary)]",
+				"focus-visible:outline-none focus-visible:text-[var(--text-primary)] focus-visible:after:absolute focus-visible:after:inset-1 focus-visible:after:rounded-[4px] focus-visible:after:ring-2 focus-visible:after:ring-[var(--border-focus)]",
+				"disabled:pointer-events-none disabled:opacity-50",
+				"[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 				className,
 			)}
 			{...props}
