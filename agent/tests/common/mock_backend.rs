@@ -132,7 +132,10 @@ impl MockBackend {
     /// Bir sonraki gelen agent bağlantısını bekler. `timeout` aşılırsa `None`.
     pub async fn next_connection(&self, timeout: Duration) -> Option<Connection> {
         let mut rx = self.connections.lock().await;
-        tokio::time::timeout(timeout, rx.recv()).await.ok().flatten()
+        tokio::time::timeout(timeout, rx.recv())
+            .await
+            .ok()
+            .flatten()
     }
 
     /// Auth header doğrulamasını aç/kapa. Açıkken Authorization header'ı yoksa
@@ -160,11 +163,7 @@ async fn ws_handler(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    if state
-        .expect_auth
-        .load(std::sync::atomic::Ordering::Relaxed)
-        && auth_header.is_none()
-    {
+    if state.expect_auth.load(std::sync::atomic::Ordering::Relaxed) && auth_header.is_none() {
         return axum::http::StatusCode::UNAUTHORIZED.into_response();
     }
 

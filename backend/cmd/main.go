@@ -36,6 +36,7 @@ import (
 	"nanonet-backend/pkg/database"
 	"nanonet-backend/pkg/mailer"
 	"nanonet-backend/pkg/middleware"
+	"nanonet-backend/pkg/netguard"
 	"nanonet-backend/pkg/ratelimit"
 	"nanonet-backend/pkg/redisstore"
 	"nanonet-backend/pkg/shutdown"
@@ -87,7 +88,14 @@ func main() {
 		hub = ws.NewHub(cfg.WSMaxConnections)
 	}
 
-	go hub.Run()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("WS hub panikledi", slog.Any("panic", r))
+			}
+		}()
+		hub.Run()
+	}()
 
 	// ── Alert + Maintenance wiring ─────────────────────────────────
 	alertSvc := alerts.NewService(db)
@@ -132,13 +140,13 @@ func main() {
 	}
 
 	// ── Notifications (multi-channel: slack/discord/webhook/email/pagerduty)
-	notifSvc := notifications.NewService(db, m)
+	notifSvc := notifications.NewService(db, m, netguard.Options{AllowPrivate: cfg.AllowPrivateWebhookURLs})
 	alertSvc.SetMultiNotifier(notificationsAdapter{svc: notifSvc})
 	logger.Info("Çok-kanallı bildirim servisi aktif")
 
 	// ── Handlers ──────────────────────────────────────────────────
 	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL, bl)
-	authMiddleware := auth.NewMiddleware(cfg.JWTSecret, bl)
+	authMiddleware := auth.NewMiddleware(cfg.JWTSecret, bl, cfg.AllowQueryTokenAuth)
 	apiTokensSvc := apitokens.NewService(db)
 	apiTokensHandler := apitokens.NewHandler(apiTokensSvc)
 	demoSvc := demo.New(db)
@@ -149,7 +157,7 @@ func main() {
 	metricsHandler := metrics.NewHandler(db)
 	alertHandler := alerts.NewHandler(alertSvc, db)
 	maintHandler := maintenance.NewHandler(maintRepo, db)
-	wsHandler := ws.NewHandler(hub, cfg.JWTSecret, cfg.FrontendURL, authSvc)
+	wsHandler := ws.NewHandler(hub, cfg.JWTSecret, cfg.FrontendURL, authSvc, cfg.AllowQueryTokenAuth)
 	aiHandler := ai.NewHandler(db, cfg.ClaudeAPIKey)
 	cmdHandler := commands.NewHandler(db)
 	cmdService := commands.NewService(db)
@@ -194,7 +202,15 @@ func main() {
 	strictLimiter := ratelimit.StrictMiddleware(10, time.Minute)
 
 	hub.SetOnCommandResult(func(commandID, status string, msg ws.AgentMessage) {
-		_ = cmdService.UpdateStatus(context.Background(), commandID, status, nil)
+		ctx := context.Background()
+		switch status {
+		case "success", "failed":
+			if err := cmdService.CompleteFromAgent(ctx, commandID, status, msg.Output, msg.Error); err != nil {
+				logger.Debug("komut tamamlanamadı", slog.String("command_id", commandID), slog.String("error", err.Error()))
+			}
+		default:
+			_ = cmdService.UpdateStatus(ctx, commandID, status, nil)
+		}
 	})
 
 	// ── Dependency auto-discovery (agent-reported outbound connections)
@@ -236,7 +252,7 @@ func main() {
 	})
 
 	// ── Synthetic probes (server-side HTTP/TCP checks) ─────────────
-	probesSvc := probes.NewService(db)
+	probesSvc := probes.NewService(db, netguard.Options{AllowPrivate: cfg.AllowPrivateProbeTargets})
 	probesHandler := probes.NewHandler(probesSvc)
 	probesRunner := probes.NewRunner(probesSvc.Repo(), logger)
 	// On Up→Down (after 3 fails) or Down→Up, dispatch a notification.
@@ -262,9 +278,21 @@ func main() {
 			Timestamp:   time.Now(),
 		})
 	})
-	go probesRunner.Start(ctx, 10*time.Second)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("Probe runner panikledi", slog.Any("panic", r))
+			}
+		}()
+		probesRunner.Start(ctx, 10*time.Second)
+	}()
 	// Trim probe_runs to a 14-day window every 6h to keep the table bounded.
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("Probe prune loop panikledi", slog.Any("panic", r))
+			}
+		}()
 		ticker := time.NewTicker(6 * time.Hour)
 		defer ticker.Stop()
 		for {
@@ -288,6 +316,11 @@ func main() {
 
 	// Periodic prune of stale, non-promoted dependencies (older than 7 days).
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("Dependency prune loop panikledi", slog.Any("panic", r))
+			}
+		}()
 		ticker := time.NewTicker(6 * time.Hour)
 		defer ticker.Stop()
 		for {
@@ -311,6 +344,11 @@ func main() {
 	// reported recently to "stale" / "down" and emit alerts. Lightweight scan
 	// over all services with a known last-heartbeat.
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("Agent staleness loop panikledi", slog.Any("panic", r))
+			}
+		}()
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
@@ -342,6 +380,11 @@ func main() {
 	// Per-user log retention — her gün çalışır. Default 30 gün; her kullanıcının
 	// user_settings.log_retention_days değeri varsa onu kullan.
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("Log retention loop panikledi", slog.Any("panic", r))
+			}
+		}()
 		runRetention := func() {
 			type row struct {
 				UserID uuid.UUID `gorm:"column:user_id"`
@@ -411,6 +454,11 @@ func main() {
 
 	// Askıda kalan komutları periyodik olarak timeout'a al
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("Command timeout loop panikledi", slog.Any("panic", r))
+			}
+		}()
 		ticker := time.NewTicker(time.Minute)
 		defer ticker.Stop()
 		for {

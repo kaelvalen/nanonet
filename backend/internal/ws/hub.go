@@ -210,7 +210,11 @@ func (h *Hub) StartRedis(ctx context.Context) {
 			switch {
 			case strings.HasPrefix(msg.Channel, "nanonet:broadcast:"):
 				// Forward to local dashboard clients via the broadcast channel.
-				h.broadcast <- []byte(msg.Payload)
+				select {
+				case h.broadcast <- []byte(msg.Payload):
+				default:
+					slog.Warn("WS broadcast kanalı dolu (Redis)", slog.String("channel", msg.Channel))
+				}
 			case strings.HasPrefix(msg.Channel, "nanonet:cmd:"):
 				serviceID := strings.TrimPrefix(msg.Channel, "nanonet:cmd:")
 				h.tryDeliverToLocalAgent(serviceID, []byte(msg.Payload))
@@ -286,6 +290,12 @@ func (h *Hub) HandleAgentMessage(client *Client, rawMessage []byte) {
 	case "ack":
 		slog.Debug("Agent komut ACK", slog.String("client_id", client.id), slog.String("command_id", msg.CommandID))
 		h.BroadcastCommandStatus(client.serviceID, msg.CommandID, "received")
+		h.mu.RLock()
+		fn := h.onCommandResult
+		h.mu.RUnlock()
+		if fn != nil {
+			fn(msg.CommandID, "received", msg)
+		}
 
 	case "result":
 		slog.Debug("Agent komut sonucu", slog.String("client_id", client.id), slog.String("command_id", msg.CommandID), slog.String("status", msg.Status))
@@ -349,7 +359,11 @@ func (h *Hub) broadcastJSON(serviceID string, data []byte) {
 		}
 		return
 	}
-	h.broadcast <- data
+	select {
+	case h.broadcast <- data:
+	default:
+		slog.Warn("WS broadcast kanalı dolu (local)", slog.String("service_id", serviceID))
+	}
 }
 
 func (h *Hub) BroadcastToDashboards(serviceID string, data interface{}) {
@@ -467,6 +481,10 @@ func (h *Hub) queueCommand(serviceID string, data []byte, commandID string) {
 		ctx := context.Background()
 		key := "nanonet:pc:" + serviceID
 		h.redisClient.RPush(ctx, key, string(data))
+		// Keep the pending queue bounded so a dead agent cannot grow memory unbounded.
+		// We retain the most recent N commands (same as in-memory behaviour).
+		const maxPending = 50
+		_ = h.redisClient.LTrim(ctx, key, -maxPending, -1).Err()
 		h.redisClient.Expire(ctx, key, 24*time.Hour)
 		return
 	}

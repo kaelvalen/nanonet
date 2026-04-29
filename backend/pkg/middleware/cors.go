@@ -23,12 +23,14 @@ func CORSMiddleware(frontendURL string, extraOrigins []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
 
-		if allowedOrigins[origin] {
+		// Only echo back allowed Origins. Never "fallback" to a different origin.
+		// Browsers enforce CORS; for non-browser clients, these headers are irrelevant.
+		if origin != "" && allowedOrigins[origin] {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-		} else if frontendURL != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", frontendURL)
+			c.Writer.Header().Set("Vary", "Origin")
 		}
 
+		// Keep credentials enabled for existing clients; only meaningful for browsers.
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Request-Id")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
@@ -36,7 +38,7 @@ func CORSMiddleware(frontendURL string, extraOrigins []string) gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, X-Request-Id")
 
 		if c.Request.Method == "OPTIONS" {
-			if allowedOrigins[origin] {
+			if origin != "" && allowedOrigins[origin] {
 				c.AbortWithStatus(204)
 			} else {
 				c.AbortWithStatus(403)

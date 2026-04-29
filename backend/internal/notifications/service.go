@@ -9,6 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"nanonet-backend/pkg/netguard"
 )
 
 // Service is the public façade. Other packages (alerts, incidents, ai) call
@@ -23,10 +25,10 @@ type Service struct {
 	cooldowns map[string]time.Time
 }
 
-func NewService(db *gorm.DB, email EmailSender) *Service {
+func NewService(db *gorm.DB, email EmailSender, guard netguard.Options) *Service {
 	return &Service{
 		repo:       NewRepository(db),
-		dispatcher: NewDispatcher(email),
+		dispatcher: NewDispatcher(email, guard),
 		cooldowns:  make(map[string]time.Time),
 	}
 }
@@ -121,11 +123,22 @@ func (s *Service) deliver(ctx context.Context, ch *Channel, ev Event) {
 		d.Status = "success"
 	}
 
-	_ = s.repo.RecordDelivery(context.Background(), d)
+	// Persist using the caller context when possible so shutdown/cancellation
+	// can stop outbound fan-out and DB writes. If the context is already done
+	// (common when called from a short-lived request), fall back to background
+	// to avoid losing delivery logs.
+	persistParent := ctx
+	if persistParent == nil || persistParent.Err() != nil {
+		persistParent = context.Background()
+	}
+	pctx, pcancel := context.WithTimeout(persistParent, 5*time.Second)
+	defer pcancel()
+
+	_ = s.repo.RecordDelivery(pctx, d)
 	if err == nil {
-		_ = s.repo.MarkUsed(context.Background(), ch.ID, "")
+		_ = s.repo.MarkUsed(pctx, ch.ID, "")
 	} else {
-		_ = s.repo.MarkUsed(context.Background(), ch.ID, err.Error())
+		_ = s.repo.MarkUsed(pctx, ch.ID, err.Error())
 	}
 }
 

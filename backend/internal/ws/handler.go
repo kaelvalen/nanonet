@@ -19,16 +19,18 @@ import (
 )
 
 type Handler struct {
-	hub              *Hub
-	jwtSecret        string
-	authService      *auth.Service
-	allowedOrigins   map[string]bool
-	upgrader         websocket.Upgrader
-	dashboardLimiter *ratelimit.Limiter
-	agentLimiter     *ratelimit.Limiter
+	hub               *Hub
+	jwtSecret         string
+	authService       *auth.Service
+	allowedOrigins    map[string]bool
+	dashboardUpgrader websocket.Upgrader
+	agentUpgrader     websocket.Upgrader
+	dashboardLimiter  *ratelimit.Limiter
+	agentLimiter      *ratelimit.Limiter
+	allowQueryToken   bool
 }
 
-func NewHandler(hub *Hub, jwtSecret string, frontendURL string, authSvc *auth.Service) *Handler {
+func NewHandler(hub *Hub, jwtSecret string, frontendURL string, authSvc *auth.Service, allowQueryToken bool) *Handler {
 	allowed := map[string]bool{}
 	if frontendURL != "" {
 		allowed[frontendURL] = true
@@ -47,14 +49,29 @@ func NewHandler(hub *Hub, jwtSecret string, frontendURL string, authSvc *auth.Se
 		allowedOrigins:   allowed,
 		dashboardLimiter: ratelimit.New(10, time.Minute),
 		agentLimiter:     ratelimit.New(5, time.Minute),
+		allowQueryToken:  allowQueryToken,
 	}
 
-	h.upgrader = websocket.Upgrader{
+	// Dashboard streams are browser-facing; enforce Origin allowlist strictly.
+	h.dashboardUpgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
 			origin := r.Header.Get("Origin")
-			// Agent bağlantıları Origin göndermeyebilir (native clients)
+			if origin == "" {
+				return false
+			}
+			return h.allowedOrigins[origin]
+		},
+	}
+
+	// Agent connections can be native clients; allow empty Origin, but still
+	// apply allowlist when Origin is present.
+	h.agentUpgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
 			if origin == "" {
 				return true
 			}
@@ -113,7 +130,7 @@ func (h *Handler) extractTokenType(tokenString string) string {
 // via the first JSON message ({"type":"auth","token":"..."}).
 // On success it returns the authenticated userID. On failure the connection is closed and false is returned.
 func (h *Handler) performAuthHandshake(c *gin.Context) (*websocket.Conn, string, bool) {
-	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.dashboardUpgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		slog.Error("WebSocket upgrade hatası", slog.String("error", err.Error()))
 		return nil, "", false
@@ -193,7 +210,9 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 		}
 	}
 	if tokenString == "" {
-		tokenString = c.Query("token")
+		if h.allowQueryToken {
+			tokenString = c.Query("token")
+		}
 	}
 
 	if tokenString == "" {
@@ -226,7 +245,7 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 		agentID = uuid.New().String()
 	}
 
-	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := h.agentUpgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		slog.Error("WebSocket upgrade hatası", slog.String("error", err.Error()))
 		return

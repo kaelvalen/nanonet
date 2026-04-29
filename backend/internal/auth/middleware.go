@@ -20,15 +20,17 @@ type APITokenAuthenticator interface {
 }
 
 type Middleware struct {
-	service   *Service
-	blacklist tokenblacklist.Blacklist
-	apiTokens APITokenAuthenticator
+	service         *Service
+	blacklist       tokenblacklist.Blacklist
+	apiTokens       APITokenAuthenticator
+	allowQueryToken bool
 }
 
-func NewMiddleware(jwtSecret string, bl tokenblacklist.Blacklist) *Middleware {
+func NewMiddleware(jwtSecret string, bl tokenblacklist.Blacklist, allowQueryToken bool) *Middleware {
 	return &Middleware{
-		service:   &Service{jwtSecret: jwtSecret},
-		blacklist: bl,
+		service:         &Service{jwtSecret: jwtSecret},
+		blacklist:       bl,
+		allowQueryToken: allowQueryToken,
 	}
 }
 
@@ -67,7 +69,9 @@ func (m *Middleware) Required() gin.HandlerFunc {
 		}
 
 		if tokenString == "" {
-			tokenString = c.Query("token")
+			if m.allowQueryToken {
+				tokenString = c.Query("token")
+			}
 		}
 
 		if tokenString == "" {

@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"nanonet-backend/pkg/netguard"
 )
 
 // EmailSender is satisfied by *pkg/mailer.Mailer; declared locally to avoid
@@ -27,12 +29,21 @@ type EmailSender interface {
 type Dispatcher struct {
 	http  *http.Client
 	email EmailSender
+	guard netguard.Options
 }
 
-func NewDispatcher(email EmailSender) *Dispatcher {
+func NewDispatcher(email EmailSender, guard netguard.Options) *Dispatcher {
 	return &Dispatcher{
-		http:  &http.Client{Timeout: 8 * time.Second},
+		http: &http.Client{
+			Timeout: 8 * time.Second,
+			// Redirects can turn an otherwise-safe URL into an SSRF gadget.
+			// We intentionally do not follow redirects; callers can update the URL.
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 		email: email,
+		guard: guard,
 	}
 }
 
@@ -211,6 +222,9 @@ func (d *Dispatcher) sendEmail(ch *Channel, ev Event) error {
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 func (d *Dispatcher) postJSON(ctx context.Context, url string, body any, headers map[string]string) (SendResult, error) {
+	if err := netguard.ValidateOutboundURL(ctx, url, d.guard); err != nil {
+		return SendResult{}, fmt.Errorf("url rejected: %w", err)
+	}
 	raw, err := json.Marshal(body)
 	if err != nil {
 		return SendResult{}, fmt.Errorf("marshal: %w", err)

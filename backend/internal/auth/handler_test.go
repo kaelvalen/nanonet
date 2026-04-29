@@ -154,7 +154,7 @@ func TestForgotPassword_ValidFormat_PassesValidation(t *testing.T) {
 // ── Middleware ────────────────────────────────────────────────────
 
 func TestMiddleware_NoAuthHeader(t *testing.T) {
-	m := NewMiddleware("test-secret-key-minimum-32-chars-x!", &stubBlacklist{})
+	m := NewMiddleware("test-secret-key-minimum-32-chars-x!", &stubBlacklist{}, false)
 	r := gin.New()
 	r.GET("/protected", m.Required(), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -165,8 +165,48 @@ func TestMiddleware_NoAuthHeader(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestMiddleware_QueryTokenRejectedWhenDisabled(t *testing.T) {
+	secret := "test-secret-key-minimum-32-chars-x!"
+	svc := &Service{jwtSecret: secret}
+	userID := uuid.New()
+
+	token, err := svc.generateToken(userID, time.Hour, "access")
+	require.NoError(t, err)
+
+	m := NewMiddleware(secret, &stubBlacklist{}, false)
+	r := gin.New()
+	r.GET("/protected", m.Required(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+	req := httptest.NewRequest(http.MethodGet, "/protected?token="+token, nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestMiddleware_QueryTokenAcceptedWhenEnabled(t *testing.T) {
+	secret := "test-secret-key-minimum-32-chars-x!"
+	svc := &Service{jwtSecret: secret}
+	userID := uuid.New()
+
+	token, err := svc.generateToken(userID, time.Hour, "access")
+	require.NoError(t, err)
+
+	m := NewMiddleware(secret, &stubBlacklist{}, true)
+	r := gin.New()
+	r.GET("/protected", m.Required(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"user_id": c.GetString("user_id")})
+	})
+	req := httptest.NewRequest(http.MethodGet, "/protected?token="+token, nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := decodeBody(t, w)
+	assert.Equal(t, userID.String(), body["user_id"])
+}
+
 func TestMiddleware_InvalidToken(t *testing.T) {
-	m := NewMiddleware("test-secret-key-minimum-32-chars-x!", &stubBlacklist{})
+	m := NewMiddleware("test-secret-key-minimum-32-chars-x!", &stubBlacklist{}, false)
 	r := gin.New()
 	r.GET("/protected", m.Required(), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -186,7 +226,7 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	token, err := svc.generateToken(userID, time.Hour, "access")
 	require.NoError(t, err)
 
-	m := NewMiddleware(secret, &stubBlacklist{})
+	m := NewMiddleware(secret, &stubBlacklist{}, false)
 	r := gin.New()
 	r.GET("/protected", m.Required(), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"user_id": c.GetString("user_id")})
@@ -208,7 +248,7 @@ func TestMiddleware_AgentTokenRejected(t *testing.T) {
 	agentToken, err := svc.generateToken(userID, time.Hour, "agent")
 	require.NoError(t, err)
 
-	m := NewMiddleware(secret, &stubBlacklist{})
+	m := NewMiddleware(secret, &stubBlacklist{}, false)
 	r := gin.New()
 	r.GET("/protected", m.Required(), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -229,7 +269,7 @@ func TestMiddleware_BlacklistedToken(t *testing.T) {
 	require.NoError(t, err)
 
 	blacklisted := &alwaysBlacklisted{}
-	m := NewMiddleware(secret, blacklisted)
+	m := NewMiddleware(secret, blacklisted, false)
 	r := gin.New()
 	r.GET("/protected", m.Required(), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})

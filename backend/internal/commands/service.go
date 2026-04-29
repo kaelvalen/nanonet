@@ -42,6 +42,11 @@ func (s *Service) UpdateStatus(ctx context.Context, commandID, status string, du
 	return s.repo.UpdateStatus(ctx, commandID, status, durationMS)
 }
 
+// CompleteFromAgent persists agent result frames (success/failed) with output/error text.
+func (s *Service) CompleteFromAgent(ctx context.Context, commandID, status string, output, errMsg *string) error {
+	return s.repo.CompleteFromAgent(ctx, commandID, status, output, errMsg)
+}
+
 func (s *Service) GetHistory(ctx context.Context, serviceID uuid.UUID, limit, offset int) ([]CommandLog, int64, error) {
 	if limit <= 0 {
 		limit = 20

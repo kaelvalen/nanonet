@@ -28,6 +28,11 @@ func NewRunner(repo *Repository, logger *slog.Logger) *Runner {
 		logger: logger,
 		client: &http.Client{
 			Timeout: 30 * time.Second, // hard ceiling; per-probe timeout is tighter
+			// Don't follow redirects. Otherwise a probe target may redirect to
+			// private/reserved networks and become an SSRF gadget.
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 			Transport: &http.Transport{
 				MaxIdleConnsPerHost: 4,
 				IdleConnTimeout:     90 * time.Second,

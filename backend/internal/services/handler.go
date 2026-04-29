@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"nanonet-backend/internal/commands"
@@ -53,6 +54,13 @@ func (h *Handler) sendCommand(c *gin.Context, id, userID uuid.UUID, action strin
 		status = "sent"
 	} else {
 		status = "queued"
+	}
+	dbStatus := "queued"
+	if sent {
+		dbStatus = "sent"
+	}
+	if err := h.cmdService.UpdateStatus(c.Request.Context(), commandID, dbStatus, nil); err != nil {
+		slog.Warn("komut durumu güncellenemedi", slog.String("command_id", commandID), slog.String("error", err.Error()))
 	}
 	return commandID, status, sent, true
 }

@@ -2,18 +2,22 @@ package probes
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"nanonet-backend/pkg/netguard"
 )
 
 type Service struct {
-	repo *Repository
+	repo         *Repository
+	guardOptions netguard.Options
 }
 
-func NewService(db *gorm.DB) *Service {
-	return &Service{repo: NewRepository(db)}
+func NewService(db *gorm.DB, guard netguard.Options) *Service {
+	return &Service{repo: NewRepository(db), guardOptions: guard}
 }
 
 func (s *Service) Repo() *Repository { return s.repo }
@@ -30,6 +34,9 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, req CreateReques
 	expected := req.ExpectedStatus
 	if expected == 0 {
 		expected = 200
+	}
+	if err := netguard.ValidateProbeTarget(ctx, req.Kind, req.Target, s.guardOptions); err != nil {
+		return nil, fmt.Errorf("probe target rejected: %w", err)
 	}
 	p := &Probe{
 		UserID:          userID,
@@ -77,6 +84,9 @@ func (s *Service) Update(ctx context.Context, userID, id uuid.UUID, req UpdateRe
 	}
 	if req.Enabled != nil {
 		p.Enabled = *req.Enabled
+	}
+	if err := netguard.ValidateProbeTarget(ctx, p.Kind, p.Target, s.guardOptions); err != nil {
+		return nil, fmt.Errorf("probe target rejected: %w", err)
 	}
 	if err := s.repo.Save(ctx, p); err != nil {
 		return nil, err

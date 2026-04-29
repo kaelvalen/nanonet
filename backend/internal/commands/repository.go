@@ -46,6 +46,36 @@ func (r *Repository) UpdateStatus(ctx context.Context, commandID, status string,
 		Updates(updates).Error
 }
 
+// CompleteFromAgent sets terminal status, optional stdout/stderr text, completion time,
+// and duration_ms from queued_at → now (server clock).
+func (r *Repository) CompleteFromAgent(ctx context.Context, commandID, status string, output, errMsg *string) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	if status != "success" && status != "failed" {
+		return r.UpdateStatus(ctx, commandID, status, nil)
+	}
+
+	var out any
+	if output != nil {
+		out = *output
+	}
+	var errText any
+	if errMsg != nil {
+		errText = *errMsg
+	}
+
+	return r.db.WithContext(ctx).Exec(`
+		UPDATE command_logs SET
+			status = ?,
+			output = ?,
+			error_message = ?,
+			completed_at = NOW(),
+			duration_ms = GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - queued_at)) * 1000)::int)
+		WHERE command_id = ?
+	`, status, out, errText, commandID).Error
+}
+
 func (r *Repository) HasInFlightCommand(ctx context.Context, serviceID uuid.UUID, action string) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -53,7 +83,7 @@ func (r *Repository) HasInFlightCommand(ctx context.Context, serviceID uuid.UUID
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&CommandLog{}).
-		Where("service_id = ? AND action = ? AND status IN ('queued', 'sent') AND queued_at > ?",
+		Where("service_id = ? AND action = ? AND status IN ('queued', 'sent', 'received') AND queued_at > ?",
 			serviceID, action, time.Now().Add(-5*time.Minute)).
 		Count(&count).Error
 	return count > 0, err
@@ -62,7 +92,7 @@ func (r *Repository) HasInFlightCommand(ctx context.Context, serviceID uuid.UUID
 func (r *Repository) MarkStalledCommandsTimeout(ctx context.Context, threshold time.Time) error {
 	return r.db.WithContext(ctx).
 		Model(&CommandLog{}).
-		Where("status IN ('queued', 'sent') AND queued_at < ?", threshold).
+		Where("status IN ('queued', 'sent', 'received') AND queued_at < ?", threshold).
 		Updates(map[string]interface{}{
 			"status":       "timeout",
 			"completed_at": time.Now(),

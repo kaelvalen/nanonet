@@ -28,6 +28,11 @@ type Config struct {
 
 	AllowedOrigins []string
 	Environment    string // "development", "staging", "production"
+
+	// Security toggles (safe defaults vary by environment).
+	AllowQueryTokenAuth      bool // allow `?token=` for auth (avoid: leakage)
+	AllowPrivateProbeTargets bool // allow probes to hit private/reserved IPs
+	AllowPrivateWebhookURLs  bool // allow webhooks/slack/discord to private/reserved IPs
 }
 
 func Load() *Config {
@@ -62,6 +67,19 @@ func Load() *Config {
 		AllowedOrigins: parseAllowedOrigins(),
 		Environment:    environment,
 	}
+
+	// Security toggles:
+	// - In production: prefer secure defaults.
+	// - In non-production: keep compatibility unless explicitly disabled.
+	isProd := cfg.Environment == "production"
+	_ = isProd // kept for future environment-specific validations
+
+	// NOTE: These are explicit opt-ins. Safe-by-default even in dev/staging,
+	// because query-string tokens and private egress are high-risk if a non-prod
+	// environment is accidentally exposed.
+	cfg.AllowQueryTokenAuth = getEnvBool("ALLOW_QUERY_TOKEN_AUTH", false)
+	cfg.AllowPrivateProbeTargets = getEnvBool("ALLOW_PRIVATE_PROBE_TARGETS", false)
+	cfg.AllowPrivateWebhookURLs = getEnvBool("ALLOW_PRIVATE_WEBHOOK_URLS", false)
 
 	if cfg.DatabaseURL == "" {
 		log.Fatal("DATABASE_URL zorunlu")
@@ -114,6 +132,18 @@ func getEnvInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intVal, err := strconv.Atoi(value); err == nil {
 			return intVal
+		}
+	}
+	return defaultValue
+}
+
+func getEnvBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "1", "true", "yes", "y", "on":
+			return true
+		case "0", "false", "no", "n", "off":
+			return false
 		}
 	}
 	return defaultValue

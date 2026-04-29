@@ -20,6 +20,7 @@ type Dispatcher interface {
 // are logged (so the command history view stays unified).
 type CommandLogger interface {
 	LogCommand(ctx context.Context, serviceID, userID uuid.UUID, commandID, action string, payload interface{}) error
+	UpdateStatus(ctx context.Context, commandID, status string, durationMS *int) error
 }
 
 type Service struct {
@@ -102,6 +103,18 @@ func (s *Service) evaluate(ctx context.Context, b *Runbook, in AlertInput) {
 				slog.String("runbook_id", b.ID.String()),
 				slog.String("error", err.Error()),
 			)
+		} else {
+			st := "queued"
+			if delivered {
+				st = "sent"
+			}
+			if err := s.cmdLog.UpdateStatus(ctx, cmdID, st, nil); err != nil {
+				s.logger.Warn("Runbook command status update failed",
+					slog.String("runbook_id", b.ID.String()),
+					slog.String("command_id", cmdID),
+					slog.String("error", err.Error()),
+				)
+			}
 		}
 	}
 
