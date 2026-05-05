@@ -209,8 +209,8 @@ function StatusOrb({
 
 function UptimeGauge({
 	percent,
-	size = 80,
-	strokeWidth = 3,
+	size = 64,
+	strokeWidth = 2.5,
 }: {
 	percent: number;
 	size?: number;
@@ -265,27 +265,35 @@ function UptimeGauge({
 					}}
 				/>
 			</svg>
-			<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-				<span
-					className="tnum font-semibold leading-none"
-					style={{
-						color: "var(--text-primary)",
-						fontSize: size * 0.24,
-					}}
-				>
-					{clamped.toFixed(clamped >= 99.95 ? 2 : 1)}
+			<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-1">
+				<span className="flex flex-col items-center gap-0.5">
 					<span
-						className="text-[9px] font-normal ml-0.5"
-						style={{ color: "var(--text-faint)" }}
+						className="tnum font-medium leading-none inline-flex items-baseline gap-0.5 whitespace-nowrap"
+						style={{
+							color: "var(--text-primary)",
+							fontSize: Math.min(
+								clamped >= 99.95 ? 13 : 14,
+								size * (clamped >= 99.95 ? 0.2 : 0.22),
+							),
+						}}
 					>
-						%
+						<span>{clamped.toFixed(clamped >= 99.95 ? 2 : 1)}</span>
+						<span
+							className="font-medium leading-none"
+							style={{
+								fontSize: "max(9px, 0.5em)",
+								color: "var(--text-secondary)",
+							}}
+						>
+							%
+						</span>
 					</span>
-				</span>
-				<span
-					className="text-[9px] uppercase tracking-wider font-semibold mt-1"
-					style={{ color: "var(--text-faint)" }}
-				>
-					24 saat
+					<span
+						className="text-[8px] uppercase tracking-wider font-semibold leading-none"
+						style={{ color: "var(--text-tertiary)" }}
+					>
+						24 saat
+					</span>
 				</span>
 			</div>
 		</div>
@@ -481,14 +489,14 @@ function VitalSignsBand({
 	return (
 		<div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,240px)_repeat(4,minmax(0,1fr))]">
 			<div
-				className="relative col-span-2 lg:col-span-1 flex items-center gap-3 p-3.5 rounded-[6px]"
+				className="relative col-span-2 lg:col-span-1 flex items-center gap-3.5 px-4 py-4 rounded-[6px]"
 				style={{
 					background: "var(--surface-base)",
 					border: "1px solid var(--border-subtle)",
 				}}
 			>
 				<UptimeGauge percent={uptimePercent ?? 0} />
-				<div className="flex flex-col gap-1 min-w-0 flex-1">
+				<div className="flex flex-col gap-1.5 min-w-0 flex-1">
 					<span
 						className="text-[10px] uppercase tracking-wider font-semibold"
 						style={{ color: "var(--text-faint)" }}
@@ -505,8 +513,11 @@ function VitalSignsBand({
 						className="text-[11px] leading-snug"
 						style={{ color: "var(--text-tertiary)" }}
 					>
-						{STATUS_LABEL[service.status]} ·{" "}
-						<span className="tnum">{service.poll_interval_sec}s poll</span>
+						{STATUS_LABEL[service.status]}
+						<span style={{ color: "var(--text-faint)" }}> · </span>
+						<span className="tnum whitespace-nowrap">
+							Ölçüm aralığı {service.poll_interval_sec}s
+						</span>
 					</p>
 				</div>
 			</div>
@@ -684,13 +695,13 @@ function IdentityRail({
 						{STATUS_LABEL[service.status]}
 					</p>
 				</div>
-				<h1
-					className="text-[18px] font-semibold leading-tight tracking-tight truncate"
+				<p
+					className="text-[14px] font-semibold leading-tight tracking-tight truncate"
 					style={{ color: "var(--text-primary)" }}
 					title={service.name}
 				>
 					{service.name}
-				</h1>
+				</p>
 
 				<button
 					type="button"
@@ -1894,7 +1905,6 @@ export function ServiceDetailPage() {
 	});
 
 	useRegisterPageMeta({
-		eyebrow: "Servis",
 		title: service?.name ?? "Servis",
 		description: service ? `${service.host}:${service.port}` : undefined,
 	});

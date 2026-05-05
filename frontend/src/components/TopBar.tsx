@@ -179,7 +179,17 @@ export function TopBar({
 	const trail = crumbs.slice(0, -1);
 	const inlineTitle = title ?? crumbs[crumbs.length - 1]?.label ?? "";
 	const inlineEyebrow = eyebrow ?? null;
+	const isServiceDetail = /^\/app\/services\/[^/]+$/.test(location.pathname);
 	const initials = getInitials(user?.email);
+
+	const crumbTextSizeClass = isServiceDetail ? "text-[11px]" : "text-[12px]";
+	const crumbLinkClass = `${crumbTextSizeClass} truncate transition-colors hover:text-[var(--text-primary)] outline-none rounded focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]`;
+	const crumbChevron = (
+		<ChevronRight
+			className="w-3 h-3 shrink-0 mx-1.5"
+			style={{ color: "var(--text-faint)" }}
+		/>
+	);
 
 	return (
 		<div
@@ -192,47 +202,81 @@ export function TopBar({
 			<div className="flex items-center h-[var(--topbar-h)] gap-3 px-4 sm:px-6">
 				{/* ── LEFT: breadcrumb + page title ────────────────────────────── */}
 				<div className="flex items-center min-w-0 flex-1 gap-2">
-					{trail.length > 0 && (
+					{isServiceDetail ? (
 						<nav
 							aria-label="Breadcrumb"
-							className="hidden md:flex items-center min-w-0 shrink-0"
+							className="flex items-center min-w-0 flex-1"
 						>
 							{trail.map((crumb) => (
-								<span key={crumb.path} className="flex items-center min-w-0">
+								<span
+									key={crumb.path}
+									className="flex items-center min-w-0 shrink-0"
+								>
 									<Link
 										to={crumb.path}
 										onMouseEnter={() => preloadRoute(crumb.path)}
 										onFocus={() => preloadRoute(crumb.path)}
-										className="text-[12px] truncate transition-colors hover:text-[var(--text-primary)] outline-none rounded focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+										className={`${crumbLinkClass} min-w-0`}
 										style={{ color: "var(--text-tertiary)" }}
 									>
 										{crumb.label}
 									</Link>
-									<ChevronRight
-										className="w-3 h-3 shrink-0 mx-1.5"
-										style={{ color: "var(--text-faint)" }}
-									/>
+									{crumbChevron}
 								</span>
 							))}
-						</nav>
-					)}
-
-					<div className="flex flex-col min-w-0">
-						{inlineEyebrow && (
-							<span
-								className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wider leading-none mb-1 truncate"
-								style={{ color: "var(--text-faint)" }}
+							<h1
+								className={`min-w-0 flex-1 truncate ${crumbTextSizeClass} font-normal font-mono leading-none tracking-tight`}
+								style={{ color: "var(--text-primary)" }}
+								title={inlineTitle}
 							>
-								{inlineEyebrow}
-							</span>
-						)}
-						<h1
-							className="text-[15px] font-semibold tracking-tight leading-none truncate"
-							style={{ color: "var(--text-primary)" }}
-						>
-							{inlineTitle}
-						</h1>
-					</div>
+								{inlineTitle}
+							</h1>
+						</nav>
+					) : (
+						<>
+							{trail.length > 0 && (
+								<nav
+									aria-label="Breadcrumb"
+									className="hidden md:flex items-center min-w-0 shrink-0"
+								>
+									{trail.map((crumb) => (
+										<span
+											key={crumb.path}
+											className="flex items-center min-w-0"
+										>
+											<Link
+												to={crumb.path}
+												onMouseEnter={() => preloadRoute(crumb.path)}
+												onFocus={() => preloadRoute(crumb.path)}
+												className={crumbLinkClass}
+												style={{ color: "var(--text-tertiary)" }}
+											>
+												{crumb.label}
+											</Link>
+											{crumbChevron}
+										</span>
+									))}
+								</nav>
+							)}
+
+							<div className="flex flex-col min-w-0">
+								{inlineEyebrow && (
+									<span
+										className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wider leading-none mb-1 truncate"
+										style={{ color: "var(--text-faint)" }}
+									>
+										{inlineEyebrow}
+									</span>
+								)}
+								<h1
+									className="text-[15px] font-semibold tracking-tight leading-none truncate"
+									style={{ color: "var(--text-primary)" }}
+								>
+									{inlineTitle}
+								</h1>
+							</div>
+						</>
+					)}
 				</div>
 
 				{/* ── CENTER: universal command palette trigger ────────────────── */}

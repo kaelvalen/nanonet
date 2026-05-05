@@ -72,12 +72,26 @@ function fmtTime(iso: string | null | undefined) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Health ring — same gauge as Service Detail, smaller
 
+function aggregateHealthRingStroke(c: {
+	up: number;
+	degraded: number;
+	down: number;
+	unknown: number;
+}): string {
+	if (c.down > 0) return "var(--status-down)";
+	if (c.degraded > 0 || c.unknown > 0) return "var(--status-degraded)";
+	return "var(--status-up)";
+}
+
 function HealthRing({
 	percent,
+	strokeColor,
 	size = 72,
 	strokeWidth = 4,
 }: {
 	percent: number;
+	/** Matches stacked status bar semantics (worst-present), not %-of-up alone. */
+	strokeColor?: string;
 	size?: number;
 	strokeWidth?: number;
 }) {
@@ -85,11 +99,12 @@ function HealthRing({
 	const circumference = 2 * Math.PI * radius;
 	const offset = circumference - (percent / 100) * circumference;
 	const color =
-		percent >= 95
+		strokeColor ??
+		(percent >= 95
 			? "var(--status-up)"
 			: percent >= 80
 				? "var(--status-degraded)"
-				: "var(--status-down)";
+				: "var(--status-down)");
 
 	return (
 		<div
@@ -129,18 +144,24 @@ function HealthRing({
 					}}
 				/>
 			</svg>
-			<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+			<div className="absolute inset-0 flex items-center justify-center pointer-events-none px-1">
 				<span
-					className="text-[20px] font-semibold tnum leading-none"
-					style={{ color: "var(--text-primary)" }}
+					className="inline-flex items-baseline justify-center gap-0.5 whitespace-nowrap tnum font-semibold leading-none translate-y-[0.5px]"
+					style={{
+						color: "var(--text-primary)",
+						fontSize: Math.min(size * 0.28, 21),
+					}}
 				>
-					{percent}
-				</span>
-				<span
-					className="text-[9px] uppercase tracking-wider font-semibold mt-1"
-					style={{ color: "var(--text-faint)" }}
-				>
-					%
+					<span>{percent}</span>
+					<span
+						className="leading-none font-semibold"
+						style={{
+							fontSize: "max(11px, 0.62em)",
+							color: "var(--text-secondary)",
+						}}
+					>
+						%
+					</span>
 				</span>
 			</div>
 		</div>
@@ -829,8 +850,12 @@ export function DashboardPage() {
 				? "var(--status-degraded)"
 				: "var(--status-down)";
 
-	const healthSeverity =
-		healthPercent >= 95 ? "ok" : healthPercent >= 80 ? "warn" : "crit";
+	const healthWorstSeverity: "ok" | "warn" | "crit" =
+		counts.down > 0
+			? "crit"
+			: counts.degraded > 0 || counts.unknown > 0
+				? "warn"
+				: "ok";
 	const alertSeverity = critCount > 0 ? "crit" : warnCount > 0 ? "warn" : "ok";
 
 	return (
@@ -868,9 +893,12 @@ export function DashboardPage() {
 					className={`grid grid-cols-1 md:grid-cols-3 ${dense ? "gap-2 mb-2" : "gap-3 mb-3"} shrink-0`}
 				>
 					{isVisible("health") && (
-						<HeroPanel accent={heroAccent(healthSeverity)}>
-							<HealthRing percent={healthPercent} />
-							<div className="min-w-0 flex-1 flex flex-col justify-center">
+						<HeroPanel accent={heroAccent(healthWorstSeverity)}>
+							<HealthRing
+								percent={healthPercent}
+								strokeColor={aggregateHealthRingStroke(counts)}
+							/>
+							<div className="min-w-0 flex-1 flex flex-col justify-center pb-0.5">
 								<p
 									className="text-[10px] uppercase tracking-wider font-semibold leading-none"
 									style={{ color: "var(--text-faint)" }}
@@ -892,7 +920,7 @@ export function DashboardPage() {
 									</span>
 								</p>
 								<div
-									className="flex gap-px mt-3 h-1 rounded-full overflow-hidden"
+									className="flex gap-px mt-[14px] h-1.5 rounded-full overflow-hidden"
 									style={{ background: "var(--surface-sunken)" }}
 								>
 									{counts.up > 0 && (

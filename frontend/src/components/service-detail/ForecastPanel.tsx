@@ -67,15 +67,19 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 	});
 
 	const series = data?.forecast.series ?? [];
-	const points = series.map((p) => ({
-		time: new Date(p.timestamp).toLocaleTimeString("tr-TR", {
-			hour: "2-digit",
-			minute: "2-digit",
-		}),
-		value: Number(p.value.toFixed(2)),
-		lower: Number(p.lower.toFixed(2)),
-		upper: Number(p.upper.toFixed(2)),
-	}));
+	const points = series.map((p) => {
+		const lower = Number(p.lower.toFixed(2));
+		const upper = Number(p.upper.toFixed(2));
+		return {
+			time: new Date(p.timestamp).toLocaleTimeString("tr-TR", {
+				hour: "2-digit",
+				minute: "2-digit",
+			}),
+			value: Number(p.value.toFixed(2)),
+			/** Recharts `isRange`: band between lower and upper (no fill down to 0). */
+			band: [lower, upper] as [number, number],
+		};
+	});
 
 	const confidence = data?.forecast.confidence ?? 0;
 	const next = data?.forecast.next_value;
@@ -87,7 +91,7 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 
 	return (
 		<div
-			className="rounded-lg overflow-hidden flex flex-col relative"
+			className="rounded-lg flex flex-col relative"
 			style={{
 				background:
 					"linear-gradient(135deg, var(--surface-card) 0%, var(--surface-card) 60%, color-mix(in srgb, " +
@@ -213,29 +217,36 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 				</div>
 			</div>
 
-			<div className="px-1 pb-2 pt-3">
+			<div
+				className="mx-3 mb-3 mt-1 px-1 pt-3 pb-1 rounded-[6px]"
+				style={{
+					background: "var(--surface-sunken)",
+					border: "1px solid var(--border-subtle)",
+				}}
+			>
 				{isLoading ? (
 					<div
-						className="h-[160px] rounded animate-pulse"
-						style={{ background: "var(--surface-sunken)" }}
+						className="h-[168px] rounded animate-pulse"
+						style={{ background: "color-mix(in srgb, var(--surface-card) 60%, transparent)" }}
 					/>
 				) : points.length === 0 ? (
 					<div
-						className="h-[160px] flex items-center justify-center text-[11px] font-mono"
+						className="h-[168px] flex items-center justify-center text-[11px] font-mono"
 						style={{ color: "var(--text-muted)" }}
 					>
 						Yeterli veri yok — en az 4 örnek gerekli.
 					</div>
 				) : (
-					<ResponsiveContainer width="100%" height={160}>
+					<ResponsiveContainer width="100%" height={168}>
 						<AreaChart
 							data={points}
-							margin={{ top: 6, right: 12, left: 0, bottom: 0 }}
+							margin={{ top: 8, right: 8, left: 0, bottom: 6 }}
 						>
 							<defs>
 								<linearGradient id={`fc-${metric}`} x1="0" y1="0" x2="0" y2="1">
-									<stop offset="0%" stopColor={meta.color} stopOpacity={0.25} />
-									<stop offset="95%" stopColor={meta.color} stopOpacity={0} />
+									<stop offset="0%" stopColor={meta.color} stopOpacity={0.22} />
+									<stop offset="88%" stopColor={meta.color} stopOpacity={0.04} />
+									<stop offset="100%" stopColor={meta.color} stopOpacity={0} />
 								</linearGradient>
 							</defs>
 							<CartesianGrid
@@ -247,13 +258,15 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 								dataKey="time"
 								tick={{
 									fontSize: 10,
-									fill: "var(--text-faint)",
+									fill: "var(--text-tertiary)",
 								}}
 								stroke="var(--border-subtle)"
 								tickLine={false}
 								axisLine={false}
 								interval="preserveStartEnd"
 								minTickGap={32}
+								tickMargin={10}
+								height={28}
 							/>
 							<YAxis
 								tick={{
@@ -308,18 +321,11 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 							)}
 							<Area
 								type="monotone"
-								dataKey="upper"
+								dataKey="band"
 								stroke="none"
 								fill={`url(#fc-${metric})`}
-								fillOpacity={0.35}
-								isAnimationActive={false}
-							/>
-							<Area
-								type="monotone"
-								dataKey="lower"
-								stroke="none"
-								fill="var(--surface-card)"
-								fillOpacity={1}
+								fillOpacity={0.9}
+								isRange
 								isAnimationActive={false}
 							/>
 							<Area
