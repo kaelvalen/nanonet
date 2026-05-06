@@ -182,4 +182,4 @@ logs-data/
 .bak*
 .env.bak*
 .env.bak.*
-*.bak.*
+*.bak.*.worktrees/
