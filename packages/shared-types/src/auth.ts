@@ -1,0 +1,29 @@
+export interface User {
+	id: string;
+	email: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface LoginRequest {
+	email: string;
+	password: string;
+}
+
+export interface RegisterRequest {
+	email: string;
+	password: string;
+}
+
+export interface TokenResponse {
+	access_token: string;
+	refresh_token: string;
+	expires_in: number;
+	/** Yeni refresh token — sunucu rotating token döndürdüğünde mevcuttur. */
+	new_refresh_token?: string;
+}
+
+export interface AuthResponse {
+	user: User;
+	tokens: TokenResponse;
+}
