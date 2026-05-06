@@ -219,3 +219,15 @@ build:
 # Dangling image'ları temizle
 clean:
 	docker image prune -f
+
+# ── Mobile ────────────────────────────────────────────────────────────────────
+.PHONY: mobile-start mobile-test mobile-build-preview
+
+mobile-start:
+	cd mobile && npx expo start
+
+mobile-test:
+	cd mobile && npm test -- --passWithNoTests
+
+mobile-build-preview:
+	cd mobile && npx eas build --profile preview --platform all --non-interactive
