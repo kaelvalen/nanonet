@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import { getAccessToken } from "../api/client";
 import { useAuthStore } from "../store/authStore";
+import { useWsStore } from "../store/wsStore";
 import type { ServiceMetrics } from "@nanonet/shared-types";
 
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL ?? "";
@@ -29,6 +30,7 @@ export function useWebSocket() {
     wsRef.current = ws;
 
     ws.onopen = () => {
+      useWsStore.getState().setConnected(true);
       reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
       heartbeatRef.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -60,6 +62,7 @@ export function useWebSocket() {
     };
 
     ws.onclose = () => {
+      useWsStore.getState().setConnected(false);
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       if (!mountedRef.current) return;
       reconnectTimeoutRef.current = setTimeout(() => {

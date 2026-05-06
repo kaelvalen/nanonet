@@ -1,14 +1,11 @@
 import { Redirect, Tabs } from "expo-router";
-import { Text } from "react-native";
+import { Bell, Flame, Layers, ScrollText, Settings } from "lucide-react-native";
+import { useWebSocket } from "../../src/hooks/useWebSocket";
 import { useAuthStore } from "../../src/store/authStore";
-
-function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{icon}</Text>
-  );
-}
+import { NN } from "../../src/theme/tokens";
 
 export default function AppLayout() {
+  useWebSocket();
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
 
@@ -16,17 +13,22 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: "#0f172a",
-          borderTopColor: "#1e293b",
+          backgroundColor: NN.bgElevated,
+          borderTopColor: NN.border,
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,
         },
-        tabBarActiveTintColor: "#3b82f6",
-        tabBarInactiveTintColor: "#475569",
+        tabBarActiveTintColor: NN.signal,
+        tabBarInactiveTintColor: NN.dim,
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
-        headerStyle: { backgroundColor: "#0f172a", shadowColor: "transparent", borderBottomWidth: 1, borderBottomColor: "#1e293b" },
-        headerTintColor: "#f1f5f9",
+        headerStyle: {
+          backgroundColor: NN.bgElevated,
+          shadowColor: "transparent",
+          borderBottomWidth: 1,
+          borderBottomColor: NN.border,
+        },
+        headerTintColor: NN.ink,
         headerTitleStyle: { fontWeight: "700", fontSize: 17 },
       }}
     >
@@ -34,35 +36,35 @@ export default function AppLayout() {
         name="index"
         options={{
           title: "Servisler",
-          tabBarIcon: ({ focused }) => <TabIcon icon="⬡" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <Layers color={color} size={size ?? 22} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="alerts"
         options={{
           title: "Alertler",
-          tabBarIcon: ({ focused }) => <TabIcon icon="⚠" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <Bell color={color} size={size ?? 22} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="incidents"
         options={{
           title: "Olaylar",
-          tabBarIcon: ({ focused }) => <TabIcon icon="🔥" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <Flame color={color} size={size ?? 22} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="logs"
         options={{
           title: "Loglar",
-          tabBarIcon: ({ focused }) => <TabIcon icon="≡" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <ScrollText color={color} size={size ?? 22} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
           title: "Ayarlar",
-          tabBarIcon: ({ focused }) => <TabIcon icon="⚙" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <Settings color={color} size={size ?? 22} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen name="services/[id]" options={{ href: null }} />

@@ -15,4 +15,8 @@ export const incidentsApi = {
     const { data } = await apiClient.get<{ data: { incidents: IncidentListItem[] } }>("/incidents");
     return data.data.incidents ?? [];
   },
+
+  resolve: async (id: string): Promise<void> => {
+    await apiClient.post(`/incidents/${id}/resolve`);
+  },
 };
