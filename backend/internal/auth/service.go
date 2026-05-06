@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"nanonet-backend/pkg/audit"
@@ -32,6 +33,7 @@ func NewService(db *gorm.DB, jwtSecret string) *Service {
 }
 
 func (s *Service) Register(email, password string) (*User, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return nil, err
@@ -50,6 +52,7 @@ func (s *Service) Register(email, password string) (*User, error) {
 }
 
 func (s *Service) Login(email, password string) (*User, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
 	var user User
 	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

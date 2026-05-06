@@ -7,6 +7,9 @@
         agent-linux-amd64 agent-linux-arm64 \
         agent-darwin-amd64 agent-darwin-arm64 \
         agent-windows-amd64 \
+        mobile-dev mobile-dev-nc mobile-install mobile-install-build \
+        mobile-install-launch mobile-build mobile-build-release \
+        mobile-build-clean mobile-test mobile-build-preview \
         build clean reset
 
 # .env dosyasını yükle
@@ -221,10 +224,40 @@ clean:
 	docker image prune -f
 
 # ── Mobile ────────────────────────────────────────────────────────────────────
-.PHONY: mobile-start mobile-test mobile-build-preview
+.PHONY: mobile-dev mobile-install mobile-build mobile-build-release \
+        mobile-build-clean mobile-start mobile-test mobile-build-preview
 
-mobile-start:
-	cd mobile && npx expo start
+## Metro'yu başlat + ADB tunnel kur (geliştirme modu)
+mobile-dev:
+	@bash scripts/mobile-dev.sh
+
+## Metro'yu cache temizlemeden başlat
+mobile-dev-nc:
+	@bash scripts/mobile-dev.sh --no-clear
+
+## Mevcut APK'yı ADB ile yükle + Metro tunnel kur
+mobile-install:
+	@bash scripts/mobile-install.sh
+
+## APK derle ve yükle (tek komut)
+mobile-install-build:
+	@bash scripts/mobile-install.sh --build
+
+## APK derle ve yükleyip uygulamayı aç
+mobile-install-launch:
+	@bash scripts/mobile-install.sh --launch
+
+## Sadece debug APK derle
+mobile-build:
+	@bash scripts/mobile-build.sh
+
+## Release APK derle
+mobile-build-release:
+	@bash scripts/mobile-build.sh --release
+
+## Temiz debug APK derle
+mobile-build-clean:
+	@bash scripts/mobile-build.sh --clean
 
 mobile-test:
 	cd mobile && npm test -- --passWithNoTests

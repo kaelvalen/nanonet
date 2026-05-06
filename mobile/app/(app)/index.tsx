@@ -7,6 +7,13 @@ import { servicesApi } from "../../src/api/services";
 import { useWebSocket } from "../../src/hooks/useWebSocket";
 import type { Service } from "@nanonet/shared-types";
 
+const AGENT_COLOR: Record<string, string> = {
+  healthy: "#22c55e",
+  stale: "#f59e0b",
+  down: "#ef4444",
+  unknown: "#64748b",
+};
+
 export default function DashboardScreen() {
   useWebSocket();
   const router = useRouter();
@@ -22,29 +29,50 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Dashboard</Text>
-      <View style={styles.counters}>
-        <Counter label="UP" value={up} color="#86efac" />
-        <Counter label="DOWN" value={down} color="#fca5a5" />
-        <Counter label="DEGRADED" value={degraded} color="#fcd34d" />
+      <View style={styles.topBar}>
+        <Text style={styles.heading}>Servisler</Text>
+        <Text style={styles.count}>{services.length} toplam</Text>
       </View>
+
+      <View style={styles.summaryRow}>
+        <SummaryPill label="Çalışıyor" value={up} color="#22c55e" />
+        <SummaryPill label="Bozuk" value={down} color="#ef4444" />
+        <SummaryPill label="Bozulan" value={degraded} color="#f59e0b" />
+      </View>
+
       {services.length === 0 && !isLoading ? (
-        <EmptyState message="Henüz servis yok." />
+        <EmptyState message="Henüz servis eklenmemiş." />
       ) : (
         <FlatList
           data={services}
           keyExtractor={(s) => s.id}
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
+          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#3b82f6" />}
           renderItem={({ item }: { item: Service }) => (
             <Pressable
               style={styles.card}
               onPress={() => router.push(`/(app)/services/${item.id}` as never)}
             >
-              <View style={styles.cardRow}>
-                <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardLeft}>
+                  <StatusDot status={item.status} />
+                  <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
+                </View>
                 <StatusBadge status={item.status} />
               </View>
               <Text style={styles.cardHost}>{item.host}:{item.port}</Text>
+              <View style={styles.cardFooter}>
+                {item.agent_connected ? (
+                  <View style={styles.agentPill}>
+                    <View style={[styles.agentDot, { backgroundColor: AGENT_COLOR[item.agent_status ?? "unknown"] }]} />
+                    <Text style={styles.agentText}>
+                      agent {item.agent_status ?? "unknown"}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.noAgent}>agent bağlı değil</Text>
+                )}
+                <Text style={styles.cardArrow}>›</Text>
+              </View>
             </Pressable>
           )}
           contentContainerStyle={{ paddingBottom: 24 }}
@@ -54,24 +82,42 @@ export default function DashboardScreen() {
   );
 }
 
-function Counter({ label, value, color }: { label: string; value: number; color: string }) {
+function StatusDot({ status }: { status: Service["status"] }) {
+  const color =
+    status === "up" ? "#22c55e" :
+    status === "degraded" ? "#f59e0b" :
+    status === "down" ? "#ef4444" : "#64748b";
+  return <View style={[styles.dot, { backgroundColor: color }]} />;
+}
+
+function SummaryPill({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <View style={styles.counter}>
-      <Text style={[styles.counterValue, { color }]}>{value}</Text>
-      <Text style={styles.counterLabel}>{label}</Text>
+    <View style={[styles.pill, { borderColor: color + "33" }]}>
+      <Text style={[styles.pillValue, { color }]}>{value}</Text>
+      <Text style={styles.pillLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0f172a", paddingTop: 16 },
-  heading: { fontSize: 22, fontWeight: "700", color: "#f1f5f9", paddingHorizontal: 16, marginBottom: 12 },
-  counters: { flexDirection: "row", justifyContent: "space-around", marginBottom: 16, paddingHorizontal: 16 },
-  counter: { alignItems: "center" },
-  counterValue: { fontSize: 28, fontWeight: "700" },
-  counterLabel: { fontSize: 12, color: "#64748b", marginTop: 2 },
-  card: { backgroundColor: "#1e293b", marginHorizontal: 16, marginBottom: 10, borderRadius: 12, padding: 16 },
-  cardRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  cardName: { fontSize: 16, fontWeight: "600", color: "#f1f5f9", flex: 1, marginRight: 8 },
-  cardHost: { fontSize: 13, color: "#64748b" },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingHorizontal: 16, marginBottom: 14 },
+  heading: { fontSize: 22, fontWeight: "700", color: "#f1f5f9" },
+  count: { fontSize: 13, color: "#64748b" },
+  summaryRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 16 },
+  pill: { flex: 1, backgroundColor: "#1e293b", borderRadius: 10, padding: 10, alignItems: "center", borderWidth: 1 },
+  pillValue: { fontSize: 20, fontWeight: "700" },
+  pillLabel: { fontSize: 11, color: "#94a3b8", marginTop: 2 },
+  card: { backgroundColor: "#1e293b", marginHorizontal: 16, marginBottom: 8, borderRadius: 12, padding: 14 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  cardLeft: { flexDirection: "row", alignItems: "center", flex: 1, gap: 8, marginRight: 8 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  cardName: { fontSize: 15, fontWeight: "600", color: "#f1f5f9", flex: 1 },
+  cardHost: { fontSize: 12, color: "#64748b", marginBottom: 8, marginLeft: 16 },
+  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  agentPill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#0f172a", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  agentDot: { width: 6, height: 6, borderRadius: 3 },
+  agentText: { fontSize: 11, color: "#94a3b8" },
+  noAgent: { fontSize: 11, color: "#475569" },
+  cardArrow: { color: "#475569", fontSize: 18 },
 });

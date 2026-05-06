@@ -22,7 +22,9 @@ export default function IncidentsScreen() {
       ) : (
         <FlatList
           data={incidents}
-          keyExtractor={(i) => i.id}
+          keyExtractor={(i, idx) =>
+            i.id && i.id !== "00000000-0000-0000-0000-000000000000" ? i.id : `inc-${idx}`
+          }
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
           renderItem={({ item }: { item: IncidentListItem }) => (
             <Pressable
