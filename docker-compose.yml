@@ -61,14 +61,16 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       target: dev
     container_name: nanonet-frontend
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend:/app/frontend
+      - ./packages:/app/packages
+      - /app/frontend/node_modules
     environment:
       VITE_API_URL: /api/v1
       VITE_WS_URL: ws://localhost:8080/ws
