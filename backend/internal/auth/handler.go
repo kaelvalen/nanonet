@@ -130,9 +130,51 @@ func (h *Handler) Login(c *gin.Context) {
 
 	csrf := h.issueAuthCookies(c, tokens.RefreshToken)
 	response.Success(c, gin.H{
-		"user":       user,
-		"tokens":     tokens,
+		"user": user,
+		"tokens": gin.H{
+			"access_token":  tokens.AccessToken,
+			"refresh_token": tokens.RefreshToken,
+			"expires_in":    tokens.ExpiresIn,
+		},
 		"csrf_token": csrf,
+	})
+}
+
+// MobileRefresh accepts refresh token from request body (mobile clients can't use HttpOnly cookies).
+func (h *Handler) MobileRefresh(c *gin.Context) {
+	var req MobileRefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Unauthorized(c, "refresh_token gerekli")
+		return
+	}
+
+	if h.blacklist.IsBlacklisted(c.Request.Context(), req.RefreshToken) {
+		response.Unauthorized(c, "geçersiz refresh token")
+		return
+	}
+
+	userID, expiry, err := h.service.ValidateRefreshToken(req.RefreshToken)
+	if err != nil {
+		response.Unauthorized(c, "geçersiz refresh token")
+		return
+	}
+
+	tokens, err := h.service.GenerateTokens(userID)
+	if err != nil {
+		response.InternalError(c, "token oluşturulamadı")
+		return
+	}
+
+	if ttl := time.Until(expiry); ttl > 0 {
+		_ = h.blacklist.Add(c.Request.Context(), req.RefreshToken, ttl)
+	}
+
+	response.Success(c, gin.H{
+		"tokens": gin.H{
+			"access_token":  tokens.AccessToken,
+			"refresh_token": tokens.RefreshToken,
+			"expires_in":    tokens.ExpiresIn,
+		},
 	})
 }
 

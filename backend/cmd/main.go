@@ -556,6 +556,7 @@ func main() {
 			authGroup.POST("/register", bruteForceLimiter, authHandler.Register)
 			authGroup.POST("/login", bruteForceLimiter, authHandler.Login)
 			authGroup.POST("/refresh", bruteForceLimiter, authHandler.Refresh)
+			authGroup.POST("/mobile/refresh", bruteForceLimiter, authHandler.MobileRefresh)
 			authGroup.POST("/forgot-password", bruteForceLimiter, authHandler.ForgotPassword)
 			authGroup.POST("/reset-password", bruteForceLimiter, authHandler.ResetPassword)
 			authGroup.POST("/logout", authMutateLimiter, authMiddleware.Required(), authHandler.Logout)

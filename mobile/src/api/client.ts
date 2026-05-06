@@ -55,7 +55,7 @@ apiClient.interceptors.response.use(
       const refreshToken = await SecureStore.getItemAsync(SECURE_KEY_REFRESH);
       if (!refreshToken) throw new Error("no refresh token");
 
-      const { data } = await axios.post(`${API_URL}/auth/refresh`, {
+      const { data } = await axios.post(`${API_URL}/auth/mobile/refresh`, {
         refresh_token: refreshToken,
       });
       const payload = data.data ?? data;

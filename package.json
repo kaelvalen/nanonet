@@ -1,6 +1,14 @@
 {
-	"workspaces": ["frontend", "mobile", "packages/*"],
+	"workspaces": [
+		"frontend",
+		"mobile",
+		"packages/*"
+	],
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.8"
+	},
+	"dependencies": {
+		"expo-linking": "^7.0.5",
+		"expo-splash-screen": "^0.29.24"
 	}
 }
