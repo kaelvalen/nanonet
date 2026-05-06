@@ -1,18 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert as RNAlert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { alertsApi } from "../../src/api/alerts";
 import { servicesApi } from "../../src/api/services";
 import { EmptyState } from "../../src/components/EmptyState";
-import type { Alert, Service } from "@nanonet/shared-types";
+import { NN } from "../../src/theme/tokens";
+import type { Alert as ServiceAlert, Service } from "@nanonet/shared-types";
 
 const SEVERITIES = ["all", "crit", "warn", "info"] as const;
 type Filter = (typeof SEVERITIES)[number];
 
 const SEV_COLOR: Record<string, string> = {
-  crit: "#ef4444",
-  warn: "#f59e0b",
-  info: "#3b82f6",
+  crit: NN.bad,
+  warn: NN.warn,
+  info: "#5ec8ff",
 };
 const SEV_LABEL: Record<string, string> = {
   crit: "KRİTİK",
@@ -21,6 +22,7 @@ const SEV_LABEL: Record<string, string> = {
 };
 
 export default function AlertsScreen() {
+  const qc = useQueryClient();
   const [filter, setFilter] = useState<Filter>("all");
 
   const { data: servicesData = [] } = useQuery({
@@ -29,9 +31,7 @@ export default function AlertsScreen() {
     staleTime: 60_000,
   });
 
-  const serviceMap = Object.fromEntries(
-    (servicesData as Service[]).map((s) => [s.id, s.name])
-  );
+  const serviceMap = Object.fromEntries((servicesData as Service[]).map((s) => [s.id, s.name]));
 
   const { data: alerts = [], isLoading, refetch } = useQuery({
     queryKey: ["alerts"],
@@ -39,28 +39,38 @@ export default function AlertsScreen() {
     refetchInterval: 30_000,
   });
 
+  const resolveM = useMutation({
+    mutationFn: (alertId: string) => alertsApi.resolve(alertId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["alerts"] }),
+  });
+
   const filtered = filter === "all" ? alerts : alerts.filter((a) => a.severity === filter);
 
   const active = alerts.filter((a) => !a.resolved_at).length;
 
+  const openSnooze = (alertId: string) => {
+    RNAlert.alert("Erteleme", "Ne kadar süreyle susturulsun?", [
+      { text: "15 dk", onPress: () => void alertsApi.snooze(alertId, 15).then(() => qc.invalidateQueries({ queryKey: ["alerts"] })) },
+      { text: "60 dk", onPress: () => void alertsApi.snooze(alertId, 60).then(() => qc.invalidateQueries({ queryKey: ["alerts"] })) },
+      { text: "İptal", style: "cancel" },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
+      <Text style={styles.kicker}>Korelasyon için olay günlükleri</Text>
       <View style={styles.topBar}>
-        <Text style={styles.heading}>Alertler</Text>
+        <Text style={styles.heading}>Aktif riskler</Text>
         {active > 0 && (
           <View style={styles.activeBadge}>
-            <Text style={styles.activeBadgeText}>{active} aktif</Text>
+            <Text style={styles.activeBadgeText}>{active} tetiklenmiş</Text>
           </View>
         )}
       </View>
 
       <View style={styles.filters}>
         {SEVERITIES.map((s) => (
-          <Pressable
-            key={s}
-            style={[styles.chip, filter === s && styles.chipActive]}
-            onPress={() => setFilter(s)}
-          >
+          <Pressable key={s} style={[styles.chip, filter === s && styles.chipActive]} onPress={() => setFilter(s)}>
             <Text style={[styles.chipText, filter === s && styles.chipTextActive]}>
               {s === "all" ? "Tümü" : SEV_LABEL[s] ?? s.toUpperCase()}
             </Text>
@@ -69,63 +79,144 @@ export default function AlertsScreen() {
       </View>
 
       {filtered.length === 0 && !isLoading ? (
-        <EmptyState message="Alert bulunamadı." />
+        <EmptyState message="Uyarılı koşullar yakalanmadığında bu liste boştur." />
       ) : (
         <FlatList
           data={filtered}
-          keyExtractor={(a, i) =>
-            a.id && a.id !== "00000000-0000-0000-0000-000000000000" ? a.id : `alert-${i}`
-          }
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#3b82f6" />}
-          renderItem={({ item }: { item: Alert }) => (
-            <AlertCard alert={item} serviceName={serviceMap[item.service_id]} />
+          keyExtractor={(a, i) => (a.id && a.id !== "00000000-0000-0000-0000-000000000000" ? a.id : `alert-${i}`)}
+          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={NN.signal} />}
+          renderItem={({ item }: { item: ServiceAlert }) => (
+            <AlertCard
+              alert={item}
+              serviceName={serviceMap[item.service_id]}
+              onResolve={() =>
+                RNAlert.alert("Alert", "Çözüldü olarak işaretlensin mi?", [
+                  { text: "İptal", style: "cancel" },
+                  {
+                    text: "Çöz",
+                    onPress: () => resolveM.mutate(item.id),
+                  },
+                ])
+              }
+              onSnooze={() => openSnooze(item.id)}
+            />
           )}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 28 }}
         />
       )}
     </View>
   );
 }
 
-function AlertCard({ alert, serviceName }: { alert: Alert; serviceName?: string }) {
-  const color = SEV_COLOR[alert.severity] ?? "#94a3b8";
+function AlertCard({
+  alert,
+  serviceName,
+  onResolve,
+  onSnooze,
+}: {
+  alert: ServiceAlert;
+  serviceName?: string;
+  onResolve: () => void;
+  onSnooze: () => void;
+}) {
+  const color = SEV_COLOR[alert.severity] ?? NN.muted;
   const resolved = !!alert.resolved_at;
   return (
-    <View style={[styles.card, { borderLeftColor: color, opacity: resolved ? 0.55 : 1 }]}>
+    <View style={[styles.card, { borderLeftColor: color }]}>
       <View style={styles.cardTop}>
-        <View style={[styles.sevBadge, { backgroundColor: color + "22" }]}>
-          <Text style={[styles.sevText, { color }]}>
-            {SEV_LABEL[alert.severity] ?? alert.severity.toUpperCase()}
-          </Text>
+        <View style={[styles.sevBadge, { borderColor: color + "55" }]}>
+          <Text style={[styles.sevText, { color }]}>{SEV_LABEL[alert.severity] ?? alert.severity.toUpperCase()}</Text>
         </View>
-        {resolved && <Text style={styles.resolvedTag}>Çözüldü</Text>}
-        {serviceName && (
-          <Text style={styles.serviceTag} numberOfLines={1}>{serviceName}</Text>
+        {resolved && (
+          <View style={styles.resolvedBadge}>
+            <Text style={styles.resolvedBadgeTxt}>ÇÖZÜLDÜ</Text>
+          </View>
         )}
       </View>
+      {serviceName && (
+        <Text style={styles.svcTag} numberOfLines={1}>
+          {serviceName}
+        </Text>
+      )}
       <Text style={styles.message}>{alert.message}</Text>
+      <Text style={styles.kind}>{alert.type}</Text>
       <Text style={styles.time}>{new Date(alert.triggered_at).toLocaleString("tr-TR")}</Text>
+      {!resolved && (
+        <View style={styles.actions}>
+          <Pressable style={styles.btnGhost} onPress={onSnooze}>
+            <Text style={styles.btnGhostTxt}>Ertele</Text>
+          </Pressable>
+          <Pressable style={styles.btnSolid} onPress={onResolve}>
+            <Text style={styles.btnSolidTxt}>Çözüldü</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0f172a", paddingTop: 16 },
-  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
-  heading: { fontSize: 22, fontWeight: "700", color: "#f1f5f9" },
-  activeBadge: { backgroundColor: "#ef444422", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  activeBadgeText: { color: "#ef4444", fontSize: 12, fontWeight: "600" },
+  container: { flex: 1, backgroundColor: NN.bg, paddingTop: 16 },
+  kicker: {
+    paddingHorizontal: 16,
+    color: NN.dim,
+    fontSize: 11,
+    letterSpacing: 1,
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  heading: { fontSize: 22, fontWeight: "700", color: NN.ink },
+  activeBadge: { backgroundColor: NN.bad + "22", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
+  activeBadgeText: { color: NN.bad, fontSize: 11, fontWeight: "700" },
   filters: { flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 12 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: "#1e293b" },
-  chipActive: { backgroundColor: "#3b82f6" },
-  chipText: { color: "#94a3b8", fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: "#fff" },
-  card: { backgroundColor: "#1e293b", marginHorizontal: 16, marginBottom: 8, borderRadius: 12, padding: 14, borderLeftWidth: 3 },
-  cardTop: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" },
-  sevBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
-  sevText: { fontSize: 11, fontWeight: "700" },
-  resolvedTag: { fontSize: 11, color: "#22c55e", backgroundColor: "#14532d33", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
-  serviceTag: { fontSize: 11, color: "#94a3b8", flex: 1 },
-  message: { color: "#e2e8f0", fontSize: 14, marginBottom: 6, lineHeight: 20 },
-  time: { color: "#64748b", fontSize: 11 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: NN.surface,
+    borderWidth: 1,
+    borderColor: NN.border,
+  },
+  chipActive: { borderColor: NN.signal, backgroundColor: NN.signalDim },
+  chipText: { color: NN.muted, fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: NN.signal },
+  card: {
+    backgroundColor: NN.surface,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    padding: 14,
+    borderLeftWidth: 3,
+    borderWidth: 1,
+    borderColor: NN.border,
+  },
+  cardTop: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  sevBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, backgroundColor: NN.bgElevated },
+  sevText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.4 },
+  resolvedBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: NN.signalDim },
+  resolvedBadgeTxt: { fontSize: 10, fontWeight: "700", color: NN.signal },
+  svcTag: { fontSize: 12, color: NN.signal, marginBottom: 6, fontWeight: "600" },
+  message: { color: NN.ink, fontSize: 14, marginBottom: 8, lineHeight: 21 },
+  kind: { color: NN.dim, fontSize: 11, marginBottom: 6 },
+  time: { color: NN.dim, fontSize: 11 },
+  actions: { flexDirection: "row", gap: 10, marginTop: 12 },
+  btnGhost: {
+    flex: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: NN.border,
+    paddingVertical: 10,
+    alignItems: "center",
+    backgroundColor: NN.bgElevated,
+  },
+  btnGhostTxt: { color: NN.muted, fontWeight: "600" },
+  btnSolid: { flex: 1, borderRadius: 8, paddingVertical: 10, alignItems: "center", backgroundColor: NN.signal },
+  btnSolidTxt: { color: NN.bg, fontWeight: "700" },
 });

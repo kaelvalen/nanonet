@@ -1,12 +1,11 @@
 import { AppState, type AppStateStatus } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
-import { getAccessToken } from "../api/client";
+import { getAccessToken, getWsDashboardUrl } from "../api/client";
 import { useAuthStore } from "../store/authStore";
 import { useWsStore } from "../store/wsStore";
 import type { ServiceMetrics } from "@nanonet/shared-types";
 
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL ?? "";
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
 const HEARTBEAT_INTERVAL = 30000;
@@ -24,9 +23,10 @@ export function useWebSocket() {
   const connect = useCallback(() => {
     if (!mountedRef.current || !isAuthenticated) return;
     const token = getAccessToken();
-    if (!token) return;
+    const wsUrl = getWsDashboardUrl();
+    if (!token || !wsUrl) return;
 
-    const ws = new WebSocket(`${WS_URL}?token=${token}`);
+    const ws = new WebSocket(`${wsUrl}?token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -66,10 +66,7 @@ export function useWebSocket() {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       if (!mountedRef.current) return;
       reconnectTimeoutRef.current = setTimeout(() => {
-        reconnectDelayRef.current = Math.min(
-          reconnectDelayRef.current * 2,
-          MAX_RECONNECT_DELAY
-        );
+        reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, MAX_RECONNECT_DELAY);
         connect();
       }, reconnectDelayRef.current);
     };
@@ -80,6 +77,7 @@ export function useWebSocket() {
     if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
     wsRef.current?.close();
     wsRef.current = null;
+    useWsStore.getState().setConnected(false);
   }, []);
 
   useEffect(() => {

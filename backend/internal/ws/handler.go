@@ -59,7 +59,8 @@ func NewHandler(hub *Hub, jwtSecret string, frontendURL string, authSvc *auth.Se
 		CheckOrigin: func(r *http.Request) bool {
 			origin := r.Header.Get("Origin")
 			if origin == "" {
-				return false
+				// Expo / React Native ve diğer native istemciler Origin göndermez; erişim JWT ile kısıtlıdır.
+				return true
 			}
 			return h.allowedOrigins[origin]
 		},

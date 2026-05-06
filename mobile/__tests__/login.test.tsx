@@ -20,5 +20,5 @@ test("renders email and password inputs", () => {
   render(<LoginScreen />);
   expect(screen.getByPlaceholderText("E-posta")).toBeTruthy();
   expect(screen.getByPlaceholderText("Şifre")).toBeTruthy();
-  expect(screen.getByText("Giriş Yap")).toBeTruthy();
+  expect(screen.getByText("Giriş yap")).toBeTruthy();
 });
