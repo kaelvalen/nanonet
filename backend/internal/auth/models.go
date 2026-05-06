@@ -35,6 +35,12 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// MobileRefreshRequest — body payload for mobile token refresh.
+// Web clients use the HttpOnly cookie; mobile sends the token here.
+type MobileRefreshRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
