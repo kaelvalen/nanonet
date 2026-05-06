@@ -1882,7 +1882,11 @@ export function ServiceDetailPage() {
 		queryKey: ["service", serviceId],
 		queryFn: () => servicesApi.get(serviceId ?? ""),
 		enabled: !!serviceId,
-		refetchInterval: 5000,
+		// WebSocket canlı metrikleri pushluyor; bu poll yalnızca status/agent
+		// connected gibi alanları senkron tutmak için bir backstop. 5s yerine
+		// 15s yeterli — WS düşerse query tekrarı yine kapsar, ama happy path'te
+		// API'ye 3x daha az istek gider (özellikle servis listesi büyürken).
+		refetchInterval: 15_000,
 	});
 
 	const { data: metrics = [], isLoading: metricsLoading } = useQuery({

@@ -23,8 +23,31 @@ use nanonet_agent::tasks;
 use nanonet_agent::{agent_health, ws};
 use nanonet_agent::{AppState, Config, VERSION};
 
-#[tokio::main]
-async fn main() -> Result<()> {
+/// Tokio runtime worker thread sayısını sınırla.
+///
+/// Eski davranış (`#[tokio::main]`): `num_cpus`, yani 8-core makinede
+/// agent başına 8 worker + bookkeeping ⇒ ~33 OS thread. 9 servis ile
+/// ~282 thread. Agent'ın iş yükü I/O ağırlıklı ve düşük QPS olduğundan
+/// 2 worker yeterli; `NANONET_TOKIO_WORKERS` ile override edilebilir.
+fn build_runtime() -> std::io::Result<tokio::runtime::Runtime> {
+    let workers = std::env::var("NANONET_TOKIO_WORKERS")
+        .ok()
+        .and_then(|s| s.parse::<usize>().ok())
+        .filter(|n| *n >= 1)
+        .unwrap_or(2);
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(workers)
+        .enable_all()
+        .thread_name("nn-agent")
+        .build()
+}
+
+fn main() -> Result<()> {
+    let runtime = build_runtime().map_err(|e| AgentError::Startup(format!("tokio runtime: {e}")))?;
+    runtime.block_on(async_main())
+}
+
+async fn async_main() -> Result<()> {
     init_logging();
 
     let config = Config::parse();
@@ -199,7 +222,7 @@ fn print_banner(config: &Config) {
     tracing::info!("  WS URL:        {}", config.ws_url());
     tracing::info!(
         "  Auth:          {}",
-        if config.effective_token().is_some() {
+        if config.has_token() {
             "Bearer ***"
         } else {
             "(yok — NANONET_AGENT_TOKEN veya NANONET_TOKEN gerekli)"

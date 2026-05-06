@@ -115,7 +115,6 @@ const queryClient = new QueryClient({
 
 function AppInit() {
 	const {
-		refreshToken,
 		accessToken,
 		setAuth,
 		clearAuth,
@@ -126,8 +125,10 @@ function AppInit() {
 	} = useAuthStore();
 
 	useEffect(() => {
-		if (!refreshToken) {
-			clearAuth();
+		// localStorage'da kullanıcı yoksa muhtemelen oturum yoktur — refresh
+		// denemeyi atla, hızlıca /login akışını aç. Eğer cookie hâlâ duruyorsa
+		// bir sonraki login zaten yenisini set edecek.
+		if (!user) {
 			setInitializing(false);
 			return;
 		}
@@ -137,16 +138,13 @@ function AppInit() {
 			return;
 		}
 
-		// Sayfa yenilendiğinde access token memory'de olmaz; refresh token ile yenile
-		const token = refreshToken;
 		async function restoreSession() {
 			try {
-				const res = await authApi.refresh(token);
-				const newRefresh = res.refresh_token ?? token;
+				// Refresh artık HttpOnly cookie üzerinden; gövde geçilmiyor.
+				const res = await authApi.refresh();
 				setAuth(
 					user ?? { id: "", email: "", created_at: "", updated_at: "" },
 					res.access_token,
-					newRefresh,
 				);
 				const fetchedUser = await authApi.me();
 				updateUser(fetchedUser);
@@ -158,15 +156,7 @@ function AppInit() {
 		}
 
 		restoreSession();
-	}, [
-		accessToken,
-		clearAuth,
-		refreshToken,
-		setAuth,
-		setInitializing,
-		updateUser,
-		user,
-	]);
+	}, [accessToken, clearAuth, setAuth, setInitializing, updateUser, user]);
 
 	if (isInitializing) {
 		return <FullScreenSpinner />;

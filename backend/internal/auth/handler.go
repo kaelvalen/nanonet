@@ -7,6 +7,7 @@ import (
 
 	"nanonet-backend/pkg/audit"
 	"nanonet-backend/pkg/mailer"
+	"nanonet-backend/pkg/middleware"
 	"nanonet-backend/pkg/response"
 	"nanonet-backend/pkg/tokenblacklist"
 
@@ -15,22 +16,45 @@ import (
 	"gorm.io/gorm"
 )
 
+// refreshCookieMaxAge — refresh JWT'nin cookie ömrü (saniye).
+// service.GenerateTokens 30 gün üretiyor; cookie ömrünü aynı seviyede tut,
+// browser cookie'yi yenileme öncesi atmasın.
+const refreshCookieMaxAge = 30 * 24 * 60 * 60
+
 type Handler struct {
-	service     *Service
-	blacklist   tokenblacklist.Blacklist
-	mailer      *mailer.Mailer
-	frontendURL string
-	audit       *audit.Logger
+	service       *Service
+	blacklist     tokenblacklist.Blacklist
+	mailer        *mailer.Mailer
+	frontendURL   string
+	audit         *audit.Logger
+	secureCookies bool
 }
 
-func NewHandler(db *gorm.DB, jwtSecret string, m *mailer.Mailer, frontendURL string, bl tokenblacklist.Blacklist) *Handler {
+func NewHandler(db *gorm.DB, jwtSecret string, m *mailer.Mailer, frontendURL string, bl tokenblacklist.Blacklist, secureCookies bool) *Handler {
 	return &Handler{
-		service:     NewService(db, jwtSecret),
-		blacklist:   bl,
-		mailer:      m,
-		frontendURL: frontendURL,
-		audit:       audit.New(db),
+		service:       NewService(db, jwtSecret),
+		blacklist:     bl,
+		mailer:        m,
+		frontendURL:   frontendURL,
+		audit:         audit.New(db),
+		secureCookies: secureCookies,
 	}
+}
+
+// issueAuthCookies — refresh ve csrf cookie'lerini set eder; CSRF token'ını
+// üretip JSON response'una da koyar (frontend ilk istekten itibaren X-CSRF
+// header'ını gönderebilsin diye).
+//
+// Hata durumunda CSRF token boş döner; çağıran login akışı yine de devam
+// edebilir, ancak frontend bir sonraki refresh'te yeni cookie alır.
+func (h *Handler) issueAuthCookies(c *gin.Context, refreshToken string) string {
+	middleware.SetRefreshCookie(c, h.secureCookies, refreshToken, refreshCookieMaxAge)
+	csrf, err := middleware.GenerateCSRFToken()
+	if err != nil {
+		return ""
+	}
+	middleware.SetCSRFCookie(c, h.secureCookies, csrf, refreshCookieMaxAge)
+	return csrf
 }
 
 func (h *Handler) Register(c *gin.Context) {
@@ -67,9 +91,11 @@ func (h *Handler) Register(c *gin.Context) {
 		Status:       audit.StatusSuccess,
 	})
 
+	csrf := h.issueAuthCookies(c, tokens.RefreshToken)
 	response.Created(c, gin.H{
-		"user":   user,
-		"tokens": tokens,
+		"user":       user,
+		"tokens":     tokens,
+		"csrf_token": csrf,
 	})
 }
 
@@ -102,29 +128,31 @@ func (h *Handler) Login(c *gin.Context) {
 		Status:       audit.StatusSuccess,
 	})
 
+	csrf := h.issueAuthCookies(c, tokens.RefreshToken)
 	response.Success(c, gin.H{
-		"user":   user,
-		"tokens": tokens,
+		"user":       user,
+		"tokens":     tokens,
+		"csrf_token": csrf,
 	})
 }
 
 func (h *Handler) Refresh(c *gin.Context) {
-	var req struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ValidationError(c, err)
+	// Refresh token tek kaynaktan: HttpOnly cookie. Eski JSON-body fallback
+	// kaldırıldı — XSS ile çalınabilen JS-erişimli token alanları artık yok.
+	// Geriye dönük uyum için bir grace window gerekmez: SPA build'i bu
+	// release'le birlikte cookie tabanlı akışa geçiyor.
+	cookieToken, err := c.Cookie(middleware.CookieRefresh)
+	if err != nil || cookieToken == "" {
+		response.Unauthorized(c, "refresh cookie eksik")
 		return
 	}
 
-	// Reject already-blacklisted tokens before any DB work.
-	if h.blacklist.IsBlacklisted(c.Request.Context(), req.RefreshToken) {
+	if h.blacklist.IsBlacklisted(c.Request.Context(), cookieToken) {
 		response.Unauthorized(c, "geçersiz refresh token")
 		return
 	}
 
-	userID, expiry, err := h.service.ValidateRefreshToken(req.RefreshToken)
+	userID, expiry, err := h.service.ValidateRefreshToken(cookieToken)
 	if err != nil {
 		response.Unauthorized(c, "geçersiz refresh token")
 		return
@@ -138,10 +166,14 @@ func (h *Handler) Refresh(c *gin.Context) {
 
 	// Blacklist the consumed refresh token so it cannot be reused.
 	if ttl := time.Until(expiry); ttl > 0 {
-		_ = h.blacklist.Add(c.Request.Context(), req.RefreshToken, ttl)
+		_ = h.blacklist.Add(c.Request.Context(), cookieToken, ttl)
 	}
 
-	response.Success(c, tokens)
+	csrf := h.issueAuthCookies(c, tokens.RefreshToken)
+	response.Success(c, gin.H{
+		"tokens":     tokens,
+		"csrf_token": csrf,
+	})
 }
 
 // AgentToken generates a new opaque agent token stored in the database.
@@ -225,6 +257,18 @@ func (h *Handler) Logout(c *gin.Context) {
 		// Access tokens live for 24h; blacklist for the full window.
 		_ = h.blacklist.Add(c.Request.Context(), tokenString, 24*time.Hour)
 	}
+
+	// Cookie'deki refresh JWT'yi de blacklist'le; sayfa kapansa bile token
+	// 30 gün boyunca geçersiz kalsın.
+	if rt, err := c.Cookie(middleware.CookieRefresh); err == nil && rt != "" {
+		if _, expiry, vErr := h.service.ValidateRefreshToken(rt); vErr == nil {
+			if ttl := time.Until(expiry); ttl > 0 {
+				_ = h.blacklist.Add(c.Request.Context(), rt, ttl)
+			}
+		}
+	}
+
+	middleware.ClearAuthCookies(c, h.secureCookies)
 
 	if userIDStr := c.GetString("user_id"); userIDStr != "" {
 		if userID, err := uuid.Parse(userIDStr); err == nil {

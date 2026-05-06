@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"nanonet-backend/internal/alerts"
@@ -25,6 +26,14 @@ type MetricsBroadcaster struct {
 	logsRepo     *logs.Repository
 	alertService *alerts.Service
 	pollInterval time.Duration
+
+	// scanInFlight — aktif çalışan ScanAllServices olup olmadığını gösterir.
+	// Eski ticker bazlı kod, önceki tarama bitmeden yeni tarama başlatabilirdi
+	// (tarama 6 saatten uzun sürerse veya DB yavaşlarsa). Bu hem DB üstünde
+	// gereksiz baskı, hem de aynı servis için çift uyarı/log yaratır.
+	// `atomic.Int32` ile compare-and-swap kullanıp aynı anda yalnızca bir
+	// tarama çalışmasına izin veriyoruz; ikinci tetikleyici "skip"er.
+	scanInFlight atomic.Int32
 }
 
 func NewMetricsBroadcaster(hub *Hub, db *gorm.DB, alertSvc *alerts.Service, logsRepo *logs.Repository, pollInterval time.Duration) *MetricsBroadcaster {
@@ -53,7 +62,7 @@ func (mb *MetricsBroadcaster) Start(ctx context.Context) {
 	slog.Info("MetricsBroadcaster başlatıldı", slog.Duration("interval", mb.pollInterval), slog.Duration("security", securityScanInterval))
 
 	// İlk başlatmada bir tarama çalıştır
-	go security.ScanAllServices(ctx, mb.db)
+	mb.runSecurityScan(ctx)
 
 	for {
 		select {
@@ -63,9 +72,28 @@ func (mb *MetricsBroadcaster) Start(ctx context.Context) {
 		case <-ticker.C:
 			mb.broadcastLatestMetrics(ctx)
 		case <-secTicker.C:
-			go security.ScanAllServices(ctx, mb.db)
+			mb.runSecurityScan(ctx)
 		}
 	}
+}
+
+// runSecurityScan — bir önceki ScanAllServices henüz bitmediyse yeni bir
+// tarama başlatmaz. Aksi halde uzun süren bir tarama, bir sonraki tick ile
+// üst üste binip DB'ye gereksiz yük bindirir.
+func (mb *MetricsBroadcaster) runSecurityScan(ctx context.Context) {
+	if !mb.scanInFlight.CompareAndSwap(0, 1) {
+		slog.Warn("Security scan atlandı: önceki tarama hâlâ sürüyor")
+		return
+	}
+	go func() {
+		defer mb.scanInFlight.Store(0)
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("Security scan panikledi", slog.Any("panic", r))
+			}
+		}()
+		security.ScanAllServices(ctx, mb.db)
+	}()
 }
 
 func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessage) {

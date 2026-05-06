@@ -4,7 +4,29 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
+# Tokio: agent I/O ağırlıklı (WS + reqwest + sysinfo polling). "full" tüm
+# şişkin modülleri (process spawn, parking_lot, türetilmiş runtime'lar) çekiyor;
+# minimum gerekli alt küme:
+#   - macros        : #[tokio::main] (artık kullanmıyoruz ama testlerde gerekli)
+#   - rt-multi-thread : Builder::new_multi_thread
+#   - net           : TcpStream / UdpSocket (reqwest, tokio-tungstenite altyapısı)
+#   - time          : sleep, interval, timeout
+#   - io-util       : AsyncReadExt/AsyncWriteExt
+#   - signal        : SIGINT/SIGTERM dinleyici (tasks::signal)
+#   - sync          : Notify, watch, broadcast (shutdown, fan-out)
+#   - fs            : audit log async append
+#   - process       : exec_action (komut spawn etmek için)
+tokio = { version = "1", features = [
+    "macros",
+    "rt-multi-thread",
+    "net",
+    "time",
+    "io-util",
+    "signal",
+    "sync",
+    "fs",
+    "process",
+] }
 tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
 futures-util = "0.3"
 serde = { version = "1", features = ["derive"] }
@@ -24,9 +46,25 @@ once_cell = "1"
 hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
+# `secrecy` token alanlarını "[REDACTED]" yazdıran SecretString verir.
+# Manuel Debug impl'ımız zaten string alanlarını saklıyor; SecretString
+# sayesinde bir gün auth_header() unutulup yapılandırma loglansa bile
+# token yine ifşa edilmez.
+secrecy = "0.8"
 
 [dev-dependencies]
 # Integration testler için yardımcılar.
-tokio = { version = "1", features = ["full", "macros", "test-util"] }
+tokio = { version = "1", features = [
+    "macros",
+    "rt-multi-thread",
+    "net",
+    "time",
+    "io-util",
+    "signal",
+    "sync",
+    "fs",
+    "process",
+    "test-util",
+] }
 serde_json = "1"
 tempfile = "3"

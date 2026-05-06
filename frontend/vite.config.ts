@@ -53,6 +53,21 @@ export default defineConfig({
 					)
 						return "form";
 
+					// React core kendi başına paralel indirilebilsin — diğer
+					// vendor chunk'larından bağımsız, hemen hemen her sayfada
+					// gerekli. `react-dom` 130KB+; `vendor`'a karıştırınca tüm
+					// vendor cache'i tek bir küçük lib güncellemesinde patlıyor.
+					if (
+						id.includes("/react/") ||
+						id.includes("/react-dom/") ||
+						id.includes("/scheduler/")
+					)
+						return "react";
+
+					// HTTP istemcisi (axios) auth + ilk fetch yolunda; küçük
+					// kendi chunk'ı olarak parallel indirilsin.
+					if (id.includes("/axios/")) return "http";
+
 					// Shared UI/runtime chunks
 					if (id.includes("/@radix-ui/")) return "radix";
 					if (id.includes("/motion/")) return "motion";

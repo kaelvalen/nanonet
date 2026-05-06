@@ -35,8 +35,13 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// TokenResponse — login/register/refresh dönüşünde frontend'e gönderilen
+// payload. RefreshToken alanı struct seviyesinde tutuluyor (servis katmanı
+// halen üretiyor) ama JSON'a serialize edilmiyor: refresh artık HttpOnly
+// cookie üzerinden taşınıyor (bkz. SetRefreshCookie). Struct alanına
+// erişen handler'lar cookie'yi set ederken bu değeri kullanıyor.
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	RefreshToken string `json:"-"`
 	ExpiresIn    int64  `json:"expires_in"`
 }

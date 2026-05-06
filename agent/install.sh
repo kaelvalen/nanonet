@@ -126,6 +126,23 @@ sudo chmod +x /usr/local/bin/nanonet-agent
 # Create systemd service
 echo -e "${YELLOW}⚙️  Systemd servisi oluşturuluyor...${NC}"
 
+# Token'ı argv'de taşımıyoruz: `ps -ef` veya `/proc/<pid>/cmdline` ile
+# yerel kullanıcılara sızar. Bunun yerine /etc/nanonet/agent.env (mode 0600,
+# yalnızca servis kullanıcısı erişebilir) kullanıyoruz.
+sudo install -d -m 0750 -o "$USER" -g "$USER" /etc/nanonet
+ENV_FILE="/etc/nanonet/agent.env"
+sudo install -m 0600 -o "$USER" -g "$USER" /dev/null "$ENV_FILE"
+sudo tee "$ENV_FILE" > /dev/null <<EOF
+NANONET_BACKEND=$BACKEND_URL
+NANONET_SERVICE_ID=$SERVICE_ID
+NANONET_AGENT_TOKEN=$TOKEN
+NANONET_HOST=$HOST
+NANONET_PORT=$PORT
+NANONET_HEALTH_ENDPOINT=$HEALTH_ENDPOINT
+NANONET_POLL_INTERVAL=$POLL_INTERVAL
+EOF
+sudo chmod 0600 "$ENV_FILE"
+
 sudo tee /etc/systemd/system/nanonet-agent.service > /dev/null <<EOF
 [Unit]
 Description=NanoNet Monitoring Agent
@@ -134,19 +151,18 @@ After=network.target
 [Service]
 Type=simple
 User=$USER
-Environment="NANONET_BACKEND=$BACKEND_URL"
-Environment="NANONET_SERVICE_ID=$SERVICE_ID"
-Environment="NANONET_TOKEN=$TOKEN"
-ExecStart=/usr/local/bin/nanonet-agent \\
-  --backend $BACKEND_URL \\
-  --service-id $SERVICE_ID \\
-  --token $TOKEN \\
-  --host $HOST \\
-  --port $PORT \\
-  --health-endpoint $HEALTH_ENDPOINT \\
-  --poll-interval $POLL_INTERVAL
+EnvironmentFile=$ENV_FILE
+ExecStart=/usr/local/bin/nanonet-agent
 Restart=always
 RestartSec=10
+
+# Hardening: token /etc/nanonet/agent.env içinde tutuluyor; ek dosya yazma
+# yetkisi gerekmez. /var/lib/nanonet altında runtime state yazılır.
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/var/lib/nanonet /home/$USER/.nanonet
 
 [Install]
 WantedBy=multi-user.target

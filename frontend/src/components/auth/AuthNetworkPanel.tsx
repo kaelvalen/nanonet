@@ -1,18 +1,4 @@
 import {
-	type Edge,
-	type EdgeProps,
-	getBezierPath,
-	Handle,
-	type Node,
-	type NodeProps,
-	Position,
-	ReactFlow,
-	ReactFlowProvider,
-	useEdgesState,
-	useNodesState,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import {
 	BarChart3,
 	Bell,
 	Database,
@@ -22,182 +8,121 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
+/**
+ * Auth ekranındaki dekoratif "live network" panel.
+ *
+ * Önceden `@xyflow/react` ile interaktif bir akış grafiği render ediyorduk;
+ * bu pakette tek bir static görsel için ~100KB+ JS yükü ekleniyordu (auth
+ * sayfası login/register dışına çıkmadığından kullanıcılar için kayıp).
+ *
+ * Bu sürüm aynı görsel etkiyi (animated edges + breathing dots) saf SVG ve
+ * CSS animasyonu ile veriyor — DOM dinamizmi yok, JS giriş maliyeti sıfır.
+ */
+
 type NodeStatus = "up" | "warn" | "down";
-type ServiceNodeData = Record<string, unknown> & {
+
+interface ServiceNode {
+	id: string;
 	label: string;
-	status: NodeStatus;
 	icon: React.ElementType;
-};
-
-const STATUS: Record<NodeStatus, { dot: string; label: string }> = {
-	up: { dot: "var(--status-up)", label: "healthy" },
-	warn: { dot: "var(--status-degraded)", label: "degraded" },
-	down: { dot: "var(--status-down)", label: "down" },
-};
-
-function ServiceNode({ data }: NodeProps) {
-	const d = data as ServiceNodeData;
-	const s = STATUS[d.status];
-	const Icon = d.icon;
-
-	return (
-		<div
-			className="w-36 rounded-[6px] overflow-hidden"
-			style={{
-				background: "var(--surface-base)",
-				border: "1px solid var(--border-subtle)",
-			}}
-		>
-			<Handle
-				type="target"
-				position={Position.Left}
-				style={{ opacity: 0, pointerEvents: "none" }}
-			/>
-			<Handle
-				type="source"
-				position={Position.Right}
-				style={{ opacity: 0, pointerEvents: "none" }}
-			/>
-
-			<div className="flex items-center gap-2.5 px-3 py-2.5">
-				<Icon
-					className="w-3.5 h-3.5 shrink-0"
-					style={{ color: "var(--text-tertiary)" }}
-					aria-hidden
-				/>
-				<span
-					className="text-[11px] font-mono truncate flex-1"
-					style={{ color: "var(--text-secondary)" }}
-				>
-					{d.label}
-				</span>
-				<span
-					role="img"
-					aria-label={s.label}
-					className="w-1.5 h-1.5 rounded-full shrink-0 nn-orb-breathe"
-					style={{ backgroundColor: s.dot }}
-				/>
-			</div>
-		</div>
-	);
+	status: NodeStatus;
+	x: number;
+	y: number;
 }
 
-function AnimatedEdge({
-	sourceX,
-	sourceY,
-	targetX,
-	targetY,
-	sourcePosition,
-	targetPosition,
-}: EdgeProps) {
-	const [path] = getBezierPath({
-		sourceX,
-		sourceY,
-		targetX,
-		targetY,
-		sourcePosition,
-		targetPosition,
-	});
+const STATUS_COLOR: Record<NodeStatus, string> = {
+	up: "var(--status-up)",
+	warn: "var(--status-degraded)",
+	down: "var(--status-down)",
+};
 
-	return (
-		<g>
-			<path
-				d={path}
-				fill="none"
-				stroke="var(--border-default)"
-				strokeWidth={1}
-			/>
-			<path
-				d={path}
-				fill="none"
-				stroke="var(--brand-primary)"
-				strokeOpacity={0.45}
-				strokeWidth={1}
-				strokeDasharray="4 10"
-				strokeLinecap="round"
-			>
-				<animate
-					attributeName="stroke-dashoffset"
-					from="0"
-					to="-56"
-					dur="2.4s"
-					repeatCount="indefinite"
-				/>
-			</path>
-		</g>
-	);
-}
+const STATUS_LABEL: Record<NodeStatus, string> = {
+	up: "healthy",
+	warn: "degraded",
+	down: "down",
+};
 
-const NODES: Node[] = [
-	{
-		id: "gw",
-		type: "service",
-		position: { x: 0, y: 120 },
-		data: { label: "api-gateway", status: "up", icon: Server },
-		draggable: false,
-	},
+const NODE_W = 140;
+const NODE_H = 32;
+
+const NODES: ServiceNode[] = [
+	{ id: "gw", label: "api-gateway", icon: Server, status: "up", x: 16, y: 124 },
 	{
 		id: "au",
-		type: "service",
-		position: { x: 200, y: 20 },
-		data: { label: "auth-service", status: "up", icon: Shield },
-		draggable: false,
+		label: "auth-service",
+		icon: Shield,
+		status: "up",
+		x: 220,
+		y: 24,
 	},
 	{
 		id: "me",
-		type: "service",
-		position: { x: 200, y: 130 },
-		data: { label: "metrics-engine", status: "up", icon: BarChart3 },
-		draggable: false,
+		label: "metrics-engine",
+		icon: BarChart3,
+		status: "up",
+		x: 220,
+		y: 134,
 	},
 	{
 		id: "lo",
-		type: "service",
-		position: { x: 200, y: 240 },
-		data: { label: "log-aggregator", status: "up", icon: ScrollText },
-		draggable: false,
+		label: "log-aggregator",
+		icon: ScrollText,
+		status: "up",
+		x: 220,
+		y: 244,
 	},
 	{
 		id: "db",
-		type: "service",
-		position: { x: 400, y: 75 },
-		data: { label: "timeseries-db", status: "warn", icon: Database },
-		draggable: false,
+		label: "timeseries-db",
+		icon: Database,
+		status: "warn",
+		x: 424,
+		y: 79,
 	},
 	{
 		id: "al",
-		type: "service",
-		position: { x: 400, y: 195 },
-		data: { label: "alert-manager", status: "down", icon: Bell },
-		draggable: false,
+		label: "alert-manager",
+		icon: Bell,
+		status: "down",
+		x: 424,
+		y: 199,
 	},
 ];
 
-const EDGES: Edge[] = [
-	{ id: "e1", source: "gw", target: "au", type: "animated" },
-	{ id: "e2", source: "gw", target: "me", type: "animated" },
-	{ id: "e3", source: "gw", target: "lo", type: "animated" },
-	{ id: "e4", source: "au", target: "db", type: "animated" },
-	{ id: "e5", source: "me", target: "db", type: "animated" },
-	{ id: "e6", source: "lo", target: "al", type: "animated" },
+const EDGES: { from: string; to: string }[] = [
+	{ from: "gw", to: "au" },
+	{ from: "gw", to: "me" },
+	{ from: "gw", to: "lo" },
+	{ from: "au", to: "db" },
+	{ from: "me", to: "db" },
+	{ from: "lo", to: "al" },
 ];
 
-const NODE_TYPES = { service: ServiceNode };
-const EDGE_TYPES = { animated: AnimatedEdge };
+const VIEW_W = 580;
+const VIEW_H = 320;
 
-function Inner() {
-	const [nodes, , onNodesChange] = useNodesState(NODES);
-	const [edges, , onEdgesChange] = useEdgesState(EDGES);
+function nodeAnchor(id: string, side: "right" | "left") {
+	const n = NODES.find((x) => x.id === id);
+	if (!n) {
+		return { x: 0, y: 0 };
+	}
+	const x = side === "right" ? n.x + NODE_W : n.x;
+	return { x, y: n.y + NODE_H / 2 };
+}
 
-	const up = NODES.filter(
-		(n) => (n.data as ServiceNodeData).status === "up",
-	).length;
-	const warn = NODES.filter(
-		(n) => (n.data as ServiceNodeData).status === "warn",
-	).length;
-	const down = NODES.filter(
-		(n) => (n.data as ServiceNodeData).status === "down",
-	).length;
+function bezier(from: { x: number; y: number }, to: { x: number; y: number }) {
+	const midX = (from.x + to.x) / 2;
+	return `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
+}
+
+export function AuthNetworkPanel() {
+	const counts = NODES.reduce<Record<NodeStatus, number>>(
+		(acc, n) => {
+			acc[n.status]++;
+			return acc;
+		},
+		{ up: 0, warn: 0, down: 0 },
+	);
 
 	return (
 		<div
@@ -229,48 +154,116 @@ function Inner() {
 				</div>
 			</div>
 
-			<div className="flex-1 min-h-0">
-				<ReactFlow
-					nodes={nodes}
-					edges={edges}
-					onNodesChange={onNodesChange}
-					onEdgesChange={onEdgesChange}
-					nodeTypes={NODE_TYPES}
-					edgeTypes={EDGE_TYPES}
-					fitView
-					fitViewOptions={{ padding: 0.22 }}
-					nodesDraggable={false}
-					nodesConnectable={false}
-					elementsSelectable={false}
-					zoomOnScroll={false}
-					panOnDrag={false}
-					zoomOnPinch={false}
-					zoomOnDoubleClick={false}
-					preventScrolling={false}
-					proOptions={{ hideAttribution: true }}
-					style={{ background: "transparent" }}
-				/>
+			<div className="flex-1 min-h-0 flex items-center justify-center px-6">
+				<svg
+					viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+					className="w-full h-full max-h-[420px]"
+					role="img"
+					aria-label="NanoNet service topology preview"
+					preserveAspectRatio="xMidYMid meet"
+				>
+					<title>NanoNet service topology preview</title>
+
+					{EDGES.map((e) => {
+						const path = bezier(
+							nodeAnchor(e.from, "right"),
+							nodeAnchor(e.to, "left"),
+						);
+						return (
+							<g key={`${e.from}-${e.to}`}>
+								<path
+									d={path}
+									fill="none"
+									stroke="var(--border-default)"
+									strokeWidth={1}
+								/>
+								<path
+									d={path}
+									fill="none"
+									stroke="var(--brand-primary)"
+									strokeOpacity={0.45}
+									strokeWidth={1}
+									strokeDasharray="4 10"
+									strokeLinecap="round"
+								>
+									<animate
+										attributeName="stroke-dashoffset"
+										from="0"
+										to="-56"
+										dur="2.4s"
+										repeatCount="indefinite"
+									/>
+								</path>
+							</g>
+						);
+					})}
+
+					{NODES.map((n) => {
+						const Icon = n.icon;
+						return (
+							<g
+								key={n.id}
+								transform={`translate(${n.x} ${n.y})`}
+								aria-label={`${n.label} ${STATUS_LABEL[n.status]}`}
+							>
+								<rect
+									width={NODE_W}
+									height={NODE_H}
+									rx={6}
+									ry={6}
+									fill="var(--surface-base)"
+									stroke="var(--border-subtle)"
+									strokeWidth={1}
+								/>
+								<foreignObject
+									x={10}
+									y={6}
+									width={NODE_W - 20}
+									height={NODE_H - 12}
+								>
+									<div
+										className="flex items-center gap-2 h-full"
+										style={{ color: "var(--text-secondary)" }}
+									>
+										<Icon
+											className="w-3.5 h-3.5 shrink-0"
+											style={{ color: "var(--text-tertiary)" }}
+											aria-hidden
+										/>
+										<span
+											className="text-[11px] font-mono truncate flex-1"
+											style={{ color: "var(--text-secondary)" }}
+										>
+											{n.label}
+										</span>
+										<span
+											className="w-1.5 h-1.5 rounded-full shrink-0 nn-orb-breathe"
+											style={{ backgroundColor: STATUS_COLOR[n.status] }}
+											aria-hidden
+										/>
+									</div>
+								</foreignObject>
+							</g>
+						);
+					})}
+				</svg>
 			</div>
 
 			<div
 				className="shrink-0 px-8 py-5 flex items-center gap-5"
 				style={{ borderTop: "1px solid var(--border-subtle)" }}
 			>
-				{[
-					{ count: up, color: "var(--status-up)", label: "healthy" },
-					{ count: warn, color: "var(--status-degraded)", label: "degraded" },
-					{ count: down, color: "var(--status-down)", label: "down" },
-				].map(({ count, color, label }) => (
-					<div key={label} className="flex items-center gap-2">
+				{(["up", "warn", "down"] as NodeStatus[]).map((s) => (
+					<div key={s} className="flex items-center gap-2">
 						<span
 							className="w-1.5 h-1.5 rounded-full"
-							style={{ backgroundColor: color }}
+							style={{ backgroundColor: STATUS_COLOR[s] }}
 						/>
 						<span
 							className="text-[10px] font-mono tnum"
 							style={{ color: "var(--text-tertiary)" }}
 						>
-							{count} {label}
+							{counts[s]} {STATUS_LABEL[s]}
 						</span>
 					</div>
 				))}
@@ -282,13 +275,5 @@ function Inner() {
 				</span>
 			</div>
 		</div>
-	);
-}
-
-export function AuthNetworkPanel() {
-	return (
-		<ReactFlowProvider>
-			<Inner />
-		</ReactFlowProvider>
 	);
 }

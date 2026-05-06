@@ -1,116 +1,138 @@
-use clap::Parser;
+use std::fmt;
+use std::path::Path;
 
-#[derive(Parser, Debug, Clone)]
+use clap::Parser;
+use secrecy::{ExposeSecret, SecretString};
+
+/// CLI/env yapılandırması.
+///
+/// **Güvenlik notu**: token alanları clap tarafından `String` olarak okunup
+/// `from_args()` içinde `SecretString` sarmalına alınır. `Debug` impl'ı
+/// secret alanları "[REDACTED]" olarak gösterir; `tracing::debug!("{:?}",
+/// config)` gibi bir kullanım bile bu yüzden token sızdırmaz.
+///
+/// **Token kaynak öncelik sırası** (`load_secrets` içinde uygulanır):
+///   1. `--agent-token-file <path>` (önerilen — argv'de leak yok)
+///   2. `--token-file <path>`
+///   3. `--agent-token` / `NANONET_AGENT_TOKEN`
+///   4. `--token` / `NANONET_TOKEN`  (legacy user-token; uyarı verilir)
+#[derive(Parser, Clone)]
 #[command(name = "nanonet-agent")]
 #[command(about = "NanoNet monitoring agent v0.2")]
 pub struct Config {
-    /// WebSocket backend URL (örn: ws://localhost:8080)
     #[arg(long, env = "NANONET_BACKEND")]
     pub backend: String,
 
-    /// İzlenecek servisin UUID'si
     #[arg(long, env = "NANONET_SERVICE_ID")]
     pub service_id: String,
 
-    /// Kimlik doğrulama için JWT token (user access token - geçici)
-    #[arg(long, env = "NANONET_TOKEN")]
+    /// Kimlik doğrulama için kullanıcı access token'ı (legacy, geçici).
+    ///
+    /// Komut satırında geçirilirse `ps`/`/proc/<pid>/cmdline` üstünden
+    /// sızar. Üretimde **`--agent-token-file`** ya da `NANONET_AGENT_TOKEN`
+    /// env tercih edilmelidir.
+    #[arg(long, env = "NANONET_TOKEN", hide_env_values = true)]
     pub token: Option<String>,
 
-    /// Agent için özel uzun ömürlü token (önerilen)
-    #[arg(long, env = "NANONET_AGENT_TOKEN")]
+    /// Agent için uzun ömürlü token (önerilen). Yine **dosyaya** veya
+    /// **env**'e yazmak en güvenlisi; CLI argv'sinde leak olur.
+    #[arg(long, env = "NANONET_AGENT_TOKEN", hide_env_values = true)]
     pub agent_token: Option<String>,
 
-    /// Health check için hedef host
+    /// Token'ı bir dosyadan oku (içerik trim edilir, ilk satır kullanılır).
+    /// `--token` ile aynı semantikte, fakat argv'de görünmez.
+    #[arg(long, env = "NANONET_TOKEN_FILE")]
+    pub token_file: Option<String>,
+
+    /// Agent token'ı bir dosyadan oku. Dosya `chmod 600` önerilir.
+    #[arg(long, env = "NANONET_AGENT_TOKEN_FILE")]
+    pub agent_token_file: Option<String>,
+
     #[arg(long, default_value = "localhost", env = "NANONET_HOST")]
     pub host: String,
 
-    /// Health check için hedef port
     #[arg(long, default_value = "8080", env = "NANONET_PORT")]
     pub port: u16,
 
-    /// Health check endpoint yolu
     #[arg(long, default_value = "/health", env = "NANONET_HEALTH_ENDPOINT")]
     pub health_endpoint: String,
 
-    /// Metrik toplama aralığı (saniye)
     #[arg(long, default_value = "10", env = "NANONET_POLL_INTERVAL")]
     pub poll_interval: u64,
 
-    /// Servisi yeniden başlatmak için shell komutu
     #[arg(long, env = "NANONET_RESTART_CMD")]
     pub restart_cmd: Option<String>,
 
-    /// Servisi durdurmak için shell komutu
     #[arg(long, env = "NANONET_STOP_CMD")]
     pub stop_cmd: Option<String>,
 
-    /// Servisi başlatmak için shell komutu
     #[arg(long, env = "NANONET_START_CMD")]
     pub start_cmd: Option<String>,
 
-    /// Scale komutu için shell komutu
     #[arg(long, env = "NANONET_SCALE_CMD")]
     pub scale_cmd: Option<String>,
 
-    /// Hata oranı hesabı için tutulacak health check sayısı
     #[arg(long, default_value = "20", env = "NANONET_ERROR_RATE_WINDOW")]
     pub error_rate_window: usize,
 
-    /// İzlenen servisin /metrics endpoint'i (opsiyonel)
     #[arg(long, env = "NANONET_METRICS_ENDPOINT")]
     pub metrics_endpoint: Option<String>,
 
-    /// İzlenecek sürecin PID veya ismi (opsiyonel)
-    /// Örn: "nginx" veya "12345"
     #[arg(long, env = "NANONET_PROCESS")]
     pub process: Option<String>,
 
-    /// Agent health endpoint portu (0 = devre dışı)
-    /// K8s liveness/readiness probe olarak kullanılabilir
     #[arg(long, default_value = "0", env = "NANONET_AGENT_PORT")]
     pub agent_port: u16,
 
-    /// Bağlantı koptuğunda biriktirilebilecek max metrik sayısı
     #[arg(long, default_value = "120", env = "NANONET_BUFFER_SIZE")]
     pub buffer_size: usize,
 
-    /// Aynı anda çalışabilecek maksimum komut sayısı (semaphore).
-    /// Operatörün paralel `exec` saldırısına karşı throttling. 0 verilirse 1'e
-    /// yuvarlanır.
     #[arg(long, default_value = "4", env = "NANONET_MAX_CONCURRENT_COMMANDS")]
     pub max_concurrent_commands: usize,
 
-    /// Komut audit log NDJSON dosya yolu. Verilirse her gelen komut ve sonucu
-    /// (redact edilmiş) bu dosyaya append edilir.
     #[arg(long, env = "NANONET_AUDIT_LOG_PATH")]
     pub audit_log_path: Option<String>,
 
-    /// Komut HMAC imzalama için paylaşılan secret. Verilirse agent her gelen
-    /// komutta `signature` ve `nonce` alanlarının dolu ve geçerli olmasını
-    /// zorunlu kılar (replay koruması nonce cache ile sağlanır).
     #[arg(long, env = "NANONET_AGENT_SIGN_SECRET", hide_env_values = true)]
     pub sign_secret: Option<String>,
 
-    /// Nonce cache'inin TTL'i (saniye). `sign_secret` ile birlikte etkili.
     #[arg(long, default_value = "300", env = "NANONET_NONCE_TTL_SEC")]
     pub nonce_ttl_sec: u64,
 
-    /// Agent metric/heartbeat/dependency mesajlarına eklenecek statik etiketler.
-    /// Birden fazla `key=value` virgül ile ayrılır.
-    /// Örn: `--labels region=eu-west,role=db,tier=prod`.
-    /// Anahtar/değer trim'lenir, boş anahtarlar yok sayılır.
     #[arg(long, env = "NANONET_LABELS", value_delimiter = ',')]
     pub labels: Vec<String>,
 
-    /// Metrik buffer'ını süreç restart'larında korumak için snapshot dosyası.
-    ///
-    /// Verilirse:
-    /// - Startup'ta dosya okunur ve metrikler buffer'a yüklenir.
-    /// - Graceful shutdown sonunda buffer dosyaya yazılır.
-    ///
-    /// Verilmezse persist devre dışı (önceki davranış).
     #[arg(long, env = "NANONET_BUFFER_PERSIST_PATH")]
     pub buffer_persist_path: Option<String>,
+}
+
+/// `Config` derive'lı `Debug`'tan kaçınıyoruz: token alanları "[REDACTED]"
+/// olarak yazılsın diye custom impl yazıyoruz. (`SecretString` zaten
+/// otomatik redacted bir Debug sağlıyor; ama bu custom impl ham String
+/// olarak tutulan diğer hassas alanlarda da güvenli davranışı garanti eder.)
+impl fmt::Debug for Config {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let token_kind = self.token_present_kind();
+        f.debug_struct("Config")
+            .field("backend", &self.backend)
+            .field("service_id", &self.service_id)
+            .field("token_kind", &token_kind)
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("health_endpoint", &self.health_endpoint)
+            .field("poll_interval", &self.poll_interval)
+            .field("error_rate_window", &self.error_rate_window)
+            .field("metrics_endpoint", &self.metrics_endpoint)
+            .field("agent_port", &self.agent_port)
+            .field("buffer_size", &self.buffer_size)
+            .field("max_concurrent_commands", &self.max_concurrent_commands)
+            .field("audit_log_path", &self.audit_log_path)
+            .field("sign_secret_present", &self.sign_secret.is_some())
+            .field("nonce_ttl_sec", &self.nonce_ttl_sec)
+            .field("labels", &self.labels)
+            .field("buffer_persist_path", &self.buffer_persist_path)
+            .finish()
+    }
 }
 
 impl Config {
@@ -123,14 +145,6 @@ impl Config {
         format!("{}/ws/agent?service_id={}", self.backend, self.service_id)
     }
 
-    /// WebSocket handshake Authorization header değeri.
-    pub fn auth_header(&self) -> Option<String> {
-        self.agent_token
-            .as_deref()
-            .or(self.token.as_deref())
-            .map(|t| format!("Bearer {}", t))
-    }
-
     /// Backend HTTP base URL (ws:// → http://, wss:// → https://)
     #[allow(dead_code)]
     pub fn http_base(&self) -> String {
@@ -139,12 +153,67 @@ impl Config {
             .replace("wss://", "https://")
     }
 
-    pub fn effective_token(&self) -> Option<&str> {
-        self.agent_token.as_deref().or(self.token.as_deref())
+    /// Etkin token'ı `SecretString` olarak döner.
+    ///
+    /// Token kaynaklarını sıralı dener; *file* kaynakları leak'siz olduğu
+    /// için önce gelir. Bir dosya verilmiş ama okunamıyorsa hata loglanır
+    /// ve bir sonraki kaynağa fallback yapılır.
+    pub fn effective_secret(&self) -> Option<SecretString> {
+        if let Some(p) = &self.agent_token_file {
+            if let Some(s) = read_token_file(p, "agent-token-file") {
+                return Some(s);
+            }
+        }
+        if let Some(p) = &self.token_file {
+            if let Some(s) = read_token_file(p, "token-file") {
+                return Some(s);
+            }
+        }
+        if let Some(t) = self.agent_token.as_ref().filter(|s| !s.is_empty()) {
+            return Some(SecretString::new(t.clone()));
+        }
+        if let Some(t) = self.token.as_ref().filter(|s| !s.is_empty()) {
+            tracing::warn!(
+                "Legacy --token / NANONET_TOKEN kullanılıyor. Üretimde --agent-token-file tercih edin."
+            );
+            return Some(SecretString::new(t.clone()));
+        }
+        None
+    }
+
+    /// Geri uyumluluk için: hangi token kaynağının bulunduğunu döner.
+    fn token_present_kind(&self) -> &'static str {
+        if self
+            .agent_token_file
+            .as_deref()
+            .is_some_and(|s| !s.is_empty())
+        {
+            return "agent-token-file";
+        }
+        if self.token_file.as_deref().is_some_and(|s| !s.is_empty()) {
+            return "token-file";
+        }
+        if self.agent_token.as_deref().is_some_and(|s| !s.is_empty()) {
+            return "agent-token-env";
+        }
+        if self.token.as_deref().is_some_and(|s| !s.is_empty()) {
+            return "user-token-env";
+        }
+        "none"
+    }
+
+    /// `effective_secret()` varsa "Bearer <secret>" üretir.
+    pub fn auth_header(&self) -> Option<String> {
+        self.effective_secret()
+            .map(|s| format!("Bearer {}", s.expose_secret()))
+    }
+
+    /// Banner gibi yerlerde token'ın *varlığını* ifade etmek için kullanılır.
+    pub fn has_token(&self) -> bool {
+        self.effective_secret().is_some()
     }
 
     /// `--labels k=v,k2=v2` parse → sıralı (deterministik) anahtar/değer.
-    /// Geçersiz girişler (eksik `=`, boş key) sessizce atlanır.
     pub fn label_map(&self) -> std::collections::BTreeMap<String, String> {
         let mut out = std::collections::BTreeMap::new();
         for raw in &self.labels {
@@ -165,6 +234,27 @@ impl Config {
             }
         }
         out
+    }
+}
+
+/// Token dosyasını okur, satır sonlarını ve etrafındaki boşlukları temizler.
+/// Hata durumunda warn'la geçer (None döner) — başka bir kaynağa fallback
+/// edilebilsin diye.
+fn read_token_file(path: &str, label: &str) -> Option<SecretString> {
+    let p = Path::new(path);
+    match std::fs::read_to_string(p) {
+        Ok(content) => {
+            let trimmed = content.lines().next().unwrap_or("").trim();
+            if trimmed.is_empty() {
+                tracing::warn!(path, label, "Token dosyası boş");
+                return None;
+            }
+            Some(SecretString::new(trimmed.to_string()))
+        }
+        Err(e) => {
+            tracing::error!(path, label, error = %e, "Token dosyası okunamadı");
+            None
+        }
     }
 }
 
@@ -244,7 +334,6 @@ mod tests {
             "agent-tok",
         ]);
         assert_eq!(c.auth_header().as_deref(), Some("Bearer agent-tok"));
-        assert_eq!(c.effective_token(), Some("agent-tok"));
     }
 
     #[test]
@@ -264,7 +353,72 @@ mod tests {
     fn auth_header_none_when_no_token() {
         let c = minimal();
         assert!(c.auth_header().is_none());
-        assert!(c.effective_token().is_none());
+        assert!(!c.has_token());
+    }
+
+    #[test]
+    fn token_file_takes_precedence_over_env() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("tok");
+        std::fs::write(&path, "from-file\n").unwrap();
+        let c = parse(&[
+            "--backend",
+            "ws://x",
+            "--service-id",
+            "s",
+            "--token",
+            "from-cli",
+            "--token-file",
+            path.to_str().unwrap(),
+        ]);
+        assert_eq!(c.auth_header().as_deref(), Some("Bearer from-file"));
+    }
+
+    #[test]
+    fn agent_token_file_beats_token_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let agent_path = dir.path().join("agent.tok");
+        let user_path = dir.path().join("user.tok");
+        std::fs::write(&agent_path, "agent-secret").unwrap();
+        std::fs::write(&user_path, "user-secret").unwrap();
+        let c = parse(&[
+            "--backend",
+            "ws://x",
+            "--service-id",
+            "s",
+            "--agent-token-file",
+            agent_path.to_str().unwrap(),
+            "--token-file",
+            user_path.to_str().unwrap(),
+        ]);
+        assert_eq!(c.auth_header().as_deref(), Some("Bearer agent-secret"));
+    }
+
+    #[test]
+    fn debug_does_not_leak_token() {
+        let c = parse(&[
+            "--backend",
+            "ws://x",
+            "--service-id",
+            "s",
+            "--token",
+            "supersecret-deadbeef",
+            "--agent-token",
+            "agent-deadbeef",
+        ]);
+        let dbg = format!("{c:?}");
+        assert!(
+            !dbg.contains("supersecret-deadbeef"),
+            "Debug leaked legacy token: {dbg}"
+        );
+        assert!(
+            !dbg.contains("agent-deadbeef"),
+            "Debug leaked agent token: {dbg}"
+        );
+        assert!(
+            dbg.contains("token_kind"),
+            "Debug should mention which token kind was provided: {dbg}"
+        );
     }
 
     #[test]
@@ -299,7 +453,6 @@ mod tests {
         let m = c.label_map();
         assert_eq!(m.get("key").map(String::as_str), Some("value"));
         assert_eq!(m.get("trim_me").map(String::as_str), Some("yes"));
-        // 2 geçerli, 3 atılmış (`noequals` eksik =, `=novalue` boş key, `" "` boş).
         assert_eq!(m.len(), 2);
     }
 

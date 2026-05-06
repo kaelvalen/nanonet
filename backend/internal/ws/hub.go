@@ -584,6 +584,25 @@ func (h *Hub) IsAgentConnected(serviceID string) bool {
 	return false
 }
 
+// AgentConnectedSet — şu an bağlı tüm agent'lerin serviceID kümesini döner.
+//
+// services.List gibi sıcak yollarda satır başına IsAgentConnected çağırmak
+// O(servisler × agent) lock altında tarama yapıyordu. Tek snapshot ile O(N)
+// döküm + O(1) set lookup yeterli. Snapshot dönüşten sonra çağıranındır;
+// hub içinde tutulan map'i sızdırmaz.
+func (h *Hub) AgentConnectedSet() map[string]struct{} {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	out := make(map[string]struct{}, len(h.agentClients))
+	for client := range h.agentClients {
+		if client.serviceID != "" {
+			out[client.serviceID] = struct{}{}
+		}
+	}
+	return out
+}
+
 func (h *Hub) GetConnectedAgentCount() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()

@@ -30,9 +30,10 @@ func CORSMiddleware(frontendURL string, extraOrigins []string) gin.HandlerFunc {
 			c.Writer.Header().Set("Vary", "Origin")
 		}
 
-		// Keep credentials enabled for existing clients; only meaningful for browsers.
+		// Cookie tabanlı auth için zorunlu: tarayıcı, Allow-Credentials yoksa
+		// withCredentials:true bir fetch'te cookie'leri göndermez.
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Request-Id")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Request-Id, X-CSRF-Token")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, X-Request-Id")

@@ -17,13 +17,13 @@ export interface RegisterRequest {
 
 export interface TokenResponse {
 	access_token: string;
-	refresh_token: string;
 	expires_in: number;
-	/** Yeni refresh token — sunucu rotating token döndürdüğünde mevcuttur. */
-	new_refresh_token?: string;
 }
 
 export interface AuthResponse {
 	user: User;
 	tokens: TokenResponse;
+	/** Server CSRF token — frontend bunu cookie'den de okuyabilir; ilk
+	 * render'da yine de explicit olarak göndermesi UX kolaylığı. */
+	csrf_token?: string;
 }

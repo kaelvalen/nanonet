@@ -33,6 +33,16 @@ type Config struct {
 	AllowQueryTokenAuth      bool // allow `?token=` for auth (avoid: leakage)
 	AllowPrivateProbeTargets bool // allow probes to hit private/reserved IPs
 	AllowPrivateWebhookURLs  bool // allow webhooks/slack/discord to private/reserved IPs
+
+	// SecureCookies — `Set-Cookie ... Secure` bayrağını kontrol eder.
+	// Production'da daima true (HTTPS arkasında zorunlu), dev'de false
+	// (lokal http üstünde browser cookie'yi kabul etsin diye). Override
+	// için SECURE_COOKIES env'i mevcut.
+	SecureCookies bool
+
+	// MetricsBasicAuth — "user:pass" formatında. Boşsa /metrics endpoint
+	// servis edilmez. Boşken prod'da uyarı verilir.
+	MetricsBasicAuth string
 }
 
 func Load() *Config {
@@ -80,6 +90,12 @@ func Load() *Config {
 	cfg.AllowQueryTokenAuth = getEnvBool("ALLOW_QUERY_TOKEN_AUTH", false)
 	cfg.AllowPrivateProbeTargets = getEnvBool("ALLOW_PRIVATE_PROBE_TARGETS", false)
 	cfg.AllowPrivateWebhookURLs = getEnvBool("ALLOW_PRIVATE_WEBHOOK_URLS", false)
+
+	// SecureCookies default: prod'da true, geri kalanlarda false. Override
+	// gerekiyorsa SECURE_COOKIES=true|false ile zorla — örn. dev makinede
+	// HTTPS reverse-proxy varsa.
+	cfg.SecureCookies = getEnvBool("SECURE_COOKIES", cfg.Environment == "production")
+	cfg.MetricsBasicAuth = getEnv("METRICS_BASIC_AUTH", "")
 
 	if cfg.DatabaseURL == "" {
 		log.Fatal("DATABASE_URL zorunlu")

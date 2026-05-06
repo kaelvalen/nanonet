@@ -13,11 +13,9 @@ export function useAuth() {
 	const loginMutation = useMutation({
 		mutationFn: (data: LoginRequest) => authApi.login(data),
 		onSuccess: (response) => {
-			setAuth(
-				response.user,
-				response.tokens.access_token,
-				response.tokens.refresh_token,
-			);
+			// Refresh token artık HttpOnly cookie içinde; store sadece access
+			// token + user'ı tutar.
+			setAuth(response.user, response.tokens.access_token);
 			toast.success("Giriş başarılı");
 			navigate("/");
 		},
@@ -29,11 +27,7 @@ export function useAuth() {
 	const registerMutation = useMutation({
 		mutationFn: (data: RegisterRequest) => authApi.register(data),
 		onSuccess: (response) => {
-			setAuth(
-				response.user,
-				response.tokens.access_token,
-				response.tokens.refresh_token,
-			);
+			setAuth(response.user, response.tokens.access_token);
 			toast.success("Kayıt başarılı");
 			navigate("/");
 		},

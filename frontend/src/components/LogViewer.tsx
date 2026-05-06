@@ -139,6 +139,36 @@ function LevelBadge({ level }: { level: string }) {
 
 const HTTP_POLL_INTERVAL_MS = 10_000;
 
+// `seenTimestamps` cap. 2000 metric ts (~10s polling × 333 dakika fallback)
+// kalıcı olarak yetiyor; üzerinde FIFO drop yapacağız.
+const SEEN_TS_MAX = 2000;
+// 5dk'dan eski timestamp dedup'a girmesin — agent restart sonrası geçmiş
+// metrikler sızıntıyı tetiklemez.
+const SEEN_TS_TTL_MS = 5 * 60 * 1000;
+
+/** markIfNew — timestamp daha önce görülmediyse map'e ekler ve true döner.
+ *  Ek olarak periyodik trim: cap aşıldığında en eski insertion-ordered
+ *  girişler atılır; TTL aşan kayıtlar dedup'a katılmaz.
+ */
+function markIfNew(map: Map<string, number>, ts: string): boolean {
+	const now = Date.now();
+	const prev = map.get(ts);
+	if (prev !== undefined && now - prev < SEEN_TS_TTL_MS) {
+		return false;
+	}
+	map.set(ts, now);
+	if (map.size > SEEN_TS_MAX) {
+		// Map insertion order'ı korur; en eski N kadarını at.
+		const drop = map.size - SEEN_TS_MAX;
+		let i = 0;
+		for (const k of map.keys()) {
+			if (i++ >= drop) break;
+			map.delete(k);
+		}
+	}
+	return true;
+}
+
 export function LogViewer({
 	serviceId,
 	serviceName,
@@ -156,7 +186,12 @@ export function LogViewer({
 
 	const wsRef = useRef<WebSocket | null>(null);
 	const pollTimerRef = useRef<ReturnType<typeof setInterval>>();
-	const seenTimestamps = useRef<Set<string>>(new Set());
+	// `seenTimestamps` previously grew unboundedly: in long polling-fallback
+	// sessions (HTTP poll every 10s, agent WS down), the Set could accumulate
+	// thousands of unique strings + their full retainers, leaking memory.
+	// Use a Map keyed by timestamp -> insertion epoch ms so we can do two
+	// kinds of trimming when needed: hard cap (FIFO drop) + age TTL.
+	const seenTimestamps = useRef<Map<string, number>>(new Map());
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const pausedRef = useRef(paused);
@@ -183,8 +218,7 @@ export function LogViewer({
 				if (cancelled) return;
 				const entries: LogEntry[] = [];
 				for (const m of metrics) {
-					if (seenTimestamps.current.has(m.time)) continue;
-					seenTimestamps.current.add(m.time);
+					if (!markIfNew(seenTimestamps.current, m.time)) continue;
 					entries.push({
 						id: `hist-${m.time}`,
 						timestamp: m.time,
@@ -262,8 +296,7 @@ export function LogViewer({
 					try {
 						const metrics = await metricsApi.getHistory(serviceId, "15m", 20);
 						for (const m of metrics) {
-							if (seenTimestamps.current.has(m.time)) continue;
-							seenTimestamps.current.add(m.time);
+							if (!markIfNew(seenTimestamps.current, m.time)) continue;
 							addLog({
 								id: `poll-${m.time}`,
 								timestamp: m.time,

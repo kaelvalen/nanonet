@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { authApi } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import { useServiceStore } from "../store/serviceStore";
 import { useWSStore } from "../store/wsStore";
@@ -250,23 +251,19 @@ export function useWebSocket() {
 						const authState = useAuthStore.getState();
 						if (!authState.accessToken) return;
 
-						if (authState.refreshToken) {
-							try {
-								const { authApi } = await import("../api/auth");
-								const tokens = await authApi.refresh(authState.refreshToken);
-								if (authState.user) {
-									authState.setAuth(
-										authState.user,
-										tokens.access_token,
-										tokens.refresh_token,
-									);
-								}
-							} catch {
-								// Refresh başarısız — oturumu temizle ve login'e yönlendir
-								authState.clearAuth();
-								window.location.href = "/login";
-								return;
+						// Refresh artık cookie üzerinden taşınıyor (HttpOnly); store'da
+						// token yok. authApi.refresh() çağrısı backend'in cookie'yi
+						// okumasına dayanır — başarılıysa yeni access token gelir.
+						try {
+							const tokens = await authApi.refresh();
+							if (authState.user) {
+								authState.setAuth(authState.user, tokens.access_token);
 							}
+						} catch {
+							// Refresh başarısız — oturumu temizle ve login'e yönlendir
+							authState.clearAuth();
+							window.location.href = "/login";
+							return;
 						}
 
 						connect();

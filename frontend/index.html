@@ -11,15 +11,13 @@
       content="NanoNet: mikroservislerinizi gerçek zamanlı izleyin, agent tabanlı komut yürütün ve AI destekli anomali analiziyle aksiyon alın."
     />
     <title>NanoNet — Mikroservis İzleme Platformu</title>
-    <script>
-      (() => {
-        var theme = localStorage.getItem("nanonet-theme");
-        if (theme === "dark") document.documentElement.classList.add("dark");
-        
-        var lang = localStorage.getItem("i18nextLng") || navigator.language.split('-')[0] || 'en';
-        document.documentElement.setAttribute("lang", lang);
-      })();
-    </script>
+    <!--
+      External boot script: theme + lang init. Inline çalışmaması
+      gerekiyordu çünkü strict CSP (script-src 'self') nonce'suz
+      inline'a izin vermez. Hash veya nonce yerine ayrı dosya tercih
+      ettik; build invariant ve cache friendly.
+    -->
+    <script src="/boot.js"></script>
   </head>
   <body>
     <div id="root"></div>

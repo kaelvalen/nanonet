@@ -146,11 +146,16 @@ export function preloadRoute(pathname: string): void {
 	}
 }
 
-/** preloadDashboardRoutes — called from App.tsx on idle to warm every chunk
- *  the authenticated user is likely to hit. Triggered via requestIdleCallback
- *  so it never competes with the initial render or above-the-fold network. */
+/** preloadDashboardRoutes — called from App.tsx on idle to warm the *most*
+ *  frequently visited chunks. Previous implementation preloaded every page
+ *  (~25 chunks ≈ 600KB JS) eagerly which dominated cold-start bandwidth even
+ *  though >70% of sessions only touch dashboard/services/alerts. The rest are
+ *  warmed lazily on link hover/focus by `preloadRoute` (see SideRail/MobileNav).
+ */
 export function preloadDashboardRoutes(): void {
-	for (const preload of Object.values(ROUTE_PRELOAD)) preload();
+	DashboardPage.preload();
+	ServicesPage.preload();
+	AlertsPage.preload();
 	ServiceDetailPage.preload();
 }
 

@@ -146,11 +146,17 @@ func (h *Handler) List(c *gin.Context) {
 		AgentConnected bool `json:"agent_connected"`
 	}
 
+	// Tek snapshot ile O(N) — daha önce satır başına IsAgentConnected (hub
+	// üstünde mutex + lineer scan) yapıyorduk; servis sayısı arttıkça liste
+	// endpoint'i tüm dashboards'i bekletecek hale geliyordu.
+	connected := h.hub.AgentConnectedSet()
+
 	result := make([]serviceWithAgent, 0, len(services))
 	for _, svc := range services {
+		_, on := connected[svc.ID.String()]
 		result = append(result, serviceWithAgent{
 			Service:        svc,
-			AgentConnected: h.hub.IsAgentConnected(svc.ID.String()),
+			AgentConnected: on,
 		})
 	}
 

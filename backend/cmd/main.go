@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"nanonet-backend/internal/agentmgmt"
@@ -23,6 +24,7 @@ import (
 	"nanonet-backend/internal/maintenance"
 	"nanonet-backend/internal/metrics"
 	"nanonet-backend/internal/notifications"
+	"nanonet-backend/internal/observability"
 	"nanonet-backend/internal/probes"
 	"nanonet-backend/internal/runbooks"
 	"nanonet-backend/internal/security"
@@ -39,11 +41,13 @@ import (
 	"nanonet-backend/pkg/netguard"
 	"nanonet-backend/pkg/ratelimit"
 	"nanonet-backend/pkg/redisstore"
+	"nanonet-backend/pkg/secrets"
 	"nanonet-backend/pkg/shutdown"
 	"nanonet-backend/pkg/tokenblacklist"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -78,7 +82,7 @@ func main() {
 			bl = tokenblacklist.NewInMemory()
 			hub = ws.NewHub(cfg.WSMaxConnections)
 		} else {
-			logger.Info("Redis bağlandı", slog.String("url", cfg.RedisURL))
+			logger.Info("Redis bağlandı", slog.String("url", secrets.RedactURL(cfg.RedisURL)))
 			bl = tokenblacklist.NewRedis(rdb)
 			hub = ws.NewHubWithRedis(cfg.WSMaxConnections, rdb)
 			go hub.StartRedis(ctx)
@@ -145,7 +149,7 @@ func main() {
 	logger.Info("Çok-kanallı bildirim servisi aktif")
 
 	// ── Handlers ──────────────────────────────────────────────────
-	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL, bl)
+	authHandler := auth.NewHandler(db, cfg.JWTSecret, m, cfg.FrontendURL, bl, cfg.SecureCookies)
 	authMiddleware := auth.NewMiddleware(cfg.JWTSecret, bl, cfg.AllowQueryTokenAuth)
 	apiTokensSvc := apitokens.NewService(db)
 	apiTokensHandler := apitokens.NewHandler(apiTokensSvc)
@@ -197,7 +201,50 @@ func main() {
 	router.Use(middleware.StructuredLoggingMiddleware(logger))
 	router.Use(middleware.CORSMiddleware(cfg.FrontendURL, cfg.AllowedOrigins))
 	router.Use(middleware.SecurityHeadersMiddleware())
+	router.Use(observability.HTTPMiddleware())
 	router.Use(ratelimit.Middleware(100, time.Minute))
+
+	// Rate limit middleware'i 429 verince observability counter'ını arttır.
+	// Bu indirection, ratelimit paketinin observability paketine cycle
+	// yapmasını engeller.
+	ratelimit.DenialObserver = func(name string) {
+		observability.RateLimitDenials.WithLabelValues(name).Inc()
+	}
+
+	// /metrics endpoint'i v1 grubunun *dışında* — auth middleware'lerine
+	// takılmasın. METRICS_BASIC_AUTH set edilmemişse endpoint kapalı kalır.
+	if cfg.MetricsBasicAuth != "" {
+		creds := strings.SplitN(cfg.MetricsBasicAuth, ":", 2)
+		if len(creds) == 2 {
+			router.GET("/metrics",
+				gin.BasicAuth(gin.Accounts{creds[0]: creds[1]}),
+				gin.WrapH(promhttp.Handler()),
+			)
+			logger.Info("Prometheus /metrics endpoint aktif (basic auth)")
+		} else {
+			logger.Warn("METRICS_BASIC_AUTH formatı 'user:pass' olmalı; /metrics kapalı")
+		}
+	} else if cfg.Environment != "production" {
+		// Dev convenience: prod-dışı ortamda auth'suz /metrics aç.
+		router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+		logger.Info("Prometheus /metrics endpoint aktif (dev: auth yok)")
+	}
+
+	// DB pool ve WS gauge'larını arka planda topla.
+	go observability.StartDBPoolCollector(ctx.Done(), db, 15*time.Second)
+	go func() {
+		t := time.NewTicker(5 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				observability.WSConnections.WithLabelValues("dashboard").Set(float64(hub.GetConnectedDashboardCount()))
+				observability.WSConnections.WithLabelValues("agent").Set(float64(hub.GetConnectedAgentCount()))
+			}
+		}
+	}()
 
 	strictLimiter := ratelimit.StrictMiddleware(10, time.Minute)
 
@@ -474,22 +521,45 @@ func main() {
 		}
 	}()
 
+	// CSRF guard'ı v1 grubunun tamamına uyguluyoruz; cookie-tabanlı
+	// session kullanan SPA için zorunlu. İlk auth uçları (cookie henüz
+	// yok) muaf tutulur. Bearer-only API client'lar için cookie boş ⇒
+	// middleware no-op (bkz. CSRFMiddleware doc'u).
+	csrfMiddleware := middleware.CSRFMiddleware(
+		"/api/v1/auth/login",
+		"/api/v1/auth/register",
+		"/api/v1/auth/refresh",
+		"/api/v1/auth/forgot-password",
+		"/api/v1/auth/reset-password",
+	)
+
 	v1 := router.Group("/api/v1")
+	v1.Use(csrfMiddleware)
 	{
+		// Auth grubu üç farklı limit penceresi kullanır:
+		//   - bruteForceLimiter (10/dk/IP): credentials'a karşı brute-force
+		//     hassas POST'lar (login/register/forgot/reset).
+		//   - authMutateLimiter (30/dk/IP): authentike kullanıcının token
+		//     yönetimi/parola değişikliği gibi mutating çağrıları.
+		//   - authReadLimiter (60/dk/IP): /me ve token listesi gibi sık
+		//     yapılan read-only çağrılar; SPA polling'i ile uyumlu.
+		bruteForceLimiter := ratelimit.BruteForceMiddleware(10, time.Minute)
+		authMutateLimiter := ratelimit.Middleware(30, time.Minute)
+		authReadLimiter := ratelimit.Middleware(60, time.Minute)
+
 		authGroup := v1.Group("/auth")
-		authGroup.Use(ratelimit.Middleware(10, time.Minute))
 		{
-			authGroup.POST("/register", authHandler.Register)
-			authGroup.POST("/login", authHandler.Login)
-			authGroup.POST("/refresh", authHandler.Refresh)
-			authGroup.POST("/forgot-password", authHandler.ForgotPassword)
-			authGroup.POST("/reset-password", authHandler.ResetPassword)
-			authGroup.POST("/logout", authMiddleware.Required(), authHandler.Logout)
-			authGroup.POST("/agent-token", authMiddleware.Required(), authHandler.AgentToken)
-			authGroup.GET("/agent-tokens", authMiddleware.Required(), authHandler.ListAgentTokens)
-			authGroup.DELETE("/agent-tokens/:token_id", authMiddleware.Required(), authHandler.RevokeAgentToken)
-			authGroup.GET("/me", authMiddleware.Required(), authHandler.Me)
-			authGroup.PUT("/password", authMiddleware.Required(), authHandler.ChangePassword)
+			authGroup.POST("/register", bruteForceLimiter, authHandler.Register)
+			authGroup.POST("/login", bruteForceLimiter, authHandler.Login)
+			authGroup.POST("/refresh", bruteForceLimiter, authHandler.Refresh)
+			authGroup.POST("/forgot-password", bruteForceLimiter, authHandler.ForgotPassword)
+			authGroup.POST("/reset-password", bruteForceLimiter, authHandler.ResetPassword)
+			authGroup.POST("/logout", authMutateLimiter, authMiddleware.Required(), authHandler.Logout)
+			authGroup.POST("/agent-token", authMutateLimiter, authMiddleware.Required(), authHandler.AgentToken)
+			authGroup.GET("/agent-tokens", authReadLimiter, authMiddleware.Required(), authHandler.ListAgentTokens)
+			authGroup.DELETE("/agent-tokens/:token_id", authMutateLimiter, authMiddleware.Required(), authHandler.RevokeAgentToken)
+			authGroup.GET("/me", authReadLimiter, authMiddleware.Required(), authHandler.Me)
+			authGroup.PUT("/password", authMutateLimiter, authMiddleware.Required(), authHandler.ChangePassword)
 		}
 
 		aiGroup := v1.Group("/ai", authMiddleware.Required())
