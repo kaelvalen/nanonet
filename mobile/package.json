@@ -1,0 +1,43 @@
+{
+  "name": "nanonet-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "test": "jest --watchAll=false"
+  },
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-router": "~4.0.0",
+    "expo-secure-store": "~14.0.0",
+    "expo-notifications": "~0.29.0",
+    "expo-constants": "~17.0.0",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.5",
+    "react-native-svg": "~15.8.0",
+    "victory-native": "^36.9.1",
+    "axios": "^1.6.5",
+    "zustand": "^5.0.0",
+    "@tanstack/react-query": "^5.17.0",
+    "lucide-react-native": "^0.400.0",
+    "@nanonet/shared-types": "*"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@types/react": "~18.3.0",
+    "typescript": "^5.3.0",
+    "jest": "^29.7.0",
+    "@testing-library/react-native": "^11.5.0",
+    "jest-expo": "~52.0.0"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|victory-native|lucide-react-native)"
+    ]
+  }
+}

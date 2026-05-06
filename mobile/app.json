@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "NanoNet",
+    "slug": "nanonet-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "nanonet",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "dev.nanonet.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "package": "dev.nanonet.mobile"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#0f172a"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -39,6 +39,7 @@ import (
 	"nanonet-backend/pkg/mailer"
 	"nanonet-backend/pkg/middleware"
 	"nanonet-backend/pkg/netguard"
+	"nanonet-backend/pkg/push"
 	"nanonet-backend/pkg/ratelimit"
 	"nanonet-backend/pkg/redisstore"
 	"nanonet-backend/pkg/secrets"
@@ -145,7 +146,9 @@ func main() {
 
 	// ── Notifications (multi-channel: slack/discord/webhook/email/pagerduty)
 	notifSvc := notifications.NewService(db, m, netguard.Options{AllowPrivate: cfg.AllowPrivateWebhookURLs})
-	alertSvc.SetMultiNotifier(notificationsAdapter{svc: notifSvc})
+	pushClient := push.NewClient()
+	pushSvc := notifications.NewPushService(db, pushClient)
+	alertSvc.SetMultiNotifier(notificationsAdapter{svc: notifSvc, pushSvc: pushSvc})
 	logger.Info("Çok-kanallı bildirim servisi aktif")
 
 	// ── Handlers ──────────────────────────────────────────────────
@@ -170,6 +173,7 @@ func main() {
 	logsHandler := logs.NewHandler(logsRepo)
 	securityHandler := security.NewHandler(db)
 	notifHandler := notifications.NewHandler(notifSvc, db)
+	pushHandler := notifications.NewPushHandler(pushSvc)
 	sloHandler := slo.NewHandler(slo.NewService(db), db)
 	statusHandler := statuspage.NewHandler(statuspage.NewService(db))
 
@@ -697,6 +701,11 @@ func main() {
 			notifGroup.DELETE("/channels/:id", notifHandler.Delete)
 			notifGroup.POST("/channels/:id/test", strictLimiter, notifHandler.Test)
 			notifGroup.GET("/channels/:id/deliveries", notifHandler.Deliveries)
+			// Mobile push notification routes
+			notifGroup.POST("/push-token", pushHandler.Register)
+			notifGroup.DELETE("/push-token", pushHandler.Delete)
+			notifGroup.GET("/push-preferences", pushHandler.GetPreference)
+			notifGroup.PUT("/push-preferences", pushHandler.UpdatePreference)
 		}
 
 		auditGroup := v1.Group("/audit", authMiddleware.Required())
@@ -798,10 +807,13 @@ func main() {
 
 // notificationsAdapter bridges alerts.MultiNotifierEvent ↔ notifications.Event
 // so the alerts package doesn't need to import notifications directly.
-type notificationsAdapter struct{ svc *notifications.Service }
+type notificationsAdapter struct {
+	svc     *notifications.Service
+	pushSvc *notifications.PushService
+}
 
 func (a notificationsAdapter) Dispatch(ctx context.Context, userID uuid.UUID, ev alerts.MultiNotifierEvent) int {
-	return a.svc.Dispatch(ctx, userID, notifications.Event{
+	count := a.svc.Dispatch(ctx, userID, notifications.Event{
 		Kind:        ev.Kind,
 		Title:       ev.Title,
 		Message:     ev.Message,
@@ -812,6 +824,8 @@ func (a notificationsAdapter) Dispatch(ctx context.Context, userID uuid.UUID, ev
 		AlertType:   ev.AlertType,
 		Timestamp:   ev.Timestamp,
 	})
+	go a.pushSvc.SendToUser(ctx, userID, ev.Title, ev.Message, ev.Severity)
+	return count
 }
 
 // incidentsAdapter bridges alerts.IncidentRecorderInput ↔ incidents.AlertInput.

@@ -35,6 +35,12 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// MobileRefreshRequest — body payload for mobile token refresh.
+// Web clients use the HttpOnly cookie; mobile sends the token here.
+type MobileRefreshRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
 // TokenResponse — login/register/refresh dönüşünde frontend'e gönderilen
 // payload. RefreshToken alanı struct seviyesinde tutuluyor (servis katmanı
 // halen üretiyor) ama JSON'a serialize edilmiyor: refresh artık HttpOnly
