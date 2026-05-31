@@ -4,11 +4,41 @@ Mikroservis izleme ve operasyon platformu: gerçek zamanlı metrikler, agent tab
 
 ## Hızlı başlangıç
 
+Her platform için tek komut:
+
+| Platform | Kurulum | Başlatma |
+|----------|---------|----------|
+| **Linux / macOS / WSL** | `./dev.sh setup` | `./dev.sh dev` |
+| **Windows** (PowerShell) | `.\dev.ps1 setup` | `.\dev.ps1 dev` |
+| **Windows** (Komut İstemi) | `dev.bat setup` | `dev.bat dev` |
+| **Nix** | `nix develop` | `make dev` |
+
 ```bash
+# Linux / macOS / WSL
 git clone <repository-url> && cd nanonet
-cp .env.example .env          # JWT_SECRET, CLAUDE_API_KEY
-npm install
-make dev                      # Docker dev stack + log viewer
+chmod +x dev.sh
+./dev.sh setup   # Docker, Go, Node, Rust yoksa otomatik kurar
+./dev.sh dev     # Docker dev stack'i başlatır
+```
+
+```powershell
+# Windows (PowerShell)
+git clone <repository-url>; cd nanonet
+.\dev.ps1 setup   # Docker Desktop, Go, Node, Rust yoksa winget ile kurar
+.\dev.ps1 dev     # Docker dev stack'i başlatır
+```
+
+> `.env.example` dosyası otomatik kopyalanır. **`JWT_SECRET`** ve **`CLAUDE_API_KEY`** alanlarını `.env` içinde doldurun.
+
+### Komutlar
+
+```
+setup    Bağımlılıkları kontrol et / kur (ilk kurulum)
+dev      Geliştirme ortamını başlat
+down     Servisleri durdur
+reset    Servisleri durdur + DB sıfırla (volume sil)
+logs     Logları takip et (./dev.sh logs backend — belirli servis)
+ps       Çalışan container'ları listele
 ```
 
 | Servis | URL |

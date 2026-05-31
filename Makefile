@@ -1,4 +1,4 @@
-.PHONY: dev dev-bg down ps dev-backend dev-frontend \
+.PHONY: setup dev dev-bg down ps dev-backend dev-frontend \
         openapi-sync api-docs \
         logs logs-all logs-app logs-mock logs-infra logs-err logs-warn logs-since \
         logs-backend logs-frontend \
@@ -12,6 +12,10 @@
         mobile-install-launch mobile-build mobile-build-release \
         mobile-build-clean mobile-test mobile-build-preview \
         build clean reset
+
+# Bağımlılıkları kur (Linux/macOS/WSL)
+setup:
+	@bash dev.sh setup
 
 # .env dosyasını yükle
 ifneq (,$(wildcard .env))
