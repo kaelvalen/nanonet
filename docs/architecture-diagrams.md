@@ -1,3 +1,7 @@
+# Mimari Diyagramlar (Mermaid)
+
+Bu dosyadaki diyagramlar [architecture.md](./architecture.md) ile birlikte kullanılır.
+
 ```mermaid
 graph LR
   subgraph CLIENT["CLIENT LAYER"]

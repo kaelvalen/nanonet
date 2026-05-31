@@ -25,8 +25,8 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
-# Logs
-logs
+# Log directories (do not ignore backend/internal/logs Go package)
+/logs/
 *.log
 npm-debug.log*
 yarn-debug.log*

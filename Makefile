@@ -1,4 +1,5 @@
 .PHONY: dev dev-bg down ps dev-backend dev-frontend \
+        openapi-sync api-docs \
         logs logs-all logs-app logs-mock logs-infra logs-err logs-warn logs-since \
         logs-backend logs-frontend \
         mock mock-all mock-stop mock-scenario \
@@ -19,6 +20,14 @@ ifneq (,$(wildcard .env))
 endif
 
 COMPOSE = docker compose -f docker-compose.dev.yml
+
+# OpenAPI spec → docs + embed; Swagger UI: http://localhost:8080/api/docs
+openapi-sync:
+	@sh scripts/sync-openapi.sh
+
+api-docs: openapi-sync
+	@echo "Swagger UI: http://localhost:8080/api/docs"
+	@echo "OpenAPI YAML: http://localhost:8080/api/openapi.yaml"
 
 # Geliştirme ortamını başlat — build arka planda, loglar renkli viewer üzerinden
 dev:

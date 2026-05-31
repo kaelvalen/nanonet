@@ -4,8 +4,13 @@
 		"mobile",
 		"packages/*"
 	],
+	"scripts": {
+		"openapi:sync": "sh scripts/sync-openapi.sh",
+		"openapi:lint": "redocly lint backend/api/openapi.yaml"
+	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.4.8"
+		"@biomejs/biome": "^2.4.8",
+		"@redocly/cli": "^1.34.3"
 	},
 	"dependencies": {
 		"expo-linking": "^7.0.5",

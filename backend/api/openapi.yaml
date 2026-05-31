@@ -37,8 +37,56 @@ tags:
     description: Kullanıcı ayarları
   - name: Audit
     description: Güvenlik ve işlem günlüğü
+  - name: System
+    description: Sağlık ve sistem endpoint'leri
+  - name: Dependencies
+    description: Servis bağımlılık grafiği
+  - name: Grants
+    description: Servis paylaşım yetkileri
+  - name: Maintenance
+    description: Bakım pencereleri
+  - name: Logs
+    description: Merkezi log arama
+  - name: Security
+    description: Güvenlik taramaları
+  - name: Demo
+    description: Demo veri
+  - name: Agents
+    description: Agent sürüm yönetimi
+  - name: ApiTokens
+    description: Kişisel API token'ları
+  - name: Incidents
+    description: Incident yönetimi
+  - name: StatusPages
+    description: Durum sayfaları
+  - name: SLO
+    description: Service level objectives
+  - name: Probes
+    description: Synthetic HTTP probeler
+  - name: Runbooks
+    description: Alert otomasyonu
+  - name: Notifications
+    description: Çok kanallı bildirimler
+  - name: Kubernetes
+    description: kubectl tabanlı K8s API
 
 components:
+  parameters:
+    ServiceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
   securitySchemes:
     BearerAuth:
       type: http
@@ -1322,3 +1370,1140 @@ paths:
                                 created_at:
                                   type: string
                                   format: date-time
+
+  /health:
+    get:
+      tags: [System]
+      summary: Basit sağlık kontrolü
+      responses:
+        '200':
+          description: OK
+
+  /health/live:
+    get:
+      tags: [System]
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Canlı
+
+  /health/ready:
+    get:
+      tags: [System]
+      summary: Readiness probe (DB)
+      responses:
+        '200':
+          description: Hazır
+        '503':
+          description: Hazır değil
+
+  /health/details:
+    get:
+      tags: [System]
+      summary: Detaylı sağlık (DB, Redis, sistem)
+      responses:
+        '200':
+          description: Sağlık raporu
+        '503':
+          description: Degraded
+
+  /api/v1/metrics:
+    post:
+      tags: [Metrics]
+      summary: Metrik ingest
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Kaydedildi
+
+  /api/v1/auth/mobile/refresh:
+    post:
+      tags: [Auth]
+      summary: Mobil refresh token
+      responses:
+        '200':
+          description: Token yenilendi
+
+  /api/v1/auth/agent-tokens:
+    get:
+      tags: [Auth]
+      summary: Agent token listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/auth/agent-tokens/{token_id}:
+    delete:
+      tags: [Auth]
+      summary: Agent token iptal
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: token_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: İptal edildi
+
+  /api/v1/ai/chat:
+    post:
+      tags: [AI]
+      summary: AI sohbet
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Yanıt
+
+  /api/v1/ai/report:
+    post:
+      tags: [AI]
+      summary: AI rapor üret
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Rapor
+
+  /api/v1/ai/usage:
+    get:
+      tags: [AI]
+      summary: AI kullanım özeti
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Özet
+
+  /api/v1/ai/usage/recent:
+    get:
+      tags: [AI]
+      summary: Son AI kullanımları
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/services/{id}/metrics/rollup:
+    get:
+      tags: [Metrics]
+      summary: Metrik rollup
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Rollup verisi
+
+  /api/v1/services/{id}/metrics/forecast:
+    get:
+      tags: [Metrics]
+      summary: Metrik tahmini
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Forecast
+
+  /api/v1/services/{id}/dependencies:
+    get:
+      tags: [Dependencies]
+      summary: Bağımlılık listesi
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Bağımlılıklar
+
+  /api/v1/services/{id}/dependencies/{dep_id}:
+    patch:
+      tags: [Dependencies]
+      summary: Bağımlılığı promote et
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+        - name: dep_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [Dependencies]
+      summary: Bağımlılık sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+        - name: dep_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/services/{id}/grants:
+    get:
+      tags: [Grants]
+      summary: Paylaşım yetkileri listesi
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Grants
+    post:
+      tags: [Grants]
+      summary: Grant oluştur
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '201':
+          description: Oluşturuldu
+
+  /api/v1/services/{id}/grants/{grant_id}:
+    patch:
+      tags: [Grants]
+      summary: Grant güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+        - name: grant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [Grants]
+      summary: Grant sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+        - name: grant_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/services/{id}/alert-rules:
+    get:
+      tags: [Alerts]
+      summary: Uyarı kuralları
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Kurallar
+    put:
+      tags: [Alerts]
+      summary: Uyarı kurallarını güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Güncellendi
+
+  /api/v1/services/{id}/maintenance:
+    get:
+      tags: [Maintenance]
+      summary: Bakım pencereleri
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [Maintenance]
+      summary: Bakım penceresi ekle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '201':
+          description: Oluşturuldu
+
+  /api/v1/services/{id}/maintenance/{windowId}:
+    delete:
+      tags: [Maintenance]
+      summary: Bakım penceresi sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+        - name: windowId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/services/{id}/logs:
+    get:
+      tags: [Logs]
+      summary: Servis logları
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Loglar
+
+  /api/v1/services/{id}/security/scans:
+    get:
+      tags: [Security]
+      summary: Güvenlik taramaları
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '200':
+          description: Taramalar
+    post:
+      tags: [Security]
+      summary: Tarama başlat
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServiceId'
+      responses:
+        '202':
+          description: Tarama kuyruğa alındı
+
+  /api/v1/alerts/{alertId}/snooze:
+    post:
+      tags: [Alerts]
+      summary: Uyarıyı ertele
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ertelendi
+
+  /api/v1/demo/seed:
+    post:
+      tags: [Demo]
+      summary: Demo veri yükle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Seed tamamlandı
+
+  /api/v1/agents/release:
+    get:
+      tags: [Agents]
+      summary: Agent sürüm bilgisi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Release metadata
+
+  /api/v1/api-tokens:
+    get:
+      tags: [ApiTokens]
+      summary: API token listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [ApiTokens]
+      summary: API token oluştur
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Token (tek seferlik gösterim)
+
+  /api/v1/api-tokens/{id}:
+    delete:
+      tags: [ApiTokens]
+      summary: API token iptal
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: İptal edildi
+
+  /api/v1/public/status/{slug}:
+    get:
+      tags: [StatusPages]
+      summary: Herkese açık durum sayfası
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Durum sayfası verisi
+
+  /api/v1/incidents:
+    get:
+      tags: [Incidents]
+      summary: Incident listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/incidents/{id}:
+    get:
+      tags: [Incidents]
+      summary: Incident detay
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Detay
+    patch:
+      tags: [Incidents]
+      summary: Incident güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [Incidents]
+      summary: Incident sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/incidents/{id}/resolve:
+    post:
+      tags: [Incidents]
+      summary: Incident çöz
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Çözüldü
+
+  /api/v1/status-pages:
+    get:
+      tags: [StatusPages]
+      summary: Durum sayfaları (admin)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [StatusPages]
+      summary: Durum sayfası oluştur
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Oluşturuldu
+
+  /api/v1/status-pages/{id}:
+    put:
+      tags: [StatusPages]
+      summary: Durum sayfası güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [StatusPages]
+      summary: Durum sayfası sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/slos:
+    get:
+      tags: [SLO]
+      summary: SLO listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [SLO]
+      summary: SLO oluştur
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Oluşturuldu
+
+  /api/v1/slos/{id}:
+    put:
+      tags: [SLO]
+      summary: SLO güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [SLO]
+      summary: SLO sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/slos/{id}/compliance:
+    get:
+      tags: [SLO]
+      summary: SLO uyumluluk
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Compliance
+
+  /api/v1/probes:
+    get:
+      tags: [Probes]
+      summary: Synthetic probe listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [Probes]
+      summary: Probe oluştur
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Oluşturuldu
+
+  /api/v1/probes/{id}:
+    put:
+      tags: [Probes]
+      summary: Probe güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [Probes]
+      summary: Probe sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/probes/{id}/runs:
+    get:
+      tags: [Probes]
+      summary: Probe çalışma geçmişi
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Runs
+
+  /api/v1/runbooks:
+    get:
+      tags: [Runbooks]
+      summary: Runbook listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [Runbooks]
+      summary: Runbook oluştur
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Oluşturuldu
+
+  /api/v1/runbooks/{id}:
+    put:
+      tags: [Runbooks]
+      summary: Runbook güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [Runbooks]
+      summary: Runbook sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/runbooks/{id}/fires:
+    get:
+      tags: [Runbooks]
+      summary: Runbook tetiklenme geçmişi
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Fires
+
+  /api/v1/notifications/channels:
+    get:
+      tags: [Notifications]
+      summary: Bildirim kanalları
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [Notifications]
+      summary: Kanal ekle
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Oluşturuldu
+
+  /api/v1/notifications/channels/{id}:
+    put:
+      tags: [Notifications]
+      summary: Kanal güncelle
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Güncellendi
+    delete:
+      tags: [Notifications]
+      summary: Kanal sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/notifications/channels/{id}/test:
+    post:
+      tags: [Notifications]
+      summary: Kanal test bildirimi
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Gönderildi
+
+  /api/v1/notifications/channels/{id}/deliveries:
+    get:
+      tags: [Notifications]
+      summary: Teslimat geçmişi
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Deliveries
+
+  /api/v1/notifications/push-token:
+    post:
+      tags: [Notifications]
+      summary: Expo push token kaydet
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Kayıtlı
+    delete:
+      tags: [Notifications]
+      summary: Push token sil
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/notifications/push-preferences:
+    get:
+      tags: [Notifications]
+      summary: Push tercihleri
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Tercihler
+    put:
+      tags: [Notifications]
+      summary: Push tercihleri güncelle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Güncellendi
+
+  /api/v1/security/overview:
+    get:
+      tags: [Security]
+      summary: Güvenlik özeti
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Özet
+
+  /api/v1/logs:
+    get:
+      tags: [Logs]
+      summary: Tüm loglarda ara
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Sonuçlar
+
+  /api/v1/logs/stats:
+    get:
+      tags: [Logs]
+      summary: Log istatistikleri
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: İstatistik
+
+  /api/v1/services/uptime/summary:
+    get:
+      tags: [Metrics]
+      summary: Toplu uptime özeti
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Özet
+
+  /api/v1/services/map:
+    get:
+      tags: [Services]
+      summary: Servis haritası layout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Harita
+    put:
+      tags: [Services]
+      summary: Servis haritası kaydet
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Kaydedildi
+
+  /api/v1/metrics/summary:
+    get:
+      tags: [Metrics]
+      summary: Global metrik özeti
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Özet
+
+  /api/v1/insights:
+    get:
+      tags: [AI]
+      summary: Tüm servisler AI insight
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Insight listesi
+
+  /api/v1/k8s/status:
+    get:
+      tags: [Kubernetes]
+      summary: Küme durumu
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Status
+
+  /api/v1/k8s/namespaces:
+    get:
+      tags: [Kubernetes]
+      summary: Namespace listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/k8s/nodes:
+    get:
+      tags: [Kubernetes]
+      summary: Node listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/k8s/pods:
+    get:
+      tags: [Kubernetes]
+      summary: Pod listesi (namespace)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/k8s/pods/all:
+    get:
+      tags: [Kubernetes]
+      summary: Tüm podlar
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/k8s/pods/{name}/logs:
+    get:
+      tags: [Kubernetes]
+      summary: Pod logları
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Loglar
+
+  /api/v1/k8s/pods/{name}:
+    delete:
+      tags: [Kubernetes]
+      summary: Pod sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/k8s/deployments:
+    get:
+      tags: [Kubernetes]
+      summary: Deployment listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/k8s/deployments/{name}:
+    get:
+      tags: [Kubernetes]
+      summary: Deployment detay
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detay
+
+  /api/v1/k8s/deployments/{name}/scale:
+    post:
+      tags: [Kubernetes]
+      summary: Deployment ölçekle
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ölçeklendi
+
+  /api/v1/k8s/deployments/{name}/restart:
+    post:
+      tags: [Kubernetes]
+      summary: Rollout restart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Restart başlatıldı
+
+  /api/v1/k8s/hpa:
+    get:
+      tags: [Kubernetes]
+      summary: HPA listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [Kubernetes]
+      summary: HPA oluştur/güncelle
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Kaydedildi
+
+  /api/v1/k8s/hpa/{name}:
+    get:
+      tags: [Kubernetes]
+      summary: HPA detay
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detay
+    delete:
+      tags: [Kubernetes]
+      summary: HPA sil
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Silindi
+
+  /api/v1/k8s/services:
+    get:
+      tags: [Kubernetes]
+      summary: K8s Service listesi
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /api/v1/k8s/endpoints/{name}:
+    get:
+      tags: [Kubernetes]
+      summary: Service endpoints
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Endpoints
+
+  /api/v1/k8s/events:
+    get:
+      tags: [Kubernetes]
+      summary: Küme olayları
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Events
+
+  /api/v1/k8s/top/pods:
+    get:
+      tags: [Kubernetes]
+      summary: Pod kaynak kullanımı (top)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Top pods
+
+  /api/v1/k8s/top/nodes:
+    get:
+      tags: [Kubernetes]
+      summary: Node kaynak kullanımı (top)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Top nodes
+
+  /api/v1/k8s/deploy:
+    post:
+      tags: [Kubernetes]
+      summary: Manifest deploy
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Deploy edildi
+
+  /api/v1/k8s/deploy/{name}:
+    delete:
+      tags: [Kubernetes]
+      summary: Deploy sil (undeploy)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Silindi

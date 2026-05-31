@@ -6,11 +6,13 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"api:types": "openapi-typescript ../backend/api/openapi.yaml -o src/api/generated/schema.ts",
+		"api:types:check": "openapi-typescript ../backend/api/openapi.yaml -o src/api/generated/schema.ts --export-type"
 	},
 	"dependencies": {
-		"@nanonet/shared-types": "*",
 		"@hookform/resolvers": "^3.3.4",
+		"@nanonet/shared-types": "*",
 		"@radix-ui/react-accordion": "^1.2.12",
 		"@radix-ui/react-alert-dialog": "^1.1.15",
 		"@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -73,6 +75,7 @@
 		"@types/react": "^18.3.28",
 		"@types/react-dom": "^18.3.7",
 		"@vitejs/plugin-react-swc": "^4.3.0",
+		"openapi-typescript": "^7.6.1",
 		"tailwindcss": "^4.1.12",
 		"typescript": "~5.6.3",
 		"vite": "^6.3.5"

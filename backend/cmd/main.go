@@ -18,6 +18,7 @@ import (
 	"nanonet-backend/internal/demo"
 	"nanonet-backend/internal/dependencies"
 	"nanonet-backend/internal/grants"
+	"nanonet-backend/internal/health"
 	"nanonet-backend/internal/incidents"
 	"nanonet-backend/internal/k8s"
 	"nanonet-backend/internal/logs"
@@ -33,6 +34,7 @@ import (
 	"nanonet-backend/internal/slo"
 	"nanonet-backend/internal/statuspage"
 	"nanonet-backend/internal/ws"
+	"nanonet-backend/pkg/apidocs"
 	"nanonet-backend/pkg/audit"
 	"nanonet-backend/pkg/config"
 	"nanonet-backend/pkg/database"
@@ -49,6 +51,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -72,6 +75,7 @@ func main() {
 	// ── Redis (optional) ───────────────────────────────────────────
 	var bl tokenblacklist.Blacklist
 	var hub *ws.Hub
+	var redisClient *redis.Client
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -83,6 +87,7 @@ func main() {
 			bl = tokenblacklist.NewInMemory()
 			hub = ws.NewHub(cfg.WSMaxConnections)
 		} else {
+			redisClient = rdb
 			logger.Info("Redis bağlandı", slog.String("url", secrets.RedactURL(cfg.RedisURL)))
 			bl = tokenblacklist.NewRedis(rdb)
 			hub = ws.NewHubWithRedis(cfg.WSMaxConnections, rdb)
@@ -207,6 +212,8 @@ func main() {
 	router.Use(middleware.SecurityHeadersMiddleware())
 	router.Use(observability.HTTPMiddleware())
 	router.Use(ratelimit.Middleware(100, time.Minute))
+
+	apidocs.Register(router)
 
 	// Rate limit middleware'i 429 verince observability counter'ını arttır.
 	// Bu indirection, ratelimit paketinin observability paketine cycle
@@ -777,6 +784,7 @@ func main() {
 		wsGroup.GET("/agent", wsHandler.AgentConnect)
 	}
 
+	healthHandler := health.NewHandler(db, redisClient)
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":               "ok",
@@ -784,6 +792,9 @@ func main() {
 			"connected_dashboards": hub.GetConnectedDashboardCount(),
 		})
 	})
+	router.GET("/health/live", healthHandler.Liveness)
+	router.GET("/health/ready", healthHandler.Readiness)
+	router.GET("/health/details", healthHandler.Check)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,
