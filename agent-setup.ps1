@@ -155,23 +155,17 @@ function Read-EnvFile {
 function Update-EnvFile {
     param([string]$Path, [string]$Key, [string]$Value)
     if (-not (Test-Path $Path)) { return }
-    $content = Get-Content $Path -Raw
+    # UTF-8 ile oku (BOM olmadan), encoding bozulmasını önler
+    $content = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
     if ($content -match "(?m)^$Key=") {
         $content = $content -replace "(?m)^$Key=.*", "$Key=$Value"
     } else {
-        $content += "`n$Key=$Value"
+        $content = $content.TrimEnd() + "`n$Key=$Value`n"
     }
-    $stream = [System.IO.File]::Open($Path,
-        [System.IO.FileMode]::Create,
-        [System.IO.FileAccess]::Write,
-        [System.IO.FileShare]::ReadWrite)
-    try {
-        $writer = New-Object System.IO.StreamWriter($stream, (New-Object System.Text.UTF8Encoding $false))
-        $writer.Write($content)
-        $writer.Flush()
-    } finally {
-        $stream.Close()
-    }
+    # Önce temp dosyaya yaz, sonra atomic rename — OneDrive race condition'ını önler
+    $tmp = "$Path.tmp"
+    [System.IO.File]::WriteAllText($tmp, $content, (New-Object System.Text.UTF8Encoding $false))
+    Move-Item -Path $tmp -Destination $Path -Force
 }
 
 # ── Binary indirme + checksum ─────────────────────────────────────────────────
@@ -514,11 +508,14 @@ Write-Host ""
 Write-Host "  Agent'ı başlatmak için:" -ForegroundColor White
 Write-Host ""
 
-$agentExe = Join-Path $InstallDir "nanonet-agent.exe"
+$agentExe   = Join-Path $InstallDir "nanonet-agent.exe"
+$cargoExe   = Join-Path $ScriptDir  "agent\target\release\nanonet-agent.exe"
 if (Get-Command "nanonet-agent" -ErrorAction SilentlyContinue) {
     Write-Host "  nanonet-agent.exe  (PATH'de kurulu)" -ForegroundColor Green
 } elseif (Test-Path $agentExe) {
     Write-Host "  $agentExe" -ForegroundColor Green
+} elseif (Test-Path $cargoExe) {
+    Write-Host "  $cargoExe" -ForegroundColor Green
 } else {
     Write-Host "  cargo build --release --manifest-path agent\Cargo.toml" -ForegroundColor Green
     Write-Host "  (derlendikten sonra agent\target\release\nanonet-agent.exe)" -ForegroundColor DarkGray
@@ -539,21 +536,34 @@ if ($runNow -match '^[Ee]') {
         $agentBin = "nanonet-agent"
     } elseif (Test-Path $agentExe) {
         $agentBin = $agentExe
+    } elseif (Test-Path $cargoExe) {
+        $agentBin = $cargoExe
     }
 
     if ($agentBin) {
-        # WebSocket URL'yi oluştur
+        # WebSocket base URL — agent ws_url() içinde "/ws/agent" yolunu kendisi
+        # ekler, bu yüzden burada SADECE şema dönüşümü yapılır (çift /ws/agent olmasın).
         $wsUrl = $Backend -replace '^http://', 'ws://' -replace '^https://', 'wss://'
-        $wsUrl = "$wsUrl/ws/agent"
+
+        # Uygulama metrik endpoint'i: izlenen servisin kendi CPU/bellek değerlerini
+        # raporlar. Backend, "app" bloğu geldiğinde system (host) metriklerini bununla
+        # ezer — böylece dashboard host'u değil servisi gösterir. .env'de
+        # AGENT_METRICS_ENDPOINT verilmişse o kullanılır, yoksa http://host:port/metrics.
+        $metricsEndpoint = if ($envVars["AGENT_METRICS_ENDPOINT"]) {
+            $envVars["AGENT_METRICS_ENDPOINT"]
+        } else {
+            "http://${serviceHost}:${servicePort}/metrics"
+        }
 
         $envBlock = @{
             NANONET_BACKEND          = $wsUrl
             NANONET_SERVICE_ID       = $serviceId
-            NANONET_TOKEN            = $agentToken
+            NANONET_AGENT_TOKEN      = $agentToken
             NANONET_HOST             = $serviceHost
             NANONET_PORT             = $servicePort.ToString()
             NANONET_HEALTH_ENDPOINT  = $serviceEndpoint
             NANONET_POLL_INTERVAL    = $servicePoll.ToString()
+            NANONET_METRICS_ENDPOINT = $metricsEndpoint
         }
 
         # Env değişkenlerini geçici ayarla
