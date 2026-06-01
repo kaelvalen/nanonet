@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useServices } from "@/hooks/useServices";
+import { MOD_KEY } from "@/lib/platform";
 import { preloadRoute } from "@/routes";
 import { useAIAssistantStore } from "@/store/aiAssistantStore";
 import { useAuthStore } from "@/store/authStore";
@@ -42,6 +43,10 @@ import { usePageMetaValue } from "./PageMetaContext";
 
 type Crumb = { label: string; path: string };
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+/* Komut paleti kısayolu hem Cmd+K (mac) hem Ctrl+K (Windows/Linux) ile açılır.
+   Rozet metni platforma göre seçilir (bkz. lib/platform). */
+const SHORTCUT_HINT = `${MOD_KEY}K`;
 
 /* Route → i18n key map. Keep this aligned with shell.nav.* in the locale
    bundles. The key resolution happens at render-time so a language switch
@@ -288,7 +293,7 @@ export function TopBar({
 						background: "var(--surface-sunken)",
 						border: "1px solid var(--border-subtle)",
 					}}
-					title={t("shell.topbar.searchHint")}
+					title={t("shell.topbar.searchHint", { mod: MOD_KEY })}
 				>
 					<Search
 						className="w-3.5 h-3.5 shrink-0"
@@ -308,7 +313,7 @@ export function TopBar({
 							border: "1px solid var(--border-subtle)",
 						}}
 					>
-						⌘K
+						{SHORTCUT_HINT}
 					</span>
 				</button>
 
@@ -409,7 +414,7 @@ export function TopBar({
 						onClick={() => openAIAssistant({ mode: "chat" })}
 						className="hidden sm:flex items-center justify-center w-9 h-9 rounded-[6px] transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
 						aria-label={t("shell.topbar.aiAssistant")}
-						title={t("shell.topbar.aiAssistantHint")}
+						title={t("shell.topbar.aiAssistantHint", { mod: MOD_KEY })}
 						style={{ color: "var(--brand-primary)" }}
 					>
 						<Sparkles className="w-4 h-4" />

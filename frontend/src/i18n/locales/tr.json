@@ -40,7 +40,7 @@
 		},
 		"topbar": {
 			"searchPlaceholder": "Ara, git, sor, çalıştır…",
-			"searchHint": "Komut paleti (⌘K)",
+			"searchHint": "Komut paleti ({{mod}}K)",
 			"healthHover": "{{up}} sağlıklı / {{total}} servis",
 			"openIncidents": "{{count}} aktif olay",
 			"liveOn": "Canlı",
@@ -48,7 +48,7 @@
 			"liveTooltipOn": "WebSocket bağlı",
 			"liveTooltipOff": "WebSocket kopuk",
 			"aiAssistant": "AI asistan",
-			"aiAssistantHint": "AI asistan (⌘K + ?)",
+			"aiAssistantHint": "AI asistan ({{mod}}K + ?)",
 			"notifications": "Bildirimler",
 			"accountMenu": "Hesap menüsü",
 			"account": "Hesap",
@@ -63,8 +63,8 @@
 			"primary": "Ana navigasyon",
 			"expand": "Genişlet",
 			"collapse": "Daralt",
-			"expandHint": "Genişlet  (⌘\\)",
-			"collapseHint": "Daralt  (⌘\\)",
+			"expandHint": "Genişlet  ({{mod}}\\)",
+			"collapseHint": "Daralt  ({{mod}}\\)",
 			"logout": "Çıkış yap"
 		},
 		"mobile": {

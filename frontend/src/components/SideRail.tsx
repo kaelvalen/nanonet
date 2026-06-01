@@ -27,6 +27,7 @@ import { NavLink, useLocation } from "react-router";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useServices } from "@/hooks/useServices";
+import { MOD_KEY } from "@/lib/platform";
 import { preloadRoute } from "@/routes";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -295,8 +296,8 @@ export function SideRail() {
 			primary: t("shell.rail.primary"),
 			expand: t("shell.rail.expand"),
 			collapse: t("shell.rail.collapse"),
-			expandHint: t("shell.rail.expandHint"),
-			collapseHint: t("shell.rail.collapseHint"),
+			expandHint: t("shell.rail.expandHint", { mod: MOD_KEY }),
+			collapseHint: t("shell.rail.collapseHint", { mod: MOD_KEY }),
 			logout: t("shell.rail.logout"),
 			settings: t("shell.nav.settings"),
 			guest: t("shell.topbar.guest"),
@@ -489,7 +490,7 @@ export function SideRail() {
 										border: "1px solid var(--border-subtle)",
 									}}
 								>
-									⌘\
+									{`${MOD_KEY}\\`}
 								</span>
 							</>
 						) : (

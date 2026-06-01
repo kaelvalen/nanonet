@@ -21,6 +21,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { servicesApi } from "@/api/services";
+import { MOD_KEY } from "@/lib/platform";
 import { preloadRoute } from "@/routes";
 import { useAIAssistantStore } from "@/store/aiAssistantStore";
 import { useServiceStore } from "@/store/serviceStore";
@@ -663,7 +664,7 @@ export function CommandPalette() {
 									{ key: "↵", label: "seç" },
 									{ key: "?", label: "AI" },
 									{ key: "/", label: "komut" },
-									{ key: "⌘K", label: "aç/kapat" },
+									{ key: `${MOD_KEY}K`, label: "aç/kapat" },
 								].map(({ key, label }) => (
 									<span key={key} className="flex items-center gap-1">
 										<kbd

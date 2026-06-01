@@ -40,7 +40,7 @@
 		},
 		"topbar": {
 			"searchPlaceholder": "Search, jump, ask, run…",
-			"searchHint": "Command palette (⌘K)",
+			"searchHint": "Command palette ({{mod}}K)",
 			"healthHover": "{{up}} healthy / {{total}} services",
 			"openIncidents": "{{count}} active incidents",
 			"liveOn": "Live",
@@ -48,7 +48,7 @@
 			"liveTooltipOn": "WebSocket connected",
 			"liveTooltipOff": "WebSocket disconnected",
 			"aiAssistant": "AI assistant",
-			"aiAssistantHint": "AI assistant (⌘K + ?)",
+			"aiAssistantHint": "AI assistant ({{mod}}K + ?)",
 			"notifications": "Notifications",
 			"accountMenu": "Account menu",
 			"account": "Account",
@@ -63,8 +63,8 @@
 			"primary": "Primary navigation",
 			"expand": "Expand",
 			"collapse": "Collapse",
-			"expandHint": "Expand  (⌘\\)",
-			"collapseHint": "Collapse  (⌘\\)",
+			"expandHint": "Expand  ({{mod}}\\)",
+			"collapseHint": "Collapse  ({{mod}}\\)",
 			"logout": "Log out"
 		},
 		"mobile": {

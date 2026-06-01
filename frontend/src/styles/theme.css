@@ -268,7 +268,7 @@
 	--card-bg: var(--surface-base);
 
 	/* ── Type scale (mirrored in typography.css for clarity; legacy refs work) ── */
-	--font-quicksand: "Inter", "Inter Variable", system-ui, -apple-system, sans-serif;
+	--font-quicksand: "Space Grotesk", system-ui, -apple-system, sans-serif;
 	--font-mono: "JetBrains Mono", "JetBrains Mono Variable", "IBM Plex Mono", ui-monospace, monospace;
 }
 
@@ -527,7 +527,7 @@
 	--radius-lg: 10px;
 	--radius-xl: 14px;
 
-	--font-quicksand: "Inter", system-ui, sans-serif;
+	--font-quicksand: "Space Grotesk", system-ui, sans-serif;
 	--font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 }
 
@@ -545,7 +545,7 @@
 
 	body {
 		@apply bg-background text-foreground;
-		font-family: "Inter", system-ui, -apple-system, sans-serif;
+		font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
 		font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "ss01" 1;
 	}
 
