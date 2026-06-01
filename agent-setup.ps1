@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     NanoNet Agent Setup — Windows Kurulum Sihirbazı
@@ -57,10 +57,10 @@ function Write-Err     {
 
 # ── Platform tespiti ──────────────────────────────────────────────────────────
 function Get-Platform {
-    $arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+    $arch = $env:PROCESSOR_ARCHITECTURE
     switch ($arch) {
-        'X64'   { return "x86_64-pc-windows-msvc" }
-        'Arm64' { return "aarch64-pc-windows-msvc" }
+        'AMD64' { return "x86_64-pc-windows-msvc" }
+        'ARM64' { return "aarch64-pc-windows-msvc" }
         default { Write-Err "Desteklenmeyen mimari: $arch" }
     }
 }
@@ -76,7 +76,7 @@ function Get-OSInfo {
     return @{
         Version = $os.VersionString
         IsWsl   = $isWsl
-        Arch    = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()
+        Arch    = $env:PROCESSOR_ARCHITECTURE
     }
 }
 
@@ -124,7 +124,9 @@ function Invoke-Api {
     }
     try {
         $resp = Invoke-WebRequest @params
-        return ($resp.Content | ConvertFrom-Json)
+        $data = $resp.Content | ConvertFrom-Json
+        Add-Member -InputObject $data -NotePropertyName StatusCode -NotePropertyValue ([int]$resp.StatusCode) -Force
+        return $data
     } catch [System.Net.WebException] {
         $statusCode = [int]$_.Exception.Response.StatusCode
         $errBody = ""
@@ -159,7 +161,17 @@ function Update-EnvFile {
     } else {
         $content += "`n$Key=$Value"
     }
-    Set-Content -Path $Path -Value $content -NoNewline
+    $stream = [System.IO.File]::Open($Path,
+        [System.IO.FileMode]::Create,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::ReadWrite)
+    try {
+        $writer = New-Object System.IO.StreamWriter($stream, (New-Object System.Text.UTF8Encoding $false))
+        $writer.Write($content)
+        $writer.Flush()
+    } finally {
+        $stream.Close()
+    }
 }
 
 # ── Binary indirme + checksum ─────────────────────────────────────────────────
@@ -248,7 +260,7 @@ $platform = Get-Platform
 
 Write-Host ""
 Write-Host "╔════════════════════════════════════════════╗" -ForegroundColor $(if ($NoColor) { 'White' } else { 'Cyan' })
-Write-Host "║     NanoNet Agent Setup  —  v2  (Windows) ║" -ForegroundColor $(if ($NoColor) { 'White' } else { 'Cyan' })
+Write-Host "║     NanoNet Agent Setup  —  v2  (Windows)  ║" -ForegroundColor $(if ($NoColor) { 'White' } else { 'Cyan' })
 Write-Host "╚════════════════════════════════════════════╝" -ForegroundColor $(if ($NoColor) { 'White' } else { 'Cyan' })
 Write-Host ""
 Write-Host "  Platform  : Windows / $($osInfo.Arch)" -ForegroundColor DarkGray
@@ -350,7 +362,8 @@ if (-not $accessToken) {
             password = $password
         }
         if ($authResp.StatusCode -and $authResp.StatusCode -ne 200) {
-            $errMsg = $authResp.Error.error ?? $authResp.Error.message ?? "E-posta veya şifre yanlış"
+            $errMsgVal = if ($authResp.Error.error) { $authResp.Error.error } elseif ($authResp.Error.message) { $authResp.Error.message } else { "E-posta veya şifre yanlış" }
+            $errMsg = $errMsgVal
             Write-Err "Giriş başarısız ($($authResp.StatusCode)): $errMsg"
         }
     }
