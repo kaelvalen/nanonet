@@ -13,10 +13,7 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 EXPOSE 8080
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "-ec", "exec \"$@\"", "--"]
 CMD ["air", "-c", ".air.toml"]

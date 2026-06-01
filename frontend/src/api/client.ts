@@ -5,8 +5,21 @@ import { readCookie } from "../utils/cookies";
 const CSRF_COOKIE = "nn_csrf";
 const MUTATING_METHODS = new Set(["post", "put", "patch", "delete"]);
 
+function normalizeApiBaseUrl(rawBaseUrl: string | undefined): string {
+	const baseUrl = rawBaseUrl?.trim();
+	if (!baseUrl) {
+		return "/api/v1";
+	}
+	if (baseUrl.endsWith("/api/v1")) {
+		return baseUrl;
+	}
+	return baseUrl.replace(/\/$/, "") + "/api/v1";
+}
+
+export const apiBaseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
+
 const apiClient = axios.create({
-	baseURL: import.meta.env.VITE_API_URL,
+	baseURL: apiBaseUrl,
 	timeout: 15000,
 	// Cookie tabanlı auth: backend nn_refresh + nn_csrf cookie set ediyor;
 	// withCredentials olmadan tarayıcı bunları cross-origin fetch'lerde
@@ -48,7 +61,7 @@ let pendingRequests: Array<{
 
 async function refreshAccessToken(): Promise<string> {
 	const response = await axios.post(
-		`${import.meta.env.VITE_API_URL}/auth/refresh`,
+		`${apiBaseUrl}/auth/refresh`,
 		undefined,
 		{ withCredentials: true },
 	);

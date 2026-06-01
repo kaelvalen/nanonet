@@ -12,7 +12,7 @@ npm run dev
 
 | Değişken | Varsayılan |
 |----------|------------|
-| `VITE_API_URL` | `http://localhost:8080` |
+| `VITE_API_URL` | `http://localhost:8080` veya `/api/v1` |
 | `VITE_WS_URL` | `ws://localhost:8080` |
 
 ## Komutlar

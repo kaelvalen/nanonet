@@ -1,11 +1,11 @@
 import axios from "axios";
-import apiClient from "./client";
+import apiClient, { apiBaseUrl } from "./client";
 
 // A bare axios instance for unauthenticated calls — bypasses the auth
 // interceptor's redirect-on-401 behaviour, which would yank an anonymous
 // visitor off the public status page on a transient backend hiccup.
 const publicClient = axios.create({
-	baseURL: import.meta.env.VITE_API_URL,
+	baseURL: apiBaseUrl,
 	timeout: 15000,
 });
 

@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 :: ─────────────────────────────────────────────────────────────────────────────
 :: dev.bat — NanoNet Windows Başlatıcı
 :: dev.ps1'i PowerShell üzerinden çalıştırır.

@@ -24,10 +24,8 @@ WORKDIR /root/
 
 COPY --from=builder /app/nanonet-backend .
 COPY --from=builder /migrations /migrations
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 EXPOSE 8080
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "-ec", "exec \"$@\"", "--"]
 CMD ["./nanonet-backend"]

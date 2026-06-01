@@ -28,6 +28,11 @@ param(
     [string[]]$Rest
 )
 
+$utf8 = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = $utf8
+[Console]::InputEncoding = $utf8
+$OutputEncoding = $utf8
+
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
@@ -179,8 +184,8 @@ function Setup-Env {
 # ── Docker ağ kurulumu ────────────────────────────────────────────────────────
 # docker-compose.dev.yml 'kind' ağını external olarak bekler.
 function Setup-Networks {
-    $result = docker network inspect kind 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $networkName = docker network ls --filter "name=^kind$" --format "{{.Name}}" 2>$null
+    if ($networkName -ne "kind") {
         Write-Info "'kind' Docker ağı oluşturuluyor (Kubernetes geliştirme için)..."
         docker network create kind 2>&1 | Out-Null
         Write-Ok "'kind' ağı oluşturuldu"
@@ -215,14 +220,10 @@ function Cmd-Setup {
 
 function Cmd-Dev {
     Write-Step "Geliştirme ortamı başlatılıyor..."
+    Check-Docker
     Ensure-Home
     Setup-Env
     Setup-Networks
-
-    $info = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Fail "Docker çalışmıyor. Docker Desktop'ı başlatın ve tekrar deneyin."
-    }
 
     docker compose -f docker-compose.dev.yml up --build -d
 
@@ -264,7 +265,7 @@ function Cmd-Ps {
     docker compose -f docker-compose.dev.yml ps
 }
 
-function Cmd-Help {
+function Show-Help {
     Write-Host ""
     Write-Host "NanoNet Dev Script — Windows (PowerShell)" -ForegroundColor White
     Write-Host ""
@@ -282,12 +283,29 @@ function Cmd-Help {
 }
 
 # ── Giriş noktası ─────────────────────────────────────────────────────────────
-switch ($Command.ToLower()) {
-    "setup"  { Cmd-Setup }
-    "dev"    { Cmd-Dev   }
-    "down"   { Cmd-Down  }
-    "reset"  { Cmd-Reset }
-    "logs"   { Cmd-Logs  }
-    "ps"     { Cmd-Ps    }
-    default  { Cmd-Help  }
+& {
+    switch ($Command.ToLower()) {
+        "setup"  { Cmd-Setup }
+        "dev"    { Cmd-Dev   }
+        "down"   { Cmd-Down  }
+        "reset"  { Cmd-Reset }
+        "logs"   { Cmd-Logs  }
+        "ps"     { Cmd-Ps    }
+        default   {
+            Write-Host ''
+            Write-Host 'NanoNet Dev Script - Windows (PowerShell)' -ForegroundColor White
+            Write-Host ''
+            Write-Host '  .\dev.ps1 setup        Bagimliliklari kontrol et / kur (ilk kurulum)' -ForegroundColor Cyan
+            Write-Host '  .\dev.ps1 dev          Gelistirme ortamini baslat' -ForegroundColor Cyan
+            Write-Host '  .\dev.ps1 down         Servisleri durdur' -ForegroundColor Cyan
+            Write-Host '  .\dev.ps1 reset        Servisleri durdur + volume sil (DB sifirla)' -ForegroundColor Cyan
+            Write-Host '  .\dev.ps1 logs         Tum loglari takip et' -ForegroundColor Cyan
+            Write-Host '  .\dev.ps1 logs backend Belirli servis loglari' -ForegroundColor Cyan
+            Write-Host '  .\dev.ps1 ps           Calisan containerlari listele' -ForegroundColor Cyan
+            Write-Host '  .\dev.ps1 help         Bu yardim mesaji' -ForegroundColor Cyan
+            Write-Host ''
+            Write-Host '  Ipucu: Ilk kullanim icin .\dev.ps1 setup calistirin.' -ForegroundColor Yellow
+            Write-Host '  Linux/macOS/WSL icin: ./dev.sh' -ForegroundColor Yellow
+        }
+    }
 }
