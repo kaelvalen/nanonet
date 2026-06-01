@@ -34,10 +34,14 @@ pub struct ProcessMetrics {
     pub status: String,
 }
 
-/// Servis /metrics endpoint'inin beklenen yanıt şeması
+/// Servis /metrics endpoint'inin beklenen yanıt şeması.
+///
+/// `memory_used_mb` için `memory_mb` alias'ı da kabul edilir: NanoNet mock
+/// servisleri (ve bazı uygulamalar) belleği `memory_mb` adıyla raporlar.
 #[derive(Debug, Deserialize)]
 struct AppMetricsResponse {
     cpu_percent: Option<f32>,
+    #[serde(alias = "memory_mb")]
     memory_used_mb: Option<f32>,
 }
 

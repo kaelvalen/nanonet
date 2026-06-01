@@ -112,7 +112,10 @@ async fn async_main() -> Result<()> {
     });
 
     // ── Agent kendi health endpoint'i ──────────────────────────────
-    let agent_health_task = tokio::spawn({
+    // NOT: `select!` kolları arasında DEĞİL. `agent_port == 0` (default) iken
+    // `serve` anında Ok döner; eğer select kolu olsaydı agent daha WS bağlanmadan
+    // kapanırdı. Heartbeat/deps task'larıyla aynı "fire-and-forget" deseni.
+    let _agent_health_task = tokio::spawn({
         let port = config.agent_port;
         let state = Arc::clone(&state);
         async move {
@@ -170,11 +173,6 @@ async fn async_main() -> Result<()> {
         result = metrics_task => {
             if let Err(e) = result {
                 tracing::error!("Metrics task panic: {}", e);
-            }
-        }
-        result = agent_health_task => {
-            if let Err(e) = result {
-                tracing::error!("Agent health task panic: {}", e);
             }
         }
         _ = signal_task => {
