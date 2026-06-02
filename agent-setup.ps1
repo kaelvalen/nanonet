@@ -25,10 +25,16 @@
 .PARAMETER NoColor
     Renksiz çıktı
 
+.PARAMETER StartAll
+    .env'deki mevcut token ve servis yapılandırmasını kullanarak tüm adımları atlayıp
+    agent'ı doğrudan başlatır. Etkileşimli giriş veya servis seçimi gerekmez.
+
 .EXAMPLE
     .\agent-setup.ps1
     .\agent-setup.ps1 -Backend http://myserver:8080 -DownloadBinary
     .\agent-setup.ps1 -Backend http://myserver:8080 -Version v1.2.3
+    .\agent-setup.ps1 -StartAll
+    .\agent-setup.ps1 -StartAll -Backend http://myserver:8080
 #>
 
 [CmdletBinding()]
@@ -38,7 +44,8 @@ param(
     [switch]$DownloadBinary,
     [string]$Version      = "latest",
     [string]$InstallDir   = "",
-    [switch]$NoColor
+    [switch]$NoColor,
+    [switch]$StartAll
 )
 
 Set-StrictMode -Version Latest
@@ -242,6 +249,54 @@ function Install-AgentBinary {
     }
 }
 
+# ── Agent binary yolunu bul ───────────────────────────────────────────────────
+function Get-AgentBin {
+    $agentExe = Join-Path $InstallDir "nanonet-agent.exe"
+    $cargoExe = Join-Path $ScriptDir  "agent\target\release\nanonet-agent.exe"
+    if (Get-Command "nanonet-agent" -ErrorAction SilentlyContinue) { return "nanonet-agent" }
+    if (Test-Path $agentExe) { return $agentExe }
+    if (Test-Path $cargoExe) { return $cargoExe }
+    return $null
+}
+
+# ── Tek bir servis için agent process başlat ─────────────────────────────────
+function Invoke-StartAgent {
+    param(
+        [string]$AgentToken,
+        [string]$ServiceId,
+        [string]$ServiceName,
+        [string]$ServiceHost,
+        [int]   $ServicePort,
+        [string]$ServiceEndpoint,
+        [int]   $ServicePoll,
+        [string]$MetricsEndpointOverride = ""
+    )
+
+    $agentBin = Get-AgentBin
+    if (-not $agentBin) {
+        Write-Warn "[$ServiceName] Binary bulunamadı — atlanıyor."
+        return $null
+    }
+
+    $wsUrl           = $Backend -replace '^http://', 'ws://' -replace '^https://', 'wss://'
+    $metricsEndpoint = if ($MetricsEndpointOverride) { $MetricsEndpointOverride } `
+                       else { "http://${ServiceHost}:${ServicePort}/metrics" }
+
+    # Her Start-Process çağrısı o anki process ortamını kopyalar —
+    # sırayla set edip başlatmak her process'e doğru değerleri verir.
+    [System.Environment]::SetEnvironmentVariable("NANONET_BACKEND",          ($wsUrl),                    "Process")
+    [System.Environment]::SetEnvironmentVariable("NANONET_SERVICE_ID",       $ServiceId,                  "Process")
+    [System.Environment]::SetEnvironmentVariable("NANONET_AGENT_TOKEN",      $AgentToken,                 "Process")
+    [System.Environment]::SetEnvironmentVariable("NANONET_HOST",             $ServiceHost,                "Process")
+    [System.Environment]::SetEnvironmentVariable("NANONET_PORT",             $ServicePort.ToString(),     "Process")
+    [System.Environment]::SetEnvironmentVariable("NANONET_HEALTH_ENDPOINT",  $ServiceEndpoint,            "Process")
+    [System.Environment]::SetEnvironmentVariable("NANONET_POLL_INTERVAL",    $ServicePoll.ToString(),     "Process")
+    [System.Environment]::SetEnvironmentVariable("NANONET_METRICS_ENDPOINT", $metricsEndpoint,            "Process")
+
+    $proc = Start-Process -FilePath $agentBin -PassThru -WindowStyle Normal
+    return $proc
+}
+
 # ── Ana akış ─────────────────────────────────────────────────────────────────
 
 # Varsayılan değerler
@@ -264,10 +319,143 @@ Write-Host "  .env      : $EnvFile" -ForegroundColor DarkGray
 Write-Host "  Target    : $platform" -ForegroundColor DarkGray
 Write-Host ""
 
+# ── .env oku ─────────────────────────────────────────────────────────────────
+$envVars = Read-EnvFile $EnvFile
+
+# ── -StartAll: tüm servisleri çek, her biri için agent başlat ────────────────
+if ($StartAll) {
+    $saAgentToken  = $envVars["AGENT_TOKEN"]
+    $saAccessToken = $envVars["ACCESS_TOKEN"]
+
+    if (-not $saAgentToken) {
+        Write-Err ".env'de AGENT_TOKEN eksik.`n  Önce .\agent-setup.ps1 çalıştırarak kurulum tamamlayın."
+    }
+
+    # Servis listesi için ACCESS_TOKEN gerekiyor; AGENT_TOKEN ile de deneyelim
+    $listToken = $null
+    foreach ($tok in @($saAccessToken, $saAgentToken)) {
+        if (-not $tok) { continue }
+        try {
+            $testResp = Invoke-RestMethod "$Backend/api/v1/services" `
+                -Headers @{ Authorization = "Bearer $tok" } `
+                -TimeoutSec 5 -UseBasicParsing
+            if ($testResp.success) { $listToken = $tok; break }
+        } catch {}
+    }
+
+    if (-not $listToken) {
+        # Token süresi dolmuş — e-posta .env'den alınır, sadece şifre sorulur
+        $saEmail = $envVars["AGENT_EMAIL"]
+        if (-not $saEmail) {
+            Write-Err "Token geçersiz ve AGENT_EMAIL .env'de yok.`n  Önce .\agent-setup.ps1 çalıştırarak kurulum tamamlayın."
+        }
+        Write-Warn "Token süresi dolmuş — yeniden giriş gerekiyor"
+        Write-Host ""
+        $securePass = Read-Host "  Şifre ($saEmail)" -AsSecureString
+        $bstr       = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
+        $saPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+        [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+
+        $authResp = Invoke-Api "$Backend/api/v1/auth/login" "POST" @{} @{
+            email    = $saEmail
+            password = $saPassword
+        }
+        if ($authResp.StatusCode -and $authResp.StatusCode -ne 200) {
+            Write-Err "Giriş başarısız ($($authResp.StatusCode)): e-posta veya şifre yanlış"
+        }
+        $listToken = $authResp.data.tokens.access_token
+        if (-not $listToken) { Write-Err "Token alınamadı." }
+
+        # Yeni token'ı .env'e kaydet
+        if (Test-Path $EnvFile) { Update-EnvFile $EnvFile "ACCESS_TOKEN" $listToken }
+
+        # AGENT_TOKEN da tazele
+        try {
+            $tr = Invoke-Api "$Backend/api/v1/auth/agent-token" "POST" @{ Authorization = "Bearer $listToken" }
+            if ($tr.data.agent_token) {
+                $saAgentToken = $tr.data.agent_token
+                if (Test-Path $EnvFile) { Update-EnvFile $EnvFile "AGENT_TOKEN" $saAgentToken }
+            }
+        } catch {}
+
+        Write-Success "Giriş başarılı"
+        Write-Host ""
+    }
+
+    $svcResp  = Invoke-RestMethod "$Backend/api/v1/services" `
+        -Headers @{ Authorization = "Bearer $listToken" } `
+        -TimeoutSec 10 -UseBasicParsing
+    $services = @($svcResp.data)
+
+    if ($services.Count -eq 0) {
+        Write-Err "Hiç servis bulunamadı. Önce bir servis oluşturun."
+    }
+
+    Write-Success "$($services.Count) servis bulundu"
+    Write-Host ""
+
+    # Çalışan tüm agent'ları durdur
+    $running = @(Get-Process "nanonet-agent" -ErrorAction SilentlyContinue)
+    if ($running.Count -gt 0) {
+        Write-Info "Çalışan $($running.Count) agent durduruluyor..."
+        $running | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 800
+    }
+
+    $agentBin = Get-AgentBin
+    if (-not $agentBin) {
+        Write-Err "Agent binary bulunamadı.`n  Derleyin: cargo build --release --manifest-path agent\Cargo.toml`n  veya: .\agent-setup.ps1 -DownloadBinary"
+    }
+
+    $started = @()
+    $failed  = @()
+
+    foreach ($svc in $services) {
+        $svcHost     = $svc.host
+        $svcPort     = [int]$svc.port
+        $svcEndpoint = if ($svc.health_endpoint) { $svc.health_endpoint } else { "/health" }
+        $svcPoll     = if ($svc.poll_interval_sec) { [int]$svc.poll_interval_sec } else { 10 }
+
+        Write-Info "Başlatılıyor: $($svc.name) ($($svc.id.Substring(0,8)))..."
+
+        $proc = Invoke-StartAgent `
+            -AgentToken      $saAgentToken `
+            -ServiceId       $svc.id `
+            -ServiceName     $svc.name `
+            -ServiceHost     $svcHost `
+            -ServicePort     $svcPort `
+            -ServiceEndpoint $svcEndpoint `
+            -ServicePoll     $svcPoll
+
+        Start-Sleep -Milliseconds 600
+
+        if ($proc -and -not $proc.HasExited) {
+            Write-Success "$($svc.name)  PID: $($proc.Id)"
+            $started += $svc.name
+        } else {
+            Write-Warn "$($svc.name)  başlatılamadı$(if ($proc) { " (ExitCode: $($proc.ExitCode))" })"
+            $failed += $svc.name
+        }
+    }
+
+    Write-Host ""
+    Write-Host "╔════════════════════════════════════════════╗" -ForegroundColor $(if ($NoColor) { 'White' } else { 'Cyan' })
+    Write-Host "║           StartAll Tamamlandı              ║" -ForegroundColor $(if ($NoColor) { 'White' } else { 'Cyan' })
+    Write-Host "╚════════════════════════════════════════════╝" -ForegroundColor $(if ($NoColor) { 'White' } else { 'Cyan' })
+    Write-Host ""
+    Write-Host ("  Başlatılan : {0}/{1}" -f $started.Count, $services.Count) -ForegroundColor Green
+    if ($failed.Count -gt 0) {
+        Write-Host ("  Başarısız  : " + ($failed -join ", ")) -ForegroundColor Yellow
+    }
+    Write-Host ""
+    Write-Host "  Tümünü durdurmak için : Stop-Process -Name nanonet-agent" -ForegroundColor Cyan
+    Write-Host ""
+    exit 0
+}
+
 # ── Adım 1: Bağımlılıklar ────────────────────────────────────────────────────
 Write-Step " 1/5  Bağımlılıklar kontrol ediliyor... "
 
-# jq yoksa indir
 if (-not (Get-Command "jq" -ErrorAction SilentlyContinue)) {
     Install-Jq
 }
@@ -288,7 +476,6 @@ try {
 # ── Adım 3: Kimlik doğrulama ─────────────────────────────────────────────────
 Write-Step " 3/5  Kimlik doğrulama... "
 
-$envVars            = Read-EnvFile $EnvFile
 $cachedAccessToken  = $envVars["ACCESS_TOKEN"]
 $cachedAgentToken   = $envVars["AGENT_TOKEN"]
 $cachedEmail        = $envVars["AGENT_EMAIL"]
@@ -399,15 +586,15 @@ Write-Host ""
 # ── Adım 5: Servis seç / oluştur ─────────────────────────────────────────────
 Write-Step " 5/5  Servis yapılandırması... "
 
+$serviceId = ""; $serviceName = ""; $serviceHost = ""; $servicePort = 8080
+$serviceEndpoint = "/health"; $servicePoll = 10
+
 $svcResp  = Invoke-Api "$Backend/api/v1/services" "GET" @{ Authorization = "Bearer $accessToken" }
 $services = $svcResp.data
 $svcCount = $services.Count
 
 Write-Host ""
 Write-Host "  Servis seçin:" -ForegroundColor White
-
-$serviceId = ""; $serviceName = ""; $serviceHost = ""; $servicePort = 8080
-$serviceEndpoint = "/health"; $servicePoll = 10
 
 if ($svcCount -gt 0) {
     for ($i = 0; $i -lt $svcCount; $i++) {
@@ -434,12 +621,12 @@ if ($svcCount -gt 0) {
 
 if (-not $serviceId) {
     Write-Host "  Yeni servis bilgileri:" -ForegroundColor White
-    $serviceName     = Read-Host "    Servis adı          "
-    $serviceHost     = Read-Host "    İzlenecek host      "
+    $serviceName      = Read-Host "    Servis adı          "
+    $serviceHost      = Read-Host "    İzlenecek host      "
     [int]$servicePort = Read-Host "    İzlenecek port      "
-    $epInput         = Read-Host "    Health endpoint [/health]"
-    $serviceEndpoint = if ($epInput) { $epInput } else { "/health" }
-    $pollInput       = Read-Host "    Metrik aralığı (s) [10]"
+    $epInput          = Read-Host "    Health endpoint [/health]"
+    $serviceEndpoint  = if ($epInput) { $epInput } else { "/health" }
+    $pollInput        = Read-Host "    Metrik aralığı (s) [10]"
     [int]$servicePoll = if ($pollInput) { [int]$pollInput } else { 10 }
     Write-Host ""
 
@@ -531,49 +718,17 @@ if ($runNow -match '^[Ee]') {
     Get-Process "nanonet-agent" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 500
 
-    $agentBin = $null
-    if (Get-Command "nanonet-agent" -ErrorAction SilentlyContinue) {
-        $agentBin = "nanonet-agent"
-    } elseif (Test-Path $agentExe) {
-        $agentBin = $agentExe
-    } elseif (Test-Path $cargoExe) {
-        $agentBin = $cargoExe
-    }
+    $proc = Invoke-StartAgent `
+        -AgentToken      $agentToken `
+        -ServiceId       $serviceId `
+        -ServiceName     $serviceName `
+        -ServiceHost     $serviceHost `
+        -ServicePort     $servicePort `
+        -ServiceEndpoint $serviceEndpoint `
+        -ServicePoll     $servicePoll
 
-    if ($agentBin) {
-        # WebSocket base URL — agent ws_url() içinde "/ws/agent" yolunu kendisi
-        # ekler, bu yüzden burada SADECE şema dönüşümü yapılır (çift /ws/agent olmasın).
-        $wsUrl = $Backend -replace '^http://', 'ws://' -replace '^https://', 'wss://'
-
-        # Uygulama metrik endpoint'i: izlenen servisin kendi CPU/bellek değerlerini
-        # raporlar. Backend, "app" bloğu geldiğinde system (host) metriklerini bununla
-        # ezer — böylece dashboard host'u değil servisi gösterir. .env'de
-        # AGENT_METRICS_ENDPOINT verilmişse o kullanılır, yoksa http://host:port/metrics.
-        $metricsEndpoint = if ($envVars["AGENT_METRICS_ENDPOINT"]) {
-            $envVars["AGENT_METRICS_ENDPOINT"]
-        } else {
-            "http://${serviceHost}:${servicePort}/metrics"
-        }
-
-        $envBlock = @{
-            NANONET_BACKEND          = $wsUrl
-            NANONET_SERVICE_ID       = $serviceId
-            NANONET_AGENT_TOKEN      = $agentToken
-            NANONET_HOST             = $serviceHost
-            NANONET_PORT             = $servicePort.ToString()
-            NANONET_HEALTH_ENDPOINT  = $serviceEndpoint
-            NANONET_POLL_INTERVAL    = $servicePoll.ToString()
-            NANONET_METRICS_ENDPOINT = $metricsEndpoint
-        }
-
-        # Env değişkenlerini geçici ayarla
-        foreach ($kv in $envBlock.GetEnumerator()) {
-            [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value, "Process")
-        }
-
-        $proc = Start-Process -FilePath $agentBin -PassThru -WindowStyle Normal
+    if ($proc) {
         Start-Sleep -Seconds 3
-
         if (-not $proc.HasExited) {
             Write-Success "Agent başlatıldı (PID: $($proc.Id))"
             Write-Host ""
@@ -581,8 +736,6 @@ if ($runNow -match '^[Ee]') {
         } else {
             Write-Warn "Agent erken kapandı (ExitCode: $($proc.ExitCode))"
         }
-    } else {
-        Write-Warn "Agent binary bulunamadı. Önce derleyin veya -DownloadBinary ile indirin."
     }
 }
 

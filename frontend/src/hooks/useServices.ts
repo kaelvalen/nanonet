@@ -19,7 +19,8 @@ export function useServices(options: { enabled?: boolean } = {}) {
 			setServices(data);
 			return data;
 		},
-		staleTime: 30000,
+		staleTime: 15000,
+		refetchInterval: 15000,
 		enabled: options.enabled ?? true,
 	});
 

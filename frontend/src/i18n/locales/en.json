@@ -21,6 +21,7 @@
 		"nav": {
 			"overview": "Overview",
 			"services": "Services",
+			"agents": "Agents",
 			"alerts": "Alerts",
 			"incidents": "Incidents",
 			"logs": "Logs",

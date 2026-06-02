@@ -284,7 +284,8 @@ func (h *Handler) GetForecast(c *gin.Context) {
 		}
 	}
 
-	samples, err := h.service.GetHistory(c.Request.Context(), serviceID, time.Hour, 200)
+	// Use 3-hour lookback with up to 500 samples for better trend estimation.
+	samples, err := h.service.GetHistory(c.Request.Context(), serviceID, 3*time.Hour, 500)
 	if err != nil {
 		response.InternalError(c, "failed to fetch metrics")
 		return
@@ -325,7 +326,8 @@ func (h *Handler) GetForecast(c *gin.Context) {
 		}
 	}
 
-	out := HoltLinearForecast(times, values, horizon, 0.4, 0.1, threshold)
+	// Pass metric key for value clamping (cpu/error_rate bounded to [0,100]).
+	out := HoltLinearForecast(times, values, horizon, 0, 0, threshold, metric)
 	response.Success(c, gin.H{"forecast": out, "metric": metric})
 }
 

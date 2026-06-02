@@ -3,6 +3,7 @@ import {
 	AlertCircle,
 	Bell,
 	BookOpen,
+	Bot,
 	ChevronsLeft,
 	ChevronsRight,
 	CircleDollarSign,
@@ -79,6 +80,7 @@ const SECTIONS: NavSection[] = [
 				icon: Server,
 				badge: "services",
 			},
+			{ to: "/app/agents", labelKey: "shell.nav.agents", icon: Bot },
 			{
 				to: "/app/alerts",
 				labelKey: "shell.nav.alerts",

@@ -48,7 +48,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
       K8S_NAMESPACE: ${K8S_NAMESPACE:-}
-      KUBECONFIG: /tmp/kubeconfig
+      KUBECONFIG: /root/.kube/config-docker
     ports:
       - "8080:8080"
     volumes:

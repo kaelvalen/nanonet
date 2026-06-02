@@ -75,6 +75,22 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
 	);
 }
 
+function Divider({ label }: { label: string }) {
+	return (
+		<div className="relative py-1">
+			<div className="absolute inset-0 flex items-center">
+				<div className="w-full" style={{ borderTop: "1px solid var(--border-subtle)" }} />
+			</div>
+			<div className="relative flex justify-center">
+				<span className="px-2 text-[10px] uppercase tracking-wider"
+					style={{ background: "var(--surface-overlay)", color: "var(--text-faint)" }}>
+					{label}
+				</span>
+			</div>
+		</div>
+	);
+}
+
 const STEPS = [
 	{ id: 1, label: "Agent token al", icon: Key },
 	{ id: 2, label: "Binary indir", icon: Download },
@@ -104,22 +120,21 @@ export function AgentSetupWizard({
 	const apiBaseUrl =
 		import.meta.env.VITE_API_URL?.replace("/api/v1", "") ??
 		"http://localhost:8080";
-	const wsUrl = import.meta.env.VITE_WS_URL ?? "ws://localhost:8080/ws";
+	const agentBackend = import.meta.env.VITE_AGENT_BACKEND ??
+		`${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`;
+
+	const sid = serviceId ?? "<service-id>";
 
 	const linuxCmd = agentToken
-		? `./nanonet-agent \\
-  --ws-url ${wsUrl}/agent \\
-  --token ${agentToken} \\
-  --service-id ${serviceId ?? "<service-id>"} \\
-  --poll-interval 10`
+		? `chmod +x nanonet-agent\n./nanonet-agent \\\n  --backend ${agentBackend} \\\n  --agent-token ${agentToken} \\\n  --service-id ${sid}`
+		: "";
+
+	const windowsCmd = agentToken
+		? `.\\nanonet-agent.exe \`\n  --backend ${agentBackend} \`\n  --agent-token ${agentToken} \`\n  --service-id ${sid}`
 		: "";
 
 	const dockerCmd = agentToken
-		? `docker run -d --name nanonet-agent \\
-  -e WS_URL=${wsUrl}/agent \\
-  -e TOKEN=${agentToken} \\
-  -e SERVICE_ID=${serviceId ?? "<service-id>"} \\
-  ghcr.io/nanonet/agent:latest`
+		? `docker run -d --name nanonet-agent \\\n  -e NANONET_BACKEND=${agentBackend} \\\n  -e NANONET_AGENT_TOKEN=${agentToken} \\\n  -e NANONET_SERVICE_ID=${sid} \\\n  ghcr.io/nanonet/agent:latest`
 		: "";
 
 	const handleClose = () => {
@@ -252,7 +267,12 @@ export function AgentSetupWizard({
 							label="Agent token (güvenli yere kaydedin)"
 						/>
 
-						<div className="flex gap-2">
+						<div className="grid grid-cols-2 gap-2">
+							<Button asChild variant="outline" className="flex-1">
+								<a href={`${apiBaseUrl}/downloads/nanonet-agent-windows-amd64.exe`}>
+									<Download className="w-3.5 h-3.5 mr-1.5" /> Windows x64
+								</a>
+							</Button>
 							<Button asChild variant="outline" className="flex-1">
 								<a href={`${apiBaseUrl}/downloads/nanonet-agent-linux-amd64`}>
 									<Download className="w-3.5 h-3.5 mr-1.5" /> Linux x64
@@ -261,6 +281,11 @@ export function AgentSetupWizard({
 							<Button asChild variant="outline" className="flex-1">
 								<a href={`${apiBaseUrl}/downloads/nanonet-agent-linux-arm64`}>
 									<Download className="w-3.5 h-3.5 mr-1.5" /> Linux ARM64
+								</a>
+							</Button>
+							<Button asChild variant="outline" className="flex-1">
+								<a href={`${apiBaseUrl}/downloads/nanonet-agent-darwin-amd64`}>
+									<Download className="w-3.5 h-3.5 mr-1.5" /> macOS x64
 								</a>
 							</Button>
 						</div>
@@ -281,30 +306,13 @@ export function AgentSetupWizard({
 							Binary'yi çalıştırılabilir yapıp başlatın:
 						</p>
 
-						<CopyBox
-							label="Linux / macOS"
-							value={`chmod +x nanonet-agent\n${linuxCmd}`}
-						/>
+						<CopyBox label="Windows (PowerShell)" value={windowsCmd} />
 
-						<div className="relative py-1">
-							<div className="absolute inset-0 flex items-center">
-								<div
-									className="w-full"
-									style={{ borderTop: "1px solid var(--border-subtle)" }}
-								/>
-							</div>
-							<div className="relative flex justify-center">
-								<span
-									className="px-2 text-[10px] uppercase tracking-wider"
-									style={{
-										background: "var(--surface-overlay)",
-										color: "var(--text-faint)",
-									}}
-								>
-									ya da Docker ile
-								</span>
-							</div>
-						</div>
+						<Divider label="ya da Linux / macOS" />
+
+						<CopyBox label="Linux / macOS" value={linuxCmd} />
+
+						<Divider label="ya da Docker ile" />
 
 						<CopyBox label="Docker" value={dockerCmd} />
 

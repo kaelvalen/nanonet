@@ -21,6 +21,7 @@
 		"nav": {
 			"overview": "Genel Bakış",
 			"services": "Servisler",
+			"agents": "Agents",
 			"alerts": "Uyarılar",
 			"incidents": "Olaylar",
 			"logs": "Loglar",

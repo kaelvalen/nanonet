@@ -72,9 +72,16 @@ export function useWebSocket() {
 							updateServiceStatus(message.service_id, message.data.status);
 							queryClient.setQueryData(["services"], (old: unknown) => {
 								if (!Array.isArray(old)) return old;
-								return old.map((s: { id: string; status: string }) =>
+								return old.map((s: { id: string }) =>
 									s.id === message.service_id
-										? { ...s, status: message.data.status }
+										? {
+											...s,
+											status:                   message.data.status,
+											agent_connected:          true,
+											agent_status:             message.data.agent_status ?? "healthy",
+											agent_last_heartbeat_at:  message.data.time ?? new Date().toISOString(),
+											agent_version:            message.data.agent_version ?? (s as Record<string, unknown>).agent_version,
+										  }
 										: s,
 								);
 							});
@@ -92,10 +99,10 @@ export function useWebSocket() {
 								disk_used_gb: message.data.disk_used_gb,
 							};
 
-							// setQueriesData matches all cached keys with prefix ['serviceMetrics', serviceId]
-							// which covers every duration variant ('15m', '1h', '6h', '24h').
-							queryClient.setQueriesData(
-								{ queryKey: ["serviceMetrics", message.service_id] },
+							// setQueryData creates the cache entry if it doesn't exist yet,
+							// so metrics accumulate even before the detail page is visited.
+							queryClient.setQueryData(
+								["serviceMetrics", message.service_id],
 								(old: ServiceMetrics[] | undefined) => {
 									const now = Date.now();
 									const arr = [...(old ?? []), newPoint].filter(
@@ -178,10 +185,11 @@ export function useWebSocket() {
 		const connect = () => {
 			if (!mountedRef.current) return;
 
-			const wsUrl = import.meta.env.VITE_WS_URL;
+			const wsUrl = import.meta.env.VITE_WS_URL ??
+				`${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
 			const token = useAuthStore.getState().accessToken;
 
-			if (!token || !wsUrl) return;
+			if (!token) return;
 
 			// Clean up existing connection
 			if (wsRef.current) {

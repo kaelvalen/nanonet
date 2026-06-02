@@ -113,6 +113,12 @@ const queryClient = new QueryClient({
 	},
 });
 
+// React 18 Strict Mode dev'de her component'i iki kez mount/unmount eder.
+// AppInit'in useEffect'i çift çalışırsa aynı refresh token iki kez kullanılır;
+// backend token rotation yaptığı için ikinci istek 401 → clearAuth → login redirect.
+// Module-level flag Strict Mode remount'unda ikinci çağrıyı engeller.
+let _restoreInFlight = false;
+
 function AppInit() {
 	const {
 		accessToken,
@@ -125,9 +131,6 @@ function AppInit() {
 	} = useAuthStore();
 
 	useEffect(() => {
-		// localStorage'da kullanıcı yoksa muhtemelen oturum yoktur — refresh
-		// denemeyi atla, hızlıca /login akışını aç. Eğer cookie hâlâ duruyorsa
-		// bir sonraki login zaten yenisini set edecek.
 		if (!user) {
 			setInitializing(false);
 			return;
@@ -138,9 +141,11 @@ function AppInit() {
 			return;
 		}
 
+		if (_restoreInFlight) return;
+		_restoreInFlight = true;
+
 		async function restoreSession() {
 			try {
-				// Refresh artık HttpOnly cookie üzerinden; gövde geçilmiyor.
 				const res = await authApi.refresh();
 				setAuth(
 					user ?? { id: "", email: "", created_at: "", updated_at: "" },
@@ -152,6 +157,7 @@ function AppInit() {
 				clearAuth();
 			} finally {
 				setInitializing(false);
+				_restoreInFlight = false;
 			}
 		}
 

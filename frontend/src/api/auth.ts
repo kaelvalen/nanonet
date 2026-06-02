@@ -52,6 +52,6 @@ export const authApi = {
 		const response = await apiClient.post("/auth/agent-token", {
 			service_id: serviceId,
 		});
-		return response.data.data?.token as string;
+		return (response.data.data?.agent_token ?? response.data.data?.token) as string;
 	},
 };
