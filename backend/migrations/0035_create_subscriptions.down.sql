@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS plans;
+ALTER TABLE users DROP COLUMN IF EXISTS plan_tier;

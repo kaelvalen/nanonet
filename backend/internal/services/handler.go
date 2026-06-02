@@ -2,9 +2,12 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
+	"net/http"
 	"time"
 
+	"nanonet-backend/internal/billing"
 	"nanonet-backend/internal/commands"
 	"nanonet-backend/internal/ws"
 	"nanonet-backend/pkg/audit"
@@ -20,6 +23,7 @@ type Handler struct {
 	hub        *ws.Hub
 	cmdService *commands.Service
 	audit      *audit.Logger
+	billing    *billing.Service
 }
 
 func NewHandler(db *gorm.DB, hub *ws.Hub) *Handler {
@@ -28,6 +32,7 @@ func NewHandler(db *gorm.DB, hub *ws.Hub) *Handler {
 		hub:        hub,
 		cmdService: commands.NewService(db),
 		audit:      audit.New(db),
+		billing:    billing.NewService(db),
 	}
 }
 
@@ -76,6 +81,14 @@ func (h *Handler) Create(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
 		return
+	}
+
+	// Enforce plan service limit
+	if err := h.billing.CheckServiceLimit(c.Request.Context(), userID); err != nil {
+		if errors.Is(err, billing.ErrLimitReached) {
+			c.JSON(http.StatusPaymentRequired, gin.H{"error": err.Error(), "upgrade_required": true})
+			return
+		}
 	}
 
 	service, err := h.service.Create(c.Request.Context(), userID, req)

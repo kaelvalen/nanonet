@@ -104,6 +104,9 @@ const ComparePage = lazyWithPreload(() =>
 const AgentsPage = lazyWithPreload(() =>
 	import("@/pages/AgentsPage").then((m) => ({ default: m.AgentsPage })),
 );
+const BillingPage = lazyWithPreload(() =>
+	import("@/pages/BillingPage").then((m) => ({ default: m.BillingPage })),
+);
 
 /* ROUTE_PRELOAD — central map from URL pathname to its preload function so
    nav components (SideRail, MobileNav, CommandPalette, breadcrumbs) can warm
@@ -130,6 +133,7 @@ const ROUTE_PRELOAD: Record<string, () => Promise<unknown>> = {
 	"/app/api-tokens": ApiTokensPage.preload,
 	"/app/compare": ComparePage.preload,
 	"/app/agents": AgentsPage.preload,
+	"/app/billing": BillingPage.preload,
 };
 
 /** preloadRoute(path) — start fetching the chunk for a route. Safe to call
@@ -271,6 +275,7 @@ export const router = createBrowserRouter([
 			{ path: "api-tokens", element: <ApiTokensPage /> },
 			{ path: "compare", element: <ComparePage /> },
 			{ path: "agents", element: <AgentsPage /> },
+			{ path: "billing", element: <BillingPage /> },
 		],
 	},
 	{

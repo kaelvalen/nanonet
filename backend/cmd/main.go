@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"nanonet-backend/internal/agentmgmt"
+	"nanonet-backend/internal/billing"
 	"nanonet-backend/internal/ai"
 	"nanonet-backend/internal/alerts"
 	"nanonet-backend/internal/apitokens"
@@ -202,6 +203,9 @@ func main() {
 		logger.Info("K8S_NAMESPACE tanımlanmadı — Kubernetes entegrasyonu devre dışı")
 	}
 	k8sHandler := k8s.NewHandler(k8sClient)
+
+	// ── Billing ───────────────────────────────────────────────────
+	billingHandler := billing.NewHandler(db)
 
 	// ── Router ────────────────────────────────────────────────────
 	router := gin.New()
@@ -772,6 +776,15 @@ func main() {
 			k8sGroup.GET("/top/nodes", k8sHandler.GetTopNodes)
 			k8sGroup.POST("/deploy", strictLimiter, k8sHandler.DeployService)
 			k8sGroup.DELETE("/deploy/:name", strictLimiter, k8sHandler.UndeployService)
+		}
+
+		// ── Billing ───────────────────────────────────────────────
+		billingGroup := v1.Group("/billing", authMiddleware.Required())
+		{
+			billingGroup.GET("/plans", billingHandler.GetPlans)
+			billingGroup.GET("/subscription", billingHandler.GetSubscription)
+			billingGroup.POST("/subscribe", strictLimiter, billingHandler.Subscribe)
+			billingGroup.POST("/cancel", strictLimiter, billingHandler.Cancel)
 		}
 	}
 

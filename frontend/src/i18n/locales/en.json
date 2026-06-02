@@ -37,6 +37,7 @@
 			"security": "Security",
 			"apiTokens": "API Tokens",
 			"aiUsage": "AI Usage",
+			"billing": "Billing",
 			"settings": "Settings"
 		},
 		"topbar": {

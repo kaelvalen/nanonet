@@ -8,6 +8,7 @@ import {
 	ChevronsRight,
 	CircleDollarSign,
 	Cloud,
+	CreditCard,
 	FileText,
 	GitCompare,
 	GitFork,
@@ -145,6 +146,7 @@ const SECTIONS: NavSection[] = [
 				labelKey: "shell.nav.aiUsage",
 				icon: CircleDollarSign,
 			},
+			{ to: "/app/billing", labelKey: "shell.nav.billing", icon: CreditCard },
 		],
 	},
 ];

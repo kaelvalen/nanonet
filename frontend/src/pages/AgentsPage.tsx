@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PageHeader, PageShell } from "@/components/ui/page-shell";
 import {
 	AlertTriangle,
 	Bot,
@@ -28,12 +29,19 @@ function relativeTime(iso?: string | null): string {
 	if (!iso) return "—";
 	const diff = Date.now() - new Date(iso).getTime();
 	const s = Math.floor(diff / 1000);
+	if (s < 15) return "az önce";
 	if (s < 60) return `${s}s önce`;
 	const m = Math.floor(s / 60);
-	if (m < 60) return `${m}d önce`;
+	if (m < 60) return `${m}dk önce`;
 	const h = Math.floor(m / 60);
 	if (h < 24) return `${h}sa önce`;
 	return `${Math.floor(h / 24)}g önce`;
+}
+
+// Heartbeat 2 dakikadan eskiyse stale sayıyoruz — muhtemelen önce bağlıydı
+function isHeartbeatFresh(iso?: string | null): boolean {
+	if (!iso) return false;
+	return Date.now() - new Date(iso).getTime() < 2 * 60 * 1000;
 }
 
 function CopyButton({ value }: { value: string }) {
@@ -131,11 +139,25 @@ function StatusBadge({ svc }: { svc: Service }) {
 			</span>
 		);
 	}
+
+	// Agent bağlı ama heartbeat stale ise farklı göster
+	if (!isHeartbeatFresh(svc.agent_last_heartbeat_at)) {
+		return (
+			<span
+				className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+				style={{ background: "var(--status-degraded-subtle)", color: "var(--status-degraded-text)" }}
+			>
+				<Clock className="w-3 h-3" />
+				Gecikmiş
+			</span>
+		);
+	}
+
 	const map = {
 		healthy: { label: "Sağlıklı", color: "var(--status-up-text)", bg: "var(--status-up-subtle)", Icon: CheckCircle2 },
 		stale:   { label: "Gecikmeli", color: "var(--status-degraded-text)", bg: "var(--status-degraded-subtle)", Icon: Clock },
 		down:    { label: "Yanıtsız", color: "var(--status-down-text)", bg: "var(--status-down-subtle)", Icon: AlertTriangle },
-		unknown: { label: "Bağlı", color: "var(--text-secondary)", bg: "var(--surface-sunken)", Icon: Bot },
+		unknown: { label: "Bağlı", color: "var(--status-up-text)", bg: "var(--status-up-subtle)", Icon: Bot },
 	} as const;
 	const s = map[svc.agent_status ?? "unknown"];
 	return (
@@ -193,10 +215,16 @@ function AgentRow({ svc }: { svc: Service }) {
 					<div className="flex items-center gap-3 text-[11px]" style={{ color: "var(--text-faint)" }}>
 						<span className="font-mono">{svc.host}:{svc.port}</span>
 						{svc.agent_version && <span>v{svc.agent_version}</span>}
-						{connected && (
-							<span className="flex items-center gap-1">
+						{connected && isHeartbeatFresh(svc.agent_last_heartbeat_at) && (
+							<span className="flex items-center gap-1" style={{ color: "var(--status-up-text)" }}>
 								<Clock className="w-3 h-3" />
 								{relativeTime(svc.agent_last_heartbeat_at)}
+							</span>
+						)}
+						{connected && !isHeartbeatFresh(svc.agent_last_heartbeat_at) && (
+							<span className="flex items-center gap-1" style={{ color: "var(--status-degraded-text)" }}>
+								<Clock className="w-3 h-3" />
+								Son: {relativeTime(svc.agent_last_heartbeat_at)}
 							</span>
 						)}
 					</div>
@@ -228,7 +256,6 @@ function AgentRow({ svc }: { svc: Service }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function AgentsPage() {
-	useRegisterPageMeta({ title: "Agents", eyebrow: "Altyapı" });
 	const qc = useQueryClient();
 
 	const { data: services = [], isLoading } = useQuery({
@@ -255,18 +282,9 @@ export function AgentsPage() {
 	const allBusy = stopAll.isPending || startAll.isPending || restartAll.isPending;
 
 	return (
-		<div className="max-w-4xl mx-auto w-full space-y-6">
-
-			{/* Header */}
-			<div className="flex items-start justify-between gap-4 flex-wrap">
-				<div>
-					<h1 className="text-[18px] font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>
-						Agents
-					</h1>
-					<p className="text-[13px]" style={{ color: "var(--text-tertiary)" }}>
-						Agent binary'lerini izle ve yönet
-					</p>
-				</div>
+		<PageShell width="wide">
+			<div className="flex items-center justify-between flex-wrap gap-3">
+				<PageHeader eyebrow="Altyapı" title="Agents" description="Agent binary'lerini izle ve yönet" />
 				{connected.length > 0 && (
 					<div className="flex items-center gap-2 flex-wrap">
 						<Button size="sm" variant="outline" onClick={() => startAll.mutate()} disabled={allBusy} className="gap-1.5">
@@ -340,6 +358,6 @@ export function AgentsPage() {
 					<p className="text-[14px]" style={{ color: "var(--text-tertiary)" }}>Henüz servis yok</p>
 				</div>
 			)}
-		</div>
+		</PageShell>
 	);
 }

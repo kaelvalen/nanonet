@@ -79,7 +79,7 @@ export function useWebSocket() {
 											status:                   message.data.status,
 											agent_connected:          true,
 											agent_status:             message.data.agent_status ?? "healthy",
-											agent_last_heartbeat_at:  message.data.time ?? new Date().toISOString(),
+											agent_last_heartbeat_at:  new Date().toISOString(), // WS receipt time, not metric time
 											agent_version:            message.data.agent_version ?? (s as Record<string, unknown>).agent_version,
 										  }
 										: s,
