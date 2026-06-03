@@ -51,7 +51,7 @@ export function DashboardLayout() {
 						className={
 							fullBleed
 								? "flex-1 flex flex-col min-h-0 overflow-hidden pb-[calc(var(--mobilenav-h)+env(safe-area-inset-bottom,0px))] md:pb-0"
-								: "flex-1 flex flex-col min-h-0 pt-3 sm:pt-4 pb-[calc(var(--mobilenav-h)+env(safe-area-inset-bottom,0px)+8px)] md:pb-4 px-3 sm:px-6 lg:px-8 overflow-y-auto"
+								: "flex-1 flex flex-col min-h-0 pt-3 sm:pt-4 pb-[calc(var(--mobilenav-h)+env(safe-area-inset-bottom,0px)+8px)] md:pb-4 px-3 sm:px-6 lg:px-8 overflow-hidden"
 						}
 					>
 						{/* Inner Suspense — without this, lazy() route transitions bubble

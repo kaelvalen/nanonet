@@ -23,7 +23,7 @@ import {
 	Target,
 	X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router";
 import { useServices } from "@/hooks/useServices";
@@ -150,32 +150,31 @@ function TabLink({
 
 // ── More drawer ──────────────────────────────────────────────────────────────
 
-function MoreDrawer({
-	open,
-	onClose,
-}: {
-	open: boolean;
-	onClose: () => void;
-}) {
+function MoreDrawer({ onClose }: { onClose: () => void }) {
 	const { t } = useTranslation();
 	const location = useLocation();
 
-	// Close on navigation
+	// This component is mounted ONLY while the drawer is open (parent renders it
+	// conditionally), so it remounts on every open. `openedAtPath` therefore
+	// captures the route at the moment of *this* open. We close only when the
+	// user navigates to a DIFFERENT route — never on the initial open. The
+	// pathname-diff guard also makes this safe if `onClose` is a fresh ref each
+	// render (otherwise the effect would fire onClose on mount and snap shut).
+	const openedAtPath = useRef(location.pathname);
 	useEffect(() => {
-		onClose();
+		if (location.pathname !== openedAtPath.current) {
+			onClose();
+		}
 	}, [location.pathname, onClose]);
 
-	// Close on backdrop scroll-down / swipe (simple approach: close on any touch outside)
+	// Escape closes the drawer.
 	useEffect(() => {
-		if (!open) return;
 		const handler = (e: KeyboardEvent) => {
 			if (e.key === "Escape") onClose();
 		};
 		window.addEventListener("keydown", handler);
 		return () => window.removeEventListener("keydown", handler);
-	}, [open, onClose]);
-
-	if (!open) return null;
+	}, [onClose]);
 
 	return (
 		<>
@@ -267,6 +266,7 @@ export function MobileNav() {
 	const location = useLocation();
 	const { services } = useServices();
 	const [moreOpen, setMoreOpen] = useState(false);
+	const closeMore = useCallback(() => setMoreOpen(false), []);
 
 	const downCount = services.filter(
 		(s) => s.status === "down" || s.status === "degraded",
@@ -318,7 +318,7 @@ export function MobileNav() {
 				</button>
 			</nav>
 
-			<MoreDrawer open={moreOpen} onClose={() => setMoreOpen(false)} />
+			{moreOpen && <MoreDrawer onClose={closeMore} />}
 		</>
 	);
 }
