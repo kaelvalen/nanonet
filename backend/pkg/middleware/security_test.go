@@ -54,6 +54,31 @@ func TestSecurityHeaders_APIRoutesGetStrictCSP(t *testing.T) {
 	}
 }
 
+func TestSecurityHeaders_SwaggerDocsGetsRelaxedCSP(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(SecurityHeadersMiddleware())
+	r.GET("/api/docs", func(c *gin.Context) { c.String(200, "<html></html>") })
+	w := get(r, "/api/docs")
+	csp := w.Header().Get("Content-Security-Policy")
+	if !strings.Contains(csp, "https://unpkg.com") {
+		t.Errorf("docs CSP should allow unpkg.com CDN, got %q", csp)
+	}
+	if !strings.Contains(csp, "script-src 'self' 'unsafe-inline' https://unpkg.com") {
+		t.Errorf("docs CSP should allow inline+unpkg scripts for Swagger UI, got %q", csp)
+	}
+}
+
+func TestSecurityHeaders_NonDocsAPIStaysStrict(t *testing.T) {
+	r := newRouter()
+	// /api/openapi.yaml is data, not the docs HTML — must remain strict.
+	w := get(r, "/api/v1/ping")
+	csp := w.Header().Get("Content-Security-Policy")
+	if strings.Contains(csp, "unpkg.com") || strings.Contains(csp, "script-src 'self' 'unsafe-inline'") {
+		t.Errorf("non-docs API route must keep strict CSP, got %q", csp)
+	}
+}
+
 func TestSecurityHeaders_NonAPIRouteCSPAllowsSelf(t *testing.T) {
 	r := newRouter()
 	w := get(r, "/")

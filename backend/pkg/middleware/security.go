@@ -11,6 +11,19 @@ import (
 // önlemleri.
 const apiCSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
 
+// swaggerCSP — yalnızca `/api/docs` Swagger UI sayfası için. Swagger UI
+// varlıkları unpkg CDN'den yüklenir ve init/init-style inline olduğundan
+// script/style için 'unsafe-inline' + unpkg.com origin'ine izin verilir.
+// Bu yalnızca tek bir docs rotasıyla sınırlıdır; API/JSON rotaları hâlâ
+// katı apiCSP kullanır.
+const swaggerCSP = "default-src 'none'; " +
+	"script-src 'self' 'unsafe-inline' https://unpkg.com; " +
+	"style-src 'self' 'unsafe-inline' https://unpkg.com; " +
+	"img-src 'self' data: https://unpkg.com; " +
+	"font-src 'self' data: https://unpkg.com; " +
+	"connect-src 'self'; " +
+	"frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+
 // SecurityHeadersMiddleware sets security-related HTTP response headers.
 //
 // CSP iki versiyonludur:
@@ -33,7 +46,10 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 		c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 
 		path := c.Request.URL.Path
-		if strings.HasPrefix(path, "/api/") ||
+		if path == "/api/docs" {
+			// Swagger UI HTML sayfası — CDN + inline gerektirir.
+			c.Header("Content-Security-Policy", swaggerCSP)
+		} else if strings.HasPrefix(path, "/api/") ||
 			strings.HasPrefix(path, "/ws/") ||
 			path == "/health" ||
 			path == "/metrics" {
