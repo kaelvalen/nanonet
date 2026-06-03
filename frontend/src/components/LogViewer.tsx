@@ -15,16 +15,8 @@ import { metricsApi } from "@/api/metrics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/components/ui/utils";
+import { type LogEntry, useServiceLogStore } from "@/store/serviceLogStore";
 import { useAuthStore } from "@/store/authStore";
-
-export interface LogEntry {
-	id: string;
-	timestamp: string;
-	level: "info" | "warn" | "error" | "debug";
-	source: string;
-	message: string;
-	raw?: string;
-}
 
 interface LogViewerProps {
 	serviceId: string;
@@ -183,6 +175,10 @@ export function LogViewer({
 	const [autoScroll, setAutoScroll] = useState(true);
 	const [paused, setPaused] = useState(false);
 	const [unreadCount, setUnreadCount] = useState(0);
+	const streamedLogs = useServiceLogStore(
+		(state) => state.logsByService[serviceId] ?? [],
+	);
+	const clearStreamedLogs = useServiceLogStore((state) => state.clearLogs);
 
 	const wsRef = useRef<WebSocket | null>(null);
 	const pollTimerRef = useRef<ReturnType<typeof setInterval>>();
@@ -208,6 +204,23 @@ export function LogViewer({
 		},
 		[maxLines],
 	);
+
+	useEffect(() => {
+		if (streamedLogs.length === 0) return;
+		setLogs((prev) => {
+			const seen = new Set(
+				prev.map((l) => `${l.timestamp}|${l.source}|${l.message}`),
+			);
+			const next = [...prev];
+			for (const entry of streamedLogs) {
+				const key = `${entry.timestamp}|${entry.source}|${entry.message}`;
+				if (seen.has(key)) continue;
+				seen.add(key);
+				next.push(entry);
+			}
+			return next.length > maxLines ? next.slice(-maxLines) : next;
+		});
+	}, [streamedLogs, maxLines]);
 
 	// Pre-load recent metric history so the log is not blank before WS connects
 	useEffect(() => {
@@ -549,7 +562,10 @@ export function LogViewer({
 						size="icon"
 						variant="ghost"
 						className="h-7 w-7"
-						onClick={() => setLogs([])}
+						onClick={() => {
+							setLogs([]);
+							clearStreamedLogs(serviceId);
+						}}
 						title="Temizle"
 					>
 						<Trash2

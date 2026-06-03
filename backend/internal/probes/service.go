@@ -2,6 +2,7 @@ package probes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,10 @@ import (
 
 	"nanonet-backend/pkg/netguard"
 )
+
+// ErrInvalidTarget — kullanıcı geçersiz/izin verilmeyen bir probe hedefi
+// verdiğinde döner. Handler bunu 400 olarak çevirir (500 değil).
+var ErrInvalidTarget = errors.New("invalid probe target")
 
 type Service struct {
 	repo         *Repository
@@ -36,7 +41,7 @@ func (s *Service) Create(ctx context.Context, userID uuid.UUID, req CreateReques
 		expected = 200
 	}
 	if err := netguard.ValidateProbeTarget(ctx, req.Kind, req.Target, s.guardOptions); err != nil {
-		return nil, fmt.Errorf("probe target rejected: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidTarget, err)
 	}
 	p := &Probe{
 		UserID:          userID,

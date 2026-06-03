@@ -64,7 +64,11 @@ export const metricsApi = {
 			params: { duration, limit },
 		});
 		const payload = response.data.data;
-		return payload?.metrics ?? payload ?? [];
+		// payload may be { metrics: [...] } or a bare array, or null. Always
+		// return an array so consumers can safely iterate.
+		if (Array.isArray(payload)) return payload;
+		if (Array.isArray(payload?.metrics)) return payload.metrics;
+		return [];
 	},
 
 	getForecast: async (
@@ -93,7 +97,11 @@ export const metricsApi = {
 			},
 		);
 		const payload = response.data.data;
-		return payload?.metrics ?? payload ?? [];
+		// payload may be { metrics: [...] } or a bare array, or null. Always
+		// return an array so consumers can safely iterate.
+		if (Array.isArray(payload)) return payload;
+		if (Array.isArray(payload?.metrics)) return payload.metrics;
+		return [];
 	},
 
 	getUptime: async (

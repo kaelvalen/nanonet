@@ -573,9 +573,9 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 		);
 	}
 	return (
-		<ol className="relative pl-6 space-y-4">
+		<ol className="relative pl-8 space-y-4">
 			<span
-				className="absolute left-[10px] top-1 bottom-1 w-px"
+				className="absolute left-[18px] top-1 bottom-1 w-px"
 				style={{ background: "var(--border-default)" }}
 				aria-hidden
 			/>
@@ -586,7 +586,7 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 					// biome-ignore lint/suspicious/noArrayIndexKey: event timeline is append-only and stable per render
 					<li key={`${e.timestamp}-${idx}`} className="relative">
 						<span
-							className="absolute -left-[18px] top-0 w-5 h-5 rounded-full flex items-center justify-center"
+							className="absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center"
 							style={{
 								background: "var(--surface-base)",
 								border: `1.5px solid ${meta.color}`,

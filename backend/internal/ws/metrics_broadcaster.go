@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +20,10 @@ import (
 // securityScanInterval güvenlik taramaları arasındaki varsayılan süre.
 const securityScanInterval = 6 * time.Hour
 
+// infoLogInterval — sağlıklı servislerin info-level heartbeat logu ne sıklıkta yazılsın.
+// Her metric poll'da log yazmak gürültü olur; 5 dakikada bir yeterli.
+const infoLogInterval = 5 * time.Minute
+
 type MetricsBroadcaster struct {
 	hub          *Hub
 	db           *gorm.DB
@@ -27,12 +32,15 @@ type MetricsBroadcaster struct {
 	alertService *alerts.Service
 	pollInterval time.Duration
 
+	// lastInfoLog — servis başına son info log zamanı (throttle için).
+	lastInfoLog   map[uuid.UUID]time.Time
+	lastInfoLogMu sync.Mutex
+
+	// lastStatus — servis başına son bilinen status (geçiş logları için).
+	lastStatus   map[uuid.UUID]string
+	lastStatusMu sync.Mutex
+
 	// scanInFlight — aktif çalışan ScanAllServices olup olmadığını gösterir.
-	// Eski ticker bazlı kod, önceki tarama bitmeden yeni tarama başlatabilirdi
-	// (tarama 6 saatten uzun sürerse veya DB yavaşlarsa). Bu hem DB üstünde
-	// gereksiz baskı, hem de aynı servis için çift uyarı/log yaratır.
-	// `atomic.Int32` ile compare-and-swap kullanıp aynı anda yalnızca bir
-	// tarama çalışmasına izin veriyoruz; ikinci tetikleyici "skip"er.
 	scanInFlight atomic.Int32
 }
 
@@ -44,6 +52,8 @@ func NewMetricsBroadcaster(hub *Hub, db *gorm.DB, alertSvc *alerts.Service, logs
 		logsRepo:     logsRepo,
 		alertService: alertSvc,
 		pollInterval: pollInterval,
+		lastInfoLog:  make(map[uuid.UUID]time.Time),
+		lastStatus:   make(map[uuid.UUID]string),
 	}
 
 	hub.SetOnMetric(mb.handleAgentMetric)
@@ -261,13 +271,50 @@ func (mb *MetricsBroadcaster) writeAgentLog(svcID uuid.UUID, metric *metrics.Met
 		}
 	}
 
-	// Sadece warn/error logları yaz — normal info metrikleri gereksiz gürültü
-	if level == "info" {
-		return
+	now := time.Now()
+
+	// Status geçiş logu: up→down veya down→up gibi değişiklikler her zaman yaz.
+	currentStatus := metric.Status
+	mb.lastStatusMu.Lock()
+	prev, hasPrev := mb.lastStatus[svcID]
+	if currentStatus != "" {
+		mb.lastStatus[svcID] = currentStatus
+	}
+	mb.lastStatusMu.Unlock()
+
+	isStatusChange := hasPrev && prev != currentStatus && currentStatus != ""
+
+	if level == "info" && !isStatusChange {
+		// Sağlıklı info metrikleri: 5 dakikada bir yaz (heartbeat).
+		mb.lastInfoLogMu.Lock()
+		lastWritten := mb.lastInfoLog[svcID]
+		shouldWrite := now.Sub(lastWritten) >= infoLogInterval
+		if shouldWrite {
+			mb.lastInfoLog[svcID] = now
+		}
+		mb.lastInfoLogMu.Unlock()
+
+		if !shouldWrite {
+			return
+		}
+		message = "Servis sağlıklı"
+	}
+
+	if isStatusChange && level == "info" {
+		if currentStatus == "up" {
+			message = fmt.Sprintf("Servis durumu normale döndü (%s → %s)", prev, currentStatus)
+		} else {
+			message = fmt.Sprintf("Servis durumu değişti: %s → %s", prev, currentStatus)
+			level = "warn"
+		}
+	}
+
+	if message == "" {
+		message = "Servis sağlıklı"
 	}
 
 	entry := &logs.ServiceLog{
-		Time:      time.Now(),
+		Time:      now,
 		ServiceID: svcID,
 		Level:     level,
 		Source:    "agent",

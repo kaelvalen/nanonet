@@ -314,7 +314,10 @@ func main() {
 	})
 
 	// ── Synthetic probes (server-side HTTP/TCP checks) ─────────────
-	probesSvc := probes.NewService(db, netguard.Options{AllowPrivate: cfg.AllowPrivateProbeTargets})
+	probesSvc := probes.NewService(db, netguard.Options{
+		AllowPrivate:  cfg.AllowPrivateProbeTargets,
+		AllowLoopback: cfg.AllowLoopbackProbeTargets,
+	})
 	probesHandler := probes.NewHandler(probesSvc)
 	probesRunner := probes.NewRunner(probesSvc.Repo(), logger)
 	// On Up→Down (after 3 fails) or Down→Up, dispatch a notification.

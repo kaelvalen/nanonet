@@ -13,6 +13,11 @@ import (
 
 type Options struct {
 	AllowPrivate bool
+	// AllowLoopback permits loopback (127.0.0.0/8, ::1) and local hostnames
+	// (localhost, host.docker.internal). Intended ONLY for local development
+	// where probing localhost services is a legitimate use case. Cloud-metadata
+	// and link-local ranges remain blocked regardless.
+	AllowLoopback bool
 }
 
 // ValidateOutboundURL validates a user-controlled outbound URL to reduce SSRF risk.
@@ -32,7 +37,7 @@ func ValidateOutboundURL(ctx context.Context, raw string, opt Options) error {
 	if host == "" {
 		return errors.New("missing host")
 	}
-	if isObviouslyLocalHost(host) {
+	if isObviouslyLocalHost(host) && !opt.AllowLoopback {
 		return errors.New("local hostnames are not allowed")
 	}
 
@@ -59,7 +64,7 @@ func ValidateProbeTarget(ctx context.Context, kind, target string, opt Options) 
 		if host == "" {
 			return errors.New("tcp target missing host")
 		}
-		if isObviouslyLocalHost(host) {
+		if isObviouslyLocalHost(host) && !opt.AllowLoopback {
 			return errors.New("local hostnames are not allowed")
 		}
 		if ip, err := netip.ParseAddr(host); err == nil {
@@ -101,9 +106,13 @@ func validateIP(ip netip.Addr, opt Options) error {
 		return errors.New("invalid ip")
 	}
 
-	// Always block clearly unsafe ranges, even if AllowPrivate=true.
-	if ip.IsLoopback() || ip.IsMulticast() || ip.IsUnspecified() {
-		return errors.New("loopback/multicast/unspecified ip not allowed")
+	// Loopback is allowed only when explicitly enabled (local dev). Multicast
+	// and unspecified are always unsafe.
+	if ip.IsLoopback() && !opt.AllowLoopback {
+		return errors.New("loopback ip not allowed")
+	}
+	if ip.IsMulticast() || ip.IsUnspecified() {
+		return errors.New("multicast/unspecified ip not allowed")
 	}
 	if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 		return errors.New("link-local ip not allowed")

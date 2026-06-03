@@ -49,6 +49,10 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       K8S_NAMESPACE: ${K8S_NAMESPACE:-default}
       KUBECONFIG: /root/.kube/config-docker
+      # Dev only: allow probes to hit localhost / private IPs (mock services).
+      # NEVER enable in production — SSRF risk.
+      ALLOW_LOOPBACK_PROBE_TARGETS: "true"
+      ALLOW_PRIVATE_PROBE_TARGETS: "true"
     ports:
       - "8080:8080"
     volumes:

@@ -45,6 +45,10 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 	p, err := h.svc.Create(c.Request.Context(), uid, req)
 	if err != nil {
+		if errors.Is(err, ErrInvalidTarget) {
+			response.BadRequest(c, "Geçersiz hedef: "+err.Error())
+			return
+		}
 		response.InternalError(c, "probe oluşturulamadı")
 		return
 	}
@@ -67,6 +71,10 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 	p, err := h.svc.Update(c.Request.Context(), uid, id, req)
 	if err != nil {
+		if errors.Is(err, ErrInvalidTarget) {
+			response.BadRequest(c, "Geçersiz hedef: "+err.Error())
+			return
+		}
 		respondNotFoundOr(c, err, "probe bulunamadı")
 		return
 	}

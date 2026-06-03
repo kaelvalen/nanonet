@@ -156,7 +156,8 @@ function StatusHeatmap({ services }: { services: Service[] }) {
 						</thead>
 						<tbody>
 							{services.map((svc, idx) => {
-								const data = heatQueries[idx]?.data ?? [];
+								const raw = heatQueries[idx]?.data;
+								const data = Array.isArray(raw) ? raw : [];
 								const byHour = new Map<number, AggregatedMetric>();
 								for (const row of data) {
 									const d = new Date(row.bucket);

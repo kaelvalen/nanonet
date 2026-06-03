@@ -27,7 +27,7 @@ import type { ServiceMetrics } from "@/types/service";
 
 const METRICS = [
 	{ key: "cpu"        as ForecastMetric, label: "CPU",     icon: Cpu,           color: "#2dd4bf", unit: "%",  threshold: 80  },
-	{ key: "memory"     as ForecastMetric, label: "Bellek",  icon: HardDrive,     color: "#22d3ee", unit: "MB"                 },
+	{ key: "memory"     as ForecastMetric, label: "Bellek",  icon: HardDrive,     color: "#22d3ee", unit: "MB", threshold: undefined },
 	{ key: "latency"    as ForecastMetric, label: "Gecikme", icon: Clock,         color: "#818cf8", unit: "ms", threshold: 500 },
 	{ key: "error_rate" as ForecastMetric, label: "Hata",    icon: AlertTriangle, color: "#fb7185", unit: "%",  threshold: 5   },
 ] as const;

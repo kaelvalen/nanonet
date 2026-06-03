@@ -30,9 +30,10 @@ type Config struct {
 	Environment    string // "development", "staging", "production"
 
 	// Security toggles (safe defaults vary by environment).
-	AllowQueryTokenAuth      bool // allow `?token=` for auth (avoid: leakage)
-	AllowPrivateProbeTargets bool // allow probes to hit private/reserved IPs
-	AllowPrivateWebhookURLs  bool // allow webhooks/slack/discord to private/reserved IPs
+	AllowQueryTokenAuth       bool // allow `?token=` for auth (avoid: leakage)
+	AllowPrivateProbeTargets  bool // allow probes to hit private/reserved IPs
+	AllowLoopbackProbeTargets bool // allow probes to hit loopback/localhost (dev only)
+	AllowPrivateWebhookURLs   bool // allow webhooks/slack/discord to private/reserved IPs
 
 	// SecureCookies — `Set-Cookie ... Secure` bayrağını kontrol eder.
 	// Production'da daima true (HTTPS arkasında zorunlu), dev'de false
@@ -89,6 +90,7 @@ func Load() *Config {
 	// environment is accidentally exposed.
 	cfg.AllowQueryTokenAuth = getEnvBool("ALLOW_QUERY_TOKEN_AUTH", false)
 	cfg.AllowPrivateProbeTargets = getEnvBool("ALLOW_PRIVATE_PROBE_TARGETS", false)
+	cfg.AllowLoopbackProbeTargets = getEnvBool("ALLOW_LOOPBACK_PROBE_TARGETS", false)
 	cfg.AllowPrivateWebhookURLs = getEnvBool("ALLOW_PRIVATE_WEBHOOK_URLS", false)
 
 	// SecureCookies default: prod'da true, geri kalanlarda false. Override

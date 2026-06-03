@@ -281,11 +281,16 @@ export function useMapState() {
 
 	// ── Add service to map ──────────────────────────────────────────
 	const addServiceToMap = useCallback(
-		(svc: Service) => {
+		(svc: Service, position?: { x: number; y: number }) => {
 			const newNode: Node = {
 				id: svc.id,
 				type: "serviceNode",
-				position: { x: Math.random() * 400 + 60, y: Math.random() * 200 + 60 },
+				// Default: viewport-center position (passed by caller). Fallback to a
+				// small jittered position if no viewport info is available.
+				position: position ?? {
+					x: Math.random() * 400 + 60,
+					y: Math.random() * 200 + 60,
+				},
 				data: {
 					...buildNodeData(svc, false),
 					onDelete: handleDelete,
@@ -293,9 +298,10 @@ export function useMapState() {
 				},
 			};
 			setNodes((ns) => [...ns, newNode]);
+			setSelectedServiceId(svc.id);
 			setAddMode(false);
 		},
-		[buildNodeData, handleDelete, handleSelect, setNodes],
+		[buildNodeData, handleDelete, handleSelect, setNodes, setSelectedServiceId],
 	);
 
 	// ── Derived ─────────────────────────────────────────────────────

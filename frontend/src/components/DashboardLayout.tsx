@@ -1,5 +1,6 @@
 import { Suspense, useCallback } from "react";
 import { Outlet, useLocation } from "react-router";
+import { useServiceRuntime } from "@/hooks/useServiceRuntime";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { AIAssistantHost } from "./AIAssistantHost";
 import { CommandPalette } from "./CommandPalette";
@@ -19,6 +20,7 @@ const FULL_BLEED_PATHS = new Set(["/app/service-map"]);
 
 export function DashboardLayout() {
 	useWebSocket();
+	useServiceRuntime();
 	const { pathname } = useLocation();
 
 	const handleOpenCommandPalette = useCallback(() => {

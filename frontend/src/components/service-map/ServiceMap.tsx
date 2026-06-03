@@ -3,6 +3,7 @@ import {
 	Controls,
 	ReactFlow,
 	ReactFlowProvider,
+	useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
@@ -50,6 +51,25 @@ function ServiceMapInner() {
 	} = useMapState();
 
 	const addMenuRef = useRef<HTMLDivElement>(null);
+	const canvasRef = useRef<HTMLDivElement>(null);
+	const { screenToFlowPosition } = useReactFlow();
+
+	// Add a service node at the center of the currently visible canvas so it
+	// always appears in view — even when the user has panned/zoomed away from
+	// the default layout origin.
+	const handleAddService = (svc: (typeof addableServices)[number]) => {
+		const rect = canvasRef.current?.getBoundingClientRect();
+		if (rect) {
+			const center = screenToFlowPosition({
+				x: rect.left + rect.width / 2,
+				y: rect.top + rect.height / 2,
+			});
+			// Offset so the node card centers roughly on the cursor target.
+			addServiceToMap(svc, { x: center.x - 90, y: center.y - 40 });
+		} else {
+			addServiceToMap(svc);
+		}
+	};
 
 	// Close add-menu on outside click
 	useEffect(() => {
@@ -236,7 +256,7 @@ function ServiceMapInner() {
 										<button
 											type="button"
 											key={svc.id}
-											onClick={() => addServiceToMap(svc)}
+											onClick={() => handleAddService(svc)}
 											className="w-full text-left px-3 py-2 rounded-xl text-[13px] flex items-center gap-2.5 transition-colors hover:bg-[var(--surface-sunken)]"
 											style={{ color: "var(--text-secondary)" }}
 										>
@@ -315,7 +335,7 @@ function ServiceMapInner() {
 			</div>
 
 			{/* ─────────── Canvas ─────────── */}
-			<div className="relative flex-1 min-h-0">
+			<div ref={canvasRef} className="relative flex-1 min-h-0">
 				<ReactFlow
 					nodes={nodes}
 					edges={edges}

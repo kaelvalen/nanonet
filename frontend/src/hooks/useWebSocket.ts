@@ -2,7 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { authApi } from "../api/auth";
+import { runtimeMessageToLog } from "../lib/serviceLogEntries";
 import { useAuthStore } from "../store/authStore";
+import { useServiceLogStore } from "../store/serviceLogStore";
 import { useServiceStore } from "../store/serviceStore";
 import { useWSStore } from "../store/wsStore";
 import type { ServiceMetrics } from "../types/metrics";
@@ -24,6 +26,7 @@ export function useWebSocket() {
 		setLastError,
 	} = useWSStore();
 	const { updateServiceStatus } = useServiceStore();
+	const appendLog = useServiceLogStore((state) => state.appendLog);
 	const wsRef = useRef<WebSocket | null>(null);
 	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 	const heartbeatRef = useRef<ReturnType<typeof setInterval>>();
@@ -49,6 +52,10 @@ export function useWebSocket() {
 			try {
 				setLastMessageTime(Date.now());
 				const message = JSON.parse(event.data);
+				const log = runtimeMessageToLog(message);
+				if (log) {
+					appendLog(log.serviceId, log.entry);
+				}
 
 				switch (message.type) {
 					case "auth_ok": {
@@ -99,10 +106,34 @@ export function useWebSocket() {
 								disk_used_gb: message.data.disk_used_gb,
 							};
 
-							// setQueryData creates the cache entry if it doesn't exist yet,
-							// so metrics accumulate even before the detail page is visited.
+							const appendMetricPoint = (old: ServiceMetrics[] | undefined) => {
+								const now = Date.now();
+								const arr = [...(old ?? []), newPoint].filter(
+									(p) => now - new Date(p.time).getTime() < METRICS_TTL_MS,
+								);
+								return arr.slice(-MAX_CACHED_POINTS);
+							};
+
+							queryClient.setQueriesData(
+								{
+									predicate: (query) => {
+										const key = query.queryKey;
+										return (
+											Array.isArray(key) &&
+											key[0] === "serviceMetrics" &&
+											key[1] === message.service_id
+										);
+									},
+								},
+								(old: ServiceMetrics[] | undefined) => {
+									if (!Array.isArray(old)) return old;
+									return appendMetricPoint(old);
+								},
+							);
+
+							// Warm the default detail-page duration even before the page is opened.
 							queryClient.setQueryData(
-								["serviceMetrics", message.service_id],
+								["serviceMetrics", message.service_id, "1h"],
 								(old: ServiceMetrics[] | undefined) => {
 									const now = Date.now();
 									const arr = [...(old ?? []), newPoint].filter(
@@ -163,6 +194,7 @@ export function useWebSocket() {
 		},
 		[
 			updateServiceStatus,
+			appendLog,
 			setLastMessageTime,
 			queryClient,
 			startHeartbeat,
