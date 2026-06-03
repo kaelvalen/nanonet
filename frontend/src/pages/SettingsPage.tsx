@@ -1154,7 +1154,7 @@ export function SettingsPage() {
 
 						{filteredAuditLogs.length > 0 ? (
 							<div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
-								{filteredAuditLogs.map((log: AuditLog) => {
+								{filteredAuditLogs.map((log: AuditLog, idx: number) => {
 									const actionColorMap: Record<string, string> = {
 										CREATE: "var(--status-up-text)",
 										UPDATE: "var(--brand-primary)",
@@ -1167,7 +1167,7 @@ export function SettingsPage() {
 										"var(--text-tertiary)";
 									return (
 										<div
-											key={log.id}
+											key={log.id || `${log.created_at}-${idx}`}
 											className="flex items-start gap-3 p-2.5 rounded-[6px]"
 											style={{
 												background: "var(--surface-sunken)",

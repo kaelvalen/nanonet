@@ -373,7 +373,11 @@ function ServiceLogsTab() {
 
 	const { data: stats } = useQuery({
 		queryKey: ["log-stats", selectedServiceId],
-		queryFn: () => logsApi.getStats(selectedServiceId || undefined),
+		queryFn: async () => {
+			const result = await logsApi.getStats(selectedServiceId || undefined);
+			return result ?? {};
+		},
+		enabled: !!selectedServiceId,
 		refetchInterval: 30_000,
 	});
 

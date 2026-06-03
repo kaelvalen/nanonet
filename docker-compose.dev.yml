@@ -47,7 +47,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
-      K8S_NAMESPACE: ${K8S_NAMESPACE:-}
+      K8S_NAMESPACE: ${K8S_NAMESPACE:-default}
       KUBECONFIG: /root/.kube/config-docker
     ports:
       - "8080:8080"
@@ -55,7 +55,7 @@ services:
       - ./backend:/app
       - ./backend/migrations:/migrations:ro
       - go_mod_cache:/go/pkg/mod
-      - ${HOME}/.kube:/root/.kube:ro
+      - ${USERPROFILE}/.kube:/root/.kube:ro
     depends_on:
       db:
         condition: service_healthy

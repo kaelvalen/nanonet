@@ -31,8 +31,14 @@ func (h *Handler) k8sCheck(c *gin.Context) bool {
 
 // GetStatus — K8s cluster erişim durumunu kontrol eder.
 // GET /k8s/status
+// Always returns 200 so the frontend can poll without console errors.
+// When K8s is not configured, returns available:false instead of 503.
 func (h *Handler) GetStatus(c *gin.Context) {
-	if !h.k8sCheck(c) {
+	if h.client == nil {
+		response.Success(c, gin.H{
+			"available": false,
+			"namespace": "",
+		})
 		return
 	}
 

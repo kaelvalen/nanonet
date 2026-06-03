@@ -227,11 +227,12 @@ export function useWebSocket() {
 
 				ws.onmessage = handleMessage;
 
-				ws.onerror = (e) => {
+				ws.onerror = () => {
 					if (!mountedRef.current) return;
 					setConnected(false);
 					setLastError("WebSocket bağlantı hatası");
-					console.error("WebSocket error:", e);
+					// Don't log: connection failures during startup/reconnect are expected
+					// and handled visually via the connection state in the UI.
 				};
 
 				ws.onclose = (e) => {

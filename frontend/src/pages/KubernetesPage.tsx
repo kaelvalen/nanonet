@@ -446,8 +446,15 @@ export function KubernetesPage() {
 	// K8s availability— 30s polling
 	const { data: k8sStatus, isLoading: statusLoading } = useQuery({
 		queryKey: ["k8s-status"],
-		queryFn: k8sApi.getStatus,
-		retry: 1,
+		queryFn: async () => {
+			try {
+				return await k8sApi.getStatus();
+			} catch {
+				// 503 = K8s not configured — not an error, just unavailable.
+				return { available: false, namespace: "" };
+			}
+		},
+		retry: false,
 		refetchInterval: 30000,
 	});
 
