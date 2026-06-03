@@ -235,8 +235,11 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 		}
 	}
 
-	ip := c.ClientIP()
-	if !h.agentLimiter.Allow(ip) {
+	// Rate-limit per serviceID, not per IP. Multiple agents on the same host
+	// share the same client IP (Docker bridge NAT), so an IP-keyed limiter lets
+	// one agent's reconnect storm starve all others. Each service gets its own
+	// independent bucket — one agent flapping can't block another.
+	if !h.agentLimiter.Allow(serviceID) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many agent connections — please wait"})
 		return
 	}

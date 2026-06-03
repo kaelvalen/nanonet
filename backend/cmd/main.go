@@ -809,6 +809,17 @@ func main() {
 	router.GET("/health/ready", healthHandler.Readiness)
 	router.GET("/health/details", healthHandler.Check)
 
+	// Agent binary downloads — serve static files from DOWNLOADS_DIR (default: ./downloads).
+	// Place compiled agent binaries here; wizard download buttons point to /downloads/*.
+	downloadsDir := os.Getenv("DOWNLOADS_DIR")
+	if downloadsDir == "" {
+		downloadsDir = "./downloads"
+	}
+	if info, err := os.Stat(downloadsDir); err == nil && info.IsDir() {
+		router.Static("/downloads", downloadsDir)
+		logger.Info("Agent downloads dizini hazır", slog.String("path", downloadsDir))
+	}
+
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,
 		Handler: router,

@@ -58,8 +58,8 @@ export function PageShell({
 				"w-full mx-auto",
 				maxW,
 				fill
-					? `h-full flex flex-col min-h-0 ${flexGap}`
-					: `block ${blockGap} pb-6`,
+					? `flex flex-col min-h-0 ${flexGap} lg:h-full`
+					: `block ${blockGap} pb-6 lg:h-full lg:overflow-y-auto`,
 				className,
 			)}
 		>

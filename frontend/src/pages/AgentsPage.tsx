@@ -109,13 +109,16 @@ function DisconnectedAgent({ svc }: { svc: Service }) {
 						{ label: "Linux / macOS",        cmd: linuxCmd! },
 					] as const).map(({ label, cmd }) => (
 						<div key={label}
-							className="rounded-[6px] p-2.5 flex items-center gap-2"
+							className="rounded-[6px] p-2.5 flex items-start gap-2"
 							style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}
 						>
-							<span className="text-[10px] uppercase tracking-wider shrink-0 w-32"
+							<span className="text-[10px] uppercase tracking-wider shrink-0 mt-0.5 w-24 sm:w-28"
 								style={{ color: "var(--text-faint)" }}>{label}</span>
-							<pre className="flex-1 font-mono text-[11px] truncate"
-								style={{ color: "var(--text-secondary)" }}>{cmd}</pre>
+							<pre
+								className="flex-1 font-mono text-[11px] overflow-x-auto"
+								style={{ color: "var(--text-secondary)", whiteSpace: "pre", scrollbarWidth: "none" }}
+								title={cmd}
+							>{cmd}</pre>
 							<CopyButton value={cmd} />
 						</div>
 					))}
@@ -282,7 +285,7 @@ export function AgentsPage() {
 	const allBusy = stopAll.isPending || startAll.isPending || restartAll.isPending;
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill={false}>
 			<div className="flex items-center justify-between flex-wrap gap-3">
 				<PageHeader eyebrow="Altyapı" title="Agents" description="Agent binary'lerini izle ve yönet" />
 				{connected.length > 0 && (
@@ -307,10 +310,10 @@ export function AgentsPage() {
 			{/* Stats */}
 			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 				{([
-					{ label: "Toplam",      value: services.length,    color: "var(--text-secondary)" },
-					{ label: "Bağlı",       value: connected.length,   color: "var(--status-up-text)" },
-					{ label: "Bağlı Değil", value: disconnected.length, color: "var(--text-faint)" },
-					{ label: "Sorunlu",     value: services.filter((s) => s.agent_status === "stale" || s.agent_status === "down").length, color: "var(--status-degraded-text)" },
+					{ label: "Toplam",      value: services.length,    color: "var(--text-primary)" },
+					{ label: "Bağlı",       value: connected.length,   color: connected.length > 0 ? "var(--status-up-text)" : "var(--text-faint)" },
+					{ label: "Bağlı Değil", value: disconnected.length, color: disconnected.length > 0 ? "var(--status-degraded-text)" : "var(--text-faint)" },
+					{ label: "Sorunlu",     value: services.filter((s) => s.agent_status === "stale" || s.agent_status === "down").length, color: services.filter((s) => s.agent_status === "stale" || s.agent_status === "down").length > 0 ? "var(--status-down-text)" : "var(--text-faint)" },
 				] as const).map((stat) => (
 					<div key={stat.label} className="rounded-[8px] px-4 py-3"
 						style={{ background: "var(--surface-base)", border: "1px solid var(--border-subtle)" }}>

@@ -687,12 +687,12 @@ function TableSkeleton() {
 					borderBottom: "1px solid var(--border-subtle)",
 				}}
 			/>
-			{Array.from({ length: 6 }, (_, i) => i).map((i) => (
+			{Array.from({ length: 4 }, (_, i) => i).map((i) => (
 				<div
 					key={i}
 					className="flex items-center gap-3 px-3 h-12 animate-pulse"
 					style={{
-						borderBottom: i === 5 ? "none" : "1px solid var(--border-subtle)",
+						borderBottom: i === 3 ? "none" : "1px solid var(--border-subtle)",
 					}}
 				>
 					<div

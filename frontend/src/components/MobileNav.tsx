@@ -153,6 +153,8 @@ function TabLink({
 function MoreDrawer({ onClose }: { onClose: () => void }) {
 	const { t } = useTranslation();
 	const location = useLocation();
+	const isActive = (to: string, end?: boolean) =>
+		end ? location.pathname === to : location.pathname === to || location.pathname.startsWith(`${to}/`);
 
 	// This component is mounted ONLY while the drawer is open (parent renders it
 	// conditionally), so it remounts on every open. `openedAtPath` therefore
@@ -205,7 +207,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
 						className="text-[11px] font-semibold uppercase tracking-wider mt-1"
 						style={{ color: "var(--text-faint)" }}
 					>
-						Tüm sayfalar
+						{t("shell.mobile.allPages")}
 					</span>
 					<button
 						type="button"
@@ -230,8 +232,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
 							<div className="grid grid-cols-2 gap-1.5">
 								{section.items.map((item) => {
 									const Icon = item.icon;
-									const active = location.pathname === item.to ||
-										(!item.end && location.pathname.startsWith(item.to + "/"));
+									const active = isActive(item.to, item.end);
 									return (
 										<NavLink
 											key={item.to}
@@ -242,12 +243,19 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
 											style={{
 												background: active ? "var(--brand-primary-subtle)" : "var(--surface-sunken)",
 												color: active ? "var(--brand-primary)" : "var(--text-secondary)",
+												fontWeight: active ? 600 : undefined,
 											}}
 										>
 											<Icon className="w-4 h-4 shrink-0" />
-											<span className="text-[12px] font-medium truncate">
+											<span className="text-[12px] truncate flex-1">
 												{t(item.labelKey)}
 											</span>
+											{active && (
+												<span
+													className="shrink-0 w-1.5 h-1.5 rounded-full"
+													style={{ background: "var(--brand-primary)" }}
+												/>
+											)}
 										</NavLink>
 									);
 								})}
@@ -264,6 +272,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
 
 export function MobileNav() {
 	const location = useLocation();
+	const { t } = useTranslation();
 	const { services } = useServices();
 	const [moreOpen, setMoreOpen] = useState(false);
 	const closeMore = useCallback(() => setMoreOpen(false), []);
@@ -314,7 +323,7 @@ export function MobileNav() {
 						/>
 					)}
 					<MoreHorizontal className="w-5 h-5" />
-					<span className="text-[9px] font-medium tracking-tight">Daha Fazla</span>
+					<span className="text-[9px] font-medium tracking-tight">{t("shell.mobile.more")}</span>
 				</button>
 			</nav>
 

@@ -117,20 +117,21 @@ export function AgentSetupWizard({
 		},
 	});
 
-	const apiBaseUrl =
-		import.meta.env.VITE_API_URL?.replace("/api/v1", "") ??
-		"http://localhost:8080";
+	const backendBase = `${window.location.protocol}//${window.location.host}`;
 	const agentBackend = import.meta.env.VITE_AGENT_BACKEND ??
 		`${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`;
 
 	const sid = serviceId ?? "<service-id>";
 
+	const downloadUrl = (platform: string) =>
+		`${backendBase}/downloads/nanonet-agent-${platform}`;
+
 	const linuxCmd = agentToken
-		? `chmod +x nanonet-agent\n./nanonet-agent \\\n  --backend ${agentBackend} \\\n  --agent-token ${agentToken} \\\n  --service-id ${sid}`
+		? `chmod +x nanonet-agent-linux-amd64\n./nanonet-agent-linux-amd64 \\\n  --backend ${agentBackend} \\\n  --agent-token ${agentToken} \\\n  --service-id ${sid}`
 		: "";
 
 	const windowsCmd = agentToken
-		? `.\\nanonet-agent.exe \`\n  --backend ${agentBackend} \`\n  --agent-token ${agentToken} \`\n  --service-id ${sid}`
+		? `.\\nanonet-agent-windows-amd64.exe \`\n  --backend ${agentBackend} \`\n  --agent-token ${agentToken} \`\n  --service-id ${sid}`
 		: "";
 
 	const dockerCmd = agentToken
@@ -268,26 +269,33 @@ export function AgentSetupWizard({
 						/>
 
 						<div className="grid grid-cols-2 gap-2">
-							<Button asChild variant="outline" className="flex-1">
-								<a href={`${apiBaseUrl}/downloads/nanonet-agent-windows-amd64.exe`}>
-									<Download className="w-3.5 h-3.5 mr-1.5" /> Windows x64
-								</a>
-							</Button>
-							<Button asChild variant="outline" className="flex-1">
-								<a href={`${apiBaseUrl}/downloads/nanonet-agent-linux-amd64`}>
-									<Download className="w-3.5 h-3.5 mr-1.5" /> Linux x64
-								</a>
-							</Button>
-							<Button asChild variant="outline" className="flex-1">
-								<a href={`${apiBaseUrl}/downloads/nanonet-agent-linux-arm64`}>
-									<Download className="w-3.5 h-3.5 mr-1.5" /> Linux ARM64
-								</a>
-							</Button>
-							<Button asChild variant="outline" className="flex-1">
-								<a href={`${apiBaseUrl}/downloads/nanonet-agent-darwin-amd64`}>
-									<Download className="w-3.5 h-3.5 mr-1.5" /> macOS x64
-								</a>
-							</Button>
+							{[
+								{ label: "Windows x64", file: "windows-amd64.exe" },
+								{ label: "Linux x64",   file: "linux-amd64"       },
+								{ label: "Linux ARM64", file: "linux-arm64"        },
+								{ label: "macOS x64",   file: "darwin-amd64"      },
+							].map(({ label, file }) => (
+								<Button key={file} asChild variant="outline" className="flex-1">
+									<a
+										href={downloadUrl(file)}
+										download
+										onClick={(e) => {
+											// Graceful fallback: if backend returns non-2xx, show toast.
+											fetch(downloadUrl(file), { method: "HEAD" }).then((r) => {
+												if (!r.ok) {
+													e.preventDefault();
+													toast.error(`${label} binary henüz mevcut değil. cargo build ile derleyin.`);
+												}
+											}).catch(() => {
+												e.preventDefault();
+												toast.error("İndirme sunucusuna ulaşılamıyor.");
+											});
+										}}
+									>
+										<Download className="w-3.5 h-3.5 mr-1.5" /> {label}
+									</a>
+								</Button>
+							))}
 						</div>
 
 						<Button onClick={() => setStep(3)} className="w-full">

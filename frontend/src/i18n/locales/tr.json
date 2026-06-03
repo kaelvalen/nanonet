@@ -74,7 +74,9 @@
 			"services": "Servisler",
 			"alerts": "Uyarılar",
 			"ai": "AI",
-			"settings": "Ayarlar"
+			"settings": "Ayarlar",
+			"more": "Daha Fazla",
+			"allPages": "Tüm sayfalar"
 		},
 		"breadcrumb": {
 			"detail": "Detay"

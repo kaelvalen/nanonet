@@ -74,7 +74,9 @@
 			"services": "Services",
 			"alerts": "Alerts",
 			"ai": "AI",
-			"settings": "Settings"
+			"settings": "Settings",
+			"more": "More",
+			"allPages": "All pages"
 		},
 		"breadcrumb": {
 			"detail": "Detail"

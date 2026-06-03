@@ -1156,12 +1156,14 @@ export function DashboardPage() {
 									>
 										Servisler
 									</h3>
-									<span
-										className="text-[11px]"
-										style={{ color: "var(--text-tertiary)" }}
-									>
-										· kritik önce · {total} servis
-									</span>
+									{total > 0 && (
+										<span
+											className="text-[11px] tnum"
+											style={{ color: "var(--text-faint)" }}
+										>
+											{total}
+										</span>
+									)}
 								</div>
 								<div className="flex items-center gap-3 shrink-0">
 									<div className="hidden md:flex items-center gap-2 text-[11px] font-mono tnum">
@@ -1207,7 +1209,7 @@ export function DashboardPage() {
 										className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-[var(--text-primary)] outline-none rounded focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
 										style={{ color: "var(--text-tertiary)" }}
 									>
-										Tümü <ArrowRight className="w-3 h-3" />
+										Tüm servisler <ArrowRight className="w-3 h-3" />
 									</Link>
 								</div>
 							</header>
@@ -1215,7 +1217,7 @@ export function DashboardPage() {
 							<div className="flex-1 min-h-0 overflow-y-auto">
 								{isLoading ? (
 									<div className="flex flex-col p-1.5 gap-px">
-										{[1, 2, 3, 4, 5].map((i) => (
+										{Array.from({ length: 4 }, (_, i) => i).map((i) => (
 											<div
 												key={i}
 												className="px-3 py-2.5 rounded-[4px] animate-pulse flex items-center gap-3"

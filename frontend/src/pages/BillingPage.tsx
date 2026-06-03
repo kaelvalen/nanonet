@@ -228,7 +228,7 @@ export function BillingPage() {
 	const isLoading = loadingSub || loadingPlans;
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill={false}>
 			<PageHeader eyebrow="Platform" title="Abonelik & Plan" description="Planınızı yönetin ve kullanımınızı takip edin" />
 
 			{isLoading && (

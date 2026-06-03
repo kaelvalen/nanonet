@@ -96,7 +96,7 @@ export function IncidentsPage() {
 		status !== "all" || severity !== "all" || search.trim().length > 0;
 
 	return (
-		<PageShell width="wide">
+		<PageShell width="wide" fill={false}>
 			<PageHeader
 				eyebrow="Olay yönetimi"
 				title="Incidents"
