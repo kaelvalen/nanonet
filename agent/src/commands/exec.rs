@@ -46,12 +46,30 @@ pub async fn run(cmd: &IncomingCommand, config: &Config) -> Result<Option<String
     run_shell(&shell_cmd, timeout).await
 }
 
-/// Kullanıcının girdiği kısa komutu servise özgü shell komutuna dönüştürür.
+/// Kullanıcının girdiği kısa komutu servise özgü kabuk komutuna dönüştürür.
 ///
 /// Desteklenen anahtarlar:
 ///   status, health, metrics, ps/proc, pid, mem/memory, cpu, connections,
 ///   logs, env, uptime, disk, netstat, help
+///
+/// Üretilen komut hedef platformun kabuk diliyle yazılır: Unix'te POSIX shell
+/// (`ss`/`awk`/`curl`/`/proc`...), Windows'ta PowerShell (`Get-NetTCPConnection`,
+/// `Get-Process`, `Invoke-WebRequest`, CIM). [`crate::commands::runner`] doğru
+/// kabuğu seçer; bu fonksiyon yalnızca o kabuğa uygun gövdeyi üretir.
 pub fn build_service_command(input: &str, config: &Config) -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        build_windows(input, config)
+    }
+    #[cfg(not(windows))]
+    {
+        build_unix(input, config)
+    }
+}
+
+/// POSIX shell (`sh -c`) için tanılama şablonları.
+#[cfg(not(windows))]
+fn build_unix(input: &str, config: &Config) -> Result<String, String> {
     let keyword = input.split_whitespace().next().unwrap_or("").to_lowercase();
     let host = &config.host;
     let port = config.port;
@@ -261,6 +279,7 @@ pub fn build_service_command(input: &str, config: &Config) -> Result<String, Str
     Ok(cmd)
 }
 
+#[cfg(not(windows))]
 const HELP_TEXT: &str = "echo 'Kullanılabilir komutlar:\n\
        status      — health endpoint durumu\n\
        health      — health endpoint yanıtı\n\
@@ -276,6 +295,206 @@ const HELP_TEXT: &str = "echo 'Kullanılabilir komutlar:\n\
        disk        — disk kullanımı\n\
        netstat     — port ağ durumu\n\
        help        — bu liste'";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Windows (PowerShell) şablonları
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// PowerShell (`powershell.exe -Command`) için tanılama şablonları.
+///
+/// Tasarım notları:
+/// - Servisin portunu dinleyen PID `Get-NetTCPConnection` ile bulunur; bulunamazsa
+///   komutlar health endpoint erişilebilirliğine fallback eder.
+/// - Tüm literal çıktı **ASCII** tutulur: PowerShell 5.1'in yönlendirilmiş stdout
+///   kodlaması UTF-8 olmadığından Türkçe özel karakterler mojibake'e dönüşür.
+/// - Hassas env değişkenleri `-notmatch` ile süzülür.
+/// - PowerShell'de `$pid` otomatik (salt-okunur) değişkendir; `$procId` kullanılır.
+#[cfg(windows)]
+fn build_windows(input: &str, config: &Config) -> Result<String, String> {
+    let keyword = input.split_whitespace().next().unwrap_or("").to_lowercase();
+    let metrics_url = config.metrics_endpoint.as_deref().unwrap_or("");
+
+    let tmpl: &str = match keyword.as_str() {
+        "help" => return Ok(HELP_TEXT_WIN.to_string()),
+        "status" => STATUS_WIN,
+        "health" => HEALTH_WIN,
+        "metrics" => {
+            if metrics_url.is_empty() {
+                return Err(
+                    "metrics endpoint yapılandırılmamış (NANONET_METRICS_ENDPOINT)".to_string(),
+                );
+            }
+            METRICS_WIN
+        }
+        "ps" | "proc" => PS_WIN,
+        "pid" => PID_WIN,
+        "mem" | "memory" => MEM_WIN,
+        "cpu" => CPU_WIN,
+        "connections" => CONNECTIONS_WIN,
+        "netstat" => NETSTAT_WIN,
+        "logs" => LOGS_WIN,
+        "env" => ENV_WIN,
+        "uptime" => UPTIME_WIN,
+        "disk" => DISK_WIN,
+        _ => {
+            return Err(format!(
+                "bilinmeyen komut: '{input}'\nKullanılabilir komutlar: \
+                 status, health, metrics, ps, pid, mem, cpu, connections, \
+                 logs, env, uptime, disk, netstat, help"
+            ));
+        }
+    };
+
+    // Şablon placeholder'larını config değerleriyle doldur. host/port/url'ler
+    // operatör tarafından yapılandırılır (güven sınırı içi); yine de tek-tırnak
+    // bağlamlarına gömülür.
+    let cmd = tmpl
+        .replace("__HOST__", &config.host)
+        .replace("__PORT__", &config.port.to_string())
+        .replace("__HEALTH__", &config.health_url())
+        .replace("__METRICS__", metrics_url);
+
+    Ok(cmd)
+}
+
+#[cfg(windows)]
+const STATUS_WIN: &str = r#"
+try { $r = Invoke-WebRequest -Uri '__HEALTH__' -TimeoutSec 3 -UseBasicParsing; $code = [int]$r.StatusCode } catch { $code = [int]$_.Exception.Response.StatusCode }
+Write-Output "host=__HOST__  port=__PORT__  endpoint=__HEALTH__"
+if ($code -eq 200) { Write-Output "durum=UP  http=$code" } elseif (-not $code) { Write-Output "durum=DOWN  (baglanti reddedildi)" } else { Write-Output "durum=DEGRADED  http=$code" }
+"#;
+
+#[cfg(windows)]
+const HEALTH_WIN: &str = r#"
+try { (Invoke-WebRequest -Uri '__HEALTH__' -TimeoutSec 5 -UseBasicParsing).Content } catch { Write-Output '(health endpoint yanit vermedi)' }
+"#;
+
+#[cfg(windows)]
+const METRICS_WIN: &str = r#"
+try { (Invoke-WebRequest -Uri '__METRICS__' -TimeoutSec 5 -UseBasicParsing).Content } catch { Write-Output '(metrics endpoint yanit vermedi)' }
+"#;
+
+#[cfg(windows)]
+const PS_WIN: &str = r#"
+$procId = (Get-NetTCPConnection -LocalPort __PORT__ -State Listen -EA SilentlyContinue | Select-Object -First 1).OwningProcess
+if ($procId) {
+  (Get-Process -Id $procId -EA SilentlyContinue | Format-List Id, ProcessName, CPU, @{N='WS_MB';E={[math]::Round($_.WorkingSet64/1MB,1)}}, StartTime, Path | Out-String).Trim()
+} else {
+  Write-Output "host=__HOST__:__PORT__ (port erisilebilirlik kontrolu)"
+  try { $sw=[Diagnostics.Stopwatch]::StartNew(); $r=Invoke-WebRequest -Uri '__HEALTH__' -TimeoutSec 3 -UseBasicParsing; $sw.Stop(); Write-Output ("http={0}  time={1}ms" -f [int]$r.StatusCode,$sw.ElapsedMilliseconds) } catch { Write-Output 'servis yanit vermiyor' }
+}
+"#;
+
+#[cfg(windows)]
+const PID_WIN: &str = r#"
+$procId = (Get-NetTCPConnection -LocalPort __PORT__ -State Listen -EA SilentlyContinue | Select-Object -First 1).OwningProcess
+if ($procId) {
+  $p = Get-Process -Id $procId -EA SilentlyContinue
+  Write-Output "PID=$procId"
+  if ($p) { Write-Output ("name={0}  path={1}" -f $p.ProcessName, $p.Path) }
+} else {
+  Write-Output 'host process bulunamadi (port dinlenmiyor)'
+  Write-Output 'not: servis uzak host veya farkli namespace icinde calisiyor olabilir'
+}
+"#;
+
+#[cfg(windows)]
+const MEM_WIN: &str = r#"
+$procId = (Get-NetTCPConnection -LocalPort __PORT__ -State Listen -EA SilentlyContinue | Select-Object -First 1).OwningProcess
+if ($procId) {
+  $p = Get-Process -Id $procId -EA SilentlyContinue
+  if ($p) { Write-Output "--- Servis Process Bellegi (PID=$procId) ---"; Write-Output ("WorkingSet={0:N1} MB  Private={1:N1} MB  Virtual={2:N1} MB" -f ($p.WorkingSet64/1MB),($p.PrivateMemorySize64/1MB),($p.VirtualMemorySize64/1MB)) }
+} else {
+  Write-Output '--- Servis Yanit Durumu ---'
+  try { $r=Invoke-WebRequest -Uri '__HEALTH__' -TimeoutSec 3 -UseBasicParsing; Write-Output ("http={0}" -f [int]$r.StatusCode) } catch { Write-Output '(servis yanit vermiyor)' }
+}
+Write-Output ''
+Write-Output '--- Host Bellek ---'
+$os = Get-CimInstance Win32_OperatingSystem
+Write-Output ("Toplam={0:N1} GB  Bos={1:N1} GB" -f ($os.TotalVisibleMemorySize/1MB),($os.FreePhysicalMemory/1MB))
+"#;
+
+#[cfg(windows)]
+const CPU_WIN: &str = r#"
+$procId = (Get-NetTCPConnection -LocalPort __PORT__ -State Listen -EA SilentlyContinue | Select-Object -First 1).OwningProcess
+if ($procId) {
+  $p = Get-Process -Id $procId -EA SilentlyContinue
+  if ($p) { Write-Output "--- Servis Process CPU (PID=$procId) ---"; Write-Output ("CPU(s)={0}  Threads={1}  WS={2:N1} MB" -f $p.CPU,$p.Threads.Count,($p.WorkingSet64/1MB)) }
+} else {
+  Write-Output '--- Servis Yanit Suresi ---'
+  try { $sw=[Diagnostics.Stopwatch]::StartNew(); $r=Invoke-WebRequest -Uri '__HEALTH__' -TimeoutSec 3 -UseBasicParsing; $sw.Stop(); Write-Output ("http={0}  yanit={1}ms" -f [int]$r.StatusCode,$sw.ElapsedMilliseconds) } catch { Write-Output '(servis yanit vermiyor)' }
+}
+Write-Output ''
+Write-Output '--- Host CPU Yuku ---'
+Write-Output ("CPU Kullanim= {0}%" -f (Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average)
+"#;
+
+#[cfg(windows)]
+const CONNECTIONS_WIN: &str = r#"
+Write-Output '--- Port __PORT__ Baglantilari ---'
+$c = Get-NetTCPConnection -LocalPort __PORT__ -EA SilentlyContinue
+if ($c) { ($c | Format-Table -AutoSize LocalAddress,LocalPort,RemoteAddress,RemotePort,State | Out-String).Trim() } else { Write-Output '(baglanti bulunamadi)' }
+Write-Output ''
+Write-Output '--- Baglanti Ozeti ---'
+if ($c) { $c | Group-Object State | ForEach-Object { Write-Output ("{0}  {1}" -f $_.Count, $_.Name) } } else { Write-Output '(veri yok)' }
+"#;
+
+#[cfg(windows)]
+const NETSTAT_WIN: &str = r#"
+Write-Output '--- Port __PORT__ Dinleme Durumu ---'
+$l = Get-NetTCPConnection -LocalPort __PORT__ -State Listen -EA SilentlyContinue
+if ($l) { ($l | Format-Table -AutoSize LocalAddress,LocalPort,State,OwningProcess | Out-String).Trim() } else { Write-Output '(host uzerinde dinlenmiyor)' }
+Write-Output ''
+Write-Output '--- Aktif Baglantilar ---'
+$a = Get-NetTCPConnection -LocalPort __PORT__ -EA SilentlyContinue | Select-Object -First 20
+if ($a) { ($a | Format-Table -AutoSize LocalAddress,LocalPort,RemoteAddress,RemotePort,State | Out-String).Trim() } else { Write-Output '(baglanti yok)' }
+"#;
+
+#[cfg(windows)]
+const LOGS_WIN: &str = r#"
+try { (Get-WinEvent -LogName Application -MaxEvents 50 -EA Stop | Select-Object TimeCreated, LevelDisplayName, ProviderName, Message | Format-Table -AutoSize -Wrap | Out-String).Trim() } catch { Write-Output 'log kaynagi bulunamadi (Event Log erisimi yok)' }
+"#;
+
+#[cfg(windows)]
+const ENV_WIN: &str = r#"
+Write-Output '--- Ortam Degiskenleri (agent process kapsami) ---'
+Write-Output 'not: Windows''ta hedef process''in ortami dogrudan okunamaz; liste agent kapsamidir'
+Get-ChildItem Env: | Where-Object { $_.Name -notmatch 'TOKEN|SECRET|KEY|PASS|CREDENTIAL' } | Sort-Object Name | ForEach-Object { Write-Output ("{0}={1}" -f $_.Name, $_.Value) }
+"#;
+
+#[cfg(windows)]
+const UPTIME_WIN: &str = r#"
+Write-Output '--- Host Uptime ---'
+$os = Get-CimInstance Win32_OperatingSystem
+$up = (Get-Date) - $os.LastBootUpTime
+Write-Output ("Uptime= {0}g {1}s {2}d" -f $up.Days, $up.Hours, $up.Minutes)
+Write-Output ''
+Write-Output '--- Servis Yanit Suresi (__HEALTH__) ---'
+try { $sw=[Diagnostics.Stopwatch]::StartNew(); $r=Invoke-WebRequest -Uri '__HEALTH__' -TimeoutSec 3 -UseBasicParsing; $sw.Stop(); Write-Output ("http={0}  yanit={1}ms" -f [int]$r.StatusCode,$sw.ElapsedMilliseconds) } catch { Write-Output '(baglanti kurulamadi)' }
+"#;
+
+#[cfg(windows)]
+const DISK_WIN: &str = r#"
+Write-Output '--- Disk Kullanimi ---'
+Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Used -ne $null } | ForEach-Object { Write-Output ("{0}:  Kullanilan={1:N1} GB  Bos={2:N1} GB" -f $_.Name, ($_.Used/1GB), ($_.Free/1GB)) }
+"#;
+
+#[cfg(windows)]
+const HELP_TEXT_WIN: &str = "Write-Output \"Kullanilabilir komutlar:`n\
+       status      - health endpoint durumu`n\
+       health      - health endpoint yaniti`n\
+       metrics     - /metrics ciktisi`n\
+       ps | proc   - servise ait process`n\
+       pid         - process ID`n\
+       mem         - bellek kullanimi`n\
+       cpu         - CPU kullanimi`n\
+       connections - aktif baglanti sayisi`n\
+       logs        - son 50 Event Log kaydi`n\
+       env         - ortam degiskenleri (agent kapsami)`n\
+       uptime      - host uptime + port yanit suresi`n\
+       disk        - disk kullanimi`n\
+       netstat     - port ag durumu`n\
+       help        - bu liste\"";
 
 #[cfg(test)]
 mod tests {
@@ -299,7 +518,8 @@ mod tests {
     #[test]
     fn help_returns_template() {
         let s = build_service_command("help", &cfg()).unwrap();
-        assert!(s.contains("Kullanılabilir komutlar"));
+        // Unix "Kullanılabilir", Windows "Kullanilabilir" — ortak "komutlar".
+        assert!(s.contains("komutlar"));
     }
 
     #[test]
@@ -335,10 +555,28 @@ mod tests {
         assert!(s.contains("durum="));
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn extra_arguments_after_keyword_are_ignored() {
         // Sadece ilk kelime keyword olarak alınır.
         let s = build_service_command("ps something", &cfg()).unwrap();
         assert!(s.contains("ps -p"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn extra_arguments_after_keyword_are_ignored_win() {
+        // Sadece ilk kelime keyword olarak alınır; Windows'ta Get-Process üretir.
+        let s = build_service_command("ps something", &cfg()).unwrap();
+        assert!(s.contains("Get-Process"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_port_is_substituted() {
+        // Placeholder'lar gerçekten dolduruluyor mu? (__PORT__ kalmamalı)
+        let s = build_service_command("netstat", &cfg()).unwrap();
+        assert!(s.contains("LocalPort 9000"));
+        assert!(!s.contains("__PORT__"));
     }
 }

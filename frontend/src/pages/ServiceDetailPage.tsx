@@ -87,6 +87,35 @@ type ExecEntry = {
 	duration_ms?: number;
 };
 
+const EXEC_HISTORY_SESSION_KEY_PREFIX = "service_exec_history:";
+const MAX_EXEC_HISTORY_ENTRIES = 200;
+
+function execHistorySessionKey(serviceId: string): string {
+	return `${EXEC_HISTORY_SESSION_KEY_PREFIX}${serviceId}`;
+}
+
+function parseExecHistory(raw: string | null): ExecEntry[] {
+	if (!raw) return [];
+	try {
+		const parsed = JSON.parse(raw);
+		if (!Array.isArray(parsed)) return [];
+		return parsed
+			.filter((entry): entry is ExecEntry => {
+				return (
+					typeof entry === "object" &&
+					entry !== null &&
+					typeof (entry as ExecEntry).command === "string" &&
+					typeof (entry as ExecEntry).command_id === "string" &&
+					typeof (entry as ExecEntry).status === "string" &&
+					typeof (entry as ExecEntry).queued_at === "string"
+				);
+			})
+			.slice(-MAX_EXEC_HISTORY_ENTRIES);
+	} catch {
+		return [];
+	}
+}
+
 type SectionId =
 	| "overview"
 	| "alerts"
@@ -1914,6 +1943,24 @@ export function ServiceDetailPage() {
 	});
 
 	useEffect(() => {
+		if (!serviceId) {
+			setExecHistory([]);
+			return;
+		}
+		setExecHistory(
+			parseExecHistory(sessionStorage.getItem(execHistorySessionKey(serviceId))),
+		);
+	}, [serviceId]);
+
+	useEffect(() => {
+		if (!serviceId) return;
+		sessionStorage.setItem(
+			execHistorySessionKey(serviceId),
+			JSON.stringify(execHistory.slice(-MAX_EXEC_HISTORY_ENTRIES)),
+		);
+	}, [serviceId, execHistory]);
+
+	useEffect(() => {
 		const handler = (e: Event) => {
 			const ev = e as CustomEvent<{
 				command_id: string;
@@ -2024,7 +2071,7 @@ export function ServiceDetailPage() {
 		try {
 			const result = await runAgentCommand(serviceId, cmd);
 			setExecHistory((prev) => [
-				...prev,
+				...prev.slice(-(MAX_EXEC_HISTORY_ENTRIES - 1)),
 				{
 					command: cmd,
 					...result,

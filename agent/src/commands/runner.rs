@@ -1,8 +1,13 @@
 //! Shell komutu çalıştırıcı.
 //!
 //! Komut çıktısı (stdout) operatöre döndürülür; başarısız ise stderr
-//! kullanılır. Tüm komutlar `sh -c` üzerinden çalışır — şu an POSIX shell
-//! varsayımıyla — ve `timeout_sec` aşımında zorla iptal edilir.
+//! kullanılır. Komutlar platforma göre seçilen bir kabukla çalışır:
+//! Unix'te `sh -c`, Windows'ta `powershell.exe -NoProfile -NonInteractive
+//! -Command`. `timeout_sec` aşımında process zorla iptal edilir.
+//!
+//! Bunun pratik sonucu: yaşam döngüsü komutları (`NANONET_RESTART_CMD` vb.)
+//! ve `exec` tanılama şablonları hedef platformun kabuk diliyle yazılmalıdır.
+//! [`crate::commands::exec`] şablonları `#[cfg]` ile her platforma ayrı verir.
 //!
 //! ## Hata stratejisi
 //!
@@ -25,11 +30,34 @@ use crate::redact::redact;
 /// Operatör çıktıları için hard cap. Bu sınırı geçen her output tail tutulur.
 pub const MAX_OUTPUT_BYTES: usize = 64 * 1024;
 
-/// Belirtilen shell komutunu `sh -c` ile çalıştırır.
+/// Platforma uygun kabuğu hazırlar: Unix'te `sh -c`, Windows'ta PowerShell.
+///
+/// Windows'ta `-NoProfile` profil yükleme gecikmesini ve kullanıcı profilinin
+/// yan etkilerini engeller; `-NonInteractive` herhangi bir prompt'un agent'ı
+/// bloklamamasını garanti eder. Komut tek bir argüman olarak `-Command`'a
+/// geçer — script dosyası olmadığı için ExecutionPolicy bunu kısıtlamaz.
+#[cfg(windows)]
+fn shell_command(cmd: &str) -> TokioCommand {
+    let mut c = TokioCommand::new("powershell.exe");
+    c.arg("-NoProfile")
+        .arg("-NonInteractive")
+        .arg("-Command")
+        .arg(cmd);
+    c
+}
+
+#[cfg(not(windows))]
+fn shell_command(cmd: &str) -> TokioCommand {
+    let mut c = TokioCommand::new("sh");
+    c.arg("-c").arg(cmd);
+    c
+}
+
+/// Belirtilen komutu platforma uygun kabukla çalıştırır.
 pub async fn run_shell(cmd: &str, timeout_sec: u64) -> Result<Option<String>, String> {
     let result = tokio::time::timeout(
         Duration::from_secs(timeout_sec),
-        TokioCommand::new("sh").arg("-c").arg(cmd).output(),
+        shell_command(cmd).output(),
     )
     .await;
 
@@ -93,36 +121,80 @@ fn sanitize_stream(bytes: &[u8]) -> String {
 mod tests {
     use super::*;
 
+    // ── Platform-bağımsız: timeout ───────────────────────────────────
+    #[tokio::test]
+    async fn enforces_timeout() {
+        // Unix'te `sleep`, Windows'ta `Start-Sleep` 5sn bekler; 1sn timeout vurur.
+        let cmd = if cfg!(windows) {
+            "Start-Sleep -Seconds 5"
+        } else {
+            "sleep 5"
+        };
+        let err = run_shell(cmd, 1).await.unwrap_err();
+        assert!(err.to_lowercase().contains("zaman"));
+    }
+
+    // ── Unix (sh) davranışı ───────────────────────────────────────────
+    #[cfg(unix)]
     #[tokio::test]
     async fn returns_stdout_on_success() {
         let out = run_shell("echo hello", 5).await.unwrap();
         assert_eq!(out.as_deref(), Some("hello"));
     }
 
+    #[cfg(unix)]
     #[tokio::test]
     async fn returns_none_when_output_empty() {
         let out = run_shell("true", 5).await.unwrap();
         assert!(out.is_none());
     }
 
+    #[cfg(unix)]
     #[tokio::test]
     async fn returns_stderr_on_failure() {
         let err = run_shell("echo boom 1>&2; exit 7", 5).await.unwrap_err();
         assert!(err.contains("boom"), "stderr çıktısı dönmeli, geldi: {err}");
     }
 
+    #[cfg(unix)]
     #[tokio::test]
     async fn returns_exit_code_when_no_output() {
         let err = run_shell("exit 42", 5).await.unwrap_err();
         assert!(err.contains("42"), "exit kodu dönmeli, geldi: {err}");
     }
 
+    // ── Windows (PowerShell) davranışı ────────────────────────────────
+    #[cfg(windows)]
     #[tokio::test]
-    async fn enforces_timeout() {
-        let err = run_shell("sleep 5", 1).await.unwrap_err();
-        assert!(err.to_lowercase().contains("zaman"));
+    async fn returns_stdout_on_success_win() {
+        let out = run_shell("Write-Output hello", 15).await.unwrap();
+        assert_eq!(out.as_deref(), Some("hello"));
     }
 
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn returns_none_when_output_empty_win() {
+        let out = run_shell("exit 0", 15).await.unwrap();
+        assert!(out.is_none());
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn returns_stderr_on_failure_win() {
+        let err = run_shell("[Console]::Error.WriteLine('boom'); exit 7", 15)
+            .await
+            .unwrap_err();
+        assert!(err.contains("boom"), "stderr çıktısı dönmeli, geldi: {err}");
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn returns_exit_code_when_no_output_win() {
+        let err = run_shell("exit 42", 15).await.unwrap_err();
+        assert!(err.contains("42"), "exit kodu dönmeli, geldi: {err}");
+    }
+
+    #[cfg(unix)]
     #[tokio::test]
     async fn caps_large_stdout_to_max_output_bytes() {
         // 256 KiB üretip 64 KiB'lik tail tutulmasını doğrula.
@@ -142,6 +214,7 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
     #[tokio::test]
     async fn caps_large_stderr_too() {
         let cmd = "dd if=/dev/zero bs=1024 count=128 2>/dev/null | tr '\\0' b 1>&2; exit 1";
