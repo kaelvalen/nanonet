@@ -223,7 +223,7 @@ func (h *Handler) AgentConnect(c *gin.Context) {
 
 	// Opaque agent token (nnat_ prefix) → DB lookup; JWT access token → JWT validation.
 	if strings.HasPrefix(tokenString, "nnat_") {
-		if _, err := h.authService.ValidateAgentToken(context.Background(), tokenString); err != nil {
+		if _, err := h.authService.ValidateAgentTokenForService(context.Background(), tokenString, serviceID); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "geçersiz agent token"})
 			return
 		}

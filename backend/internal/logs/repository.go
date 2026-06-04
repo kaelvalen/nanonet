@@ -42,36 +42,10 @@ func (r *Repository) Insert(ctx context.Context, entry *ServiceLog) error {
 }
 
 // GetByService — bir servise ait logları sayfalı getir
-func (r *Repository) GetByService(ctx context.Context, serviceID uuid.UUID, opts QueryOpts) ([]ServiceLog, error) {
+func (r *Repository) GetByService(ctx context.Context, serviceID uuid.UUID, opts QueryOpts) ([]ServiceLog, int64, error) {
 	q := r.db.WithContext(ctx).
-		Where("service_id = ?", serviceID).
-		Order("time DESC").
-		Limit(opts.limit()).
-		Offset(opts.offset())
-
-	if opts.Level != "" {
-		q = q.Where("level = ?", opts.Level)
-	}
-	if opts.Source != "" {
-		q = q.Where("source = ?", opts.Source)
-	}
-	if !opts.Since.IsZero() {
-		q = q.Where("time >= ?", opts.Since)
-	}
-	if !opts.Until.IsZero() {
-		q = q.Where("time <= ?", opts.Until)
-	}
-
-	var rows []ServiceLog
-	return rows, q.Find(&rows).Error
-}
-
-// SearchAll — tüm servisler genelinde log ara
-func (r *Repository) SearchAll(ctx context.Context, opts QueryOpts) ([]ServiceLog, error) {
-	q := r.db.WithContext(ctx).
-		Order("time DESC").
-		Limit(opts.limit()).
-		Offset(opts.offset())
+		Model(&ServiceLog{}).
+		Where("service_id = ?", serviceID)
 
 	if opts.Level != "" {
 		q = q.Where("level = ?", opts.Level)
@@ -89,19 +63,58 @@ func (r *Repository) SearchAll(ctx context.Context, opts QueryOpts) ([]ServiceLo
 		q = q.Where("time <= ?", opts.Until)
 	}
 
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var rows []ServiceLog
-	return rows, q.Find(&rows).Error
+	err := q.Order("time DESC").Limit(opts.limit()).Offset(opts.offset()).Find(&rows).Error
+	return rows, total, err
+}
+
+// SearchAll — tüm servisler genelinde log ara
+func (r *Repository) SearchAll(ctx context.Context, opts QueryOpts) ([]ServiceLog, int64, error) {
+	q := r.db.WithContext(ctx).
+		Model(&ServiceLog{})
+
+	if opts.Level != "" {
+		q = q.Where("level = ?", opts.Level)
+	}
+	if opts.Source != "" {
+		q = q.Where("source = ?", opts.Source)
+	}
+	if opts.Search != "" {
+		q = q.Where("message ILIKE ?", "%"+opts.Search+"%")
+	}
+	if !opts.Since.IsZero() {
+		q = q.Where("time >= ?", opts.Since)
+	}
+	if !opts.Until.IsZero() {
+		q = q.Where("time <= ?", opts.Until)
+	}
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var rows []ServiceLog
+	err := q.Order("time DESC").Limit(opts.limit()).Offset(opts.offset()).Find(&rows).Error
+	return rows, total, err
 }
 
 // GetStats — level bazlı log sayıları
-func (r *Repository) GetStats(ctx context.Context, since time.Time) ([]LevelStat, error) {
+func (r *Repository) GetStats(ctx context.Context, since time.Time, serviceID *uuid.UUID) ([]LevelStat, error) {
 	var stats []LevelStat
-	err := r.db.WithContext(ctx).
+	q := r.db.WithContext(ctx).
 		Model(&ServiceLog{}).
 		Select("level, COUNT(*) as count").
-		Where("time >= ?", since).
-		Group("level").
-		Scan(&stats).Error
+		Where("time >= ?", since)
+	if serviceID != nil {
+		q = q.Where("service_id = ?", *serviceID)
+	}
+	err := q.Group("level").Scan(&stats).Error
 	return stats, err
 }
 
@@ -119,6 +132,7 @@ type QueryOpts struct {
 	Since  time.Time
 	Until  time.Time
 	Page   int
+	Offset int
 	Limit  int
 }
 
@@ -130,6 +144,9 @@ func (o QueryOpts) limit() int {
 }
 
 func (o QueryOpts) offset() int {
+	if o.Offset > 0 {
+		return o.Offset
+	}
 	if o.Page <= 1 {
 		return 0
 	}

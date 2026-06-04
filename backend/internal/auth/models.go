@@ -9,6 +9,7 @@ import (
 type AgentToken struct {
 	ID         uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	UserID     uuid.UUID  `gorm:"type:uuid;not null" json:"user_id"`
+	ServiceID  *uuid.UUID `gorm:"type:uuid" json:"service_id,omitempty"`
 	TokenHash  string     `gorm:"type:varchar(64);unique;not null" json:"-"`
 	Name       string     `gorm:"type:varchar(100);not null;default:''" json:"name"`
 	LastUsedAt *time.Time `json:"last_used_at"`

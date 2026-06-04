@@ -114,7 +114,22 @@ func (s *Service) generateToken(userID uuid.UUID, duration time.Duration, tokenT
 
 // GenerateAgentToken creates a new opaque agent token, stores its SHA-256 hash
 // in the database, and returns the raw token to the caller (shown only once).
-func (s *Service) GenerateAgentToken(userID uuid.UUID, name string) (string, *AgentToken, error) {
+func (s *Service) GenerateAgentToken(userID uuid.UUID, name string, serviceID *uuid.UUID) (string, *AgentToken, error) {
+	if serviceID != nil {
+		var count int64
+		if err := s.db.Table("services").
+			Where(`id = ? AND (
+				user_id = ?
+				OR id IN (SELECT service_id FROM service_grants WHERE grantee_user_id = ?)
+			)`, *serviceID, userID, userID).
+			Count(&count).Error; err != nil {
+			return "", nil, err
+		}
+		if count == 0 {
+			return "", nil, errors.New("servis bulunamadı veya erişim yok")
+		}
+	}
+
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		return "", nil, fmt.Errorf("token üretilemedi: %w", err)
@@ -126,6 +141,7 @@ func (s *Service) GenerateAgentToken(userID uuid.UUID, name string) (string, *Ag
 
 	rec := &AgentToken{
 		UserID:    userID,
+		ServiceID: serviceID,
 		TokenHash: hash,
 		Name:      name,
 	}
@@ -155,6 +171,32 @@ func (s *Service) ValidateAgentToken(ctx context.Context, rawToken string) (uuid
 	now := time.Now()
 	_ = s.db.WithContext(ctx).Model(&rec).Update("last_used_at", now).Error
 	return rec.UserID, nil
+}
+
+func (s *Service) ValidateAgentTokenForService(ctx context.Context, rawToken, serviceID string) (uuid.UUID, error) {
+	userID, err := s.ValidateAgentToken(ctx, rawToken)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	sid, err := uuid.Parse(serviceID)
+	if err != nil {
+		return uuid.Nil, errors.New("geçersiz service_id")
+	}
+
+	sum := sha256.Sum256([]byte(rawToken))
+	hash := hex.EncodeToString(sum[:])
+
+	var rec AgentToken
+	if err := s.db.WithContext(ctx).
+		Where("token_hash = ? AND revoked_at IS NULL", hash).
+		First(&rec).Error; err != nil {
+		return uuid.Nil, err
+	}
+	if rec.ServiceID != nil && *rec.ServiceID != sid {
+		return uuid.Nil, errors.New("agent token bu servis için geçerli değil")
+	}
+	return userID, nil
 }
 
 // RevokeAgentToken revokes a specific agent token by its ID, enforcing user ownership.

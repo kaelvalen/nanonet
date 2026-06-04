@@ -19,7 +19,7 @@ import {
 	X,
 	Zap,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type LogQueryParams, logsApi, type ServiceLog } from "@/api/metrics";
 import { servicesApi } from "@/api/services";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,10 @@ import {
 	EmptyState as SharedEmptyState,
 } from "@/components/ui/primitives";
 import { useAuthStore } from "@/store/authStore";
+import {
+	type LogEntry,
+	useServiceLogStore,
+} from "@/store/serviceLogStore";
 
 // ── Tipler ──────────────────────────────────────────────────────
 type TabKey = "service" | "audit" | "k8s";
@@ -174,6 +178,33 @@ function downloadLogs(logs: ServiceLog[]) {
 	a.download = `nanonet-logs-${Date.now()}.txt`;
 	a.click();
 	URL.revokeObjectURL(url);
+}
+
+function sourceForServiceLog(source: string): ServiceLog["source"] {
+	if (source === "command") return "command";
+	if (source === "system" || source === "alert") return "system";
+	if (source === "k8s") return "k8s";
+	if (source === "health_check") return "health_check";
+	return "agent";
+}
+
+function liveEntryToServiceLog(
+	serviceId: string,
+	entry: LogEntry,
+): ServiceLog {
+	return {
+		time: entry.timestamp,
+		id: entry.id,
+		service_id: serviceId,
+		level: entry.level,
+		source: sourceForServiceLog(entry.source),
+		message: entry.message,
+		fields: entry.raw ? { raw: entry.raw, live: true } : { live: true },
+	};
+}
+
+function logKey(log: ServiceLog): string {
+	return `${log.id}|${log.time}|${log.source}|${log.message}`;
 }
 
 // ── Bileşenler ───────────────────────────────────────────────────
@@ -363,6 +394,9 @@ function ServiceLogsTab() {
 	});
 	const [search, setSearch] = useState("");
 	const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+	const streamedLogs = useServiceLogStore(
+		(state) => state.logsByService[selectedServiceId] ?? [],
+	);
 
 	const { data, isLoading, refetch, isFetching } = useQuery({
 		queryKey: ["service-logs", selectedServiceId, params],
@@ -380,6 +414,47 @@ function ServiceLogsTab() {
 		enabled: !!selectedServiceId,
 		refetchInterval: 30_000,
 	});
+
+	const liveLogs = useMemo(() => {
+		const q = (params.search ?? "").trim().toLowerCase();
+		return streamedLogs
+			.map((entry) => liveEntryToServiceLog(selectedServiceId, entry))
+			.filter((log) => {
+				if (params.level && log.level !== params.level) return false;
+				if (params.source && log.source !== params.source) return false;
+				if (q && !log.message.toLowerCase().includes(q)) return false;
+				return true;
+			});
+	}, [
+		streamedLogs,
+		selectedServiceId,
+		params.level,
+		params.source,
+		params.search,
+	]);
+
+	const visibleLogs = useMemo(() => {
+		const seen = new Set<string>();
+		const merged = [...liveLogs, ...(data?.logs ?? [])].filter((log) => {
+			const key = logKey(log);
+			if (seen.has(key)) return false;
+			seen.add(key);
+			return true;
+		});
+		return merged.sort(
+			(a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
+		);
+	}, [data?.logs, liveLogs]);
+
+	const mergedStats = useMemo(() => {
+		const next: Record<string, number> = { ...(stats ?? {}) };
+		for (const log of liveLogs) {
+			next[log.level] = (next[log.level] ?? 0) + 1;
+		}
+		return next;
+	}, [stats, liveLogs]);
+
+	const displayTotal = Math.max(data?.total ?? 0, visibleLogs.length);
 
 	useEffect(() => {
 		clearTimeout(searchTimer.current);
@@ -495,11 +570,11 @@ function ServiceLogsTab() {
 					<RefreshCw className="w-3.5 h-3.5 mr-1.5" />
 					Yenile
 				</Button>
-				{data?.logs && data.logs.length > 0 && (
+				{visibleLogs.length > 0 && (
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => downloadLogs(data.logs)}
+						onClick={() => downloadLogs(visibleLogs)}
 					>
 						<Download className="w-3.5 h-3.5 mr-1.5" />
 						İndir
@@ -508,26 +583,26 @@ function ServiceLogsTab() {
 			</div>
 
 			{/* Stats */}
-			{stats && (
+			{(stats || liveLogs.length > 0) && (
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 					<LogStatCard
 						label="Debug"
-						value={stats.debug ?? 0}
+						value={mergedStats.debug ?? 0}
 						cfg={LEVEL_CONFIG.debug}
 					/>
 					<LogStatCard
 						label="Info"
-						value={stats.info ?? 0}
+						value={mergedStats.info ?? 0}
 						cfg={LEVEL_CONFIG.info}
 					/>
 					<LogStatCard
 						label="Warn"
-						value={stats.warn ?? 0}
+						value={mergedStats.warn ?? 0}
 						cfg={LEVEL_CONFIG.warn}
 					/>
 					<LogStatCard
 						label="Error"
-						value={stats.error ?? 0}
+						value={mergedStats.error ?? 0}
 						cfg={LEVEL_CONFIG.error}
 					/>
 				</div>
@@ -543,7 +618,9 @@ function ServiceLogsTab() {
 						className="text-[13px] font-semibold tnum"
 						style={{ color: "var(--text-primary)" }}
 					>
-						{data ? `${data.total.toLocaleString()} kayıt` : "Servis logları"}
+						{data || visibleLogs.length > 0
+							? `${displayTotal.toLocaleString()} kayıt`
+							: "Servis logları"}
 					</span>
 					{isFetching && (
 						<Loader2
@@ -562,7 +639,7 @@ function ServiceLogsTab() {
 					/>
 				) : isLoading ? (
 					<LoadingState />
-				) : !data?.logs.length ? (
+				) : visibleLogs.length === 0 ? (
 					<SharedEmptyState
 						icon={Terminal}
 						title="Log yok"
@@ -571,7 +648,7 @@ function ServiceLogsTab() {
 					/>
 				) : (
 					<div>
-						{data.logs.map((log) => (
+						{visibleLogs.map((log) => (
 							<LogRow key={`${log.time}-${log.id}`} log={log} />
 						))}
 					</div>

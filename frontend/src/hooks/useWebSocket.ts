@@ -16,6 +16,30 @@ const MAX_CACHED_POINTS = 500;
 const METRICS_TTL_MS = 24 * 60 * 60 * 1000; // 24 saat
 const AUTH_ACK_TIMEOUT_MS = 10000; // backend'den auth_ok bekleme süresi
 
+function mergeMetricUpdateIntoService(
+	service: { id: string },
+	data: Record<string, unknown>,
+) {
+	const current = service as Record<string, unknown>;
+	const next: Record<string, unknown> = {
+		...current,
+		status: data.status,
+	};
+
+	// Latest-metric replays are not proof that an agent is connected.
+	if (data.agent_connected === true) {
+		next.agent_connected = true;
+		next.agent_status =
+			typeof data.agent_status === "string" ? data.agent_status : "healthy";
+		next.agent_last_heartbeat_at = new Date().toISOString();
+		if (typeof data.agent_version === "string" && data.agent_version) {
+			next.agent_version = data.agent_version;
+		}
+	}
+
+	return next;
+}
+
 export function useWebSocket() {
 	const queryClient = useQueryClient();
 	const {
@@ -81,14 +105,7 @@ export function useWebSocket() {
 								if (!Array.isArray(old)) return old;
 								return old.map((s: { id: string }) =>
 									s.id === message.service_id
-										? {
-											...s,
-											status:                   message.data.status,
-											agent_connected:          true,
-											agent_status:             message.data.agent_status ?? "healthy",
-											agent_last_heartbeat_at:  new Date().toISOString(), // WS receipt time, not metric time
-											agent_version:            message.data.agent_version ?? (s as Record<string, unknown>).agent_version,
-										  }
+										? mergeMetricUpdateIntoService(s, message.data)
 										: s,
 								);
 							});

@@ -234,11 +234,22 @@ func (h *Handler) AgentToken(c *gin.Context) {
 	}
 
 	var req struct {
-		Name string `json:"name"`
+		Name      string `json:"name"`
+		ServiceID string `json:"service_id"`
 	}
 	_ = c.ShouldBindJSON(&req)
 
-	rawToken, rec, err := h.service.GenerateAgentToken(userID, req.Name)
+	var serviceID *uuid.UUID
+	if req.ServiceID != "" {
+		id, err := uuid.Parse(req.ServiceID)
+		if err != nil {
+			response.BadRequest(c, "geçersiz service_id")
+			return
+		}
+		serviceID = &id
+	}
+
+	rawToken, rec, err := h.service.GenerateAgentToken(userID, req.Name, serviceID)
 	if err != nil {
 		response.InternalError(c, "agent token oluşturulamadı")
 		return
@@ -248,6 +259,7 @@ func (h *Handler) AgentToken(c *gin.Context) {
 		"token_id":    rec.ID,
 		"agent_token": rawToken,
 		"name":        rec.Name,
+		"service_id":  rec.ServiceID,
 		"created_at":  rec.CreatedAt,
 	})
 }

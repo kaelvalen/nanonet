@@ -192,6 +192,81 @@ function Setup-Networks {
     }
 }
 
+# Docker içindeki backend, host kubeconfig'indeki 127.0.0.1 adresine erişemez.
+# Her dev başlatmada kind control-plane IP'si ile config-docker'i tazele.
+function Ensure-DockerKubeconfig {
+    $script:DockerKubeconfigReady = $false
+    $script:DockerKubeconfigChanged = $false
+
+    if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
+        Write-Warn "kubectl bulunamadı; Kubernetes entegrasyonu atlandı."
+        return
+    }
+
+    $context = (& kubectl config current-context 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $context) {
+        Write-Warn "Aktif kubeconfig context bulunamadı; Kubernetes entegrasyonu atlandı."
+        return
+    }
+
+    $cluster = $null
+    if ($context -match '^kind-(.+)$') {
+        $cluster = $Matches[1]
+    } elseif (Get-Command kind -ErrorAction SilentlyContinue) {
+        $cluster = (& kind get clusters 2>$null | Select-Object -First 1)
+    }
+
+    if (-not $cluster) {
+        Write-Warn "kind cluster bulunamadı; Kubernetes entegrasyonu atlandı."
+        return
+    }
+
+    $controlPlane = (& docker ps `
+        --filter "label=io.x-k8s.kind.cluster=$cluster" `
+        --filter "label=io.x-k8s.kind.role=control-plane" `
+        --format "{{.Names}}" | Select-Object -First 1)
+
+    if (-not $controlPlane) {
+        Write-Warn "kind-$cluster control-plane container'ı çalışmıyor; Kubernetes entegrasyonu atlandı."
+        return
+    }
+
+    $controlPlaneIP = (& docker inspect $controlPlane --format '{{.NetworkSettings.Networks.kind.IPAddress}}' 2>$null)
+    if (-not $controlPlaneIP) {
+        Write-Warn "$controlPlane için kind ağ IP'si bulunamadı; Kubernetes entegrasyonu atlandı."
+        return
+    }
+
+    $kubeDir = Join-Path $env:USERPROFILE ".kube"
+    if (-not (Test-Path $kubeDir)) {
+        New-Item -ItemType Directory -Path $kubeDir | Out-Null
+    }
+
+    $dockerConfig = Join-Path $kubeDir "config-docker"
+    $rawConfig = (& kubectl config view --raw 2>$null) -join "`n"
+    if ($LASTEXITCODE -ne 0 -or -not $rawConfig) {
+        Write-Warn "Host kubeconfig okunamadı; Kubernetes entegrasyonu atlandı."
+        return
+    }
+
+    $dockerConfigText = [regex]::Replace(
+        $rawConfig,
+        '(?m)^(\s*server:\s*)https://[^\r\n]+',
+        "`$1https://$controlPlaneIP`:6443"
+    )
+
+    $previous = if (Test-Path $dockerConfig) { Get-Content -Raw -Path $dockerConfig } else { "" }
+    if ($previous -ne $dockerConfigText) {
+        [System.IO.File]::WriteAllText($dockerConfig, $dockerConfigText, $utf8)
+        $script:DockerKubeconfigChanged = $true
+        Write-Ok "Kubernetes Docker kubeconfig güncellendi: $dockerConfig -> https://$controlPlaneIP`:6443"
+    } else {
+        Write-Ok "Kubernetes Docker kubeconfig güncel: https://$controlPlaneIP`:6443"
+    }
+
+    $script:DockerKubeconfigReady = $true
+}
+
 # ── Compose yardımcısı ────────────────────────────────────────────────────────
 function Invoke-Compose {
     Ensure-Home
@@ -224,8 +299,14 @@ function Cmd-Dev {
     Ensure-Home
     Setup-Env
     Setup-Networks
+    Ensure-DockerKubeconfig
 
     docker compose -f docker-compose.dev.yml up --build -d
+
+    if ($script:DockerKubeconfigChanged) {
+        Write-Info "Kubernetes kubeconfig değişti; backend yeniden başlatılıyor..."
+        docker compose -f docker-compose.dev.yml restart backend
+    }
 
     Write-Host ""
     Write-Ok "Servisler çalışıyor!"

@@ -2,6 +2,7 @@ package logs
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,25 +27,35 @@ func (h *Handler) GetServiceLogs(c *gin.Context) {
 	}
 
 	opts := parseQueryOpts(c)
-	rows, err := h.repo.GetByService(c.Request.Context(), serviceID, opts)
+	rows, total, err := h.repo.GetByService(c.Request.Context(), serviceID, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"logs": rows})
+	c.JSON(http.StatusOK, gin.H{
+		"logs":   rows,
+		"total":  total,
+		"limit":  opts.limit(),
+		"offset": opts.offset(),
+	})
 }
 
 // SearchAll GET /logs
 func (h *Handler) SearchAll(c *gin.Context) {
 	opts := parseQueryOpts(c)
-	rows, err := h.repo.SearchAll(c.Request.Context(), opts)
+	rows, total, err := h.repo.SearchAll(c.Request.Context(), opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"logs": rows})
+	c.JSON(http.StatusOK, gin.H{
+		"logs":   rows,
+		"total":  total,
+		"limit":  opts.limit(),
+		"offset": opts.offset(),
+	})
 }
 
 // GetStats GET /logs/stats
@@ -57,7 +68,14 @@ func (h *Handler) GetStats(c *gin.Context) {
 		}
 	}
 
-	stats, err := h.repo.GetStats(c.Request.Context(), since)
+	var serviceID *uuid.UUID
+	if raw := c.Query("service_id"); raw != "" {
+		if id, err := uuid.Parse(raw); err == nil {
+			serviceID = &id
+		}
+	}
+
+	stats, err := h.repo.GetStats(c.Request.Context(), since, serviceID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -73,16 +91,35 @@ func parseQueryOpts(c *gin.Context) QueryOpts {
 		Search: c.Query("search"),
 	}
 
-	if s := c.Query("since"); s != "" {
+	if v, err := strconv.Atoi(c.Query("limit")); err == nil {
+		opts.Limit = v
+	}
+	if v, err := strconv.Atoi(c.Query("offset")); err == nil {
+		opts.Offset = v
+	}
+	if v, err := strconv.Atoi(c.Query("page")); err == nil {
+		opts.Page = v
+	}
+
+	if s := firstNonEmpty(c.Query("since"), c.Query("from")); s != "" {
 		if t, err := time.Parse(time.RFC3339, s); err == nil {
 			opts.Since = t
 		}
 	}
-	if u := c.Query("until"); u != "" {
+	if u := firstNonEmpty(c.Query("until"), c.Query("to")); u != "" {
 		if t, err := time.Parse(time.RFC3339, u); err == nil {
 			opts.Until = t
 		}
 	}
 
 	return opts
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }

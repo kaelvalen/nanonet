@@ -186,8 +186,13 @@ func (mb *MetricsBroadcaster) handleAgentMetric(serviceID string, msg AgentMessa
 
 	// Normalize and broadcast to dashboards so frontend gets consistent data shape
 	broadcast := map[string]any{
-		"time":   metric.Time,
-		"status": metric.Status,
+		"time":            metric.Time,
+		"status":          metric.Status,
+		"agent_connected": true,
+		"agent_status":    "healthy",
+	}
+	if msg.AgentVersion != "" {
+		broadcast["agent_version"] = msg.AgentVersion
 	}
 	if metric.CPUPercent != nil {
 		broadcast["cpu_percent"] = *metric.CPUPercent

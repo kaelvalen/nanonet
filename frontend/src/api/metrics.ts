@@ -261,14 +261,14 @@ export const logsApi = {
 		const response = await apiClient.get(`/services/${serviceId}/logs`, {
 			params,
 		});
-		return response.data.data;
+		return normalizeLogsResponse(response.data, params);
 	},
 
 	searchAll: async (
 		params: LogQueryParams & { service_id?: string } = {},
 	): Promise<LogsResponse> => {
 		const response = await apiClient.get("/logs", { params });
-		return response.data.data;
+		return normalizeLogsResponse(response.data, params);
 	},
 
 	getStats: async (
@@ -278,7 +278,18 @@ export const logsApi = {
 		const response = await apiClient.get("/logs/stats", {
 			params: { service_id: serviceId, since },
 		});
-		return response.data.data;
+		const payload = response.data?.data ?? response.data;
+		const stats = payload?.stats ?? payload ?? {};
+		if (Array.isArray(stats)) {
+			return stats.reduce<Record<string, number>>((acc, row) => {
+				const level = row?.level;
+				if (typeof level === "string") {
+					acc[level] = Number(row?.count ?? 0);
+				}
+				return acc;
+			}, {});
+		}
+		return stats;
 	},
 
 	getAuditLogs: async (
@@ -293,6 +304,32 @@ export const logsApi = {
 		return response.data.data;
 	},
 };
+
+function normalizeLogsResponse(
+	raw: unknown,
+	params: LogQueryParams = {},
+): LogsResponse {
+	const payload =
+		(raw as { data?: unknown } | undefined)?.data ??
+		(raw as { logs?: unknown } | undefined) ??
+		{};
+	const logs = Array.isArray((payload as { logs?: unknown }).logs)
+		? ((payload as { logs: LogsResponse["logs"] }).logs)
+		: [];
+	const limit =
+		typeof (payload as { limit?: unknown }).limit === "number"
+			? ((payload as { limit: number }).limit)
+			: (params.limit ?? logs.length);
+	const offset =
+		typeof (payload as { offset?: unknown }).offset === "number"
+			? ((payload as { offset: number }).offset)
+			: (params.offset ?? 0);
+	const total =
+		typeof (payload as { total?: unknown }).total === "number"
+			? ((payload as { total: number }).total)
+			: logs.length;
+	return { logs, total, limit, offset };
+}
 
 export const aiChatApi = {
 	chat: async (
