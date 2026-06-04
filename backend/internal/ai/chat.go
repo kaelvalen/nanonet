@@ -13,6 +13,7 @@ import (
 
 	"nanonet-backend/pkg/ratelimit"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -38,6 +39,7 @@ type ChatResponse struct {
 
 type ChatService struct {
 	db          *gorm.DB
+	guard       *CostGuard
 	apiKey      string
 	client      *http.Client
 	rateLimiter *ratelimit.Limiter
@@ -46,6 +48,7 @@ type ChatService struct {
 func NewChatService(db *gorm.DB, apiKey string) *ChatService {
 	return &ChatService{
 		db:          db,
+		guard:       NewCostGuard(db),
 		apiKey:      apiKey,
 		client:      &http.Client{Timeout: 60 * time.Second},
 		rateLimiter: ratelimit.New(20, time.Minute),
@@ -53,12 +56,24 @@ func NewChatService(db *gorm.DB, apiKey string) *ChatService {
 }
 
 // Chat processes a conversational AI request with full platform context.
-func (s *ChatService) Chat(ctx context.Context, userID string, req ChatRequest) (*ChatResponse, error) {
-	if !s.rateLimiter.Allow(userID) {
+func (s *ChatService) Chat(ctx context.Context, userID uuid.UUID, req ChatRequest) (*ChatResponse, error) {
+	if !s.rateLimiter.Allow(userID.String()) {
 		return nil, ErrRateLimitExceeded
 	}
+	if s.guard != nil {
+		if err := s.guard.CheckBudget(ctx, userID); err != nil {
+			return nil, err
+		}
+	}
 
-	systemPrompt := s.buildSystemPrompt(ctx, userID, req.Context)
+	systemPrompt := s.buildSystemPrompt(ctx, userID.String(), req.Context)
+
+	var serviceID *uuid.UUID
+	if req.Context != "" && req.Context != "global" {
+		if parsed, err := uuid.Parse(req.Context); err == nil {
+			serviceID = &parsed
+		}
+	}
 
 	messages := make([]Message, 0, len(req.History)+1)
 	for _, h := range req.History {
@@ -101,6 +116,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req ChatRequest) 
 	httpReq.Header.Set("x-api-key", s.apiKey)
 	httpReq.Header.Set("anthropic-version", "2023-06-01")
 
+	start := time.Now()
 	resp, err := s.client.Do(httpReq)
 	if err != nil {
 		return nil, err
@@ -118,6 +134,7 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req ChatRequest) 
 			Text string `json:"text"`
 		} `json:"content"`
 		Usage struct {
+			InputTokens  int `json:"input_tokens"`
 			OutputTokens int `json:"output_tokens"`
 		} `json:"usage"`
 	}
@@ -127,6 +144,19 @@ func (s *ChatService) Chat(ctx context.Context, userID string, req ChatRequest) 
 
 	if len(claudeResp.Content) == 0 {
 		return nil, fmt.Errorf("boş yanıt")
+	}
+
+	if s.guard != nil {
+		s.guard.LogUsage(ctx, UsageRow{
+			UserID:       userID,
+			ServiceID:    serviceID,
+			Model:        ModelHaiku,
+			Kind:         "chat",
+			InputTokens:  claudeResp.Usage.InputTokens,
+			OutputTokens: claudeResp.Usage.OutputTokens,
+			CacheHit:     false,
+			LatencyMS:    int(time.Since(start).Milliseconds()),
+		})
 	}
 
 	return &ChatResponse{

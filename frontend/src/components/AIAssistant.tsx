@@ -28,6 +28,7 @@ import {
 	type TimeRange,
 } from "@/api/metrics";
 import {
+	AI_CHAT_DEFAULT_MESSAGE,
 	type AIAssistantMode,
 	useAIAssistantStore,
 } from "@/store/aiAssistantStore";
@@ -101,13 +102,6 @@ const PRIORITY_TEXT: Record<string, string> = {
 	medium: "var(--status-degraded-text)",
 	low: "var(--status-up-text)",
 };
-
-interface ChatBubble {
-	id: string;
-	role: "ai" | "user";
-	text: string;
-	time: string;
-}
 
 const SUGGESTIONS = [
 	{ icon: Sparkles, label: "Sistem durumu nedir?" },
@@ -418,16 +412,16 @@ function ReportView({
 // Main panel
 
 export function AIAssistant() {
-	const { isOpen, mode, setMode, close, consumeSeed } = useAIAssistantStore();
+	const {
+		isOpen,
+		mode,
+		setMode,
+		close,
+		consumeSeed,
+		getChatMessages,
+		appendChatMessage,
+	} = useAIAssistantStore();
 	const [message, setMessage] = useState("");
-	const [chatMessages, setChatMessages] = useState<ChatBubble[]>([
-		{
-			id: "init",
-			role: "ai",
-			text: "Selam — neye bakmamı istiyorsun? Sistem durumu, son anomaliler veya bir servis hakkında soru sorabilirsin.",
-			time: "Şimdi",
-		},
-	]);
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
 	const [selectedRange, setSelectedRange] = useState<TimeRange>("24h");
 	const [report, setReport] = useState<ReportResult | null>(null);
@@ -449,6 +443,17 @@ export function AIAssistant() {
 		() => services.find((s) => s.id === contextServiceId)?.name,
 		[services, contextServiceId],
 	);
+	const chatContextKey = contextServiceId
+		? `service:${contextServiceId}`
+		: "global";
+	const chatMessages = useAIAssistantStore(
+		(s) => s.chatByContext[chatContextKey] ?? [AI_CHAT_DEFAULT_MESSAGE],
+	);
+	const chatMessagesRef = useRef(chatMessages);
+
+	useEffect(() => {
+		chatMessagesRef.current = chatMessages;
+	}, [chatMessages]);
 
 	const now = () =>
 		new Date().toLocaleTimeString("tr-TR", {
@@ -458,14 +463,16 @@ export function AIAssistant() {
 
 	const sendMessage = async (text: string) => {
 		if (!text.trim() || isAnalyzing) return;
-		setChatMessages((prev) => [
-			...prev,
-			{ id: `user-${Date.now()}`, role: "user", text, time: now() },
-		]);
+		appendChatMessage(chatContextKey, {
+			id: `user-${Date.now()}`,
+			role: "user",
+			text,
+			time: now(),
+		});
 		setMessage("");
 		setIsAnalyzing(true);
 		try {
-			const history: ChatMessage[] = chatMessages.slice(-10).map((m) => ({
+			const history: ChatMessage[] = chatMessagesRef.current.slice(-10).map((m) => ({
 				role: m.role === "user" ? "user" : "assistant",
 				content: m.text,
 			}));
@@ -474,20 +481,19 @@ export function AIAssistant() {
 				history,
 				contextServiceId ?? "global",
 			);
-			setChatMessages((prev) => [
-				...prev,
-				{ id: `ai-${Date.now()}`, role: "ai", text: result.reply, time: now() },
-			]);
+			appendChatMessage(chatContextKey, {
+				id: `ai-${Date.now()}`,
+				role: "ai",
+				text: result.reply,
+				time: now(),
+			});
 		} catch {
-			setChatMessages((prev) => [
-				...prev,
-				{
-					id: `ai-err-${Date.now()}`,
-					role: "ai",
-					text: "AI asistanı geçici olarak kullanılamıyor.",
-					time: now(),
-				},
-			]);
+			appendChatMessage(chatContextKey, {
+				id: `ai-err-${Date.now()}`,
+				role: "ai",
+				text: "AI asistanı geçici olarak kullanılamıyor.",
+				time: now(),
+			});
 		} finally {
 			setIsAnalyzing(false);
 		}
@@ -506,7 +512,7 @@ export function AIAssistant() {
 		if (mode === "chat") {
 			requestAnimationFrame(() => inputRef.current?.focus());
 		}
-	}, [isOpen, consumeSeed, mode]);
+	}, [isOpen, consumeSeed, mode, chatContextKey]);
 
 	// Auto-scroll on new messages or while analyzing.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: chatMessages/isAnalyzing are intentional triggers
@@ -537,15 +543,12 @@ export function AIAssistant() {
 			setReport(result);
 		} catch {
 			setMode("chat");
-			setChatMessages((prev) => [
-				...prev,
-				{
-					id: `ai-err-${Date.now()}`,
-					role: "ai",
-					text: "Rapor oluşturulamadı, lütfen tekrar deneyin.",
-					time: now(),
-				},
-			]);
+			appendChatMessage(chatContextKey, {
+				id: `ai-err-${Date.now()}`,
+				role: "ai",
+				text: "Rapor oluşturulamadı, lütfen tekrar deneyin.",
+				time: now(),
+			});
 		} finally {
 			setIsGeneratingReport(false);
 		}

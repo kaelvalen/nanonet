@@ -32,8 +32,8 @@ func NewHandler(db *gorm.DB, apiKey string) *Handler {
 func (h *Handler) CostGuard() *CostGuard { return h.service.CostGuard() }
 
 func (h *Handler) Chat(c *gin.Context) {
-	userID := c.GetString("user_id")
-	if userID == "" {
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
 		response.Unauthorized(c, "geçersiz kullanıcı")
 		return
 	}
@@ -48,6 +48,10 @@ func (h *Handler) Chat(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, ErrRateLimitExceeded) {
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, ErrBudgetExceeded) {
+			response.Error(c, http.StatusPaymentRequired, "aylık AI bütçeniz tükendi — Settings → Monitoring'den artırabilirsiniz")
 			return
 		}
 		log.Printf("[AI Chat ERROR] user=%s: %v", userID, err)
