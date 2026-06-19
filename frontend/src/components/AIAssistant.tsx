@@ -9,6 +9,7 @@ import {
 	MessageSquare,
 	Send,
 	Sparkles,
+	Trash2,
 	TrendingUp,
 	X,
 	Zap,
@@ -418,8 +419,8 @@ export function AIAssistant() {
 		setMode,
 		close,
 		consumeSeed,
-		getChatMessages,
 		appendChatMessage,
+		resetChatMessages,
 	} = useAIAssistantStore();
 	const [message, setMessage] = useState("");
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -655,15 +656,33 @@ export function AIAssistant() {
 									</p>
 								</div>
 							</div>
-							<button
-								type="button"
-								onClick={close}
-								className="w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
-								aria-label="Kapat"
-								style={{ color: "var(--text-tertiary)" }}
-							>
-								<X className="w-4 h-4" />
-							</button>
+							<div className="flex items-center gap-1 shrink-0">
+								{mode === "chat" && chatMessages.length > 1 && (
+									<button
+										type="button"
+										onClick={() => {
+											resetChatMessages(chatContextKey);
+											requestAnimationFrame(() => inputRef.current?.focus());
+										}}
+										disabled={isAnalyzing}
+										className="w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] disabled:opacity-40 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+										aria-label="Sohbeti temizle"
+										title="Sohbeti temizle"
+										style={{ color: "var(--text-tertiary)" }}
+									>
+										<Trash2 className="w-4 h-4" />
+									</button>
+								)}
+								<button
+									type="button"
+									onClick={close}
+									className="w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+									aria-label="Kapat"
+									style={{ color: "var(--text-tertiary)" }}
+								>
+									<X className="w-4 h-4" />
+								</button>
+							</div>
 						</header>
 
 						{/* Mode tabs */}
@@ -875,7 +894,11 @@ export function AIAssistant() {
 												}
 											}}
 											disabled={isAnalyzing}
-											className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-9 text-[13px]"
+											className="flex-1 border-0 shadow-none focus-visible:ring-0 focus-visible:shadow-none px-0 h-9 text-[13px]"
+											// Input bileşeni bg/border'ı inline style ile bastığından
+											// className override'ları kazanmaz; pill'e karışması için
+											// burada da inline olarak nötrle.
+											style={{ background: "transparent", borderColor: "transparent" }}
 										/>
 										<button
 											type="button"

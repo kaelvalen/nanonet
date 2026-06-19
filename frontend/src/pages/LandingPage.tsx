@@ -1564,7 +1564,7 @@ function AISection() {
 						className="mt-5 text-[15px] leading-relaxed max-w-lg"
 						style={{ color: TXT_MUTED }}
 					>
-						Claude destekli analiz motoru; metrik, log ve alert geçmişini
+						AI destekli analiz motoru; metrik, log ve alert geçmişini
 						birleştirip olası kök-nedeni, etkilenen bileşenleri ve uygulanabilir
 						çözümü çıkarır.
 					</p>
@@ -1957,7 +1957,7 @@ function Footer() {
 					))}
 				</div>
 				<p className="text-[10.5px] font-mono" style={{ color: TXT_FAINT }}>
-					© 2026 NanoNet · Sinyalin gürültüye karşı zaferi
+					© 2026 NanoNet 
 				</p>
 			</div>
 		</footer>

@@ -69,6 +69,8 @@ tags:
     description: Çok kanallı bildirimler
   - name: Kubernetes
     description: kubectl tabanlı K8s API
+  - name: Billing
+    description: Abonelik ve faturalama
 
 components:
   parameters:
@@ -97,7 +99,7 @@ components:
     # ---- AUTH ----
     RegisterRequest:
       type: object
-      required: [email, password]
+      required: [ email, password ]
       properties:
         email:
           type: string
@@ -110,7 +112,7 @@ components:
 
     LoginRequest:
       type: object
-      required: [email, password]
+      required: [ email, password ]
       properties:
         email:
           type: string
@@ -176,7 +178,7 @@ components:
           example: 10
         status:
           type: string
-          enum: [healthy, unhealthy, degraded, unknown]
+          enum: [ healthy, unhealthy, degraded, unknown ]
         agent_id:
           type: string
           format: uuid
@@ -190,7 +192,7 @@ components:
 
     CreateServiceRequest:
       type: object
-      required: [name, host, port, health_endpoint, poll_interval_sec]
+      required: [ name, host, port, health_endpoint, poll_interval_sec ]
       properties:
         name:
           type: string
@@ -304,7 +306,7 @@ components:
           example: cpu_threshold
         severity:
           type: string
-          enum: [info, warn, crit]
+          enum: [ info, warn, crit ]
         message:
           type: string
         triggered_at:
@@ -341,7 +343,7 @@ components:
           description: Tespit edilen sorunun kök nedeni
         risk_level:
           type: string
-          enum: [low, medium, high, critical]
+          enum: [ low, medium, high, critical ]
         recommendations:
           type: array
           items:
@@ -351,7 +353,7 @@ components:
                 type: string
               priority:
                 type: string
-                enum: [low, medium, high]
+                enum: [ low, medium, high ]
         anomalies:
           type: array
           items:
@@ -430,6 +432,108 @@ components:
           type: integer
         page:
           type: integer
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+          example: pro
+        name:
+          type: string
+          example: Pro
+        tier:
+          type: integer
+          example: 2
+        price_monthly_usd:
+          type: number
+          example: 29
+        max_services:
+          type: integer
+          example: 50
+        max_agents:
+          type: integer
+          example: 50
+        max_probes:
+          type: integer
+          example: 100
+        max_alert_rules:
+          type: integer
+          example: 500
+        ai_tokens_monthly:
+          type: integer
+          example: 2000000
+        metric_retention_days:
+          type: integer
+          example: 90
+        log_retention_days:
+          type: integer
+          example: 30
+        k8s_enabled:
+          type: boolean
+          example: true
+        slo_enabled:
+          type: boolean
+          example: true
+        runbooks_enabled:
+          type: boolean
+          example: true
+        team_members:
+          type: integer
+          example: 5
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        plan_id:
+          type: string
+          example: pro
+        plan:
+          $ref: "#/components/schemas/Plan"
+        status:
+          type: string
+          enum:
+            - active
+            - canceled
+            - past_due
+            - trialing
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+          nullable: true
+        cancel_at_period_end:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PlanSummary:
+      type: object
+      properties:
+        subscription:
+          $ref: "#/components/schemas/Subscription"
+        usage:
+          type: object
+          properties:
+            services_used:
+              type: integer
+            agents_used:
+              type: integer
+            probes_used:
+              type: integer
+            alert_rules_used:
+              type: integer
+            ai_tokens_used:
+              type: integer
 
 security: []
 
@@ -440,12 +544,18 @@ paths:
   # ============================================================
   /api/v1/auth/register:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Yeni kullanıcı kaydı
-      description: |
+      description: >-
         E-posta ve parola ile yeni hesap oluşturur.
+
         Başarılıysa kullanıcı bilgisi ve JWT token çifti döner.
+
         Aynı e-posta ile ikinci kayıt HTTP 409 döndürür.
+
+
+
+        **🖥️ Front-end kullanımı:** `authApi.register()` — **RegisterPage** kayıt formu (useAuth). Access token Zustand store'a yazılır, refresh token HttpOnly cookie ile döner.
       requestBody:
         required: true
         content:
@@ -481,12 +591,18 @@ paths:
 
   /api/v1/auth/login:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Kullanıcı girişi
-      description: |
+      description: >-
         E-posta ve parola ile giriş yapar.
+
         Başarılıysa access_token (15dk) ve refresh_token (7gün) döner.
+
         Rate limit: 10 istek/dakika.
+
+
+
+        **🖥️ Front-end kullanımı:** `authApi.login()` — **LoginPage** giriş formu (useAuth). Başarıda kullanıcı + access token store'a yazılır.
       requestBody:
         required: true
         content:
@@ -511,11 +627,16 @@ paths:
 
   /api/v1/auth/logout:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Çıkış yap
-      description: |
+      description: >-
         Mevcut access token'ı blacklist'e ekler.
+
         Sonraki isteklerde bu token geçersiz sayılır.
+
+
+
+        **🖥️ Front-end kullanımı:** `authApi.logout()` — üst menüdeki "Çıkış Yap". Refresh cookie temizlenir, store sıfırlanır.
       security:
         - BearerAuth: []
       responses:
@@ -526,16 +647,20 @@ paths:
 
   /api/v1/auth/refresh:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Access token yenile
-      description: Refresh token ile yeni access token üretir.
+      description: >-
+        Refresh token ile yeni access token üretir.
+
+
+        **🖥️ Front-end kullanımı:** `authApi.refresh()` — `client.ts` axios interceptor'ı 401 alınca otomatik çağırır; access token sessizce yenilenir.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [refresh_token]
+              required: [ refresh_token ]
               properties:
                 refresh_token:
                   type: string
@@ -555,7 +680,7 @@ paths:
 
   /api/v1/auth/me:
     get:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Mevcut kullanıcı bilgisi
       security:
         - BearerAuth: []
@@ -572,10 +697,12 @@ paths:
                         $ref: '#/components/schemas/User'
         '401':
           description: Token gerekli
+      description: "**🖥️ Front-end kullanımı:** `authApi.me()` — uygulama açılışında
+        oturumu doğrulamak için (useAuth bootstrap)."
 
   /api/v1/auth/password:
     put:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Parola değiştir
       security:
         - BearerAuth: []
@@ -585,7 +712,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [current_password, new_password]
+              required: [ current_password, new_password ]
               properties:
                 current_password:
                   type: string
@@ -597,10 +724,12 @@ paths:
           description: Parola güncellendi
         '400':
           description: Mevcut parola hatalı
+      description: "**🖥️ Front-end kullanımı:** `settingsApi.changePassword()` —
+        **SettingsPage › Güvenlik** parola değiştirme."
 
   /api/v1/auth/forgot-password:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Şifre sıfırlama e-postası gönder
       requestBody:
         required: true
@@ -608,7 +737,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email]
+              required: [ email ]
               properties:
                 email:
                   type: string
@@ -616,10 +745,12 @@ paths:
       responses:
         '200':
           description: E-posta gönderildi (e-posta kayıtlı olmasa bile 200 döner; güvenlik)
+      description: "**🖥️ Front-end kullanımı:** `authApi.forgotPassword()` —
+        **ForgotPasswordPage** sıfırlama e-postası talebi."
 
   /api/v1/auth/reset-password:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Parola sıfırla
       requestBody:
         required: true
@@ -627,7 +758,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [token, new_password]
+              required: [ token, new_password ]
               properties:
                 token:
                   type: string
@@ -640,12 +771,18 @@ paths:
           description: Parola sıfırlandı
         '400':
           description: Token geçersiz veya süresi dolmuş
+      description: "**🖥️ Front-end kullanımı:** `authApi.resetPassword()` —
+        **ResetPasswordPage** (e-postadaki token ile yeni parola)."
 
   /api/v1/auth/agent-token:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Agent kimlik token'ı oluştur
-      description: İzlenen sunucuya deploy edilecek Rust agent'ın kullanacağı token üretir.
+      description: >-
+        İzlenen sunucuya deploy edilecek Rust agent'ın kullanacağı token üretir.
+
+
+        **🖥️ Front-end kullanımı:** `authApi.createAgentToken()` — **AgentSetupWizard** / **AgentsPage**, agent kurulumu için tek seferlik token üretir.
       security:
         - BearerAuth: []
       responses:
@@ -668,9 +805,13 @@ paths:
   # ============================================================
   /api/v1/services:
     get:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servisleri listele
-      description: Giriş yapmış kullanıcının tüm kayıtlı servislerini döner.
+      description: >-
+        Giriş yapmış kullanıcının tüm kayıtlı servislerini döner.
+
+
+        **🖥️ Front-end kullanımı:** `servicesApi.list()` — **ServicesPage**, **DashboardPage**, **CommandPalette** ve `useServices` hook'u (servis kartları/tablosu).
       security:
         - BearerAuth: []
       responses:
@@ -691,7 +832,7 @@ paths:
                               $ref: '#/components/schemas/Service'
 
     post:
-      tags: [Services]
+      tags: [ Services ]
       summary: Yeni servis ekle
       security:
         - BearerAuth: []
@@ -720,10 +861,12 @@ paths:
                         $ref: '#/components/schemas/Service'
         '400':
           description: Validasyon hatası
+      description: '**🖥️ Front-end kullanımı:** `servicesApi.create()` — **ServicesPage**
+        "Servis Ekle" sihirbazı.'
 
-  /api/v1/services/{id}:
+  "/api/v1/services/{id}":
     get:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servis detayı
       security:
         - BearerAuth: []
@@ -747,9 +890,11 @@ paths:
                         $ref: '#/components/schemas/Service'
         '404':
           description: Servis bulunamadı
+      description: "**🖥️ Front-end kullanımı:** `servicesApi.get()` —
+        **ServiceDetailPage** açılışında tekil servis detayı."
 
     put:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servis güncelle
       security:
         - BearerAuth: []
@@ -771,9 +916,11 @@ paths:
           description: Güncellendi
         '404':
           description: Servis bulunamadı
+      description: "**🖥️ Front-end kullanımı:** `servicesApi.update()` —
+        **ServiceDetailPage** ayar/düzenleme formu."
 
     delete:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servis sil
       security:
         - BearerAuth: []
@@ -789,12 +936,18 @@ paths:
           description: Silindi
         '404':
           description: Servis bulunamadı
+      description: "**🖥️ Front-end kullanımı:** `servicesApi.delete()` —
+        **ServiceDetailPage** / **ServicesPage** silme aksiyonu."
 
-  /api/v1/services/{id}/ping:
+  "/api/v1/services/{id}/ping":
     post:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servisi manuel ping'le
-      description: Health endpoint'e anlık istek gönderir, latency ve durumu döner.
+      description: >-
+        Health endpoint'e anlık istek gönderir, latency ve durumu döner.
+
+
+        **🖥️ Front-end kullanımı:** **ServiceDetailPage** — manuel sağlık kontrolü (anlık ping) butonu.
       security:
         - BearerAuth: []
       parameters:
@@ -821,13 +974,18 @@ paths:
                           status:
                             type: string
 
-  /api/v1/services/{id}/restart:
+  "/api/v1/services/{id}/restart":
     post:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servisi yeniden başlat
-      description: |
+      description: >-
         Servisin bağlı agent'ına restart komutu gönderir.
+
         Rate limit: 10 istek/dakika (sıkı limit).
+
+
+
+        **🖥️ Front-end kullanımı:** `servicesApi.restart()` — **ServiceDetailPage** aksiyon çubuğu ve **CommandPalette** (agent'a komut kuyruğa alır).
       security:
         - BearerAuth: []
       parameters:
@@ -843,9 +1001,9 @@ paths:
         '429':
           description: Rate limit aşıldı
 
-  /api/v1/services/{id}/stop:
+  "/api/v1/services/{id}/stop":
     post:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servisi durdur
       security:
         - BearerAuth: []
@@ -859,10 +1017,12 @@ paths:
       responses:
         '200':
           description: Komut gönderildi
+      description: '**🖥️ Front-end kullanımı:** `servicesApi.stop()` —
+        **ServiceDetailPage** "Durdur" butonu.'
 
-  /api/v1/services/{id}/start:
+  "/api/v1/services/{id}/start":
     post:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servisi başlat
       security:
         - BearerAuth: []
@@ -876,10 +1036,12 @@ paths:
       responses:
         '200':
           description: Komut gönderildi
+      description: '**🖥️ Front-end kullanımı:** `servicesApi.start()` —
+        **ServiceDetailPage** "Başlat" butonu.'
 
-  /api/v1/services/{id}/exec:
+  "/api/v1/services/{id}/exec":
     post:
-      tags: [Services]
+      tags: [ Services ]
       summary: Agent üzerinde komut çalıştır
       security:
         - BearerAuth: []
@@ -896,7 +1058,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [command]
+              required: [ command ]
               properties:
                 command:
                   type: string
@@ -904,10 +1066,12 @@ paths:
       responses:
         '200':
           description: Komut çalıştırıldı
+      description: "**🖥️ Front-end kullanımı:** `servicesApi.exec()` — **ServiceDetailPage
+        › Exec/Terminal** sekmesi (komutu agent'a iletir)."
 
-  /api/v1/services/{id}/scale:
+  "/api/v1/services/{id}/scale":
     post:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servisi ölçeklendir
       security:
         - BearerAuth: []
@@ -924,7 +1088,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [replicas]
+              required: [ replicas ]
               properties:
                 replicas:
                   type: integer
@@ -932,15 +1096,22 @@ paths:
       responses:
         '200':
           description: Ölçeklendirme komutu gönderildi
+      description: "**🖥️ Front-end kullanımı:** `servicesApi.scale()` —
+        **ServiceDetailPage › Ölçekleme** ve **LoadBalancingTab** (instance
+        sayısı/strateji)."
 
   # ============================================================
   # METRICS
   # ============================================================
-  /api/v1/services/{id}/metrics:
+  "/api/v1/services/{id}/metrics":
     get:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Metrik geçmişi
-      description: Belirli zaman aralığı için ham metrik veri noktalarını döner.
+      description: >-
+        Belirli zaman aralığı için ham metrik veri noktalarını döner.
+
+
+        **🖥️ Front-end kullanımı:** `metricsApi.getHistory()` — **ServiceDetailPage** zaman serisi grafikleri.
       security:
         - BearerAuth: []
       parameters:
@@ -954,7 +1125,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [1h, 6h, 24h, 7d]
+            enum: [ 1h, 6h, 24h, 7d ]
             default: 1h
           description: Zaman penceresi
         - name: limit
@@ -980,11 +1151,15 @@ paths:
                             items:
                               $ref: '#/components/schemas/MetricSnapshot'
 
-  /api/v1/services/{id}/metrics/aggregated:
+  "/api/v1/services/{id}/metrics/aggregated":
     get:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Agregat metrikler
-      description: Ortalama, max, P95 gibi istatistiksel özeti döner.
+      description: >-
+        Ortalama, max, P95 gibi istatistiksel özeti döner.
+
+
+        **🖥️ Front-end kullanımı:** `metricsApi.getAggregated()` — **ServiceDetailPage** ve **ComparePage** (bucket'lanmış ortalamalar).
       security:
         - BearerAuth: []
       parameters:
@@ -998,7 +1173,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [1h, 6h, 24h, 7d]
+            enum: [ 1h, 6h, 24h, 7d ]
       responses:
         '200':
           description: Agregat özet
@@ -1011,11 +1186,15 @@ paths:
                       data:
                         $ref: '#/components/schemas/AggregatedMetrics'
 
-  /api/v1/services/{id}/metrics/uptime:
+  "/api/v1/services/{id}/metrics/uptime":
     get:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Uptime hesabı
-      description: Belirtilen pencerede servisin sağlıklı olduğu süre yüzdesi.
+      description: >-
+        Belirtilen pencerede servisin sağlıklı olduğu süre yüzdesi.
+
+
+        **🖥️ Front-end kullanımı:** `metricsApi.getUptime()` — **ServiceDetailPage** ve **DashboardPage** uptime rozetleri.
       security:
         - BearerAuth: []
       parameters:
@@ -1047,9 +1226,13 @@ paths:
   # ============================================================
   /api/v1/alerts:
     get:
-      tags: [Alerts]
+      tags: [ Alerts ]
       summary: Aktif alertleri listele
-      description: Tüm servislerdeki çözümlenmemiş alertleri döner.
+      description: >-
+        Tüm servislerdeki çözümlenmemiş alertleri döner.
+
+
+        **🖥️ Front-end kullanımı:** **AlertsPage** — tüm aktif uyarılar listesi.
       security:
         - BearerAuth: []
       responses:
@@ -1069,9 +1252,9 @@ paths:
                             items:
                               $ref: '#/components/schemas/Alert'
 
-  /api/v1/services/{id}/alerts:
+  "/api/v1/services/{id}/alerts":
     get:
-      tags: [Alerts]
+      tags: [ Alerts ]
       summary: Servise ait alertleri listele
       security:
         - BearerAuth: []
@@ -1104,12 +1287,18 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/Alert'
+      description: "**🖥️ Front-end kullanımı:** `metricsApi.getAlerts()` —
+        **ServiceDetailPage** servise özgü uyarılar."
 
-  /api/v1/alerts/{alertId}/resolve:
+  "/api/v1/alerts/{alertId}/resolve":
     post:
-      tags: [Alerts]
+      tags: [ Alerts ]
       summary: Alert'i çözümle
-      description: Belirtilen alert'in resolved_at alanını şimdiki zamana ayarlar.
+      description: >-
+        Belirtilen alert'in resolved_at alanını şimdiki zamana ayarlar.
+
+
+        **🖥️ Front-end kullanımı:** `metricsApi.resolveAlert()` — **AlertsPage** "Çöz" aksiyonu.
       security:
         - BearerAuth: []
       parameters:
@@ -1128,19 +1317,27 @@ paths:
   # ============================================================
   # AI
   # ============================================================
-  /api/v1/services/{id}/analyze:
+  "/api/v1/services/{id}/analyze":
     post:
-      tags: [AI]
+      tags: [ AI ]
       summary: AI anomali analizi başlat
-      description: |
+      description: >-
         Belirtilen zaman penceresindeki metrikleri Claude API'ye gönderir ve
+
         kök neden analizi + öneriler içeren yapılandırılmış yanıt alır.
+
 
         **Rate limit:** Kullanıcı başına dakikada 10 istek.
 
+
         **Model seçimi:** deep_analysis=false → claude-haiku-3; true → claude-sonnet-3.
 
+
         AI çağrısı tamamen server-side'dır; API key frontend'e iletilmez.
+
+
+
+        **🖥️ Front-end kullanımı:** **ServiceDetailPage** — "Analiz Et" butonu, anlık anomali analizi tetikler.
       security:
         - BearerAuth: []
       parameters:
@@ -1177,11 +1374,15 @@ paths:
         '500':
           description: Claude API hatası
 
-  /api/v1/services/{id}/insights:
+  "/api/v1/services/{id}/insights":
     get:
-      tags: [AI]
+      tags: [ AI ]
       summary: AI analiz geçmişini listele
-      description: Belirtilen servise ait geçmiş AI analizlerini sayfalı olarak döner.
+      description: >-
+        Belirtilen servise ait geçmiş AI analizlerini sayfalı olarak döner.
+
+
+        **🖥️ Front-end kullanımı:** **ServiceDetailPage** — servise ait AI içgörüleri (önbellekli).
       security:
         - BearerAuth: []
       parameters:
@@ -1226,11 +1427,15 @@ paths:
   # ============================================================
   # COMMANDS
   # ============================================================
-  /api/v1/services/{id}/commands:
+  "/api/v1/services/{id}/commands":
     get:
-      tags: [Commands]
+      tags: [ Commands ]
       summary: Komut geçmişi
-      description: Servise gönderilmiş komutların (restart, stop, exec vb.) tarihçesi.
+      description: >-
+        Servise gönderilmiş komutların (restart, stop, exec vb.) tarihçesi.
+
+
+        **🖥️ Front-end kullanımı:** `servicesApi.getCommandHistory()` — **CommandHistoryTab** (sayfalı komut geçmişi).
       security:
         - BearerAuth: []
       parameters:
@@ -1270,7 +1475,7 @@ paths:
                                   example: restart
                                 status:
                                   type: string
-                                  enum: [pending, success, failed]
+                                  enum: [ pending, success, failed ]
                                 requested_at:
                                   type: string
                                   format: date-time
@@ -1280,7 +1485,7 @@ paths:
   # ============================================================
   /api/v1/settings:
     get:
-      tags: [Settings]
+      tags: [ Settings ]
       summary: Kullanıcı ayarlarını getir
       security:
         - BearerAuth: []
@@ -1295,11 +1500,17 @@ paths:
                   - properties:
                       data:
                         $ref: '#/components/schemas/UserSettings'
+      description: "**🖥️ Front-end kullanımı:** `settingsApi.get()` — **SettingsPage**
+        açılışında kullanıcı tercihleri."
 
     put:
-      tags: [Settings]
+      tags: [ Settings ]
       summary: Kullanıcı ayarlarını güncelle
-      description: Alert eşik değerleri ve bildirim tercihlerini günceller.
+      description: >-
+        Alert eşik değerleri ve bildirim tercihlerini günceller.
+
+
+        **🖥️ Front-end kullanımı:** `settingsApi.update()` — **SettingsPage** bildirim/poll/AI/webhook ayarlarını kaydeder.
       security:
         - BearerAuth: []
       requestBody:
@@ -1317,9 +1528,13 @@ paths:
   # ============================================================
   /api/v1/audit:
     get:
-      tags: [Audit]
+      tags: [ Audit ]
       summary: Audit log'larını listele
-      description: Login, servis değişikliği ve kritik komut işlemlerinin güvenlik günlüğü.
+      description: >-
+        Login, servis değişikliği ve kritik komut işlemlerinin güvenlik günlüğü.
+
+
+        **🖥️ Front-end kullanımı:** `settingsApi.getAuditLogs()` — **SettingsPage › Denetim Günlüğü** (sayfalı).
       security:
         - BearerAuth: []
       parameters:
@@ -1373,71 +1588,85 @@ paths:
 
   /health:
     get:
-      tags: [System]
+      tags: [ System ]
       summary: Basit sağlık kontrolü
       responses:
         '200':
           description: OK
+      description: "**🖥️ Front-end kullanımı:** Yük dengeleyici / izleme sistemleri için
+        sağlık ucu (bağlı agent/dashboard sayısı). UI kullanmaz."
 
   /health/live:
     get:
-      tags: [System]
+      tags: [ System ]
       summary: Liveness probe
       responses:
         '200':
           description: Canlı
+      description: "**🖥️ Front-end kullanımı:** Kubernetes liveness probe."
 
   /health/ready:
     get:
-      tags: [System]
+      tags: [ System ]
       summary: Readiness probe (DB)
       responses:
         '200':
           description: Hazır
         '503':
           description: Hazır değil
+      description: "**🖥️ Front-end kullanımı:** Kubernetes readiness probe (DB/Redis
+        bağlantısı)."
 
   /health/details:
     get:
-      tags: [System]
+      tags: [ System ]
       summary: Detaylı sağlık (DB, Redis, sistem)
       responses:
         '200':
           description: Sağlık raporu
         '503':
           description: Degraded
+      description: "**🖥️ Front-end kullanımı:** Ops için ayrıntılı bağımlılık sağlık
+        raporu."
 
   /api/v1/metrics:
     post:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Metrik ingest
       security:
         - BearerAuth: []
       responses:
         '201':
           description: Kaydedildi
+      description: "**🖥️ Front-end kullanımı:** Agent / harici sistemler tarafından metrik
+        yazımı için. Web SPA bu ucu kullanmaz (veri WebSocket üzerinden akar)."
 
   /api/v1/auth/mobile/refresh:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Mobil refresh token
       responses:
         '200':
           description: Token yenilendi
+      description: "**🖥️ Front-end kullanımı:** Yalnızca mobil istemci için (body ile
+        refresh token). Web SPA bunun yerine cookie tabanlı `/auth/refresh`
+        kullanır."
 
   /api/v1/auth/agent-tokens:
     get:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Agent token listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** **AgentsPage** — servise bağlı agent
+        token'larını listeler."
 
-  /api/v1/auth/agent-tokens/{token_id}:
+  "/api/v1/auth/agent-tokens/{token_id}":
     delete:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: Agent token iptal
       security:
         - BearerAuth: []
@@ -1451,50 +1680,60 @@ paths:
       responses:
         '200':
           description: İptal edildi
+      description: "**🖥️ Front-end kullanımı:** **AgentsPage** — token iptal (revoke)
+        butonu."
 
   /api/v1/ai/chat:
     post:
-      tags: [AI]
+      tags: [ AI ]
       summary: AI sohbet
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Yanıt
+      description: "**🖥️ Front-end kullanımı:** **AIAssistant** bileşeni — kullanıcı
+        sohbet mesajını Claude'a iletir (servis bağlamıyla)."
 
   /api/v1/ai/report:
     post:
-      tags: [AI]
+      tags: [ AI ]
       summary: AI rapor üret
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Rapor
+      description: "**🖥️ Front-end kullanımı:** **ReportPDF** bileşeni — SSE akışıyla AI
+        rapor üretir (PDF/özet)."
 
   /api/v1/ai/usage:
     get:
-      tags: [AI]
+      tags: [ AI ]
       summary: AI kullanım özeti
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Özet
+      description: "**🖥️ Front-end kullanımı:** `aiUsageApi.summary()` — **AIUsagePage**
+        aylık harcama/token özeti ve bütçe."
 
   /api/v1/ai/usage/recent:
     get:
-      tags: [AI]
+      tags: [ AI ]
       summary: Son AI kullanımları
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `aiUsageApi.recent()` — **AIUsagePage**
+        son AI çağrıları tablosu."
 
-  /api/v1/services/{id}/metrics/rollup:
+  "/api/v1/services/{id}/metrics/rollup":
     get:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Metrik rollup
       security:
         - BearerAuth: []
@@ -1503,10 +1742,12 @@ paths:
       responses:
         '200':
           description: Rollup verisi
+      description: "**🖥️ Front-end kullanımı:** **ServiceDetailPage** — uzun dönem
+        (günlük/saatlik) rollup grafikleri."
 
-  /api/v1/services/{id}/metrics/forecast:
+  "/api/v1/services/{id}/metrics/forecast":
     get:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Metrik tahmini
       security:
         - BearerAuth: []
@@ -1515,10 +1756,12 @@ paths:
       responses:
         '200':
           description: Forecast
+      description: "**🖥️ Front-end kullanımı:** `metricsApi.getForecast()` —
+        **ForecastPanel** (CPU/bellek/latency tahmini ve güven aralığı)."
 
-  /api/v1/services/{id}/dependencies:
+  "/api/v1/services/{id}/dependencies":
     get:
-      tags: [Dependencies]
+      tags: [ Dependencies ]
       summary: Bağımlılık listesi
       security:
         - BearerAuth: []
@@ -1527,10 +1770,12 @@ paths:
       responses:
         '200':
           description: Bağımlılıklar
+      description: "**🖥️ Front-end kullanımı:** `dependenciesApi.list()` —
+        **DependenciesPanel** (agent'ın keşfettiği bağımlılıklar)."
 
-  /api/v1/services/{id}/dependencies/{dep_id}:
+  "/api/v1/services/{id}/dependencies/{dep_id}":
     patch:
-      tags: [Dependencies]
+      tags: [ Dependencies ]
       summary: Bağımlılığı promote et
       security:
         - BearerAuth: []
@@ -1545,8 +1790,10 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `dependenciesApi.promote()` —
+        **DependenciesPanel** bağımlılığı kalıcı (promoted) işaretler."
     delete:
-      tags: [Dependencies]
+      tags: [ Dependencies ]
       summary: Bağımlılık sil
       security:
         - BearerAuth: []
@@ -1561,10 +1808,12 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `dependenciesApi.remove()` —
+        **DependenciesPanel** bağımlılığı siler."
 
-  /api/v1/services/{id}/grants:
+  "/api/v1/services/{id}/grants":
     get:
-      tags: [Grants]
+      tags: [ Grants ]
       summary: Paylaşım yetkileri listesi
       security:
         - BearerAuth: []
@@ -1573,8 +1822,10 @@ paths:
       responses:
         '200':
           description: Grants
+      description: "**🖥️ Front-end kullanımı:** `grantsApi.list()` — **SharingPanel**
+        servis paylaşım yetkileri."
     post:
-      tags: [Grants]
+      tags: [ Grants ]
       summary: Grant oluştur
       security:
         - BearerAuth: []
@@ -1583,10 +1834,12 @@ paths:
       responses:
         '201':
           description: Oluşturuldu
+      description: "**🖥️ Front-end kullanımı:** `grantsApi.create()` — **SharingPanel**
+        kullanıcıya rol (viewer/operator/admin) verir."
 
-  /api/v1/services/{id}/grants/{grant_id}:
+  "/api/v1/services/{id}/grants/{grant_id}":
     patch:
-      tags: [Grants]
+      tags: [ Grants ]
       summary: Grant güncelle
       security:
         - BearerAuth: []
@@ -1601,8 +1854,10 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `grantsApi.update()` — **SharingPanel**
+        rol değiştirir."
     delete:
-      tags: [Grants]
+      tags: [ Grants ]
       summary: Grant sil
       security:
         - BearerAuth: []
@@ -1617,10 +1872,12 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `grantsApi.remove()` — **SharingPanel**
+        paylaşımı kaldırır."
 
-  /api/v1/services/{id}/alert-rules:
+  "/api/v1/services/{id}/alert-rules":
     get:
-      tags: [Alerts]
+      tags: [ Alerts ]
       summary: Uyarı kuralları
       security:
         - BearerAuth: []
@@ -1629,8 +1886,10 @@ paths:
       responses:
         '200':
           description: Kurallar
+      description: "**🖥️ Front-end kullanımı:** **AlertRulesPanel** / **AlertRulesTab** —
+        eşik kurallarını yükler."
     put:
-      tags: [Alerts]
+      tags: [ Alerts ]
       summary: Uyarı kurallarını güncelle
       security:
         - BearerAuth: []
@@ -1639,10 +1898,12 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** **AlertRulesPanel** — eşik kurallarını
+        kaydeder (CPU/bellek/latency limitleri)."
 
-  /api/v1/services/{id}/maintenance:
+  "/api/v1/services/{id}/maintenance":
     get:
-      tags: [Maintenance]
+      tags: [ Maintenance ]
       summary: Bakım pencereleri
       security:
         - BearerAuth: []
@@ -1651,8 +1912,10 @@ paths:
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `maintenanceApi.list()` —
+        **MaintenanceTab** bakım pencereleri."
     post:
-      tags: [Maintenance]
+      tags: [ Maintenance ]
       summary: Bakım penceresi ekle
       security:
         - BearerAuth: []
@@ -1661,10 +1924,12 @@ paths:
       responses:
         '201':
           description: Oluşturuldu
+      description: "**🖥️ Front-end kullanımı:** `maintenanceApi.create()` —
+        **MaintenanceTab** yeni bakım penceresi (uyarılar susturulur)."
 
-  /api/v1/services/{id}/maintenance/{windowId}:
+  "/api/v1/services/{id}/maintenance/{windowId}":
     delete:
-      tags: [Maintenance]
+      tags: [ Maintenance ]
       summary: Bakım penceresi sil
       security:
         - BearerAuth: []
@@ -1679,10 +1944,12 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `maintenanceApi.delete()` —
+        **MaintenanceTab** bakım penceresini siler."
 
-  /api/v1/services/{id}/logs:
+  "/api/v1/services/{id}/logs":
     get:
-      tags: [Logs]
+      tags: [ Logs ]
       summary: Servis logları
       security:
         - BearerAuth: []
@@ -1691,10 +1958,12 @@ paths:
       responses:
         '200':
           description: Loglar
+      description: "**🖥️ Front-end kullanımı:** **ServiceDetailPage › Loglar** sekmesi
+        (servise özgü loglar)."
 
-  /api/v1/services/{id}/security/scans:
+  "/api/v1/services/{id}/security/scans":
     get:
-      tags: [Security]
+      tags: [ Security ]
       summary: Güvenlik taramaları
       security:
         - BearerAuth: []
@@ -1703,20 +1972,12 @@ paths:
       responses:
         '200':
           description: Taramalar
-    post:
-      tags: [Security]
-      summary: Tarama başlat
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ServiceId'
-      responses:
-        '202':
-          description: Tarama kuyruğa alındı
+      description: "**🖥️ Front-end kullanımı:** `securityApi.getServiceScans()` —
+        **SecurityPage** / **ServiceDetailPage** tarama geçmişi."
 
-  /api/v1/alerts/{alertId}/snooze:
+  "/api/v1/alerts/{alertId}/snooze":
     post:
-      tags: [Alerts]
+      tags: [ Alerts ]
       summary: Uyarıyı ertele
       security:
         - BearerAuth: []
@@ -1730,48 +1991,58 @@ paths:
       responses:
         '200':
           description: Ertelendi
+      description: "**🖥️ Front-end kullanımı:** **AlertsPage** — uyarıyı belirli süre
+        erteleme."
 
   /api/v1/demo/seed:
     post:
-      tags: [Demo]
+      tags: [ Demo ]
       summary: Demo veri yükle
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Seed tamamlandı
+      description: '**🖥️ Front-end kullanımı:** `demoApi.seed()` — **ServicesPage** boş
+        durumdaki "Demo verisi yükle" butonu.'
 
   /api/v1/agents/release:
     get:
-      tags: [Agents]
+      tags: [ Agents ]
       summary: Agent sürüm bilgisi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Release metadata
+      description: '**🖥️ Front-end kullanımı:** **AgentsPage** — "güncelleme mevcut"
+        rozeti için en güncel agent sürümü.'
 
   /api/v1/api-tokens:
     get:
-      tags: [ApiTokens]
+      tags: [ ApiTokens ]
       summary: API token listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `apiTokensApi.list()` — **ApiTokensPage**
+        kişisel token listesi + kullanılabilir scope'lar."
     post:
-      tags: [ApiTokens]
+      tags: [ ApiTokens ]
       summary: API token oluştur
       security:
         - BearerAuth: []
       responses:
         '201':
           description: Token (tek seferlik gösterim)
+      description: "**🖥️ Front-end kullanımı:** `apiTokensApi.create()` —
+        **ApiTokensPage** yeni token (gizli değer tek sefer gösterilir)."
 
-  /api/v1/api-tokens/{id}:
+  "/api/v1/api-tokens/{id}":
     delete:
-      tags: [ApiTokens]
+      tags: [ ApiTokens ]
       summary: API token iptal
       security:
         - BearerAuth: []
@@ -1785,10 +2056,12 @@ paths:
       responses:
         '200':
           description: İptal edildi
+      description: "**🖥️ Front-end kullanımı:** `apiTokensApi.revoke()` —
+        **ApiTokensPage** token iptali."
 
-  /api/v1/public/status/{slug}:
+  "/api/v1/public/status/{slug}":
     get:
-      tags: [StatusPages]
+      tags: [ StatusPages ]
       summary: Herkese açık durum sayfası
       parameters:
         - name: slug
@@ -1799,20 +2072,24 @@ paths:
       responses:
         '200':
           description: Durum sayfası verisi
+      description: "**🖥️ Front-end kullanımı:** `statusPageApi.getPublic()` —
+        **PublicStatusPage** (kimlik doğrulamasız, anonim ziyaretçi)."
 
   /api/v1/incidents:
     get:
-      tags: [Incidents]
+      tags: [ Incidents ]
       summary: Incident listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `incidentsApi.list()` — **IncidentsPage**
+        incident listesi."
 
-  /api/v1/incidents/{id}:
+  "/api/v1/incidents/{id}":
     get:
-      tags: [Incidents]
+      tags: [ Incidents ]
       summary: Incident detay
       security:
         - BearerAuth: []
@@ -1821,8 +2098,10 @@ paths:
       responses:
         '200':
           description: Detay
+      description: "**🖥️ Front-end kullanımı:** `incidentsApi.get()` — **IncidentsPage**
+        detay + zaman çizelgesi (timeline)."
     patch:
-      tags: [Incidents]
+      tags: [ Incidents ]
       summary: Incident güncelle
       security:
         - BearerAuth: []
@@ -1831,8 +2110,10 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `incidentsApi.update()` —
+        **IncidentsPage** başlık/özet/postmortem düzenleme."
     delete:
-      tags: [Incidents]
+      tags: [ Incidents ]
       summary: Incident sil
       security:
         - BearerAuth: []
@@ -1841,10 +2122,12 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `incidentsApi.remove()` —
+        **IncidentsPage** incident siler."
 
-  /api/v1/incidents/{id}/resolve:
+  "/api/v1/incidents/{id}/resolve":
     post:
-      tags: [Incidents]
+      tags: [ Incidents ]
       summary: Incident çöz
       security:
         - BearerAuth: []
@@ -1853,28 +2136,34 @@ paths:
       responses:
         '200':
           description: Çözüldü
+      description: "**🖥️ Front-end kullanımı:** `incidentsApi.resolve()` —
+        **IncidentsPage** incident'ı çözer."
 
   /api/v1/status-pages:
     get:
-      tags: [StatusPages]
+      tags: [ StatusPages ]
       summary: Durum sayfaları (admin)
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `statusPageApi.list()` —
+        **StatusPagesAdmin** durum sayfası listesi."
     post:
-      tags: [StatusPages]
+      tags: [ StatusPages ]
       summary: Durum sayfası oluştur
       security:
         - BearerAuth: []
       responses:
         '201':
           description: Oluşturuldu
+      description: "**🖥️ Front-end kullanımı:** `statusPageApi.create()` —
+        **StatusPagesAdmin** yeni herkese açık durum sayfası."
 
-  /api/v1/status-pages/{id}:
+  "/api/v1/status-pages/{id}":
     put:
-      tags: [StatusPages]
+      tags: [ StatusPages ]
       summary: Durum sayfası güncelle
       security:
         - BearerAuth: []
@@ -1888,8 +2177,10 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `statusPageApi.update()` —
+        **StatusPagesAdmin** düzenleme."
     delete:
-      tags: [StatusPages]
+      tags: [ StatusPages ]
       summary: Durum sayfası sil
       security:
         - BearerAuth: []
@@ -1903,28 +2194,33 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `statusPageApi.remove()` —
+        **StatusPagesAdmin** silme."
 
   /api/v1/slos:
     get:
-      tags: [SLO]
+      tags: [ SLO ]
       summary: SLO listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `sloApi.list()` — **SLOPage** SLO listesi."
     post:
-      tags: [SLO]
+      tags: [ SLO ]
       summary: SLO oluştur
       security:
         - BearerAuth: []
       responses:
         '201':
           description: Oluşturuldu
+      description: "**🖥️ Front-end kullanımı:** `sloApi.create()` — **SLOPage** yeni SLO
+        (availability/latency/error_rate)."
 
-  /api/v1/slos/{id}:
+  "/api/v1/slos/{id}":
     put:
-      tags: [SLO]
+      tags: [ SLO ]
       summary: SLO güncelle
       security:
         - BearerAuth: []
@@ -1933,8 +2229,9 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `sloApi.update()` — **SLOPage** düzenleme."
     delete:
-      tags: [SLO]
+      tags: [ SLO ]
       summary: SLO sil
       security:
         - BearerAuth: []
@@ -1943,10 +2240,11 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `sloApi.remove()` — **SLOPage** silme."
 
-  /api/v1/slos/{id}/compliance:
+  "/api/v1/slos/{id}/compliance":
     get:
-      tags: [SLO]
+      tags: [ SLO ]
       summary: SLO uyumluluk
       security:
         - BearerAuth: []
@@ -1955,28 +2253,34 @@ paths:
       responses:
         '200':
           description: Compliance
+      description: "**🖥️ Front-end kullanımı:** `sloApi.compliance()` — **SLOPage** error
+        budget / burndown grafiği."
 
   /api/v1/probes:
     get:
-      tags: [Probes]
+      tags: [ Probes ]
       summary: Synthetic probe listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `probesApi.list()` — **ProbesPage**
+        synthetic probe listesi."
     post:
-      tags: [Probes]
+      tags: [ Probes ]
       summary: Probe oluştur
       security:
         - BearerAuth: []
       responses:
         '201':
           description: Oluşturuldu
+      description: "**🖥️ Front-end kullanımı:** `probesApi.create()` — **ProbesPage** yeni
+        HTTP/TCP probe."
 
-  /api/v1/probes/{id}:
+  "/api/v1/probes/{id}":
     put:
-      tags: [Probes]
+      tags: [ Probes ]
       summary: Probe güncelle
       security:
         - BearerAuth: []
@@ -1985,8 +2289,10 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `probesApi.update()` — **ProbesPage**
+        düzenleme."
     delete:
-      tags: [Probes]
+      tags: [ Probes ]
       summary: Probe sil
       security:
         - BearerAuth: []
@@ -1995,10 +2301,12 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `probesApi.remove()` — **ProbesPage**
+        silme."
 
-  /api/v1/probes/{id}/runs:
+  "/api/v1/probes/{id}/runs":
     get:
-      tags: [Probes]
+      tags: [ Probes ]
       summary: Probe çalışma geçmişi
       security:
         - BearerAuth: []
@@ -2007,28 +2315,34 @@ paths:
       responses:
         '200':
           description: Runs
+      description: "**🖥️ Front-end kullanımı:** `probesApi.runs()` — **ProbesPage** probe
+        çalışma geçmişi (latency/durum)."
 
   /api/v1/runbooks:
     get:
-      tags: [Runbooks]
+      tags: [ Runbooks ]
       summary: Runbook listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `runbooksApi.list()` — **RunbooksPage**
+        otomasyon kuralları."
     post:
-      tags: [Runbooks]
+      tags: [ Runbooks ]
       summary: Runbook oluştur
       security:
         - BearerAuth: []
       responses:
         '201':
           description: Oluşturuldu
+      description: "**🖥️ Front-end kullanımı:** `runbooksApi.create()` — **RunbooksPage**
+        yeni runbook (alert → aksiyon)."
 
-  /api/v1/runbooks/{id}:
+  "/api/v1/runbooks/{id}":
     put:
-      tags: [Runbooks]
+      tags: [ Runbooks ]
       summary: Runbook güncelle
       security:
         - BearerAuth: []
@@ -2037,8 +2351,10 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `runbooksApi.update()` — **RunbooksPage**
+        düzenleme."
     delete:
-      tags: [Runbooks]
+      tags: [ Runbooks ]
       summary: Runbook sil
       security:
         - BearerAuth: []
@@ -2047,10 +2363,12 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `runbooksApi.remove()` — **RunbooksPage**
+        silme."
 
-  /api/v1/runbooks/{id}/fires:
+  "/api/v1/runbooks/{id}/fires":
     get:
-      tags: [Runbooks]
+      tags: [ Runbooks ]
       summary: Runbook tetiklenme geçmişi
       security:
         - BearerAuth: []
@@ -2059,28 +2377,35 @@ paths:
       responses:
         '200':
           description: Fires
+      description: "**🖥️ Front-end kullanımı:** `runbooksApi.fires()` — **RunbooksPage**
+        tetiklenme geçmişi."
 
   /api/v1/notifications/channels:
     get:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Bildirim kanalları
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `notificationsApi.list()` —
+        **NotificationsPage** kanal listesi."
     post:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Kanal ekle
       security:
         - BearerAuth: []
       responses:
         '201':
           description: Oluşturuldu
+      description: "**🖥️ Front-end kullanımı:** `notificationsApi.create()` —
+        **NotificationsPage** yeni kanal
+        (slack/discord/webhook/email/pagerduty)."
 
-  /api/v1/notifications/channels/{id}:
+  "/api/v1/notifications/channels/{id}":
     put:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Kanal güncelle
       security:
         - BearerAuth: []
@@ -2089,8 +2414,10 @@ paths:
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** `notificationsApi.update()` —
+        **NotificationsPage** kanal düzenleme."
     delete:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Kanal sil
       security:
         - BearerAuth: []
@@ -2099,10 +2426,12 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `notificationsApi.remove()` —
+        **NotificationsPage** kanal silme."
 
-  /api/v1/notifications/channels/{id}/test:
+  "/api/v1/notifications/channels/{id}/test":
     post:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Kanal test bildirimi
       security:
         - BearerAuth: []
@@ -2111,10 +2440,12 @@ paths:
       responses:
         '200':
           description: Gönderildi
+      description: '**🖥️ Front-end kullanımı:** `notificationsApi.test()` —
+        **NotificationsPage** "Test gönder" butonu.'
 
-  /api/v1/notifications/channels/{id}/deliveries:
+  "/api/v1/notifications/channels/{id}/deliveries":
     get:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Teslimat geçmişi
       security:
         - BearerAuth: []
@@ -2123,174 +2454,209 @@ paths:
       responses:
         '200':
           description: Deliveries
+      description: "**🖥️ Front-end kullanımı:** `notificationsApi.deliveries()` —
+        **NotificationsPage** teslimat geçmişi."
 
   /api/v1/notifications/push-token:
     post:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Expo push token kaydet
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Kayıtlı
+      description: "**🖥️ Front-end kullanımı:** Mobil uygulama — cihaz push token kaydı
+        (web SPA kullanmaz)."
     delete:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Push token sil
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** Mobil uygulama — push token silme."
 
   /api/v1/notifications/push-preferences:
     get:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Push tercihleri
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Tercihler
+      description: "**🖥️ Front-end kullanımı:** Mobil uygulama — push tercihleri."
     put:
-      tags: [Notifications]
+      tags: [ Notifications ]
       summary: Push tercihleri güncelle
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Güncellendi
+      description: "**🖥️ Front-end kullanımı:** Mobil uygulama — push tercihleri
+        güncelleme."
 
   /api/v1/security/overview:
     get:
-      tags: [Security]
+      tags: [ Security ]
       summary: Güvenlik özeti
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Özet
+      description: "**🖥️ Front-end kullanımı:** `securityApi.getOverview()` —
+        **SecurityPage** güvenlik skoru ve servis özetleri."
 
   /api/v1/logs:
     get:
-      tags: [Logs]
+      tags: [ Logs ]
       summary: Tüm loglarda ara
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Sonuçlar
+      description: "**🖥️ Front-end kullanımı:** **LogsPage** / **LogViewer** — merkezi log
+        arama (servis/seviye/metin filtresi)."
 
   /api/v1/logs/stats:
     get:
-      tags: [Logs]
+      tags: [ Logs ]
       summary: Log istatistikleri
       security:
         - BearerAuth: []
       responses:
         '200':
           description: İstatistik
+      description: "**🖥️ Front-end kullanımı:** **LogsPage** — log seviye
+        dağılımı/istatistikleri."
 
   /api/v1/services/uptime/summary:
     get:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Toplu uptime özeti
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Özet
+      description: "**🖥️ Front-end kullanımı:** **DashboardPage** / **ServicesPage** — tüm
+        servislerin uptime'ını tek istekte çeker (N+1 önleme)."
 
   /api/v1/services/map:
     get:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servis haritası layout
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Harita
+      description: "**🖥️ Front-end kullanımı:** `servicesApi.loadMap()` —
+        **ServiceMapPage** (`useMapState`) kayıtlı düğüm/kenar yerleşimini
+        yükler."
     put:
-      tags: [Services]
+      tags: [ Services ]
       summary: Servis haritası kaydet
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Kaydedildi
+      description: "**🖥️ Front-end kullanımı:** `servicesApi.saveMap()` —
+        **ServiceMapPage** yerleşimi kaydeder (sürükle-bırak sonrası)."
 
   /api/v1/metrics/summary:
     get:
-      tags: [Metrics]
+      tags: [ Metrics ]
       summary: Global metrik özeti
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Özet
+      description: "**🖥️ Front-end kullanımı:** **DashboardPage** — küresel metrik özeti
+        (ort. latency, p95, hata oranı, CPU)."
 
   /api/v1/insights:
     get:
-      tags: [AI]
+      tags: [ AI ]
       summary: Tüm servisler AI insight
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Insight listesi
+      description: "**🖥️ Front-end kullanımı:** **AIInsightsPage** — tüm servislerin AI
+        içgörülerini bir arada gösterir."
 
   /api/v1/k8s/status:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Küme durumu
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Status
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getStatus()` — **KubernetesPage**
+        K8s entegrasyonunun erişilebilirliğini kontrol eder."
 
   /api/v1/k8s/namespaces:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Namespace listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getNamespaces()` —
+        **KubernetesPage** namespace seçici."
 
   /api/v1/k8s/nodes:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Node listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getNodes()` — **KubernetesPage**
+        düğüm listesi."
 
   /api/v1/k8s/pods:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Pod listesi (namespace)
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getPods()` — **PodsTab** (label
+        selector ile)."
 
   /api/v1/k8s/pods/all:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Tüm podlar
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getAllPods()` — **PodsTab**
+        namespace'teki tüm pod'lar."
 
-  /api/v1/k8s/pods/{name}/logs:
+  "/api/v1/k8s/pods/{name}/logs":
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Pod logları
       security:
         - BearerAuth: []
@@ -2303,10 +2669,12 @@ paths:
       responses:
         '200':
           description: Loglar
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getPodLogs()` — **PodsTab** pod
+        log görüntüleyici."
 
-  /api/v1/k8s/pods/{name}:
+  "/api/v1/k8s/pods/{name}":
     delete:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Pod sil
       security:
         - BearerAuth: []
@@ -2319,20 +2687,24 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.deletePod()` — **PodsTab** pod
+        silme (yeniden oluşturulur)."
 
   /api/v1/k8s/deployments:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Deployment listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.listDeployments()` —
+        **KubernetesPage** deployment listesi."
 
-  /api/v1/k8s/deployments/{name}:
+  "/api/v1/k8s/deployments/{name}":
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Deployment detay
       security:
         - BearerAuth: []
@@ -2345,10 +2717,12 @@ paths:
       responses:
         '200':
           description: Detay
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getDeployment()` —
+        **KubernetesPage** deployment detayı."
 
-  /api/v1/k8s/deployments/{name}/scale:
+  "/api/v1/k8s/deployments/{name}/scale":
     post:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Deployment ölçekle
       security:
         - BearerAuth: []
@@ -2361,10 +2735,12 @@ paths:
       responses:
         '200':
           description: Ölçeklendi
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.scaleDeployment()` —
+        **KubernetesPage** replica ölçekleme."
 
-  /api/v1/k8s/deployments/{name}/restart:
+  "/api/v1/k8s/deployments/{name}/restart":
     post:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Rollout restart
       security:
         - BearerAuth: []
@@ -2377,28 +2753,34 @@ paths:
       responses:
         '200':
           description: Restart başlatıldı
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.rolloutRestart()` —
+        **KubernetesPage** rollout restart."
 
   /api/v1/k8s/hpa:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: HPA listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.listHPAs()` — **KubernetesPage**
+        HPA listesi."
     post:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: HPA oluştur/güncelle
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Kaydedildi
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.createOrUpdateHPA()` —
+        **KubernetesPage** HPA oluştur/güncelle."
 
-  /api/v1/k8s/hpa/{name}:
+  "/api/v1/k8s/hpa/{name}":
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: HPA detay
       security:
         - BearerAuth: []
@@ -2411,8 +2793,10 @@ paths:
       responses:
         '200':
           description: Detay
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getHPA()` — **KubernetesPage** HPA
+        detayı."
     delete:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: HPA sil
       security:
         - BearerAuth: []
@@ -2425,20 +2809,24 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.deleteHPA()` — **KubernetesPage**
+        HPA silme."
 
   /api/v1/k8s/services:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: K8s Service listesi
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Liste
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.listServices()` — **ServicesTab**
+        K8s servisleri."
 
-  /api/v1/k8s/endpoints/{name}:
+  "/api/v1/k8s/endpoints/{name}":
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Service endpoints
       security:
         - BearerAuth: []
@@ -2451,50 +2839,60 @@ paths:
       responses:
         '200':
           description: Endpoints
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getEndpoints()` — **EndpointsTab**
+        servis endpoint'leri."
 
   /api/v1/k8s/events:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Küme olayları
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Events
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getEvents()` — **EventsTab** küme
+        olayları."
 
   /api/v1/k8s/top/pods:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Pod kaynak kullanımı (top)
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Top pods
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getTopPods()` — **KubernetesPage**
+        pod kaynak kullanımı (metrics-server)."
 
   /api/v1/k8s/top/nodes:
     get:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Node kaynak kullanımı (top)
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Top nodes
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.getTopNodes()` —
+        **KubernetesPage** düğüm kaynak kullanımı."
 
   /api/v1/k8s/deploy:
     post:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Manifest deploy
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Deploy edildi
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.deployService()` — **NanonetTab**
+        yeni servisi K8s'e deploy eder."
 
-  /api/v1/k8s/deploy/{name}:
+  "/api/v1/k8s/deploy/{name}":
     delete:
-      tags: [Kubernetes]
+      tags: [ Kubernetes ]
       summary: Deploy sil (undeploy)
       security:
         - BearerAuth: []
@@ -2507,3 +2905,149 @@ paths:
       responses:
         '200':
           description: Silindi
+      description: "**🖥️ Front-end kullanımı:** `k8sApi.undeployService()` —
+        **NanonetTab** servisi K8s'ten kaldırır."
+  /api/v1/billing/plans:
+    get:
+      tags:
+        - Billing
+      summary: Abonelik planları
+      description: >-
+        Tüm abonelik planlarını (Free/Pro/Enterprise vb.) limitleri ve
+        fiyatlarıyla döndürür. Yanıt standart zarf ile sarılır: `{ "success":
+        true, "data": ... }`.
+
+
+        **🖥️ Front-end kullanımı:** `billingApi.getPlans()` — **BillingPage** mevcut plan kartları.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Plan listesi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Plan"
+  /api/v1/billing/subscription:
+    get:
+      tags:
+        - Billing
+      summary: Mevcut abonelik ve kullanım
+      description: >-
+        Oturum açan kullanıcının aktif aboneliğini ve mevcut kullanım
+        sayaçlarını (servis/agent/probe/AI token) döndürür. Yanıt standart zarf
+        ile sarılır: `{ "success": true, "data": ... }`.
+
+
+        **🖥️ Front-end kullanımı:** `billingApi.getSubscription()` — **BillingPage** aktif abonelik + kullanım göstergeleri.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Abonelik özeti
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/PlanSummary"
+  /api/v1/billing/subscribe:
+    post:
+      tags:
+        - Billing
+      summary: Plan değiştir / yükselt
+      description: >-
+        Kullanıcıyı verilen plana geçirir. Yanıt standart zarf ile sarılır: `{
+        "success": true, "data": ... }`.
+
+
+        **🖥️ Front-end kullanımı:** `billingApi.subscribe()` — **BillingPage** plan seçme/yükseltme.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - plan_id
+              properties:
+                plan_id:
+                  type: string
+                  example: pro
+      responses:
+        "200":
+          description: Güncel abonelik
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Subscription"
+        "422":
+          description: Geçersiz plan veya geçiş yapılamadı
+  /api/v1/billing/cancel:
+    post:
+      tags:
+        - Billing
+      summary: Aboneliği iptal et
+      description: >-
+        Aktif aboneliği dönem sonunda iptal olacak şekilde işaretler. Yanıt
+        standart zarf ile sarılır: `{ "success": true, "data": ... }`.
+
+
+        **🖥️ Front-end kullanımı:** `billingApi.cancel()` — **BillingPage** aboneliği iptal (dönem sonunda).
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: İptal edildi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      canceled:
+                        type: boolean
+                        example: true
+  "/api/v1/services/{id}/security/scan":
+    post:
+      tags:
+        - Security
+      summary: Güvenlik taraması başlat
+      description: >-
+        Servis için anlık TLS/güvenlik-başlığı taraması çalıştırır ve sonucu
+        döndürür.
+
+
+        **🖥️ Front-end kullanımı:** `securityApi.triggerScan()` — **SecurityPage** "Tara" butonu (TLS/başlık taraması tetikler).
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ServiceId"
+      responses:
+        "200":
+          description: Tarama sonucu

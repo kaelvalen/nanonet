@@ -89,16 +89,25 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // findUserByEmail resolves an email to a user id. Returns gorm.ErrRecordNotFound
 // when there is no matching user.
+//
+// We scan into a string (id::text) rather than directly into uuid.UUID: GORM's
+// Raw().Scan() mishandles a Postgres `uuid` column when the destination is a
+// uuid.UUID ([16]byte array), surfacing a scan error even for valid rows. The
+// text cast + uuid.Parse path is robust.
 func (r *Repository) findUserByEmail(ctx context.Context, email string) (uuid.UUID, error) {
-	var id uuid.UUID
+	var idStr string
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT id FROM users WHERE lower(email) = lower(?)`, strings.TrimSpace(email),
-	).Scan(&id).Error
+		`SELECT id::text FROM users WHERE lower(email) = lower(?)`, strings.TrimSpace(email),
+	).Scan(&idStr).Error
 	if err != nil {
 		return uuid.Nil, err
 	}
-	if id == uuid.Nil {
+	if idStr == "" {
 		return uuid.Nil, gorm.ErrRecordNotFound
+	}
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return uuid.Nil, err
 	}
 	return id, nil
 }

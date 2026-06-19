@@ -83,7 +83,7 @@ export function AuthLayout({
 						className="text-[10px] font-mono tracking-wider uppercase"
 						style={{ color: "var(--text-faint)" }}
 					>
-						signal over noise · v2.0
+						v2.0
 					</p>
 				</div>
 			</div>

@@ -1041,6 +1041,7 @@ type ChartPoint = {
 
 function OverviewSection({
 	chartData,
+	history,
 	loading,
 	empty,
 	serviceId,
@@ -1048,6 +1049,7 @@ function OverviewSection({
 	onDurationChange,
 }: {
 	chartData: ChartPoint[];
+	history: ServiceMetrics[];
 	loading: boolean;
 	empty: boolean;
 	serviceId: string;
@@ -1104,7 +1106,7 @@ function OverviewSection({
 		<Suspense fallback={skeletonGrid}>
 			<div className="flex flex-col gap-4">
 				{toolbar}
-				<ForecastPanel serviceId={serviceId} />
+				<ForecastPanel serviceId={serviceId} history={history} />
 				<ServiceMetricsCharts chartData={chartData} />
 				<DependenciesPanel serviceId={serviceId} />
 			</div>
@@ -1595,7 +1597,7 @@ function AIAnalysisSection({
 							className="text-[13px] font-semibold leading-tight"
 							style={{ color: "var(--text-primary)" }}
 						>
-							Claude AI analiz
+							AI analiz
 						</p>
 						<p
 							className="text-[11px] leading-tight mt-1"
@@ -1674,7 +1676,7 @@ function AIAnalysisSection({
 						style={{ color: "var(--brand-primary)" }}
 					/>
 					<p className="text-[12px]" style={{ color: "var(--text-tertiary)" }}>
-						Claude metrikleri inceliyor…
+						 metrikleri inceliyor…
 					</p>
 				</div>
 			) : result ? (
@@ -2202,6 +2204,7 @@ export function ServiceDetailPage() {
 								{activeSection === "overview" && (
 									<OverviewSection
 										chartData={chartData}
+										history={metrics}
 										loading={metricsLoading}
 										empty={chartData.length === 0}
 										serviceId={serviceId ?? ""}

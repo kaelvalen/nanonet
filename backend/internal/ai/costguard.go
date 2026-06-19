@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -176,7 +177,7 @@ func (g *CostGuard) LogUsage(ctx context.Context, in UsageRow) {
 	if in.CreatedAt.IsZero() {
 		in.CreatedAt = time.Now()
 	}
-	_ = g.db.WithContext(ctx).Exec(`
+	if err := g.db.WithContext(ctx).Exec(`
 		INSERT INTO ai_usage
 			(user_id, service_id, model, kind, input_tokens, output_tokens, cost_usd, cache_hit, latency_ms, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -184,7 +185,9 @@ func (g *CostGuard) LogUsage(ctx context.Context, in UsageRow) {
 		in.UserID, in.ServiceID, in.Model, in.Kind,
 		in.InputTokens, in.OutputTokens, in.CostUSD,
 		in.CacheHit, in.LatencyMS, in.CreatedAt,
-	).Error
+	).Error; err != nil {
+		log.Printf("[AI Usage LOG ERROR] user=%s kind=%s model=%s: %v", in.UserID, in.Kind, in.Model, err)
+	}
 }
 
 // PruneCache deletes expired cache rows. Run periodically.

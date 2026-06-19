@@ -6,7 +6,6 @@ import {
 	BrainCircuit,
 	CheckCircle2,
 	Cpu,
-	GitFork,
 	MemoryStick,
 	Plus,
 	Server,
@@ -866,22 +865,6 @@ export function DashboardPage() {
 				actions={
 					<>
 						<DashboardCustomize />
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() => navigate("/app/service-map")}
-						>
-							<GitFork className="w-3.5 h-3.5 mr-1.5" />
-							Harita
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() => navigate("/app/ai-insights")}
-						>
-							<Sparkles className="w-3.5 h-3.5 mr-1.5" />
-							AI
-						</Button>
 						<AddServiceDialog />
 					</>
 				}

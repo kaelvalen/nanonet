@@ -1,4 +1,4 @@
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import {
 	AlertTriangle,
 	Clock,
@@ -189,10 +189,19 @@ function MetricCard({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ForecastPanel({ serviceId }: { serviceId: string }) {
+export function ForecastPanel({
+	serviceId,
+	history = [],
+}: {
+	serviceId: string;
+	/* Live metric history (WS-fed) from the parent. Used both for the chart's
+	   historical line and — crucially — to anchor the forecast's time axis to
+	   the latest real observation, since the backend forecast is built from DB
+	   samples that can lag the live stream. */
+	history?: ServiceMetrics[];
+}) {
 	const [selected, setSelected] = useState<ForecastMetric>("cpu");
 	const [horizon, setHorizon] = useState<Horizon>(12);
-	const qc = useQueryClient();
 
 	const meta = METRICS.find((m) => m.key === selected) ?? METRICS[0];
 
@@ -207,27 +216,29 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 		})),
 	});
 
-	// Latest historical value per metric (from WS cache)
+	// Latest historical value per metric (from the live WS-fed history)
 	const historicalData = useMemo(() => {
-		const cached = qc.getQueryData<ServiceMetrics[]>(["serviceMetrics", serviceId]);
-		if (!cached?.length) return {} as Record<ForecastMetric, number | null>;
-		const last = cached[cached.length - 1];
+		const last = history.length ? history[history.length - 1] : null;
+		if (!last) return {} as Record<ForecastMetric, number | null>;
 		return {
 			cpu:        last.cpu_percent    ?? null,
 			memory:     last.memory_used_mb ?? null,
 			latency:    last.latency_ms     ?? null,
 			error_rate: last.error_rate     ?? null,
 		} as Record<ForecastMetric, number | null>;
-	}, [qc, serviceId]);
+	}, [history]);
 
-	// Build combined chart data: last 20 historical + all forecast points
+	// Build combined chart data: last 20 live points + all forecast points.
 	const chartData = useMemo(() => {
 		const forecastIdx = METRICS.findIndex((m) => m.key === selected);
-		const forecastData = forecasts[forecastIdx]?.data?.forecast;
-		const cached = qc.getQueryData<ServiceMetrics[]>(["serviceMetrics", serviceId]);
+		const series = forecasts[forecastIdx]?.data?.forecast.series ?? [];
 
-		const historical = (cached ?? []).slice(-20).map((p) => ({
-			time: new Date(p.time).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+		const fmtTime = (t: number) =>
+			new Date(t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+
+		const historical = history.slice(-20).map((p) => ({
+			t:    new Date(p.time).getTime(),
+			time: "",
 			hist: metricValue(p, selected),
 			pred: null as number | null,
 			lo:   null as number | null,
@@ -235,8 +246,31 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 			isNow: false,
 		}));
 
-		const predicted = (forecastData?.series ?? []).map((p) => ({
-			time: new Date(p.timestamp).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+		// Forecast step: prefer the live sampling cadence so the projected axis
+		// continues seamlessly from the latest real point; fall back to the
+		// spacing the backend used, then to 1 min.
+		let stepMs = 60_000;
+		if (historical.length >= 2) {
+			stepMs = historical[historical.length - 1].t - historical[historical.length - 2].t;
+		} else if (series.length >= 2) {
+			stepMs =
+				new Date(series[1].timestamp).getTime() -
+				new Date(series[0].timestamp).getTime();
+		}
+		if (!(stepMs > 0)) stepMs = 60_000;
+
+		// Anchor the forecast to the most recent *live* observation rather than
+		// the backend's last stored sample (which can lag the live stream by
+		// hours), so the prediction's time axis stays aligned with "now".
+		const anchorMs = historical.length
+			? historical[historical.length - 1].t
+			: series.length
+				? new Date(series[0].timestamp).getTime() - stepMs
+				: Date.now();
+
+		const predicted = series.map((p, i) => ({
+			t:    anchorMs + (i + 1) * stepMs,
+			time: "",
 			hist: null as number | null,
 			pred: Number(p.value.toFixed(2)),
 			lo:   Number(p.lower.toFixed(2)),
@@ -244,19 +278,18 @@ export function ForecastPanel({ serviceId }: { serviceId: string }) {
 			isNow: false,
 		}));
 
-		// Add "now" divider point
+		// Add "now" divider point bridging the historical and forecast lines.
 		if (historical.length && predicted.length) {
 			const lastHist = historical[historical.length - 1];
-			const firstPred = predicted[0];
 			return [
 				...historical,
 				{ ...lastHist, pred: lastHist.hist, lo: lastHist.hist, hi: lastHist.hist, isNow: true },
 				...predicted.map((p, i) => ({ ...p, hist: i === 0 ? lastHist.hist : null })),
-			];
+			].map((p) => ({ ...p, time: fmtTime(p.t) }));
 		}
 
-		return [...historical, ...predicted];
-	}, [forecasts, selected, serviceId, qc]);
+		return [...historical, ...predicted].map((p) => ({ ...p, time: fmtTime(p.t) }));
+	}, [forecasts, selected, history]);
 
 	const nowIndex = chartData.findIndex((p) => p.isNow);
 	const nowTime = nowIndex >= 0 ? chartData[nowIndex].time : undefined;
